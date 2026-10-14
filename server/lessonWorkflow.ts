@@ -197,7 +197,10 @@ export async function runLessonWorkflow(o:Options){
   }
   function restoreSpeechState(restored:Awaited<ReturnType<typeof verifiedSpeech>>){
     speech=restored.reused;
-    if(restored.pending.length){phase='narration';return;}
+    // Narration may have been saved after requesting a new voice/chapter take,
+    // while the old, lexically correct waveform is still on disk. Only the
+    // normal raw-key/revision/tempo pipeline can establish this take is current.
+    if(savedCheckpoint?.phase==='narration'||restored.pending.length){phase='narration';return;}
     const rate=lessonPacingCheck([...speech.values()].reduce((n,s)=>n+compactSpeech(s.analysis.transcript).length,0),[...speech.values()].reduce((n,s)=>n+s.analysis.duration,0),pacing);
     if(rate.passed){phase='scenes';return;}
     // A process can stop after the last ASR write but before the whole-track

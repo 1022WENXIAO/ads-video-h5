@@ -40,6 +40,23 @@ async function seed(directory:string,phase='narration',rendererHash='old-rendere
   return{work,checkpoint,o,events,stages,originals,save};
 }
 async function noProviders<T>(action:()=>Promise<T>){const original=globalThis.fetch;let submissions=0;globalThis.fetch=async()=>{submissions++;throw new Error('Recovery must not submit a provider request');};try{return await action();}finally{globalThis.fetch=original;assert.equal(submissions,0);}}
+async function seedAudio(s:Awaited<ReturnType<typeof seed>>,directory:string,pending=false){
+  const pacing=lessonPacing(prompt),voiceStyle=lessonVoiceStyle(pacing,lessonPresentation(prompt));
+  const anchor=Buffer.from('CONTROLLED existing voice anchor'),anchorHash=hashBytes(anchor),anchorLine='接下来，我们从一个简单的例子开始，把问题讲清楚。';
+  await writeFile(path.join(s.work,'voice-anchor.mp3'),anchor);await writeFile(path.join(s.work,'voice-anchor.json'),JSON.stringify({seedKey:hashBytes(JSON.stringify({model:audioConfig.modelId,revision:0,voiceStyle,anchorLine})),hash:anchorHash}));
+  s.checkpoint.report.voice={...s.checkpoint.report.voice!,anchorHash};
+  const tone=path.join(directory,'controlled-tone.mp3');await runFFmpeg(['-v','error','-y','-f','lavfi','-i','sine=frequency=440:sample_rate=48000:duration=14.56','-ar','48000','-ac','1',tone]);
+  const hashes=new Map<string,string>();
+  const rawKey=(chapter:LessonChapter,voiceRevision=0,chapterRevision=0)=>hashBytes(JSON.stringify({line:spokenLessonText(chapter.narration),model:audioConfig.modelId,anchorHash,voiceRevision,chapterRevision,voiceStyle}));
+  for(const chapter of s.checkpoint.report.chapters){
+    const dir=path.join(s.work,chapter.id),raw=path.join(dir,'raw-speech.mp3'),edge=path.join(dir,'edge-speech.wav'),prepared=path.join(dir,'prepared-speech.wav'),tempo=path.join(dir,'tempo-speech.wav'),paced=path.join(dir,'paced-speech.wav'),file=path.join(dir,'speech.mp3');
+    await copyFile(tone,raw);await writeFile(path.join(dir,'raw-speech.json'),JSON.stringify({key:rawKey(chapter),hash:hashBytes(await readFile(raw))}));
+    await prepareLessonSpeech(raw,edge);await tightenNewsSpeechSilence(edge,prepared,pacing.maxPauseSeconds);await runFFmpeg(['-v','error','-y','-i',prepared,'-af','atempo=1','-ar','48000','-ac','1','-c:a','pcm_s16le',tempo]);await tightenNewsSpeechSilence(tempo,paced,pacing.maxPauseSeconds);await runFFmpeg(['-v','error','-y','-i',paced,'-ar','48000','-ac','1',file]);
+    const bytes=await readFile(file),duration=await probeAudio(file),heard=pending&&chapter.id==='c1'?chapter.narration.replace('损失','损'):chapter.narration;
+    await writeFile(path.join(dir,'speech-analysis.json'),JSON.stringify(analysis(chapter,bytes,heard,duration)));await writeFile(path.join(dir,'analysis-key.json'),JSON.stringify({hash:hashBytes(bytes),id:'cached-'+chapter.id}));hashes.set(chapter.id,hashBytes(bytes));
+  }
+  await s.save();return{hashes,rawKey};
+}
 
 for(const [phase,renderer] of [['narration','old-renderer'],['scenes','old-renderer'],['scenes','current'],['narration','current']])test(`partial ${phase}/${renderer} checkpoint resumes narration and preserves facts/raw audio`,async()=>{
   const directory=await mkdtemp(path.join(tmpdir(),'qingjian-speech-resume-'));
@@ -79,20 +96,20 @@ test('actual P9 omitted 程 transcript becomes pending speech verification inste
 
 test('all currently verified chapters go directly to scenes after renderer update',async()=>{
   const directory=await mkdtemp(path.join(tmpdir(),'qingjian-speech-resume-'));
-  try{await noProviders(async()=>{const s=await seed(directory);await assert.rejects(runLessonWorkflow(s.o),e=>e===STOP);assert.deepEqual(s.stages,['绘制公式、曲线与教学分镜']);assert.equal(JSON.parse(await readFile(path.join(s.work,'checkpoint.json'),'utf8')).phase,'scenes');});}finally{await rm(directory,{recursive:true,force:true});}
+  try{await noProviders(async()=>{const s=await seed(directory,'scenes');await assert.rejects(runLessonWorkflow(s.o),e=>e===STOP);assert.deepEqual(s.stages,['绘制公式、曲线与教学分镜']);assert.equal(JSON.parse(await readFile(path.join(s.work,'checkpoint.json'),'utf8')).phase,'scenes');});}finally{await rm(directory,{recursive:true,force:true});}
 });
 
 test('renderer updates preserve an existing required script repair and recheck whole-track pacing',async()=>{
   const directory=await mkdtemp(path.join(tmpdir(),'qingjian-speech-resume-'));
   try{await noProviders(async()=>{
-    for(const phase of ['script','narration','fact-review','budget']){
+    for(const phase of ['script','scenes','fact-review','budget']){
       const s=await seed(path.join(directory,phase),phase);
-      if(phase==='narration')for(const chapter of s.checkpoint.report.chapters){const bytes=await readFile(path.join(s.work,chapter.id,'speech.mp3'));await writeFile(path.join(s.work,chapter.id,'speech-analysis.json'),JSON.stringify(analysis(chapter,bytes,chapter.narration,1)));}
+      if(phase==='scenes')for(const chapter of s.checkpoint.report.chapters){const bytes=await readFile(path.join(s.work,chapter.id,'speech.mp3'));await writeFile(path.join(s.work,chapter.id,'speech-analysis.json'),JSON.stringify(analysis(chapter,bytes,chapter.narration,1)));}
       let nextTool='';s.o.progress=async(events)=>{const restored=events.find(e=>e.tool==='renderer_rebuild'&&e.status==='succeeded');if(restored){nextTool=(restored.output as any).nextTool;throw STOP;}};
       await assert.rejects(runLessonWorkflow(s.o),e=>e===STOP);
-      const saved=JSON.parse(await readFile(path.join(s.work,'checkpoint.json'),'utf8'));assert.equal(saved.phase,phase==='narration'?'script':phase);assert.equal(saved.report.factReview.needsRepair,false);
+      const saved=JSON.parse(await readFile(path.join(s.work,'checkpoint.json'),'utf8'));assert.equal(saved.phase,phase==='scenes'?'script':phase);assert.equal(saved.report.factReview.needsRepair,false);
       assert.equal(nextTool,phase==='fact-review'?'review_lesson_script':phase==='budget'?'plan_lesson_budget':'revise_lesson_script');
-      if(phase==='narration')assert.match(saved.feedback,/实际每秒56\.000字.*高于上限/);
+      if(phase==='scenes')assert.match(saved.feedback,/实际每秒56\.000字.*高于上限/);
     }
   });}finally{await rm(directory,{recursive:true,force:true});}
 });
@@ -107,23 +124,65 @@ test('speech restore keeps filesystem denial and cancellation terminal before an
   });}finally{await rm(directory,{recursive:true,force:true});}
 });
 
+for(const revision of ['global','chapter'])for(const renderer of ['current','old-renderer'])test(`pending ${revision} voice revision stays in narration with ${renderer} even when old words/hash pass`,async()=>{
+  const directory=await mkdtemp(path.join(tmpdir(),'qingjian-speech-revision-'));
+  try{await noProviders(async()=>{
+    const s=await seed(directory,'narration',renderer==='current'?lessonRendererHash():renderer);
+    Object.assign(s.checkpoint,revision==='global'?{voiceRevision:1}:{chapterVoiceRevisions:{c1:1}});await s.save();
+    await assert.rejects(runLessonWorkflow(s.o),e=>e===STOP);assert.deepEqual(s.stages,['制作统一教学旁白']);
+    const saved=JSON.parse(await readFile(path.join(s.work,'checkpoint.json'),'utf8'));assert.equal(saved.phase,'narration');assert.equal(saved.report.voice.revision,0);assert.deepEqual(saved.report.factReview,s.checkpoint.report.factReview);
+    if(renderer==='old-renderer'){const restored=s.events.find(e=>e.tool==='renderer_rebuild'&&e.status==='succeeded')!;assert.deepEqual((restored.output as any).verifiedChapters,['c0','c1','c2']);assert.equal((restored.output as any).nextTool,'synthesize_narration');}
+  });}finally{await rm(directory,{recursive:true,force:true});}
+});
+
+const causedBy=(error:unknown,expected:unknown):boolean=>error===expected||Boolean(error&&typeof error==='object'&&'cause'in error&&causedBy(error.cause,expected));
+for(const revision of ['global','chapter'])test(`cached ${revision} repair is checked against the current synthesis key before reusing final speech`,async()=>{
+  const directory=await mkdtemp(path.join(tmpdir(),'qingjian-speech-revision-audio-'));
+  try{await noProviders(async()=>{
+    const s=await seed(directory,'narration',lessonRendererHash());await seedAudio(s,directory);
+    Object.assign(s.checkpoint,revision==='global'?{voiceRevision:1}:{chapterVoiceRevisions:{c1:1}});await s.save();
+    const expected=revision==='global'?'synthesize_voice_anchor':'synthesize_chapter',progress=s.o.progress;
+    const o={...s.o,stage:async(stage:string)=>{s.stages.push(stage);},progress:async(events:WorkflowEvent[])=>{await progress(events);if(events.some(e=>e.tool===expected&&e.status==='running'))throw STOP;}};
+    await assert.rejects(runLessonWorkflow(o),error=>causedBy(error,STOP));assert.deepEqual(s.stages,['制作统一教学旁白']);
+    const submissions=s.events.filter(e=>e.tool===expected);assert.equal(submissions.length,1);
+    if(revision==='chapter')assert.equal((submissions[0].input as any).chapterId,'c1');
+    assert.equal(s.events.some(e=>e.tool==='transcribe_chapter'),false);assert.equal(JSON.parse(await readFile(path.join(s.work,'checkpoint.json'),'utf8')).phase,'narration');
+  });}finally{await rm(directory,{recursive:true,force:true});}
+});
+
+test('current raw metadata with an old final waveform finishes that take and recognizes only the changed chapter',async()=>{
+  const directory=await mkdtemp(path.join(tmpdir(),'qingjian-speech-final-pending-'));
+  try{await noProviders(async()=>{
+    const s=await seed(directory,'narration','old-renderer'),{hashes,rawKey}=await seedAudio(s,directory),chapter=s.checkpoint.report.chapters[1];
+    Object.assign(s.checkpoint,{chapterVoiceRevisions:{c1:1}});
+    const raw=path.join(s.work,'c1/raw-speech.mp3');await runFFmpeg(['-v','error','-y','-f','lavfi','-i','sine=frequency=660:sample_rate=48000:duration=14.56','-ar','48000','-ac','1',raw]);
+    await writeFile(path.join(s.work,'c1/raw-speech.json'),JSON.stringify({key:rawKey(chapter,0,1),hash:hashBytes(await readFile(raw))}));await s.save();
+    let recognitions=0;
+    const o={...s.o,stage:async(stage:string)=>{s.stages.push(stage);if(stage==='绘制公式、曲线与教学分镜')throw STOP;},analyze:async(item:any,file:string)=>{
+      recognitions++;assert.equal(path.basename(path.dirname(file)),'c1');assert.notEqual(item.id,'cached-c1');const bytes=await readFile(file);assert.notEqual(hashBytes(bytes),hashes.get('c1'));return analysis(chapter,bytes,chapter.narration,await probeAudio(file));
+    }};
+    await assert.rejects(runLessonWorkflow(o),e=>e===STOP);assert.equal(recognitions,1);assert.deepEqual(s.stages,['制作统一教学旁白','绘制公式、曲线与教学分镜']);assert.equal(s.events.some(e=>e.tool==='synthesize_chapter'||e.tool==='synthesize_voice_anchor'),false);
+    for(const id of ['c0','c2'])assert.equal(hashBytes(await readFile(path.join(s.work,id,'speech.mp3'))),hashes.get(id));
+    const final=JSON.parse(await readFile(path.join(s.work,'c1/speech-analysis.json'),'utf8'));assert.equal(final.sourceHash,hashBytes(await readFile(path.join(s.work,'c1/speech.mp3'))));assert.notEqual(final.sourceHash,hashes.get('c1'));
+  });}finally{await rm(directory,{recursive:true,force:true});}
+});
+
+test('narration stopped after all valid ASR writes still executes the pipeline without duplicate synthesis or recognition',async()=>{
+  const directory=await mkdtemp(path.join(tmpdir(),'qingjian-speech-all-ready-'));
+  try{await noProviders(async()=>{
+    const s=await seed(directory,'narration',lessonRendererHash()),{hashes}=await seedAudio(s,directory);
+    const o={...s.o,stage:async(stage:string)=>{s.stages.push(stage);if(stage==='绘制公式、曲线与教学分镜')throw STOP;}};
+    await assert.rejects(runLessonWorkflow(o),e=>e===STOP);assert.deepEqual(s.stages,['制作统一教学旁白','绘制公式、曲线与教学分镜']);
+    assert.equal(s.events.some(e=>['synthesize_chapter','synthesize_voice_anchor','transcribe_chapter'].includes(e.tool)),false);
+    assert.equal(s.events.filter(e=>e.tool==='verify_narration_pacing'&&e.status==='succeeded').length,1);
+    for(const[id,hash]of hashes)assert.equal(hashBytes(await readFile(path.join(s.work,id,'speech.mp3'))),hash);
+  });}finally{await rm(directory,{recursive:true,force:true});}
+});
+
 test('resumed narration reuses verified chapters and independently rechecks only the unchanged pending waveform',async()=>{
   const directory=await mkdtemp(path.join(tmpdir(),'qingjian-speech-resume-audio-'));
   try{await noProviders(async()=>{
-    const s=await seed(directory),pacing=lessonPacing(prompt),voiceStyle=lessonVoiceStyle(pacing,lessonPresentation(prompt));
-    const anchor=Buffer.from('CONTROLLED existing voice anchor'),anchorHash=hashBytes(anchor),anchorLine='接下来，我们从一个简单的例子开始，把问题讲清楚。';
-    await writeFile(path.join(s.work,'voice-anchor.mp3'),anchor);await writeFile(path.join(s.work,'voice-anchor.json'),JSON.stringify({seedKey:hashBytes(JSON.stringify({model:audioConfig.modelId,revision:0,voiceStyle,anchorLine})),hash:anchorHash}));
-    s.checkpoint.report.voice={...s.checkpoint.report.voice!,anchorHash};
-    const tone=path.join(directory,'controlled-tone.mp3');await runFFmpeg(['-v','error','-y','-f','lavfi','-i','sine=frequency=440:sample_rate=48000:duration=14.56','-ar','48000','-ac','1',tone]);
-    const hashes=new Map<string,string>();
-    for(const chapter of s.checkpoint.report.chapters){
-      const dir=path.join(s.work,chapter.id),raw=path.join(dir,'raw-speech.mp3'),edge=path.join(dir,'edge-speech.wav'),prepared=path.join(dir,'prepared-speech.wav'),tempo=path.join(dir,'tempo-speech.wav'),paced=path.join(dir,'paced-speech.wav'),file=path.join(dir,'speech.mp3');
-      await copyFile(tone,raw);await writeFile(path.join(dir,'raw-speech.json'),JSON.stringify({key:hashBytes(JSON.stringify({line:spokenLessonText(chapter.narration),model:audioConfig.modelId,anchorHash,voiceRevision:0,chapterRevision:0,voiceStyle})),hash:hashBytes(await readFile(raw))}));
-      await prepareLessonSpeech(raw,edge);await tightenNewsSpeechSilence(edge,prepared,pacing.maxPauseSeconds);await runFFmpeg(['-v','error','-y','-i',prepared,'-af','atempo=1','-ar','48000','-ac','1','-c:a','pcm_s16le',tempo]);await tightenNewsSpeechSilence(tempo,paced,pacing.maxPauseSeconds);await runFFmpeg(['-v','error','-y','-i',paced,'-ar','48000','-ac','1',file]);
-      const bytes=await readFile(file),duration=await probeAudio(file),heard=chapter.id==='c1'?chapter.narration.replace('损失','损'):chapter.narration;
-      await writeFile(path.join(dir,'speech-analysis.json'),JSON.stringify(analysis(chapter,bytes,heard,duration)));await writeFile(path.join(dir,'analysis-key.json'),JSON.stringify({hash:hashBytes(bytes),id:'cached-'+chapter.id}));hashes.set(chapter.id,hashBytes(bytes));
-    }
-    await s.save();
+    const s=await seed(directory),{hashes}=await seedAudio(s,directory,true);
     if(process.getuid?.()!==0){
       const meta=path.join(s.work,'c1/raw-speech.json');await chmod(meta,0);
       try{await assert.rejects(runLessonWorkflow({...s.o,stage:async()=>{}}),(error:any)=>{let current=error;while(current&&current.code!=='EACCES')current=current.cause;return current?.code==='EACCES';});}finally{await chmod(meta,0o600);}
