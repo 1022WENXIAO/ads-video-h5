@@ -1,7 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createPlanWithPi, validatePlan } from '../server/core';
-import { editProposalTimingFeedback, normalizeEditProposal } from '../server/editProposal';
+import { applyEditAudioPolicy, editAudioNormalization, editProposalNarrativeFeedback, editProposalTimingFeedback, editSentenceBudgetHint, normalizeEditProposal } from '../server/editProposal';
+import { applyTimelineRequest } from '../server/timeline';
 import type { EditPlan, MediaItem } from '../shared/types';
 import { ARK_BASE_URL, TEXT_MODEL_PRESETS } from '../shared/textModels';
 
@@ -19,6 +20,50 @@ test('real incident timing feedback includes duration and stale overlay together
   const feedback = editProposalTimingFeedback(normalized.plan, prompt).join('\n');
   assert.match(feedback, /31\.280秒.*20秒/); assert.match(feedback, /覆盖层第2条.*27\.55–34\.55/); assert.match(feedback, /减少所选完整句子/); assert.match(feedback, /删片前的旧轴/);
   assert.throws(() => validatePlan(normalized.plan, media), /覆盖层第2条.*0–31\.280秒/);
+});
+test('original speech defaults to actual loudness processing and only explicit audio processing exclusions disable it', () => {
+  for (const request of ['保留原声，不重新配音', '不要新增配音图片，音量统一一点', '不要压缩视频，保留原声', '不要关闭响度归一化', 'keep original speech without generating voiceover']) assert.equal(editAudioNormalization(request), true, request);
+  for (const request of ['不做响度归一化', '不要调整原声的音量', '不要动态处理', '保留原始动态', '关闭响度均衡', 'do not normalize audio', 'without dynamic compression']) assert.equal(editAudioNormalization(request), false, request);
+  const raw = { ...failedProposal(), audio: { originalVolume: .8, bgmVolume: 0, narrationVolume: 1, normalize: false } };
+  const normalized = normalizeEditProposal(raw, '保留原话原声，加字幕');
+  assert.equal(normalized.plan.audio!.normalize, true); assert.equal(normalized.plan.audio!.originalVolume, .8); assert.equal(raw.audio.normalize, false);
+  assert(normalized.repairs.some(message => /逐段与混音/.test(message)));
+  assert.equal(applyEditAudioPolicy(normalized.plan, '保持原始响度，不做动态处理').audio!.normalize, false);
+});
+test('a complete ASR conclusion still needs its adjacent stated limitation for a coherent ending', () => {
+  const sources = structuredClone(media), original = sources[1].analysis!.sentences[2];
+  const conclusion = { ...original, id: 'conclusion', start: 10.35, end: 12.35, text: '结论应当由证据支持', words: [{ text: '结论应当由证据支持', start: 10.35, end: 12.35 }] };
+  const limitation = { ...original, id: 'limitation', start: 12.6, end: 17.67, text: '暂时没有把握的部分需要保留限制不能把猜测说成事实', words: [{ text: '暂时没有把握的部分需要保留限制不能把猜测说成事实', start: 12.6, end: 17.67 }] };
+  sources[1].analysis!.sentences.splice(2, 1, conclusion, limitation);
+  const before = structuredClone(sources);
+  const candidate = { ...failedProposal(), clips: [clip(0, 0), { sourceId: sources[1].id, start: 10.1, end: 12.5, sentenceIds: ['conclusion'], purpose: 'conclusion' as const }] };
+  assert.match(editProposalNarrativeFeedback(candidate, sources).join('\n'), /当前句在ASR中完整.*丢失论证边界/);
+  assert.equal(conclusion.complete, true); assert.deepEqual(sources, before);
+  const repaired = { ...candidate, clips: [candidate.clips[0], { ...candidate.clips[1], end: 17.82, sentenceIds: ['conclusion', 'limitation'] }] };
+  assert.deepEqual(editProposalNarrativeFeedback(repaired, sources), []);
+});
+test('sentence budget suggestions are computed through actual plan and padding validation within the central duration band', () => {
+  let validated = 0;
+  const hint = editSentenceBudgetHint(failedProposal(), prompt, media, candidate => { const result = applyTimelineRequest(validatePlan(candidate, media), prompt, media); validated++; assert(Math.abs(result.targetSeconds - 20) <= 2); return result; });
+  assert(validated > 0); assert.match(hint, /实际源时间.*padding/);
+  const suggestions = hint.split('\n').slice(1); assert(suggestions.length > 0 && suggestions.length <= 3);
+  for (const row of suggestions) { const seconds = Number(/\d+\.\s+(\d+(?:\.\d+)?)秒/.exec(row)![1]); assert(seconds >= 19 && seconds <= 21); }
+  assert.equal(editSentenceBudgetHint(failedProposal(), prompt, media, () => { throw new Error('invalid source or timing'); }), '');
+});
+test('the real Pi adapter overrides model normalize=false and preserves an explicit user opt-out after timeline application', async () => {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async () => {
+    const candidate = { ...failedProposal(), fineCut: false, clips: [clip(0, 0), clip(1, 0), clip(1, 2)], overlays: [], audio: { originalVolume: 1, bgmVolume: 0, narrationVolume: 1, normalize: false } };
+    const delta = { role: 'assistant', tool_calls: [{ index: 0, id: 'normalization-fixture', type: 'function', function: { name: 'propose_edit', arguments: JSON.stringify(candidate) } }] };
+    const chunks = [{ delta, finish_reason: null }, { delta: {}, finish_reason: 'tool_calls' }].map(choice => `data: ${JSON.stringify({ id: 'controlled-normalization', object: 'chat.completion.chunk', created: 1, model: config.modelId, choices: [{ index: 0, ...choice }] })}\n\n`).join('');
+    return new Response(chunks + 'data: [DONE]\n\n', { headers: { 'Content-Type': 'text/event-stream' } });
+  };
+  try {
+    assert.equal((await createPlanWithPi(prompt, config, structuredClone(media), [], null, [])).audio!.normalize, true);
+    assert.equal((await createPlanWithPi(prompt + ' 不做响度归一化，保留原始动态。', config, structuredClone(media), [], null, [])).audio!.normalize, false);
+    const natural = await createPlanWithPi('把两段视频剪成20秒横屏小片，两段都用到，所选句子保留完整原话原声，加字幕，不新增配音图片，给我成片。', config, structuredClone(media), [], null, []);
+    assert.equal(natural.fineCut, true); assert(Math.abs(natural.targetSeconds - 20) <= 2); assert.equal(natural.audio!.normalize, true);
+  } finally { globalThis.fetch = originalFetch; }
 });
 test('overlong speech and obsolete overlays are repaired in one Pi turn and selected original words stay complete', async () => {
   const originalFetch = globalThis.fetch; let requests = 0;
@@ -41,4 +86,16 @@ test('overlong speech and obsolete overlays are repaired in one Pi turn and sele
     assert(plan.captions!.every(caption => caption.start >= 0 && caption.end <= plan.targetSeconds));
     assert.doesNotThrow(() => validatePlan(plan, media));
   } finally { globalThis.fetch = originalFetch; }
+});
+test('the planner can repair more than three bounded validation rejections while ordinary tools retain their default budget', async () => {
+  const originalFetch = globalThis.fetch; let requests = 0;
+  globalThis.fetch = async (_url, init) => {
+    requests++;
+    if (requests > 1) assert.match(JSON.stringify(JSON.parse(String(init?.body)).messages), /候选/);
+    const candidate = requests <= 3 ? failedProposal() : { ...failedProposal(), clips: [clip(0, 0), clip(1, 0), clip(1, 2)], overlays: [] };
+    const delta = { role: 'assistant', tool_calls: [{ index: 0, id: `repair-${requests}`, type: 'function', function: { name: 'propose_edit', arguments: JSON.stringify(candidate) } }] };
+    return new Response([{ delta, finish_reason: null }, { delta: {}, finish_reason: 'tool_calls' }].map(choice => `data: ${JSON.stringify({ id: 'bounded-edit-recovery', object: 'chat.completion.chunk', created: 1, model: config.modelId, choices: [{ index: 0, ...choice }] })}\n\n`).join('') + 'data: [DONE]\n\n', { headers: { 'Content-Type': 'text/event-stream' } });
+  };
+  try { assert((await createPlanWithPi(prompt, config, structuredClone(media), [], null, [])).clips.length); assert.equal(requests, 4); }
+  finally { globalThis.fetch = originalFetch; }
 });

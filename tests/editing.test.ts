@@ -3,6 +3,9 @@ import assert from 'node:assert/strict';
 import { mkdtemp, mkdir, copyFile, readFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
+import { execFile } from 'node:child_process';
+import { createRequire } from 'node:module';
+import { promisify } from 'node:util';
 import { classify, shouldUpdatePlan } from '../server/intents';
 import { validateTranscript, regroupWords, splitRepeatedLeads, wordBoundaryCaptionBreaks, validateCaptionBreaks } from '../server/audioUnderstanding';
 import { applyTimelineRequest, captionsFromTranscript } from '../server/timeline';
@@ -132,13 +135,23 @@ test('multiple fades and mixed cuts retain constant frame rate and full audio du
       const candidate=validatePlan({format:'9:16',summary:'连续转场',targetSeconds:0,clips,captions:[],overlays:[],audio:{originalVolume:1,bgmVolume:0,narrationVolume:1,normalize:false}},media);
       const output=await renderPlan(candidate,media,dir,path.join(dir,'out'));
       const probe=await probeVideo(output.file);assert.ok(probe.hasAudio);assert.ok(Math.abs(probe.duration-candidate.targetSeconds)<.15);
-      const log=await runFFmpeg(['-hide_banner','-i',output.file,'-vf','showinfo','-af','ashowinfo','-f','null','-'],180000,250000);
-      assert.match(log,/frame_rate:\s*30\/1/);
-      const videoTimes=[...log.matchAll(/\[Parsed_showinfo[^\]]*\].*?\bn:\s*\d+\s+pts:\s*\d+\s+pts_time:([\d.]+)/g)].map(m=>Number(m[1]));
-      const audioTimes=[...log.matchAll(/\[Parsed_ashowinfo[^\]]*\].*?\bn:\s*\d+\s+pts:\s*\d+\s+pts_time:([\d.]+).*?nb_samples:(\d+)/g)].map(m=>Number(m[1])+Number(m[2])/44100);
-      assert.ok(videoTimes.length>100&&Math.abs(videoTimes.at(-1)!+1/30-candidate.targetSeconds)<.15);
+      // showinfo and ashowinfo write human-readable stderr concurrently. Some
+      // FFmpeg builds can interleave those lines and lose regex matches even
+      // when the encoded file has every frame. Audit the actual decoded frame
+      // records as structured FFprobe JSON, retaining all timing assertions.
+      const ffprobe:string=createRequire(import.meta.url)('ffprobe-static').path;
+      const {stdout}=await promisify(execFile)(ffprobe,['-v','error','-show_streams','-show_frames','-show_entries','stream=index,codec_type,sample_rate,r_frame_rate,avg_frame_rate:frame=stream_index,best_effort_timestamp_time,pts_time,pkt_pts_time,nb_samples','-of','json',output.file],{timeout:180000,maxBuffer:2_000_000});
+      const decoded=JSON.parse(stdout) as {streams:Array<{index:number;codec_type:string;sample_rate?:string;r_frame_rate?:string;avg_frame_rate?:string}>;frames:Array<{stream_index:number;best_effort_timestamp_time?:string;pts_time?:string;pkt_pts_time?:string;nb_samples?:number}>};
+      const video=decoded.streams.find(s=>s.codec_type==='video')!,audio=decoded.streams.find(s=>s.codec_type==='audio')!;
+      assert.equal(video.r_frame_rate,'30/1');assert.equal(video.avg_frame_rate,'30/1');
+      const timestamp=(frame:typeof decoded.frames[number])=>Number(frame.best_effort_timestamp_time??frame.pts_time??frame.pkt_pts_time);
+      const videoTimes=decoded.frames.filter(f=>f.stream_index===video.index).map(timestamp);
+      const audioTimes=decoded.frames.filter(f=>f.stream_index===audio.index).map(f=>timestamp(f)+Number(f.nb_samples)/Number(audio.sample_rate));
+      assert.ok(videoTimes.every(Number.isFinite)&&audioTimes.every(Number.isFinite),'decoded frame timestamps and audio sample counts must be present');
+      assert.ok(Math.abs(videoTimes[0])<.00002,'encoded video must begin at zero');
+      assert.ok(videoTimes.length>100&&Math.abs(videoTimes.at(-1)!+1/30-candidate.targetSeconds)<.15,JSON.stringify({mixed,frames:videoTimes.length,videoEnd:videoTimes.at(-1)!+1/30,target:candidate.targetSeconds}));
       for(let i=1;i<videoTimes.length;i++)assert.ok(Math.abs(videoTimes[i]-videoTimes[i-1]-1/30)<.00002);
-      assert.ok(audioTimes.length>0&&Math.abs(audioTimes.at(-1)!-candidate.targetSeconds)<.15);
+      assert.ok(audioTimes.length>0&&Math.abs(audioTimes.at(-1)!-candidate.targetSeconds)<.15,JSON.stringify({mixed,audioEnd:audioTimes.at(-1),target:candidate.targetSeconds}));
     }
   } finally {await rm(dir,{recursive:true,force:true});}
 });

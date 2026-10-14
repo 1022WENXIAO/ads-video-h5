@@ -58,6 +58,12 @@ test('required-tool authentication errors retain the provider cause without retr
   try{await assert.rejects(()=>createImagePromptWithPi('画封面',config(),[]),error=>{assert.match(String(error),/401|unauthorized/);assert.doesNotMatch(String(error),/test-private-credential/);return true;});assert.equal(requests,1);}
   finally{globalThis.fetch=original;}
 });
+test('ordinary required tools retain the default limit of three invalid submissions',async()=>{
+  const original=globalThis.fetch;let requests=0;
+  globalThis.fetch=async()=>{requests++;return call('submit_narration',{text:''});};
+  try{await assert.rejects(()=>createNarrationWithPi('写口播',config(),[]),/口播文案为空/);assert.equal(requests,3);}
+  finally{globalThis.fetch=original;}
+});
 
 test('editing a supplied source corrects a refusal and produces a validated plan',async()=>{
   const original=globalThis.fetch;let requests=0;

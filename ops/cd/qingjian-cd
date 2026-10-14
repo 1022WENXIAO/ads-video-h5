@@ -8,6 +8,7 @@ cache=/var/cache/qingjian-cd
 build_user=qingjian-build
 build_dir=
 backup_dir=
+browser_staging=
 previous_sha=
 target_sha=
 switched=0
@@ -37,6 +38,7 @@ finish() {
   fi
   if [[ "$build_dir" == "$cache"/build.* && -d "$build_dir" ]]; then rm -rf -- "$build_dir"; fi
   if [[ "$backup_dir" == "$cache"/backup.* && -d "$backup_dir" ]]; then rm -rf -- "$backup_dir"; fi
+  if [[ "$browser_staging" == "$cache"/browser-staging.* && -d "$browser_staging" ]]; then rm -rf -- "$browser_staging"; fi
   exit "$status"
 }
 trap finish EXIT
@@ -64,8 +66,43 @@ fi
 
 build_dir=$(mktemp -d "$cache/build.XXXXXXXX")
 git -C "$repo" archive "$target_sha" | tar -x -C "$build_dir"
+install -d -o "$build_user" -g "$build_user" -m 0755 "$cache/home" "$cache/home/.cache"
+# Real HTML tests need a browser before HyperFrames runs. Bind an installed
+# system browser, or copy only the runtime's browser bundle out of its private
+# cache. Never grant the build user access to production accounts or media,
+# and never let a test silently download a browser under a different HOME.
+test_browser=
+for candidate in "${HYPERFRAMES_BROWSER_PATH:-}" \
+  /usr/bin/google-chrome /usr/bin/google-chrome-stable /usr/bin/chromium /usr/bin/chromium-browser \
+  /data/qingjian/.cache/hyperframes/chrome/chrome-headless-shell/linux-*/chrome-headless-shell-linux64/chrome-headless-shell \
+  /data/qingjian/.cache/puppeteer/chrome-headless-shell/linux-*/chrome-headless-shell-linux64/chrome-headless-shell; do
+  [[ -n "$candidate" && -f "$candidate" && -x "$candidate" ]] || continue
+  if runuser -u "$build_user" -- test -x "$candidate"; then
+    test_browser=$candidate
+    break
+  fi
+  candidate=$(readlink -f "$candidate")
+  [[ "$candidate" == /data/qingjian/.cache/*/chrome-headless-shell/linux-*/chrome-headless-shell-linux64/chrome-headless-shell ]] || continue
+  browser_hash=$(sha256sum "$candidate" | cut -d' ' -f1)
+  browser_bundle="$cache/browser-$browser_hash"
+  if [[ ! -x "$browser_bundle/chrome-headless-shell" ]]; then
+    browser_staging=$(mktemp -d "$cache/browser-staging.XXXXXXXX")
+    cp -a "$(dirname "$candidate")/." "$browser_staging/"
+    chmod -R a+rX "$browser_staging"
+    mv "$browser_staging" "$browser_bundle"
+    browser_staging=
+  fi
+  test_browser="$browser_bundle/chrome-headless-shell"
+  break
+done
+if [[ -z "$test_browser" ]]; then
+  echo 'Real HTML regression tests require an existing browser readable by the isolated build user.' >&2
+  exit 1
+fi
+runuser -u "$build_user" -- "$test_browser" --version
 chown -R "$build_user:$build_user" "$build_dir"
 runuser -u "$build_user" -- env -i PATH="$PATH" HOME="$cache/home" XDG_CACHE_HOME="$cache/home/.cache" \
+  HYPERFRAMES_BROWSER_PATH="$test_browser" PRODUCER_HEADLESS_SHELL_PATH="$test_browser" \
   bash -c 'cd "$1" && pnpm install --frozen-lockfile && node --import tsx --test --test-concurrency=2 tests/*.test.ts && VITE_BASE_PATH=/qingjian/ pnpm build' _ "$build_dir"
 test -f "$build_dir/dist/index.html"
 test -f "$build_dir/dist/admin/index.html"

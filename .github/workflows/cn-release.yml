@@ -45,11 +45,19 @@ jobs:
         with:
           node-version: 24.21.0
           package-manager-cache: false
-      - name: Provide system FFmpeg
+      - name: Provide system FFmpeg and Chinese fonts
         shell: bash
         run: |
           sudo apt-get update -qq
-          sudo apt-get install --no-install-recommends -y ffmpeg
+          sudo apt-get install --no-install-recommends -y ffmpeg fonts-noto-cjk
+      - name: Bind the runner's existing browser for real HTML rendering tests
+        shell: bash
+        run: |
+          browser=$(command -v google-chrome || command -v google-chrome-stable || command -v chromium || true)
+          test -n "$browser" && test -x "$browser"
+          "$browser" --version
+          printf 'HYPERFRAMES_BROWSER_PATH=%s\n' "$browser" >> "$GITHUB_ENV"
+          printf 'PRODUCER_HEADLESS_SHELL_PATH=%s\n' "$browser" >> "$GITHUB_ENV"
       - name: Install frozen dependencies
         shell: bash
         run: |

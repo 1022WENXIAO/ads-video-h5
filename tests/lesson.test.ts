@@ -410,7 +410,7 @@ test('long lessons require matching chapter evidence, reference hashes and actua
   assert.throws(()=>validateLesson({...calculated,chapters:calculated.chapters.map(c=>({...c,claims:[{...c.claims[0],text:'1964年提出'}]}))},'教学视频90秒'),/伪装/);
   assert.throws(()=>validateLesson({...calculated,chapters:calculated.chapters.map(c=>({...c,claims:[{...c.claims[0],basis:'source'}]}))},'教学视频90秒'),/真实来源/);
   assert.throws(()=>validateLesson({...calculated,chapters:calculated.chapters.map(c=>({...c,narration:'误差变大损失越高'.repeat(20)}))},'教学视频90秒'),/总旁白估计/);
-  assert.deepEqual(dimensions(plan),[1280,720]);assert.ok(createAss(plan).includes('subtitle,PingFang SC,34,'));
+  assert.deepEqual(dimensions(plan),[1280,720]);assert.match(createAss(plan),/^Style: subtitle,[^,\n]+,34,/m);
 });
 test('actual success and rejection traces retain tool data while redacting credentials and media',async()=>{
   const updates:WorkflowEvent[][]=[];const trace=createToolTrace(async e=>{updates.push(structuredClone(e));},['sensitive-credential']);

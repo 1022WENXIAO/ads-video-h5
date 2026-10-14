@@ -525,32 +525,34 @@ async function performJob(job: Job): Promise<void> {
         }, review: (file, next) => reviewRender(file, next, media, prompt) });
       plan = session.plan = workflow.plan; result = workflow.rendered!; review = workflow.review!;
     } else {
+    const traceModels = await Promise.all([getModelConfig('text', session.modelId),getModelConfig('understanding')]);
+    const exportTrace = createToolTrace(basicProgress,traceModels.flatMap(model=>model?.apiKey?[model.apiKey]:[]));
     for (const clip of plan.clips) await oss?.ensure(job.ownerId!, 'media', clip.sourceId, path.join(mediaDir, clip.sourceId));
     if (narrationId && narrationFile) await oss?.ensure(job.ownerId!, 'artifacts', narrationId, narrationFile);
     if (bgmId && bgmId !== 'preset' && bgmFile) await oss?.ensure(job.ownerId!, 'media', bgmId, bgmFile);
     if (plan.coverMediaId) await oss?.ensure(job.ownerId!, 'media', plan.coverMediaId, path.join(mediaDir, plan.coverMediaId));
     updateReply(session,job,'方案已确认，正在渲染画面、字幕和声音。','commentary','basic-render');await saveState();
-    result = await renderPlan(plan, media, mediaDir, exportDir, narrationFile, bgmFile);
+    result = await exportTrace.run('render_video','合成剪辑成片',{planHash:planHash(plan),clips:plan.clips.length,seconds:plan.targetSeconds},()=>renderPlan(plan, media, mediaDir, exportDir, narrationFile, bgmFile));
     job.progress = 90; await saveState();
     updateReply(session,job,'成片已渲染，正在检查画面、字幕和声音。','commentary','basic-review');await saveState();
-    review = await reviewRender(result.file, plan, media, prompt);
+    review = await exportTrace.run('review_video','独立检查成片',{artifactId:result.id,planHash:planHash(plan)},()=>reviewRender(result.file, plan, media, prompt));
     const correctable = review.status === 'needs-review' && review.checks.some((c) => !c.passed && ['实际时长', '字幕执行', '字幕原话', '字幕时间映射', '覆盖层执行', '对比关键词覆盖', '推镜执行', '转场执行', '响度归一化执行', '完整句子', '人声响度', '分段人声响度一致性', '段落衔接音量跳变', '段内音量稳定性', '声音峰值与削波', '成片语义审查'].includes(c.name) && c.detail !== '未完成，不能视为通过');
     if (correctable) {
       const textConfig = await getModelConfig('text', session.modelId);
       if (textConfig) {
         try {
           const findings = review.checks.filter((c) => !c.passed).map((c) => `${c.name}：${c.detail}`).join('；');
-          const repairedBase = withCover(await createPlanWithPi(`${prompt}\n成片审查发现：${findings}。请修复上述问题，保留其他已有设置，不编造素材。`, textConfig, selectedSources().filter((m) => m.kind !== 'audio'), history, plan, attached, analyzeAudio, basicProgress));
+          const repairedBase = withCover(await exportTrace.run('repair_edit','根据成片检查返修剪辑',{findings},()=>createPlanWithPi(`${prompt}\n成片审查发现：${findings}。请修复上述问题，保留其他已有设置，不编造素材。`, textConfig, selectedSources().filter((m) => m.kind !== 'audio'), history, plan, attached, analyzeAudio, basicProgress)));
           const repaired = { ...repairedBase, version: (plan.version || 0) + 1 };
           for (const clip of repaired.clips) await oss?.ensure(job.ownerId!, 'media', clip.sourceId, path.join(mediaDir, clip.sourceId));
-          const repairedResult = await renderPlan(repaired, media, mediaDir, exportDir, narrationFile, bgmFile);
-          const repairedReview = await reviewRender(repairedResult.file, repaired, media, prompt);
+          const repairedResult = await exportTrace.run('render_video','合成返修成片',{planHash:planHash(repaired),clips:repaired.clips.length,seconds:repaired.targetSeconds},()=>renderPlan(repaired, media, mediaDir, exportDir, narrationFile, bgmFile));
+          const repairedReview = await exportTrace.run('review_video','复查返修成片',{artifactId:repairedResult.id,planHash:planHash(repaired)},()=>reviewRender(repairedResult.file, repaired, media, prompt));
           // Keep the first result if the attempted repair made its checks worse.
           if (repairedReview.score >= review.score && repairedReview.checks.filter((c) => !c.passed).length <= review.checks.filter((c) => !c.passed).length) {
             plan = repaired; session.plan = plan;
             result = repairedResult; review = repairedReview; if (review.semantic) review.semantic.repaired = true;
           }
-        } catch { review.limitations.push('自动返修未完成，保留原成片及审查问题，可继续修改。'); }
+        } catch { throwIfJobCancelled();review.limitations.push('自动返修未完成，保留原成片及审查问题，可继续修改。'); }
       }
     }
     }
