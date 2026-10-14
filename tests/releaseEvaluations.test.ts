@@ -76,6 +76,7 @@ test('generated user messages stay natural while all mandatory server expectatio
   assert(cases.slice(0,2).every(c => c.expectation.html && c.expectation.seconds === 30 && !c.expectation.originalOnly));
   assert(cases[0].messages[0].includes('最近三天的真实热点'));
   assert(cases[2].messages[0].includes('保留完整原话和原声'));
+  assert(cases[2].messages[0].includes('所选句子保留完整原话和原声'));
   assert(cases[2].expectation.originalOnly && cases[2].expectation.minSources === 2 && !cases[2].expectation.html);
   for (const coaching of ['制作HTML图解视频给我','先搜索查证，再制作视频','页面不可读就更换来源生成视频','生成视频后进行成片审查','制作短片，调用工具完成任务']) {
     assert.throws(() => normalizeGeneratedReleaseCases([{...rows()[0],request:coaching},...rows().slice(1)],3,fixtures),/自然用户需求/);

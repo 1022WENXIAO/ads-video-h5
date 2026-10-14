@@ -11,6 +11,7 @@ import { generateAudio } from './providers';
 import type { Format, MediaItem, ReconstructionBeat } from '../src/types';
 import { motionLibrary } from './motionComponents';
 import { loadMotionDesignContext } from './skills';
+import { safeErrorText } from './executionErrors';
 
 export const hashBytes = (v: string | Buffer) => createHash('sha256').update(v).digest('hex');
 const escape = (s:string) => s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]!));
@@ -107,6 +108,7 @@ export async function checkHtmlProject(project:string,options?:{fullCheck?:boole
     const timer=setTimeout(()=>child.kill('SIGKILL'),90000);
     child.on('error',e=>{clearTimeout(timer);reject(e)});
     child.on('close',async code=>{clearTimeout(timer);try{
+      if(!stdout.trim()&&code!==0)throw Object.assign(new Error(`HTML ${task} 检查进程未完成（退出码${code??'中断'}），请检查渲染运行环境。`,{cause:new Error(safeErrorText(stderr).slice(-1000))}),{code:'HTML_RUNTIME_UNAVAILABLE'});
       const result=parseHtmlCheckReport(stdout,task);
       await writeFile(path.join(project,`${task}-report.json`),JSON.stringify(result,null,2));
       const issues=result.issues||result.findings||['lint','runtime','layout','motion','contrast'].flatMap(key=>result[key]?.findings||[]).filter(f=>f.severity==='error');

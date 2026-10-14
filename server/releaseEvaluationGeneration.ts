@@ -6,6 +6,7 @@ import type { ModelConfig } from './modelRegistry';
 import { getAgent } from './core';
 import { runRequiredTool } from './requiredTool';
 import { validateEvaluationCase, EvaluationError } from './evaluations';
+import { releaseEvaluationFixtureContext } from './releaseEvaluationFixtures';
 
 export interface GeneratedReleaseCase { name: string; category: 'hot-news' | 'knowledge' | 'multi-video'; request: string; format: '9:16' | '16:9' }
 
@@ -24,7 +25,7 @@ export function normalizeGeneratedReleaseCases(input: unknown, count: number, fi
     const editing = row.category === 'multi-video', seconds = editing ? 20 : 30;
     if (editing && fixtures.length < 2) throw new EvaluationError('自动验收缺少两段真实视频素材。');
     const constraints = editing
-      ? `把这两段视频剪成${seconds}秒${row.format === '9:16' ? '竖屏' : '横屏'}，两段都用到，保留完整原话和原声，加字幕，不要新增配音或图片，给我成片。`
+      ? `把这两段视频剪成${seconds}秒${row.format === '9:16' ? '竖屏' : '横屏'}，两段都用到，所选句子保留完整原话和原声，加字幕，不要新增配音或图片，给我成片。`
       : `做成${seconds}秒${row.format === '9:16' ? '竖屏' : '横屏'}视频，配音和字幕，画面用动态示意，给我可以播放的成片。${row.category === 'hot-news' ? '内容讲最近三天的真实热点。' : ''}`;
     const validated = validateEvaluationCase({ name: row.name.trim(), category: row.category, description: `发布自动验收；模型生成的原始需求：${request}`, messages: [`${request}\n${constraints}`], fixtureIds: editing ? fixtures.slice(0,2).map(f => f.id) : [], expectation: { seconds, toleranceSeconds: 2.4, format: row.format, captions: true, minSources: editing ? 2 : 0, html: !editing, originalOnly: editing, requiredWords: [] }, threshold: 80, enabled: true });
     return { ...validated, id: `release-${randomUUID()}` };
@@ -40,7 +41,7 @@ export async function generateReleaseCases(options: { config: ModelConfig; count
     cases = normalizeGeneratedReleaseCases(args.cases, options.count, options.fixtures, options.previousRequests);
     return { content: [{ type: 'text', text: `${cases.length}条用例已校验，接下来实际制作视频。` }], details: { count: cases.length } };
   } };
-  const prompt = `为轻剪本次发布 ${options.revision} 设计恰好${options.count}个不同的中文用户视频制作请求。当前UTC时间${new Date().toISOString()}。必须包含热点新闻、知识/产品/教程等从零视频生成、使用两段附加视频保留原话原声的剪辑，其他条目可覆盖不同内容领域。新闻只表达想看最近三天的真实热点，不预设具体未经证实事件。生成视频最终30秒、剪辑最终20秒；不要在原始请求中指定矛盾时长或画幅。剪辑素材为可剪辑的受控示意视频，内容讲观察、对比和解释，不要假定有真人、品牌、现场或其他画面。每条request必须像普通用户说话，变化主题、句式、表达顺序，可含口述停顿。只描述用户希望得到的内容和效果，不教Agent怎么做；禁止提HTML、GSAP、FFmpeg、渲染、审查、验收、工具调用、联网搜索查证、来源数量、换来源或故障恢复策略。不得提供URL、素材ID或修改验收规则。必须调用${tool.name}。避免重复以下近期原始需求：${JSON.stringify(options.previousRequests.slice(-24))}`;
+  const prompt = `为轻剪本次发布 ${options.revision} 设计恰好${options.count}个不同的中文用户视频制作请求。当前UTC时间${new Date().toISOString()}。必须包含热点新闻、知识/产品/教程等从零视频生成、使用两段附加视频保留原话原声的剪辑，其他条目可覆盖不同内容领域。新闻只表达想看最近三天的一条真实热点，不预设具体未经证实事件。每条生成需求聚焦一个30秒能讲清楚的核心问题，不列长清单或要求多个主题。生成视频最终30秒、剪辑最终20秒；不要在原始请求中指定矛盾时长或画幅。${releaseEvaluationFixtureContext()}。剪辑用例的format选16:9，以素材原画幅完整呈现；生成类可以选9:16或16:9。剪辑请求须能由这些现有画面和原话完成，不要假定有真人、品牌、现场或其他画面；只选择适合20秒的完整句子，不要求保留所有原话。每条request必须像普通用户说话，变化主题、句式、表达顺序，可含口述停顿。只描述用户希望得到的内容和效果，不教Agent怎么做；禁止提HTML、GSAP、FFmpeg、渲染、审查、验收、工具调用、联网搜索查证、来源数量、换来源或故障恢复策略。不得提供URL、素材ID或修改验收规则。必须调用${tool.name}。避免重复以下近期原始需求：${JSON.stringify(options.previousRequests.slice(-24))}`;
   const agent = getAgent(options.config, [tool], '你是视频Agent发布验收用例设计者。只提交可执行需求，不自行模拟测试结果，不请求关闭质量检查。', true, { maxTokens: 8192 });
   await runRequiredTool(agent, prompt, { name: tool.name, label: '发布验收用例生成', done: () => Boolean(cases), config: options.config, secrets: [options.config.apiKey], timeoutMs: options.timeoutMs, maxTurns: 4 });
   return cases!;
