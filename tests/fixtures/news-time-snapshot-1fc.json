@@ -1,0 +1,21 @@
+{
+  "revision": "1fcbd5085d60c592d25cf9ed1cb889718b7afa03",
+  "runId": "5da3dea7-a4f9-424f-8610-4a224677c54c",
+  "requestedAt": 1792009676928,
+  "signal": {
+    "id": "baidu-12",
+    "title": "成都警方通报女子持U型锁打人",
+    "source": "baidu",
+    "rank": 12,
+    "observedAt": "2026-10-14T20:27:57.487Z"
+  },
+  "texts": [
+    "百度热搜快照于北京时间2026年10月15日04时27分57秒显示“成都警方通报女子持U型锁打人”在榜，排名第12",
+    "该时间只代表本次观察，不证明首次上榜时间",
+    "热搜快照 10月15日 04:27"
+  ],
+  "claimText": "百度热搜快照于北京时间2026年10月15日04时27分57秒显示“成都警方通报女子持U型锁打人”在榜，排名第12；该时间只代表本次观察，不证明首次上榜时间。",
+  "narration": "截至本次核验，百度热搜显示成都U型锁打人报道在榜；报道发布是十月十四日，伤人事件发生在十月十二日下午。",
+  "provenance": "Exact text-only production failure replay. No paid calls or rewritten evaluation records.",
+  "firstDraftText": "热搜关注的成都U型锁打人，报道日期是十月十四日"
+}

@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import {readFile} from 'node:fs/promises';
 import type { HotTopicSignal, LessonReport } from '../src/types';
 import { beijingTimestamp, newsObservationContext, newsObservationFindings } from '../server/newsTime';
 import { reviewLessonScript } from '../server/lessonWorkflow';
@@ -85,4 +86,32 @@ test('original-request publication freshness keeps exact Beijing date-only bound
   }
   report.references[0].publishedAt='2026-10-14';report.references[0].verification='search-cited';assert.equal(newsFreshAtOriginalRequest(report,requestedAt,reviewedAt),false);
   report.references[0].verification='news-page';report.references[0].freshness='stale';assert.equal(newsFreshAtOriginalRequest(report,requestedAt,reviewedAt),false);
+});
+
+
+const productionSnapshot=JSON.parse(await readFile(new URL('./fixtures/news-time-snapshot-1fc.json',import.meta.url),'utf8'));
+const snapshotReport=(narration:string):LessonReport=>({hotResearch:{asOf:productionSnapshot.signal.observedAt,windowHours:24,signals:[structuredClone(productionSnapshot.signal)]},chapters:[{id:'chapter-1',narration,claims:[],visual:{takeaway:'',items:[]}}],references:[]} as unknown as LessonReport);
+test('exact production snapshot statements and the narrow unknown-onset warning are not first-entry claims',()=>{
+  const original=JSON.stringify(productionSnapshot.signal);
+  for(const text of [...productionSnapshot.texts,productionSnapshot.claimText,'本次观察 2026年10月15日04时27分57秒，百度热搜显示该报道在榜','首次上榜时间未知','本次观察无法确认首次上榜日期']){
+    const report=snapshotReport(text);assert.deepEqual(newsObservationFindings(report,productionSnapshot.requestedAt),[],text);assert.equal(JSON.stringify(report.hotResearch!.signals[0]),original);
+  }
+  const actual=snapshotReport(productionSnapshot.narration);actual.chapters[0].claims=[{text:productionSnapshot.claimText,referenceIds:[]}];actual.chapters[0].visual.items=[{label:productionSnapshot.texts[2],detail:'',cue:''}];
+  assert.deepEqual(newsObservationFindings(actual,productionSnapshot.requestedAt),[],'actual narration, combined claim and visible snapshot label share the same source clock');assert.equal(JSON.stringify(productionSnapshot.signal),original);
+});
+test('snapshot markers still require the exact source year date hour minute and explicit seconds',()=>{
+  for(const text of ['热搜快照 10月14日 04:27','热搜快照 10月15日 16:27','热搜快照 10月15日 04:28','热搜快照 2025年10月15日04时27分57秒','热搜快照 2026年10月15日04时27分58秒','热搜快照 2026-10-15 04:27:58','本次观察 10月14日04:27，百度热搜显示该报道在榜','不证明首次上榜时间，热搜快照10月15日04:28'])assert.ok(newsObservationFindings(snapshotReport(text),productionSnapshot.requestedAt).length,text);
+  for(const text of ['热搜快照 2026年10月15日04时27分57秒','热搜快照 2026-10-15 04:27:57','热搜快照 十月十五日凌晨四点二十七分五十七秒'])assert.deepEqual(newsObservationFindings(snapshotReport(text),productionSnapshot.requestedAt),[],text);
+});
+test('a warning never excuses an actual first-entry claim before after or inside the same clause',()=>{
+  for(const text of ['不证明首次上榜时间，但今天首次上榜','今天首次上榜，但不证明首次上榜时间','不证明首次上榜时间但今天首次上榜','首次上榜时间未知；今天首次上榜','本次观察无法确认首次上榜日期，今日刚刚冲上热搜','热搜快照10月15日04:27显示今天首次上榜','并非不证明首次上榜时间','不是不代表首次上榜时间','不能不证明首次上榜时间'])assert.ok(newsObservationFindings(snapshotReport(text),productionSnapshot.requestedAt).length,text);
+  const dated='2026年10月14日傍晚，该报道首次登上百度热搜。',report=snapshotReport(dated);report.references=[{id:'historical',title:'Actual historical quote fixture',url:'https://example.invalid/historical',verification:'news-page',freshness:'fresh',excerpt:dated}];
+  assert.deepEqual(newsObservationFindings(report,productionSnapshot.requestedAt),[],'an exact actually-read historical onset quote remains a distinct source-backed exception');
+  report.references[0].verification='search-cited';assert.ok(newsObservationFindings(report,productionSnapshot.requestedAt).length,'a search snippet still cannot prove historical first entry');
+});
+
+
+test('the first production draft separates explicit reporting and event dates from the chart observation date',()=>{
+  for(const text of [productionSnapshot.firstDraftText,'热搜关注这条成都通报，通报发布日期为2026年10月14日','热搜关注这条成都通报，事件发生日期是十月十二日','热搜快照10月15日04:27，报道日期是十月十四日','报道日期是十月十四日，事件发生日期是十月十二日，热搜快照10月15日04:27'])assert.deepEqual(newsObservationFindings(snapshotReport(text),productionSnapshot.requestedAt),[],text);
+  for(const text of ['十月十四日上榜','热搜关注这条成都通报，报道日期是十月十四日，十月十四日上榜','热搜关注这条成都通报，报道日期是十月十四日，说明当天上榜','热搜关注这条成都通报，报道日期是十月十四日且当天首次上榜','报道日期是十月十四日，但今天首次登上热搜','不证明首次上榜时间，报道日期是十月十四日，但今天首次上榜','热搜快照10月14日04:27，报道日期是十月十四日','热搜快照10月15日04:28，报道日期是十月十四日'])assert.ok(newsObservationFindings(snapshotReport(text),productionSnapshot.requestedAt).length,text);
 });

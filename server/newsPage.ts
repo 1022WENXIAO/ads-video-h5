@@ -33,6 +33,12 @@ function text(root:Tree.Node,visible=true):string{
 
 const months=['January','February','March','April','May','June','July','August','September','October','November','December'];
 const datePattern=/(?:\d{4}[-/.年]\d{1,2}[-/.月]\d{1,2}日?(?:[T\s]+\d{1,2}:\d{2}(?::\d{2})?(?:\.\d+)?(?:\s*(?:Z|[+-]\d{2}:?\d{2}))?)?|(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)\.?\s+\d{1,2}(?:st|nd|rd|th)?,?\s+\d{4})/i;
+const nonPublication=/(?:更新|修改)(?:时间|日期|于)|最后(?:更新|修改)|(?:网站|系统|当前|现在)(?:时间|日期|时钟)|Last\s+updated|Copyright|版权|活动开始|会议时间|开幕时间|截止时间|\b(?:updated|modified|clock|event|scheduled|deadline|current\s+(?:time|date)|site\s+(?:time|date))\b/i;
+const updateLabel=(node:Tree.Element)=>/^更新[：:\s]*$/.test(text(node));
+function nonPublicationByline(node:Tree.Element):boolean{
+  const parent=node.parentNode,scope=parent&&element(parent)&&['p','div','span','header'].includes(parent.tagName)&&text(parent).length<=220?parent:node;
+  return nonPublication.test(text(scope))||nodes(scope).some(updateLabel);
+}
 export function sourceDate(value:string):string|undefined{
   let v=compact(value),match:RegExpExecArray|null;
   if((match=/^([A-Za-z]+)\.?\s+(\d{1,2})(?:st|nd|rd|th)?,?\s+(\d{4})$/i.exec(v))){
@@ -67,6 +73,39 @@ function articleData(elements:Tree.Element[],title:string):Record<string,any>[] 
   return result.sort((a,b)=>Number(typeof b.headline==='string'&&b.headline.toLowerCase().replace(/\s/g,'').includes(key))-Number(typeof a.headline==='string'&&a.headline.toLowerCase().replace(/\s/g,'').includes(key)));
 }
 
+/** Some publishers use an otherwise unlabelled date beside the author, directly
+ * under the article h1. Recognize that bounded byline structure rather than
+ * treating any date in an article (or the site's clock) as publication evidence. */
+function headingPublication(elements:Tree.Element[]):{publishedAt?:string;dateEvidence?:string}{
+  for(const heading of elements.filter(node=>node.tagName==='h1'&&!ignored(node)&&!ignoredParent(node)).slice(0,8)){
+    const titleNodes=new Set(nodes(heading));
+    let parent=heading.parentNode;
+    for(let depth=0;parent&&element(parent)&&depth<3;depth++,parent=parent.parentNode){
+      if(['article','main','body','html'].includes(parent.tagName))break;
+      const descriptor=attr(parent,'class')+' '+attr(parent,'id');
+      if(ignored(parent)||ignoredParent(parent)||/modif|updat|copyright/i.test(descriptor))break;
+      if(parent.tagName!=='header'&&!/(?:^|[\s_-])(?:title|header)(?:$|[\s_-])/i.test(descriptor))continue;
+      const value=text(parent);if(value.length>700||nonPublication.test(value))continue;
+      const scope=nodes(parent);if(scope.filter(node=>node.tagName==='h1').length!==1||scope.some(node=>/modif|updat|copyright/i.test(attr(node,'class')+' '+attr(node,'id')+' '+attr(node,'itemprop'))||updateLabel(node)))continue;
+      const dates=scope.filter(node=>['span','em','time'].includes(node.tagName)&&!titleNodes.has(node)&&!ignored(node)&&!ignoredParent(node)).flatMap(node=>{
+        const value=attr(node,'datetime')||text(node),candidate=datePattern.exec(value)?.[0];
+        // A title or a plain calendar day is too ambiguous for this fallback.
+        if(!candidate||candidate!==value||!/[T\s]\d{1,2}:\d{2}/.test(candidate))return [];
+        const date=sourceDate(candidate),byline=node.parentNode;
+        if(!date||!byline||!element(byline)||text(byline).length>220||nonPublicationByline(node))return [];
+        const attributed=children(byline).some(sibling=>{
+          if(!element(sibling)||sibling===node||!['a','span'].includes(sibling.tagName)||ignored(sibling)||ignoredParent(sibling))return false;
+          const attribution=text(sibling);return attribution.length>=2&&attribution.length<=100&&!datePattern.test(attribution)&&!nonPublication.test(attribution);
+        });
+        return attributed?[{date,candidate}]:[];
+      });
+      const unique=new Map(dates.map(date=>[date.date,date]));
+      if(unique.size===1){const date=[...unique.values()][0];return {publishedAt:date.date,dateEvidence:`原页标题署名行日期：${date.candidate}`};}
+    }
+  }
+  return {};
+}
+
 function publication(elements:Tree.Element[],data:Record<string,any>[]):{publishedAt?:string;dateEvidence?:string}{
   for(const node of data){const date=sourceDate(String(node.datePublished||''));if(date)return {publishedAt:date,dateEvidence:`JSON-LD datePublished: ${node.datePublished}`};}
   for(const node of elements.filter(n=>n.tagName==='meta')){
@@ -81,6 +120,7 @@ function publication(elements:Tree.Element[],data:Record<string,any>[]):{publish
     if(modified||ignoredParent(node))continue;
     const field=/(?:publish|publication|release).*(?:time|date)|datePublished|(?:article|post|news|detail)[-_](?:info|meta|date|time)|\bbyline\b/i.test(descriptor);
     if(!field&&node.tagName!=='time')continue;
+    if(node.tagName==='time'&&nonPublicationByline(node))continue;
     const value=attr(node,'datetime')||attr(node,'content')||attr(node,'value')||text(node);
     if(value.length>700||/更新时间|更新于|Last updated|Modified/i.test(value))continue;
     const candidate=datePattern.exec(value)?.[0],date=candidate&&sourceDate(candidate);
@@ -92,7 +132,7 @@ function publication(elements:Tree.Element[],data:Record<string,any>[]):{publish
     const candidate=datePattern.exec(value.slice(label.index+label[0].length, label.index+label[0].length+80))?.[0],date=candidate&&sourceDate(candidate);
     if(date)return {publishedAt:date,dateEvidence:label[0]+candidate};
   }
-  return {};
+  return headingPublication(elements);
 }
 
 export function readNewsDocument(html:string):{title:string;excerpt:string;publishedAt?:string;dateEvidence?:string}{
