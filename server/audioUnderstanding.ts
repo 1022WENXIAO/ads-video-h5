@@ -253,6 +253,10 @@ export async function transcribeWindow(file:string,start:number,duration:number,
       catch(e){
         throwIfJobCancelled();lastError=e;
         await atomicJson(path.join(dir,`failure-${round(start)}-${duration}-${attempt}.json`),{start,duration,depth,error:e instanceof Error?e.message:String(e),...(e instanceof AudioTranscriptOutputError?{responseDiagnostic:e.diagnostic}:{})});
+        // Explicit output-limit failures move directly to smaller windows
+        // within the existing split bounds. Short/deep windows retain their
+        // terminal diagnostic instead of repeating the unchanged limit.
+        if(e instanceof AudioTranscriptOutputError)break;
         if(blocksModelOutputRecovery(e)||!(e instanceof SyntaxError||/^(?:音频理解|字词|句子)/.test(e instanceof Error?e.message:'')))throw e;
       }
     }
