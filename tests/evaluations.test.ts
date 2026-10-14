@@ -129,6 +129,23 @@ test('real-media evaluation stores immutable cases, disjoint scores, and no mode
   assert(!(await readFile(path.join(dir,'evaluations/index.json'),'utf8')).includes('TEST-PRIVATE-CREDENTIAL'));
   assert.throws(()=>manager.videoFile(run.id,'other-case'),/尚无/);
 });
+test('a fully decodable short video with full audio fails the mandatory packet gate while preserving its artifact and other scores', { timeout:20000 }, async t => {
+  const dir=await mkdtemp(path.join(tmpdir(),'qingjian-eval-short-video-'));t.after(()=>rm(dir,{recursive:true,force:true}));
+  const video=path.join(dir,'video.mp4');
+  await runFFmpeg(['-v','error','-y','-f','lavfi','-t','3.3','-i','color=c=white:s=64x96:r=30','-f','lavfi','-t','10','-i','sine=frequency=300:sample_rate=48000','-c:v','libx264','-threads','2','-c:a','aac',video]);
+  const o=output();o.file=video;await writeFile(video.replace('.mp4','.render.json'),JSON.stringify({planHash:o.artifact.planHash}));
+  const manager=createEvaluations({dataDir:dir,implementation:{revision:null,implementationHash:'code',skillHash:'skill'},models:async()=>models,execute:async()=>o,stop:async()=>{},artifactFile:()=>video});
+  await manager.init();const one=await manager.saveFixture(video,'one.mp4'),two=await manager.saveFixture(video,'two.mp4');
+  const c=await manager.upsert({...sample(),id:undefined,fixtureIds:[one.id,two.id]});
+  const run=await manager.start({caseIds:[c.id]});let final=manager.get(run.id);const deadline=Date.now()+5000;
+  while(final.status==='running'&&Date.now()<deadline){await new Promise(resolve=>setTimeout(resolve,20));final=manager.get(run.id);}
+  const result=final.results[0];assert.equal(final.status,'completed');assert.equal(result.status,'failed');
+  assert.equal(result.score,100,'the extra mandatory gate must not lower or inflate existing score weights');
+  assert.equal(result.checks?.find(check=>check.id==='duration')?.passed,true);
+  assert.equal(result.checks?.find(check=>check.id==='stream-duration')?.passed,false);
+  assert.match(result.error!,/video实际起点.*终点3\.300秒.*audio实际起点.*终点10\.000秒/);
+  assert.equal(result.artifact?.sha256.length,64);assert.equal(manager.videoFile(run.id,result.id),video);
+});
 test('restart marks unfinished runs interrupted and stops their actual jobs instead of replaying stale snapshots', async t => {
   const dir=await mkdtemp(path.join(tmpdir(),'qingjian-eval-restart-'));t.after(()=>rm(dir,{recursive:true,force:true}));
   const stopped:string[]=[];

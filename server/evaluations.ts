@@ -13,6 +13,8 @@ import { runWithJobSignal } from './jobExecution';
 import type { ModelSnapshot } from './modelContext';
 import { MAX_MEDIA_UPLOAD_BYTES } from '../src/uploadLimits';
 import { planHash } from './renderTimeline';
+import { inspectEvaluationStreamDuration } from './evaluationMediaGate';
+import { timelineDuration } from './timeline';
 
 export class EvaluationError extends Error { constructor(message: string, public status = 400) { super(message); } }
 export function evaluationUploadName(value: string): string {
@@ -96,10 +98,10 @@ export function createEvaluations(options: Options) {
           result.workflow = update.jobs.flatMap(j => j.workflow || []); await persist();
         } });
         signal.throwIfAborted();
-        const [sha256, size, probe] = await runWithJobSignal(signal, async () => {
+        const [sha256, size, probe, streamDuration] = await runWithJobSignal(signal, async () => {
           // Metadata and a matching manifest alone do not prove that a file plays.
           await runFFmpeg(['-hide_banner','-v','error','-xerror','-err_detect','explode','-i',output.file,'-map','0:v:0','-map','0:a?','-f','null','-']);
-          return Promise.all([evaluationFileHash(output.file), stat(output.file), probeVideo(output.file)]);
+          return Promise.all([evaluationFileHash(output.file), stat(output.file), probeVideo(output.file), inspectEvaluationStreamDuration(output.file, output.artifact.plan?.clips.length ? timelineDuration(output.artifact.plan) : NaN)]);
         });
         let verified = false;
         try {
@@ -108,10 +110,12 @@ export function createEvaluations(options: Options) {
         } catch { /* An absent or mismatched manifest is a failed gate. */ }
         signal.throwIfAborted();
         const scored = scoreEvaluation(result.case, output.artifact, output.media, output.sourceIds, probe.duration, verified);
+        scored.checks.push(streamDuration); scored.passed = scored.passed && streamDuration.passed;
         const { url: _url, downloadUrl: _download, ownerId: _owner, ...artifact } = structuredClone(output.artifact);
         result.artifact = { ...artifact, sha256, bytes: size.size, actualDuration: probe.duration };
         result.workflow = structuredClone(output.workflow); result.checks = scored.checks; result.spokenText = scored.spokenText; result.score = scored.score;
-        result.status = scored.passed ? 'passed' : 'failed'; result.stage = scored.passed ? '评测通过' : '质量需要复核';
+        result.status = scored.passed ? 'passed' : 'failed'; result.stage = scored.passed ? '评测通过' : streamDuration.passed ? '质量需要复核' : '实际音画流不完整';
+        if (!streamDuration.passed) result.error = streamDuration.detail;
       } catch (error) {
         result.status = controller.signal.aborted ? 'cancelled' : 'failed';
         result.error = timedOut ? `本例超过${run.maxCaseSeconds}秒，已停止实际任务。` : redact(error instanceof Error ? error.message : String(error), models);

@@ -10,7 +10,9 @@ import { probeVideo, runFFmpeg } from './core';
 import { prepareLessonSpeech } from './lessonAudio';
 import { throwIfJobCancelled } from './jobExecution';
 
-export const RELEASE_FIXTURE_VERSION = 'controlled-semantic-v2';
+export const RELEASE_FIXTURE_VERSION = 'controlled-semantic-v3';
+/** Reserved for the final 960×540 editing subtitles, including their outline. */
+export const RELEASE_FIXTURE_CAPTION_ZONE = { top: 400, bottom: 480 } as const;
 const fixtureVersion = RELEASE_FIXTURE_VERSION;
 // The spoken content is unchanged. An illustration upgrade must not buy the
 // same two speech clips again, including on an already-provisioned server.
@@ -53,8 +55,9 @@ export function releaseFixtureStoryboard(index: number, duration: number, cues =
   const font=process.env.QINGJIAN_SUBTITLE_FONT || (process.platform==='darwin'?'PingFang SC':'Noto Sans CJK SC');
   if (!/^[\w \u4e00-\u9fff-]{1,80}$/.test(font)) throw new EvaluationError('受控素材字体配置无效。');
   const events: string[] = [], labels: string[] = [], objects: string[] = [];
+  const labelBounds: Array<{ text: string; x: number; y: number; height: number }> = [];
   const event = (start: number, end: number, content: string, layer=0) => events.push(`Dialogue: ${layer},${assTime(start)},${assTime(end)},base,,0,0,0,,${content}`);
-  const text = (value: string,x:number,y:number,size=25,color=ink,start=0,end=duration) => {labels.push(value);event(start,end,`{\\an7\\pos(${x},${y})\\fs${size}\\c&H${assColor(color)}&\\bord0\\shad0}${assText(value)}`,5);};
+  const text = (value: string,x:number,y:number,size=25,color=ink,start=0,end=duration) => {labels.push(value);labelBounds.push({text:value,x,y,height:size*1.2});event(start,end,`{\\an7\\pos(${x},${y})\\fs${size}\\c&H${assColor(color)}&\\bord0\\shad0}${assText(value)}`,5);};
   const shape = (name:string,x:number,y:number,geometry:string,color:string,start=0,end=duration,animation='',border=0,outline=color) => {objects.push(name);event(start,end,`{\\an7${animation || `\\pos(${x},${y})`}\\p1\\c&H${assColor(color)}&\\bord${border}\\3c&H${assColor(outline)}&\\shad0}${geometry}`,2);};
   const rect = (name:string,x:number,y:number,w:number,h:number,color:string,start=0,end=duration) => shape(name,x,y,`m 0 0 l ${w} 0 ${w} ${h} 0 ${h}`,color,start,end);
   const circlePath = (r:number) => `m ${r*2} ${r} b ${r*2} ${r*.448} ${r*1.552} 0 ${r} 0 b ${r*.448} 0 0 ${r*.448} 0 ${r} b 0 ${r*1.552} ${r*.448} ${r*2} ${r} ${r*2} b ${r*1.552} ${r*2} ${r*2} ${r*1.552} ${r*2} ${r}`;
@@ -97,13 +100,13 @@ export function releaseFixtureStoryboard(index: number, duration: number, cues =
     circle('pushed-object',709,352,14,amber);
     text('外力？',757,335,21,amber);
     rect('observation-inference-separator',480,178,2,255,'#c6d2d8');
-    text('观察 ≠ 推测',360,440,28,ink);
+    text('观察 ≠ 推测',360,68,22,ink);
     const verify=cues[2].start;
     for(let i=0;i<3;i++) {
       circle('repeated-evidence-point',590+i*80,397,8,green,verify);
       if(i<2)rect('repeat-connection',598+i*80,395,64,4,green,verify);
     }
-    check(814,383,verify);text('重复观察，核验解释',567,411,21,green,verify);
+    check(814,365,verify);text('重复观察，核验解释',567,68,21,green,verify);
   } else {
     // Equal tracks and clocks make the shared comparison conditions visible.
     text('方案 A',108,176,26,blue); text('方案 B',557,176,26,amber);
@@ -131,13 +134,13 @@ export function releaseFixtureStoryboard(index: number, duration: number, cues =
     arrow('A-measured-travel',106,281,192,blue,cues[1].start);
     arrow('B-measured-travel',555,281,236,amber,cues[1].start);
     const conclusion=cues[2].start;
-    check(240,434,conclusion); text('证据支持的结论',292,431,25,green,conclusion);
-    circle('uncertainty-boundary',650,447,18,background,conclusion,duration,'',2,amber);
-    text('?',644,432,25,amber,conclusion);text('未知部分保留限制',682,435,22,amber,conclusion);
+    check(240,67,conclusion); text('证据支持的结论',292,68,22,green,conclusion);
+    circle('uncertainty-boundary',650,80,14,background,conclusion,duration,'',2,amber);
+    text('?',644,67,22,amber,conclusion);text('未知部分保留限制',682,68,22,amber,conclusion);
     text('差异仅为方法示意，不代表实际产品性能',235,486,18,muted);
   }
   const ass=`[Script Info]\nScriptType: v4.00+\nPlayResX: 960\nPlayResY: 540\nWrapStyle: 2\nScaledBorderAndShadow: yes\n[V4+ Styles]\nFormat: Name,Fontname,Fontsize,PrimaryColour,SecondaryColour,OutlineColour,BackColour,Bold,Italic,Underline,StrikeOut,ScaleX,ScaleY,Spacing,Angle,BorderStyle,Outline,Shadow,Alignment,MarginL,MarginR,MarginV,Encoding\nStyle: base,${font},25,&H004A3619,&H004A3619,&H00000000,&H00000000,0,0,0,0,100,100,0,0,1,0,0,7,0,0,0,1\n[Events]\nFormat: Layer,Start,End,Style,Name,MarginL,MarginR,MarginV,Effect,Text\n${events.join('\n')}\n`;
-  return {ass,labels:[...new Set(labels)],objects:[...new Set(objects)],cues,background};
+  return {ass,labels:[...new Set(labels)],labelBounds,objects:[...new Set(objects)],cues,background};
 }
 
 async function recognizedFixtureWords(evaluations: Evaluations,dataDir:string,index:number): Promise<WordTiming[]> {
@@ -196,7 +199,7 @@ export async function ensureReleaseEvaluationFixtures(evaluations: Evaluations, 
     if (!probe.hasAudio || probe.duration < 12) throw new EvaluationError('受控剪辑素材的真实音轨或时长不足，不能跳过剪辑验收。');
     await runFFmpeg(['-hide_banner','-v','error','-xerror','-i',video,'-f','null','-']);
     const fixture=await evaluations.saveFixture(video,name);
-    await writeFile(path.join(directory,`${i+1}.storyboard.json`),JSON.stringify({version:fixtureVersion,narration:lines[i],narrationHash:hash(lines[i]),audioHash:hash(bytes),preparedAudioHash:await evaluationFileHash(prepared),leadingTrim:preparation.leadingTrim,trailingTrim:preparation.trailingTrim,duration:probe.duration,timingMethod:timing.method,cues:story.cues,labels:story.labels,diagramObjects:story.objects,assHash:hash(story.ass),videoHash:fixture.sha256,fixtureId:fixture.id}),{mode:0o600});
+    await writeFile(path.join(directory,`${i+1}.storyboard.json`),JSON.stringify({version:fixtureVersion,narration:lines[i],narrationHash:hash(lines[i]),audioHash:hash(bytes),preparedAudioHash:await evaluationFileHash(prepared),leadingTrim:preparation.leadingTrim,trailingTrim:preparation.trailingTrim,duration:probe.duration,timingMethod:timing.method,cues:story.cues,labels:story.labels,labelBounds:story.labelBounds,captionZone:RELEASE_FIXTURE_CAPTION_ZONE,diagramObjects:story.objects,assHash:hash(story.ass),videoHash:fixture.sha256,fixtureId:fixture.id}),{mode:0o600});
     fixtures.push(fixture);
   }
   return fixtures;

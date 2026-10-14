@@ -37,7 +37,7 @@ function engine(fail = false) {
     start: async (body: {caseIds: string[]}, generated: { cases: EvaluationCase[]; releaseId: string; releaseAttempt: number }) => {
       starts++;
       const timestamp = new Date().toISOString();
-      const run: EvaluationRun = { id: `run-${starts}`, releaseId: generated.releaseId, releaseAttempt: generated.releaseAttempt, name: 'orchestration fixture only', status: 'completed', createdAt: timestamp, finishedAt: timestamp, maxCaseSeconds: 60, snapshot: { ...implementation, rubricVersion: 'fixture', models: [] }, results: generated.cases.map((c,i) => ({ id: `result-${i}`, case: c, caseHash: evaluationCaseHash(c,[]), fixtures: [], repeat: 1, status: fail && i === 0 ? 'failed' : 'passed', error: fail && i === 0 ? 'actual pipeline failed in fixture' : undefined, jobIds: [], score:100, checks:[{id:'fixture-engine',name:'orchestration fixture only',passed:true,weight:1,detail:'engine completion record fixture'}], artifact:{id:'fixture-artifact',sessionId:'',messageId:'',name:'fixture only',kind:'video',createdAt:'',version:1,sha256:'f'.repeat(64),bytes:1,actualDuration:c.expectation.seconds,planHash:'fixture-plan-hash',review:{status:'passed',score:100,checks:[{name:'fixture only',passed:true,detail:''}],limitations:[],createdAt:''}} })) };
+      const run: EvaluationRun = { id: `run-${starts}`, releaseId: generated.releaseId, releaseAttempt: generated.releaseAttempt, name: 'orchestration fixture only', status: 'completed', createdAt: timestamp, finishedAt: timestamp, maxCaseSeconds: 60, snapshot: { ...implementation, rubricVersion: 'fixture', models: [] }, results: generated.cases.map((c,i) => ({ id: `result-${i}`, case: c, caseHash: evaluationCaseHash(c,[]), fixtures: [], repeat: 1, status: fail && i === 0 ? 'failed' : 'passed', error: fail && i === 0 ? 'actual pipeline failed in fixture' : undefined, jobIds: [], score:100, checks:[{id:'fixture-engine',name:'orchestration fixture only',passed:true,weight:1,detail:'engine completion record fixture'},{id:'stream-duration',name:'orchestration fixture only',passed:true,weight:0,detail:'controlled packet gate result fixture'}], artifact:{id:'fixture-artifact',sessionId:'',messageId:'',name:'fixture only',kind:'video',createdAt:'',version:1,sha256:'f'.repeat(64),bytes:1,actualDuration:c.expectation.seconds,planHash:'fixture-plan-hash',review:{status:'passed',score:100,checks:[{name:'fixture only',passed:true,detail:''}],limitations:[],createdAt:''}} })) };
       assert.deepEqual(body.caseIds,generated.cases.map(c => c.id)); runs.push(run); return run;
     },
     stop: async (id: string) => { const run = runs.find(r => r.id === id); if (run) run.status = 'cancelled'; },
@@ -105,6 +105,22 @@ test('a failing mandatory media case fails the release and keeps the real run li
   const fake = engine(true); const {manager} = await setup(t,{evaluations:fake as unknown as Evaluations});
   const release = (await manager.enqueueCurrentRevision())!; const completed = await terminal(manager,release.id);
   assert.equal(completed.status,'failed'); assert.equal(completed.summary?.failed,1); assert.match(completed.error!,/actual pipeline failed/); assert.equal(completed.evaluationRunId,'run-1');
+});
+test('a passed engine label cannot replace the mandatory actual stream endpoint gate', async t => {
+  for (const missing of [true,false]) {
+    const fake=engine(),start=fake.start;
+    fake.start=async(...args)=>{
+      const run=await start(...args);
+      for(const result of run.results) {
+        if(missing)result.checks=result.checks?.filter(check=>check.id!=='stream-duration');
+        else result.checks!.find(check=>check.id==='stream-duration')!.passed=false;
+      }
+      return run;
+    };
+    const {manager}=await setup(t,{evaluations:fake as unknown as Evaluations});
+    const release=(await manager.enqueueCurrentRevision())!;
+    assert.equal((await terminal(manager,release.id)).status,'failed');
+  }
 });
 test('automatic generation waits for a manual evaluation and holds the shared reservation', async t => {
   let releaseGeneration!: () => void, entered!: () => void;

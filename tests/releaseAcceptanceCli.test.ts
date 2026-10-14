@@ -76,7 +76,7 @@ function localRecords() {
   const run: EvaluationRun = { id: release.evaluationRunId!, releaseId: release.id, releaseAttempt: release.attempt, name: 'controlled record metadata', status: 'completed', createdAt: '', maxCaseSeconds: 60, snapshot: { revision, implementationHash: 'implementation', skillHash: 'skill', rubricVersion: 'fixture', models: [] }, results: generatedCases.map((test, index) => {
     const bound = test.category === 'multi-video' ? fixtures : [];
     const caseHash = createHash('sha256').update(JSON.stringify({ category: test.category, messages: test.messages, expectation: test.expectation, threshold: test.threshold, fixtures: bound.map(fixture => fixture.sha256) })).digest('hex');
-    return { id: `result-${index}`, case: test, caseHash, fixtures: bound, repeat: 1, status: 'passed', jobIds: [], score: 100, checks: ['render', 'duration', 'format', 'captions', 'evidence', 'sound', 'quality', 'sources', 'original', 'html', 'narrative'].map(id => ({ id, name: id, passed: true, weight: 10, detail: 'controlled gate fixture' })), artifact: { id: `artifact-${index}`, kind: 'video', sessionId: 'session', messageId: 'message', name: 'fixture.mp4', createdAt: '', version: 1, format: '9:16', duration: 20, hasNarration: test.category !== 'multi-video', sha256: 'c'.repeat(64), bytes: 1000, actualDuration: 20, planHash: 'd'.repeat(64), plan: { summary: 'controlled metadata fixture', format: '9:16', targetSeconds: 20, clips: [{ sourceId: 'source', start: 0, end: 20 }] }, review: { status: 'passed', score: 90, checks: [{ name: 'fixture', passed: true, detail: 'controlled metadata' }], limitations: [], createdAt: '' } } };
+    return { id: `result-${index}`, case: test, caseHash, fixtures: bound, repeat: 1, status: 'passed', jobIds: [], score: 100, checks: ['render', 'duration', 'stream-duration', 'format', 'captions', 'evidence', 'sound', 'quality', 'sources', 'original', 'html', 'narrative'].map(id => ({ id, name: id, passed: true, weight: id === 'stream-duration' ? 0 : 10, detail: 'controlled gate fixture' })), artifact: { id: `artifact-${index}`, kind: 'video', sessionId: 'session', messageId: 'message', name: 'fixture.mp4', createdAt: '', version: 1, format: '9:16', duration: 20, hasNarration: test.category !== 'multi-video', sha256: 'c'.repeat(64), bytes: 1000, actualDuration: 20, planHash: 'd'.repeat(64), plan: { summary: 'controlled metadata fixture', format: '9:16', targetSeconds: 20, clips: [{ sourceId: 'source', start: 0, end: 20 }] }, review: { status: 'passed', score: 90, checks: [{ name: 'fixture', passed: true, detail: 'controlled metadata' }], limitations: [], createdAt: '' } } };
   }) };
   return { release, run };
 }
@@ -86,6 +86,8 @@ test('local gate verifies matching revision, immutable attempt, case checks and 
   for (const corrupt of [
     (copy: EvaluationRun) => { copy.results[0].artifact = undefined; },
     (copy: EvaluationRun) => { copy.results[0].checks = []; },
+    (copy: EvaluationRun) => { copy.results[0].checks = copy.results[0].checks!.filter(check => check.id !== 'stream-duration'); },
+    (copy: EvaluationRun) => { copy.results[0].checks!.find(check => check.id === 'stream-duration')!.passed = false; },
     (copy: EvaluationRun) => { copy.results[0].checks![0].passed = false; },
     (copy: EvaluationRun) => { copy.results[0].artifact!.bytes = 0; },
     (copy: EvaluationRun) => { copy.results[0].artifact!.sha256 = 'missing'; },

@@ -11,6 +11,7 @@ import { validateTranscript, regroupWords, splitRepeatedLeads, wordBoundaryCapti
 import { applyTimelineRequest, captionsFromTranscript } from '../server/timeline';
 import { validatePlan, runFFmpeg, renderPlan, probeVideo } from '../server/core';
 import { planHash } from '../server/renderTimeline';
+import { inspectEvaluationStreamDuration } from '../server/evaluationMediaGate';
 import type { EditPlan, MediaItem } from '../src/types';
 
 const fixture: MediaItem = { id: 'source', name: 'source.mp4', kind: 'video', mimeType: 'video/mp4', duration: 5, url: '', createdAt: '', analysis: { status: 'ready', modelId: 'test', sourceHash: 'test', duration: 5, transcript: '保持真实', timing: 'model-estimated', pauses: [], warnings: [], createdAt: '', sentences: [{ id: 's1', start: 1, end: 3, text: '保持真实', complete: true, words: [{ start: 1, end: 1.8, text: '保持' }, { start: 2, end: 3, text: '真实' }] }] } };
@@ -153,5 +154,54 @@ test('multiple fades and mixed cuts retain constant frame rate and full audio du
       for(let i=1;i<videoTimes.length;i++)assert.ok(Math.abs(videoTimes[i]-videoTimes[i-1]-1/30)<.00002);
       assert.ok(audioTimes.length>0&&Math.abs(audioTimes.at(-1)!-candidate.targetSeconds)<.15,JSON.stringify({mixed,audioEnd:audioTimes.at(-1),target:candidate.targetSeconds}));
     }
+  } finally {await rm(dir,{recursive:true,force:true});}
+});
+
+test('a cut between fade chains retains the distinct footage after the cut and at the real movie end', async () => {
+  const dir=await mkdtemp(path.join(tmpdir(),'qingjian-mixed-content-'));
+  try {
+    const colors=['red','lime','blue','yellow','purple'];
+    const media:MediaItem[]=[];
+    for(const [index,color]of colors.entries()) {
+      const id=`source-${index}`;
+      await runFFmpeg(['-v','error','-y','-f','lavfi','-i',`color=c=${color}:s=270x480:r=30`,'-f','lavfi','-i',`sine=frequency=${330+index*110}:sample_rate=44100`,'-t','1.3','-c:v','libx264','-threads','2','-pix_fmt','yuv420p','-c:a','aac','-f','mp4',path.join(dir,id)]);
+      media.push({...fixture,id,duration:1.3,analysis:undefined});
+    }
+    const clips=media.map((m,i)=>({sourceId:m.id,start:0,end:1.23,transition:{kind:i===0||i===2?'cut' as const:'fade' as const,duration:i===0||i===2?0:.18}}));
+    const candidate=validatePlan({format:'9:16',summary:'叠化链之间切镜，保留末尾原片',targetSeconds:0,clips,captions:[],overlays:[],audio:{originalVolume:1,bgmVolume:0,narrationVolume:1,normalize:false}},media);
+    const output=await renderPlan(candidate,media,dir,path.join(dir,'out'));
+    const pixel=async(seconds:number)=>{
+      const file=path.join(dir,`pixel-${seconds}.rgb`);
+      await runFFmpeg(['-v','error','-y','-ss',String(seconds),'-i',output.file,'-vf','scale=1:1','-frames:v','1','-pix_fmt','rgb24','-f','rawvideo',file]);
+      const bytes=await readFile(file);assert.equal(bytes.length,3,`the actual encoded movie must contain a decoded frame at ${seconds}s`);return [...bytes];
+    };
+    const afterCut=await pixel(2.6),ending=await pixel(5.1);
+    assert.ok(afterCut[2]>180&&afterCut[0]<35&&afterCut[1]<35,`the original blue third source must survive the cut: ${afterCut}`);
+    assert.ok(ending[0]>90&&ending[2]>90&&ending[1]<35,`the final purple fifth source must reach the real video end: ${ending}`);
+  } finally {await rm(dir,{recursive:true,force:true});}
+});
+
+test('32 fractional short clips retain the final incoming shot and cumulative frame boundaries', async () => {
+  const dir=await mkdtemp(path.join(tmpdir(),'qingjian-many-fade-chains-'));
+  try {
+    const media:MediaItem[]=[];
+    for(const color of ['red','blue']) {
+      await runFFmpeg(['-v','error','-y','-f','lavfi','-i',`color=c=${color}:s=90x160:r=30`,'-f','lavfi','-i','sine=frequency=440:sample_rate=44100','-t','1','-c:v','libx264','-threads','2','-pix_fmt','yuv420p','-c:a','aac','-f','mp4',path.join(dir,color)]);
+      media.push({...fixture,id:color,duration:1,analysis:undefined});
+    }
+    const clips=Array.from({length:32},(_,i)=>({sourceId:i===31?'blue':'red',start:0,end:.51,transition:{kind:i%2?'fade' as const:'cut' as const,duration:i%2?.05:0}}));
+    const candidate=validatePlan({format:'9:16',summary:'短镜头叠化不可丢失后镜，累计帧边界保持音画同步',targetSeconds:0,clips,captions:[],overlays:[],audio:{originalVolume:1,bgmVolume:0,narrationVolume:1,normalize:false}},media);
+    assert.equal(candidate.targetSeconds,15.52);
+    const output=await renderPlan(candidate,media,dir,path.join(dir,'out'));
+    const check=await inspectEvaluationStreamDuration(output.file,candidate.targetSeconds);assert.equal(check.passed,true,check.detail);
+    const ffprobe:string=createRequire(import.meta.url)('ffprobe-static').path;
+    const {stdout}=await promisify(execFile)(ffprobe,['-v','error','-select_streams','v:0','-count_frames','-show_entries','stream=nb_read_frames,duration,r_frame_rate,avg_frame_rate','-of','json',output.file]);
+    const video=JSON.parse(stdout).streams[0];assert.equal(video.r_frame_rate,'30/1');assert.equal(video.avg_frame_rate,'30/1');
+    assert.ok(Math.abs(Number(video.nb_read_frames)-Math.round(candidate.targetSeconds*30))<=1,stdout);
+    assert.ok(Math.abs(Number(video.duration)-candidate.targetSeconds)<=1/30+.002,stdout);
+    const pixel=path.join(dir,'last-source.rgb');
+    await runFFmpeg(['-v','error','-y','-ss','15.2','-i',output.file,'-vf','scale=1:1','-frames:v','1','-pix_fmt','rgb24','-f','rawvideo',pixel]);
+    const bytes=await readFile(pixel);assert.equal(bytes.length,3,'the final incoming source must exist near the real video end');
+    assert.ok(bytes[2]>180&&bytes[0]<35&&bytes[1]<35,`the final blue source must not be replaced by padded red footage: ${[...bytes]}`);
   } finally {await rm(dir,{recursive:true,force:true});}
 });

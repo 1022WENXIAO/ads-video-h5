@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
-import { ensureReleaseEvaluationFixtures, releaseEvaluationFixtureContext, releaseFixtureCues, releaseFixtureStoryboard, RELEASE_FIXTURE_VERSION } from '../server/releaseEvaluationFixtures';
+import { ensureReleaseEvaluationFixtures, releaseEvaluationFixtureContext, releaseFixtureCues, releaseFixtureStoryboard, RELEASE_FIXTURE_CAPTION_ZONE, RELEASE_FIXTURE_VERSION } from '../server/releaseEvaluationFixtures';
 import { createEvaluations, evaluationFileHash } from '../server/evaluations';
 import { runFFmpeg } from '../server/core';
 import type { ModelConfig } from '../server/modelRegistry';
@@ -20,6 +20,16 @@ test('controlled diagrams describe actual source capabilities and carry synchron
   }
   const timing=releaseFixtureCues(1,18,[{text:'保持比较条件一致',start:2,end:4},{text:'再看差异',start:4.3,end:5.2},{text:'结论应当由证据支持',start:10.3,end:12}],.3);
   assert.equal(timing.method,'reused-recognized-word-timing');assert.equal(timing.cues[1].start,4);assert.equal(timing.cues[2].start,10);
+});
+test('essential diagram conclusions and limitations stay outside the final subtitle band',()=>{
+  const essential=[['观察 ≠ 推测','重复观察，核验解释'],['证据支持的结论','未知部分保留限制']];
+  for(let index=0;index<2;index++){
+    const story=releaseFixtureStoryboard(index,18);
+    for(const value of essential[index]){
+      const labels=story.labelBounds.filter(label=>label.text===value);assert(labels.length>0,value);
+      for(const label of labels){assert(label.y+label.height<=RELEASE_FIXTURE_CAPTION_ZONE.top||label.y>=RELEASE_FIXTURE_CAPTION_ZONE.bottom,`${value} overlaps the final caption band`);assert(story.ass.includes(`\\pos(${label.x},${label.y})`),'metadata must describe actual rendered ASS position');}
+    }
+  }
 });
 
 test('controlled editing sources validate actual cached files and repair corruption without resynthesizing speech', {timeout:60000}, async t => {
@@ -59,7 +69,7 @@ test('controlled editing sources validate actual cached files and repair corrupt
   assert.notEqual(missingRepaired[1].id,repaired[1].id); assert.equal(missingRepaired[0].id,repaired[0].id); assert.equal(synthesisCalls,2);
 });
 
-test('semantic v2 rebuilds old color-pattern videos while reusing unchanged v1 paid speech caches', {timeout:30000}, async t=>{
+test('semantic visual upgrades reuse unchanged v1 paid speech caches', {timeout:30000}, async t=>{
   const dir=await mkdtemp(path.join(tmpdir(),'qingjian-release-fixture-upgrade-'));t.after(()=>rm(dir,{recursive:true,force:true}));
   const oldDir=path.join(dir,'evaluations/controlled-fixtures/controlled-spoken-v1');await mkdir(oldDir,{recursive:true});
   const audio=path.join(dir,'speech.mp3');await runFFmpeg(['-v','error','-f','lavfi','-i','sine=frequency=400:sample_rate=48000','-t','13','-c:a','libmp3lame',audio]);

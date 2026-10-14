@@ -104,18 +104,33 @@ export async function renderTimeline(inputPlan: EditPlan, media: MediaItem[], me
       audioSegments.push(`${segments.map((_,i)=>`[sa${i}]`).join('')}concat=n=${segments.length}:v=0:a=1[voice]`);
       await runFFmpeg(['-v','error','-y','-f','concat','-safe','0','-i',list,...segments.flatMap(s=>['-i',s]),'-filter_complex',audioSegments.join(';'),'-map','0:v:0','-map','[voice]','-t',String(timelineDuration(plan)),'-c:v','copy','-c:a','aac','-b:a','128k',merged]);
     } else {
-      // Timebase/PTS conversion can leave an unknown frame rate on Linux.
-      // Establish CFR after conversion and after each join before another xfade.
-      const filters = segments.map((_, i) => `[${i}:v]setpts=PTS-STARTPTS,fps=30,settb=AVTB[v${i}];[${i}:a]atrim=duration=${plan.clips[i].end-plan.clips[i].start},asetpts=PTS-STARTPTS[a${i}]`);
-      let v = 'v0'; let a = 'a0'; let elapsed = plan.clips[0].end - plan.clips[0].start;
-      for (let i = 1; i < segments.length; i++) {
-        const fade = plan.clips[i].transition?.kind === 'fade' ? plan.clips[i].transition!.duration : 0;
-        if (fade) filters.push(`[${v}][v${i}]xfade=transition=fade:duration=${fade}:offset=${(elapsed - fade).toFixed(3)}[joined${i}];[${a}][a${i}]acrossfade=d=${fade}:c1=tri:c2=tri[am${i}]`);
-        else filters.push(`[${v}][${a}][v${i}][a${i}]concat=n=2:v=1:a=1[joined${i}][am${i}]`);
-        filters.push(`[joined${i}]fps=30,settb=AVTB[vm${i}]`);
-        v = `vm${i}`; a = `am${i}`; elapsed += plan.clips[i].end - plan.clips[i].start - fade;
+      // Precut segments already have CFR. Repeating fps before xfade changes
+      // its EOF timestamp and can discard the entire incoming shot when a
+      // fractional transition ends between frames. Keep fade chains separate
+      // from cuts and normalize their frame boundaries only once at the end.
+      const filters = segments.map((_, i) => `[${i}:v]setpts=PTS-STARTPTS,settb=AVTB[v${i}];[${i}:a]atrim=duration=${plan.clips[i].end-plan.clips[i].start},asetpts=PTS-STARTPTS[a${i}]`);
+      const chains: Array<{video:string;audio:string}> = [];
+      let first=0,cumulativeSeconds=0,frameBoundary=0;
+      while(first<segments.length) {
+        let v=`v${first}`,a=`a${first}`,elapsed=plan.clips[first].end-plan.clips[first].start,last=first+1;
+        for(;last<segments.length&&plan.clips[last].transition?.kind==='fade';last++) {
+          const fade=plan.clips[last].transition!.duration;
+          filters.push(`[${v}][v${last}]xfade=transition=fade:duration=${fade}:offset=${(elapsed-fade).toFixed(3)}[joined${last}];[${a}][a${last}]acrossfade=d=${fade}:c1=tri:c2=tri[am${last}]`);
+          filters.push(`[joined${last}]settb=AVTB,setpts=PTS-STARTPTS[vm${last}]`);
+          v=`vm${last}`;a=`am${last}`;elapsed+=plan.clips[last].end-plan.clips[last].start-fade;
+        }
+        cumulativeSeconds+=elapsed;
+        const nextBoundary=Math.round(cumulativeSeconds*30),frames=nextBoundary-frameBoundary;frameBoundary=nextBoundary;
+        // A single repeated endpoint frame supplies fractional CFR rounding;
+        // quantize cumulative boundaries so many short chains cannot drift.
+        filters.push(`[${v}]tpad=stop_mode=clone:stop=1,trim=end_frame=${frames},settb=1/30,setpts=N[chainv${first}];[${a}]atrim=duration=${elapsed.toFixed(6)},asetpts=PTS-STARTPTS[chaina${first}]`);
+        chains.push({video:`chainv${first}`,audio:`chaina${first}`});first=last;
       }
-      await runFFmpeg(['-v', 'error', '-y', '-filter_complex_threads', '1', ...segments.flatMap((s) => ['-i', s]), '-filter_complex', filters.join(';'), '-map', `[${v}]`, '-map', `[${a}]`, '-t', String(timelineDuration(plan)), '-c:v', 'libx264', '-threads', '2', '-preset', 'veryfast', '-crf', '23', '-pix_fmt', 'yuv420p', '-c:a', 'aac', merged]);
+      // Keep exact audio sample lengths independent of rounded video frames;
+      // a fractional frame must never shift subsequent speech/caption times.
+      if(chains.length>1)filters.push(`${chains.map(c=>`[${c.video}]`).join('')}concat=n=${chains.length}:v=1:a=0[joinedVideo];${chains.map(c=>`[${c.audio}]`).join('')}concat=n=${chains.length}:v=0:a=1[joinedAudio]`);
+      filters.push(`[${chains.length>1?'joinedVideo':chains[0].video}]settb=1/30,setpts=N[finalVideo]`);
+      await runFFmpeg(['-v', 'error', '-y', '-filter_complex_threads', '1', ...segments.flatMap((s) => ['-threads', '1', '-i', s]), '-filter_complex', filters.join(';'), '-map', '[finalVideo]', '-map', `[${chains.length>1?'joinedAudio':chains[0].audio}]`, '-t', String(timelineDuration(plan)), '-r', '30', '-vsync', 'cfr', '-c:v', 'libx264', '-threads', '2', '-preset', 'veryfast', '-crf', '23', '-pix_fmt', 'yuv420p', '-c:a', 'aac', merged]);
     }
     let composed = merged;
     const drawings = await renderDrawings(plan, width, height, tempDir);

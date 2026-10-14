@@ -1,6 +1,6 @@
 import type { EvaluationCase, EvaluationCategory, EvaluationExpectation } from '../src/evaluationTypes';
 
-export const EVALUATION_RUBRIC_VERSION = 'qingjian-video-v3';
+export const EVALUATION_RUBRIC_VERSION = 'qingjian-video-v4';
 export const evaluationCategoryNames: Record<EvaluationCategory, string> = { 'hot-news': '热点新闻', knowledge: '知识科普', 'multi-video': '多素材剪辑' };
 const expected = (seconds: number, format: EvaluationExpectation['format'], extra: Partial<EvaluationExpectation> = {}): EvaluationExpectation => ({ seconds, toleranceSeconds: Math.max(2, seconds * .08), format, captions: true, minSources: 0, html: true, originalOnly: false, requiredWords: [], ...extra });
 const define = (id: string, category: EvaluationCategory, name: string, description: string, messages: string[], expectation: EvaluationExpectation): EvaluationCase => ({ id, category, name, description, messages, expectation, fixtureIds: [], threshold: 80, enabled: true, version: 1, updatedAt: '2026-10-02T00:00:00.000Z' });

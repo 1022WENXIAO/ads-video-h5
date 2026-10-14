@@ -28,8 +28,12 @@ finish() {
   if (( status != 0 && switched == 1 )); then
     echo "Deploy failed; restoring ${previous_sha:0:12}" >&2
     git -C "$repo" checkout --detach --quiet "$previous_sha" || true
-    if [[ -d "$repo/node_modules" ]]; then mv "$repo/node_modules" "$build_dir/failed-node-modules"; fi
-    if [[ -d "$backup_dir/node_modules" ]]; then mv "$backup_dir/node_modules" "$repo/node_modules"; fi
+    # Checkout/preflight can fail before the dependency swap. In that case
+    # the live dependencies are still the original ones and must stay put.
+    if [[ -d "$backup_dir/node_modules" ]]; then
+      if [[ -d "$repo/node_modules" ]]; then mv "$repo/node_modules" "$build_dir/failed-node-modules"; fi
+      mv "$backup_dir/node_modules" "$repo/node_modules"
+    fi
     if [[ -n "$backup_dir" && -d "$backup_dir/dist" ]]; then
       if [[ -d "$repo/dist" ]]; then mv "$repo/dist" "$build_dir/failed-dist"; fi
       mv "$backup_dir/dist" "$repo/dist"
