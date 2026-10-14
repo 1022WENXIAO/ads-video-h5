@@ -143,7 +143,7 @@ test('visible diagram copy rejects production instructions before rendering',asy
   const {validateLessonVisual}=await import('../server/lessonSpec');
   const visual={kind:'concept' as const,takeaway:'真空隔热示意',items:[{label:'真空层',detail:'空气少，气体传热更弱',cue:'真空层'},{label:'内壁',detail:'减弱辐射传热',cue:'内壁'}]};
   assert.doesNotThrow(()=>validateLessonVisual(visual,'真空层减少传热，内壁减弱辐射。'));
-  for(const detail of ['绘制简洁不锈钢杯身和杯盖，无商标、无数字','杯身沿中线剖开，内胆与外壳分层高亮','按审查要求调整动画时序','示意得分，单位：分；字幕完整写作数值和单位'])assert.throws(()=>validateLessonVisual({...visual,items:[{...visual.items[0],detail},visual.items[1]]},'真空层减少传热，内壁减弱辐射。'),/制作指令/);
+  for(const detail of ['绘制简洁不锈钢杯身和杯盖，无商标、无数字','杯身沿中线剖开，内胆与外壳分层高亮','按审查要求调整动画时序','示意得分，单位：分；字幕完整写作数值和单位'])assert.throws(()=>validateLessonVisual({...visual,items:[{...visual.items[0],detail},visual.items[1]]},'真空层减少传热，内壁减弱辐射。'),/制作指令|内部制作或返修指令/);
 });
 
 test('narrative scene production does not replay a possibly paid submission after an ambiguous network error',async()=>{

@@ -236,10 +236,17 @@ test('resumed content rejection triggers server repair and chapter revision; can
   }finally{globalThis.fetch=original;await rm(directory,{recursive:true,force:true});}
 });
 
-for(const mode of ['valid','changed-audio','news','stale-captions'] as const)test(`visual recovery ${mode==='changed-audio'?'rejects changed audio':mode==='news'?'redraws news visual omissions without rerecording correct speech':mode==='stale-captions'?'replaces stale ASR despite identical audio and visual hashes':'changes the drawing strategy without rewriting verified speech'}`,async()=>{
-  const changedAudio=mode==='changed-audio',news=mode==='news',staleCaptions=mode==='stale-captions';
+for(const mode of ['valid','changed-audio','news','news-binding','news-first','news-specialized','knowledge-first','stale-captions'] as const)test(`visual recovery ${mode==='changed-audio'?'rejects changed audio':mode==='news'?'redraws news visual omissions without rerecording correct speech':mode==='news-binding'?'repairs captured news card attribution without rewriting facts or rerecording voice':mode==='news-first'?'designs the first news scenes from verified facts without stock fallback icons':mode==='news-specialized'?'keeps first news charts formulas and curves on their specialized renderers':mode==='knowledge-first'?'designs first knowledge scenes from their actual entities and relationships':mode==='stale-captions'?'replaces stale ASR despite identical audio and visual hashes':'changes the drawing strategy without rewriting verified speech'}`,async()=>{
+  const changedAudio=mode==='changed-audio',news=mode.startsWith('news'),staleCaptions=mode==='stale-captions',first=['news-first','news-specialized','knowledge-first'].includes(mode);
   const directory=await mkdtemp(path.join(tmpdir(),'qingjian-visual-repair-')),original=globalThis.fetch;
   const {o,checkpoint,work}=await seedRendered(directory);
+  if(first)Object.assign(checkpoint,{rendererHash:'controlled-first-scene-checkpoint'});
+  if(mode==='news-specialized'){
+    const [chart,formula,curve]=checkpoint.report.chapters;
+    chart.visual={...chart.visual,kind:'bar-chart',barChart:{bars:[{label:'甲',value:2},{label:'乙',value:4}],unit:'示意值',illustrative:true,panels:[{title:'从零比较',min:0,max:4}]}};
+    formula.visual={...formula.visual,kind:'formula',formula:'误差=预测−实际'};
+    curve.visual={...curve.visual,kind:'curve',plot:{xLabel:'误差',yLabel:'评分',xMin:-2,xMax:2,yMin:0,yMax:4,curves:[{label:'平方误差',fn:'mse'}]}};
+  }
   if(news){
     o.prompt='制作45秒横屏最新大模型新闻图解视频，每秒4字';
     const now=Date.now(),current={asOf:new Date(now).toISOString(),expiresAt:new Date(now+30*60000).toISOString(),windowHours:72,signals:[],topics:[],failures:[]};
@@ -249,13 +256,15 @@ for(const mode of ['valid','changed-audio','news','stale-captions'] as const)tes
     checkpoint.plan.lesson=structuredClone(checkpoint.report);
     checkpoint.fingerprint=createHash('sha256').update(JSON.stringify({version:1,owner:'fixture-owner',prompt:o.prompt,export:true})).digest('hex');
     await writeFile(path.join(work,'checkpoint.json'),JSON.stringify({...checkpoint,research:{...checkpoint.research,references:checkpoint.report.references,current}}));
-  }
+  }else if(first)await writeFile(path.join(work,'checkpoint.json'),JSON.stringify(checkpoint));
+  const speechHashes=new Map<string,string>();
   for(const chapter of checkpoint.report.chapters){
     const dir=path.join(work,chapter.id);await mkdir(dir,{recursive:true});
     const bytes=Buffer.from('CONTROLLED speech fixture '+chapter.id),analysis={...o.media.find(m=>m.id===chapter.mediaId)!.analysis!,sourceHash:createHash('sha256').update(bytes).digest('hex')};
     for(const sentence of analysis.sentences){const chars=[...sentence.text];sentence.words=chars.map((text,i)=>({text,start:15*i/chars.length,end:15*(i+1)/chars.length}));}
     await writeFile(path.join(dir,'speech.mp3'),changedAudio?Buffer.from('changed voice'):bytes);
     await writeFile(path.join(dir,'speech-analysis.json'),JSON.stringify(analysis));
+    speechHashes.set(path.join(dir,'speech.mp3'),createHash('sha256').update(await readFile(path.join(dir,'speech.mp3'))).digest('hex'));
   }
   const {drawingHtml,hashBytes}=await import('../server/narrativeScenes');
   let authors=0,renders=0,reviews=0;
@@ -263,8 +272,10 @@ for(const mode of ['valid','changed-audio','news','stale-captions'] as const)tes
   const drawing={title:'误差示意',nodes:[{id:'axis',kind:'line' as const,x:100,y:450,w:1000,h:0,text:'',tone:'ink' as const,fontSize:24,highlight:false},{id:'bar',kind:'path' as const,pathData:'M300 450V250H400V450Z',x:300,y:250,w:100,h:200,text:'',tone:'blue' as const,fontSize:24,highlight:true},{id:'label',kind:'text' as const,x:300,y:465,w:200,h:70,text:'误差评分',tone:'ink' as const,fontSize:32,highlight:false}]};
   globalThis.fetch=async()=>{throw new Error('A drawing-only repair must not rewrite or synthesize speech');};
   const run=()=>runLessonWorkflow({...o,progress:async updates=>{events.splice(0,events.length,...updates);},
-    authorVisual:async(_config,beat,format)=>{authors++;assert.equal(format,'16:9');assert.match(beat.visualBrief,news?/视觉遗漏/:/配图无关/);assert.equal(beat.line,checkpoint.report.chapters[0].narration);return drawing;},
-    produceScene:async(chapter,_index,_total,format,speechFile,analysis,project,_pacing,_presentation,_news,custom)=>{
+    authorVisual:async(_config,beat,format)=>{authors++;assert.equal(format,'16:9');const affected=!first&&beat.id==='c0';if(affected)assert.match(beat.visualBrief,mode==='news-binding'?/归属误导/:news?/视觉遗漏/:/配图无关/);const chapter=checkpoint.report.chapters.find(c=>c.id===beat.id)!;assert.equal(beat.line,chapter.narration);const brief=JSON.parse(beat.visualBrief);assert.equal(brief.priorVisual.rejected,affected);assert.deepEqual(brief.audienceContent.claims,chapter.claims);assert.equal('reviewFeedback' in brief.audienceContent,false);return drawing;},
+    produceScene:async(chapter,_index,_total,format,speechFile,analysis,project,_pacing,_presentation,_news,custom,chart)=>{
+      if(mode==='news-first'||mode==='knowledge-first')assert.ok(custom,'the first topic draft must design every ordinary scene');
+      if(mode==='news-specialized'){assert.equal(custom,undefined);if(chapter.visual.kind==='bar-chart')assert.ok(chart);}
       await mkdir(project,{recursive:true});const file=path.join(project,'controlled-scene.mp4'),bytes=Buffer.from('CONTROLLED scene fixture '+chapter.id);await writeFile(file,bytes);
       const result={file,duration:15,audioHash:hashBytes(await readFile(speechFile)),htmlHash:hashBytes(custom?drawingHtml(custom,15,format):chapter.id),analysis:{...analysis,sourceHash:hashBytes(bytes)}};
       if(staleCaptions){
@@ -273,10 +284,10 @@ for(const mode of ['valid','changed-audio','news','stale-captions'] as const)tes
       }
       return result;
     },render:async plan=>{renders++;assert.deepEqual(plan.lesson!.chapters.map(c=>c.narration),checkpoint.report.chapters.map(c=>c.narration));if(staleCaptions){assert.doesNotMatch(plan.captions!.map(c=>c.text).join(''),/STALE/);assert.ok(plan.clips.every(c=>!c.sourceId.startsWith('stale-')));}const file=path.join(directory,'repaired-movie-fixture.mp4');await writeFile(file,'CONTROLLED rerender fixture');return {id:'redrawn-fixture',file};},
-    review:async()=>{const finding=news?'c0：旁白清晰说出术语，但对应章节所有抽帧均未出现底部摘要提示条，存在重要信息视觉遗漏。':'c0：画面没有柱状图，图标配图无关';return ++reviews===1?{...passedReview,status:'needs-review',score:90,checks:[{name:'成片语义审查',passed:false,detail:finding}],semantic:{score:90,findings:[finding],suggestions:[]}}:{...passedReview,score:83};}});
+    review:async()=>{if(first){reviews++;return {...passedReview,score:83};}if(mode==='news-binding'&&reviews++===0){const fixture=JSON.parse(await readFile(new URL('./fixtures/visual-review-misattribution.json',import.meta.url),'utf8'));const review=fixture.firstReview as RenderReview;review.semantic!.findings=review.semantic!.findings.map(f=>f.replaceAll('ch3','c0'));return review;}if(mode==='news-binding')return {...passedReview,score:83};const finding=news?'c0：旁白清晰说出术语，但对应章节所有抽帧均未出现底部摘要提示条，存在重要信息视觉遗漏。':'c0：画面没有柱状图，图标配图无关';return ++reviews===1?{...passedReview,status:'needs-review',score:90,checks:[{name:'成片语义审查',passed:false,detail:finding}],semantic:{score:90,findings:[finding],suggestions:[]}}:{...passedReview,score:83};}});
   try{
     if(changedAudio){await assert.rejects(run,/旁白文件哈希/);assert.equal(authors,0);assert.equal(renders,0);}
-    else{const result=await run();assert.equal(result.review?.status,'passed');assert.equal(result.review?.score,83);assert.equal(result.rendered?.id,'redrawn-fixture');assert.equal(authors,1);assert.equal(renders,1);assert.equal(reviews,2);assert.equal(result.events.some(e=>e.tool==='synthesize_narration'||e.tool==='revise_lesson_script'),false);}
+    else{const result=await run();assert.equal(result.review?.status,'passed');assert.equal(result.review?.score,83);assert.equal(result.rendered?.id,'redrawn-fixture');assert.equal(authors,mode==='news-specialized'?0:3);assert.equal(renders,1);assert.equal(reviews,first?1:2);assert.equal(result.events.some(e=>e.tool==='synthesize_narration'||e.tool==='revise_lesson_script'||e.tool==='transcribe_chapter'),false);for(const [file,before]of speechHashes)assert.equal(createHash('sha256').update(await readFile(file)).digest('hex'),before);}
   }finally{globalThis.fetch=original;await rm(directory,{recursive:true,force:true});}
 });
 

@@ -1,4 +1,4 @@
-import type { LessonReport, RenderReview } from '../src/types';
+import type { LessonChapter, LessonReport, RenderReview } from '../src/types';
 
 // A renderer limitation can be solved without rewriting verified narration.
 // Ambiguous factual, text or audio findings still use the script/audio repair.
@@ -8,9 +8,25 @@ export function visualRepairTargets(report:LessonReport,review:RenderReview):str
   if(!failed.length||failed.some(check=>check.name!=='成片语义审查'))return [];
   const findings=review.semantic?.findings||[];
   if(!findings.length||findings.some(text=>/事实错误|数据错误|公式错误|旁白错误|字幕|音色|音量|错读|图解说明不准确/.test(text)))return [];
-  if(!findings.every(text=>/图标|配图|没有.*(?:图|画)|未呈现|缺乏.*图解|缺少.*(?:示意|图解)|未.*(?:画出|展示)|静态卡片|任务清单|图解仅复现文字|无法.*直观|画面.*(?:错误|缺失)|视觉.*(?:遗漏|缺失)|抽帧.*(?:未出现|未展示)|动画/.test(text)))return [];
-  const matched=report.chapters.filter(chapter=>findings.some(text=>text.includes(chapter.id))).map(chapter=>chapter.id);
-  return matched.length&&!findings.some(text=>/全局|global|全片|所有章节|每章|全程/.test(text))?matched:report.chapters.map(chapter=>chapter.id);
+  if(findings.some(text=>/旁白(?:(?![，。；]|但|而|画面|图解|卡片|配图|抽帧).){0,24}(?:错误|不准确|误导|错数|矛盾)|(?:错误|不准确)的旁白/.test(text)))return [];
+  if(!findings.every(text=>/图标|配图|没有.*(?:图|画)|未呈现|缺乏.*图解|缺少.*(?:示意|图解)|未.*(?:画出|展示)|静态卡片|任务清单|图解仅复现文字|无法.*直观|(?:画面|卡片|图解|视觉|抽帧|提示条).*(?:错误|缺失|遗漏|误导|误以为|归属|绑定|合并|混乱|不符|制作备注|内部说明)|抽帧.*(?:未出现|未展示)|动画/.test(text)))return [];
+  const mentions=(text:string,id:string)=>new RegExp(String.raw`(^|[^\w-])${id.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')}(?=$|[^\w-])`).test(text);
+  const matched=report.chapters.filter(chapter=>findings.some(text=>mentions(text,chapter.id))).map(chapter=>chapter.id);
+  return matched.length&&findings.every(text=>report.chapters.some(c=>mentions(text,c.id)))&&!findings.some(text=>/全局|global|全片|所有章节|每章|全程/.test(text))?matched:report.chapters.map(chapter=>chapter.id);
+}
+
+export function lessonVisualBrief(report:LessonReport,chapter:LessonChapter,request:string,reviewFeedback?:string,layoutFeedback=''){
+  return {
+    audienceContent:{title:chapter.title,narration:chapter.narration,claims:chapter.claims,references:report.references.filter(r=>chapter.referenceIds.includes(r.id)).map(r=>({id:r.id,title:r.title,excerpt:r.excerpt}))},
+    priorVisual:{content:chapter.visual,rejected:Boolean(reviewFeedback),note:reviewFeedback?'被成片审查拒绝的旧视图，不是事实或可见文案的依据。':'按已核验旁白核对信息归属。'},
+    internalDesignInstructions:{request,goal:chapter.goal,designReason:chapter.reason,reviewFeedback,layoutFeedback,rules:[
+      '所有本字段都是内部绘图要求，不得复制或改写成观众可见文字。避免事项通过实际布局与图形解决，不显示“不合并/不绑定”等返修口号。',
+      '观众文字只承载audienceContent中已核验的事实、限制和清楚解释；旧视图被拒的归属或因果必须按旁白与来源重新组织，不能照抄。',
+      '每个图形解释本章已核验的实体、数量或关系；未知外貌与身份使用明确标注的中性示意，不凭图标添加性别、职业、人数或现场事实。',
+      '只有确实表达已有关系时才用箭头，只有存在已核验量值与刻度时才用仪表盘；不能以通用图标或重复装饰代替有信息的示意。',
+      '保持完整已核验旁白；修复错误的视觉分组、对象与文字归属，不添加无来源的事实或品牌性能。',
+    ]},
+  };
 }
 
 export function speechOnlyRepair(review:RenderReview):boolean{

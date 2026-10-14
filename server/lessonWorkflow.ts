@@ -10,7 +10,7 @@ import { getModelConfig, type ModelConfig } from './modelRegistry';
 import { getAgent, probeAudio, runFFmpeg, validatePlan, textThinking } from './core';
 import { mergeResearch, researchGaps } from './narrativeResearch';
 import { hashBytes, authorDrawing, type HtmlDrawing } from './narrativeScenes';
-import { visualRepairTargets, speechOnlyRepair } from './visualRecovery';
+import { visualRepairTargets, speechOnlyRepair, lessonVisualBrief } from './visualRecovery';
 import { alignLessonSpeech, compactSpeech, lessonSettings, lessonPacing, lessonPadding, lessonNarrationBudget, lessonScriptBudget, assertLessonScriptBudget, validateLesson, spokenLessonText, lessonSpeechLexicon, correctLessonTranscript, lessonCaptionAnalysis, applyLessonChapterRepairs, lessonRepairTargets } from './lessonSpec';
 import { produceLessonScene, NEWS_ILLUSTRATIONS, lessonRendererHash } from './lessonScenes';
 import { loadEditingSkill, loadMotionDesignContext } from './skills';
@@ -20,7 +20,7 @@ import { generateAudio } from './providers';
 import { verifyLessonResearch, lessonResearchSummary } from './lessonResearch';
 import { reviewFindings } from './reviewResults';
 import { mapLimited } from './taskPool';
-import { inspectLessonSpeechGaps, lessonTempo, lessonVoiceStyle, lessonPacingCheck, prepareLessonSpeech, tightenNewsSpeechSilence } from './lessonAudio';
+import { inspectLessonSpeechGaps, lessonTempo, lessonVoiceStyle, lessonPacingCheck, prepareLessonSpeech, preserveLessonSpeechTake, tightenNewsSpeechSilence } from './lessonAudio';
 import { reviewNeedsContentRepair, canReuseNewsEvidence } from './reviewResults';
 import { cachedLessonResearch } from './lessonResearchCache';
 import { currentResearchExpired, refreshHotTopics, researchHotTopics } from './hotResearch';
@@ -247,9 +247,19 @@ export async function runLessonWorkflow(o:Options){
     }
     const reference=anchor,anchorHash=hashBytes(reference);
     const prepareChapterSpeech=async(chapter:LessonChapter,file:string,preparedFile:string)=>{
-      const edgeFile=current?path.join(path.dirname(file),'edge-speech.wav'):preparedFile;
+      // Preserve every paid take before any later retry replaces the active file.
+      const {hash:takeHash}=await preserveLessonSpeechTake(file);
+      const edgeFile=path.join(path.dirname(file),'edge-speech.wav');
       await trace.run('prepare_speech_edges',`整理旁白首尾空白 · ${chapter.title}`,{chapterId:chapter.id,noiseDb:-55,preservedMarginSeconds:.12},()=>prepareLessonSpeech(file,edgeFile));
-      if(current)await trace.run('tighten_speech_gaps',`收紧新闻旁白空白 · ${chapter.title}`,{chapterId:chapter.id,noiseDb:-55,maxPauseSeconds:pacing.maxPauseSeconds,originalTakePreserved:true},()=>tightenNewsSpeechSilence(edgeFile,preparedFile,pacing.maxPauseSeconds));
+      await trace.run('tighten_speech_gaps',`收紧生成旁白空白 · ${chapter.title}`,{chapterId:chapter.id,audioHash:takeHash,noiseDb:-65,maxPauseSeconds:pacing.maxPauseSeconds,originalTakePreserved:true},()=>tightenNewsSpeechSilence(edgeFile,preparedFile,pacing.maxPauseSeconds));
+    };
+    const adjustChapterSpeech=async(chapter:LessonChapter,preparedFile:string,adjusted:string,tempo:number)=>{
+      const dir=path.dirname(preparedFile),tempoFile=path.join(dir,'tempo-speech.wav'),pacedFile=path.join(dir,'paced-speech.wav');
+      await runFFmpeg(['-v','error','-y','-i',preparedFile,'-af',`atempo=${tempo}`,'-ar','48000','-ac','1','-c:a','pcm_s16le',tempoFile]);
+      // Slowing speech can lengthen a previously acceptable pause. Repair only
+      // confirmed near-silence in the final timing before ASR and final gates.
+      await trace.run('tighten_speech_gaps',`核对变速后的旁白空白 · ${chapter.title}`,{chapterId:chapter.id,stage:'after-tempo',noiseDb:-65,maxPauseSeconds:pacing.maxPauseSeconds,originalTakePreserved:true},()=>tightenNewsSpeechSilence(tempoFile,pacedFile,pacing.maxPauseSeconds));
+      await runFFmpeg(['-v','error','-y','-i',pacedFile,'-ar','48000','-ac','1',adjusted]);
     };
     const raw=await mapLimited(report.chapters,2,async chapter=>{
       const dir=path.join(work,chapter.id);await mkdir(dir,{recursive:true});const spoken=spokenLessonText(chapter.narration),file=path.join(dir,'raw-speech.mp3'),metaFile=path.join(dir,'raw-speech.json');const key=hashBytes(JSON.stringify({line:spoken,model:audioConfig.modelId,anchorHash,voiceRevision,chapterRevision:chapterVoiceRevisions[chapter.id]||0,voiceStyle}));let cached=false;
@@ -285,7 +295,7 @@ export async function runLessonWorkflow(o:Options){
     await persistCheckpoint();
     await mapLimited(raw,2,async({chapter,file,preparedFile})=>{
       const dir=path.dirname(file),adjusted=path.join(dir,'speech.mp3');
-      await runFFmpeg(['-v','error','-y','-i',preparedFile,'-af',`atempo=${tempo}`,'-ar','48000','-ac','1',adjusted]);
+      await adjustChapterSpeech(chapter,preparedFile,adjusted,tempo);
       let verified=false,lastError:unknown;
       for(let attempt=0;attempt<2;attempt++){
         const hash=hashBytes(await readFile(adjusted)),duration=await probeAudio(adjusted);const metaFile=path.join(dir,'analysis-key.json');let id=randomUUID();
@@ -315,7 +325,7 @@ export async function runLessonWorkflow(o:Options){
           }
           const {corrected,aligned}=checked,analysis=lessonCaptionAnalysis(chapter,corrected);chapter.speechMatch=aligned.similarity;chapter.cues=aligned.cues;speech.set(chapter.id,{file:adjusted,analysis});await writeFile(path.join(dir,'speech-analysis.json'),JSON.stringify(analysis,null,2),{mode:0o600});verified=true;break;
         }catch(error){lastError=error;if(error instanceof NarrationAnalysisError)throw error;if(attempt===1||!/匹配|年份|原词|数学符号|数字|长停顿|重复字/.test(String(error))){if(/匹配|年份|原词|数学符号|数字|长停顿|重复字/.test(String(error)))phase='script';throw error;}
-          const spoken=spokenLessonText(chapter.narration);const result=await trace.run('synthesize_chapter',`重录错字 · ${chapter.title}`,{chapterId:chapter.id,narration:spoken,correction:String(error)},()=>generateAudio(`使用@Audio1同一声音。${voiceStyle} 上次核验发现：${String(error).slice(0,300)}。必须完整准确地朗读下面的文字，日期按汉字读法，小数每一位数字清楚读出，不能增删。只朗读台词，不朗读核验意见。台词：${spoken}`,audioConfig,reference));await writeFile(file,result.bytes,{mode:0o600});await prepareChapterSpeech(chapter,file,preparedFile);await runFFmpeg(['-v','error','-y','-i',preparedFile,'-af',`atempo=${tempo}`,'-ar','48000','-ac','1',adjusted]);
+          const spoken=spokenLessonText(chapter.narration);const result=await trace.run('synthesize_chapter',`重录错字 · ${chapter.title}`,{chapterId:chapter.id,narration:spoken,correction:String(error)},()=>generateAudio(`使用@Audio1同一声音。${voiceStyle} 上次核验发现：${String(error).slice(0,300)}。必须完整准确地朗读下面的文字，日期按汉字读法，小数每一位数字清楚读出，不能增删。只朗读台词，不朗读核验意见。台词：${spoken}`,audioConfig,reference));await writeFile(file,result.bytes,{mode:0o600});await prepareChapterSpeech(chapter,file,preparedFile);await adjustChapterSpeech(chapter,preparedFile,adjusted,tempo);
         }
       }
       if(!verified)throw lastError;
@@ -338,13 +348,13 @@ export async function runLessonWorkflow(o:Options){
           const dir=path.join(work,chapter.id),barChart=chapterBarChart(chapter,commonChart);let layoutFeedback='';
           for(let layoutAttempt=0;layoutAttempt<2;layoutAttempt++){
           let drawing:HtmlDrawing|undefined;
-          const custom=!barChart&&!['formula','curve'].includes(chapter.visual.kind)&&(visualFeedback[chapter.id]||!current&&(['product','tutorial','promotion','story'].includes(brief.genre)||/程序绘制/.test(o.prompt)));
+          const custom=!barChart&&!['formula','curve'].includes(chapter.visual.kind);
           if(custom){
             const key=hashBytes(JSON.stringify({rendererHash,prompt:o.prompt,narration:chapter.narration,visual:chapter.visual,reason:chapter.reason,feedback:visualFeedback[chapter.id],layoutFeedback}));
             try{const cache=JSON.parse(await readFile(path.join(dir,'drawing-cache.json'),'utf8'));if(cache.key===key)drawing=cache.drawing;}catch{}
             if(!drawing){
               drawing=await trace.run('author_lesson_visual','设计与旁白对应的实际图解',{chapterId:chapter.id,format:report!.format,narration:chapter.narration,visual:chapter.visual,feedback:visualFeedback[chapter.id]},()=>
-                (o.authorVisual||authorDrawing)(o.config,{id:chapter.id,title:chapter.title,line:chapter.narration,role:chapter.role==='hook'?'hook':chapter.role==='recap'?'conclusion':'argument',mode:'generated',visual:'html',reason:chapter.reason,referenceIds:chapter.referenceIds,visualBrief:JSON.stringify({request:o.prompt,goal:chapter.goal,narration:chapter.narration,visual:chapter.visual,designReason:chapter.reason,reviewFeedback:visualFeedback[chapter.id],layoutFeedback,rules:'画出真正对应旁白的对象与关系，不能用通用图标替代。任务描述仅用于设计，不能作为画面文字。保留已核验内容与数据，不添加未经支持的具体品牌性能。'})},report!.format));
+                (o.authorVisual||authorDrawing)(o.config,{id:chapter.id,title:chapter.title,line:chapter.narration,role:chapter.role==='hook'?'hook':chapter.role==='recap'?'conclusion':'argument',mode:'generated',visual:'html',reason:chapter.reason,referenceIds:chapter.referenceIds,visualBrief:JSON.stringify(lessonVisualBrief(report!,chapter,o.prompt,visualFeedback[chapter.id],layoutFeedback))},report!.format));
               await mkdir(dir,{recursive:true});await writeFile(path.join(dir,'drawing-cache.json'),JSON.stringify({key,drawing}),{mode:0o600});
             }
           }

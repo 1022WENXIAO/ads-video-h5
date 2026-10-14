@@ -1,6 +1,20 @@
 import { probeAudio, runFFmpeg } from './core';
-import { copyFile } from 'node:fs/promises';
+import { copyFile, mkdir, readFile, writeFile } from 'node:fs/promises';
+import { createHash } from 'node:crypto';
+import path from 'node:path';
 import type { LessonPacing, LessonPresentation } from '../src/types';
+
+export async function preserveLessonSpeechTake(file:string){
+  const bytes=await readFile(file),hash=createHash('sha256').update(bytes).digest('hex');
+  const directory=path.join(path.dirname(file),'takes'),archived=path.join(directory,hash+'.mp3');
+  await mkdir(directory,{recursive:true});
+  try{await writeFile(archived,bytes,{flag:'wx',mode:0o600});}
+  catch(error){
+    if((error as NodeJS.ErrnoException).code!=='EEXIST')throw error;
+    if(!(await readFile(archived)).equals(bytes))throw new Error('原始旁白留档损坏，保留现有文件并停止覆盖。');
+  }
+  return {hash,file:archived};
+}
 
 export function lessonVoiceStyle(pacing:LessonPacing,presentation?:LessonPresentation):string{
   const mood=presentation?.mood==='urgent'?'严肃新闻播报，带紧张迫切感，重音鲜明但不喊叫，台词清楚完整。':'';
@@ -26,7 +40,7 @@ export function lessonTempo(rawSeconds:number,targetSeconds:number,padding:numbe
 }
 
 // Trim only low-energy silence touching the file edges. Keep a margin around
-// the detected speech and preserve internal pauses; those require a retake.
+// the detected speech and preserve internal pauses for separate safe editing.
 export async function prepareLessonSpeech(file:string,output:string):Promise<{leadingTrim:number;trailingTrim:number;duration:number}>{
   const duration=await probeAudio(file);
   const log=await runFFmpeg(['-hide_banner','-nostats','-i',file,'-vn','-af','silencedetect=noise=-55dB:d=0.04','-f','null','-']);
@@ -43,23 +57,43 @@ export async function prepareLessonSpeech(file:string,output:string):Promise<{le
   return {leadingTrim:+begin.toFixed(3),trailingTrim:+(duration-end).toFixed(3),duration:await probeAudio(output)};
 }
 
-// News pacing may remove the middle of confirmed near-silent TTS gaps. Leave
-// margins at both ends, retain the original take, then transcribe the new file.
-// Quiet syllables are not eligible; ambiguous low-energy pauses still retake.
+// Generated narration can shorten only the near-silent centers inside a gap
+// rejected by the unchanged pacing detector. The -40dB interval alone never
+// authorizes a cut: a separate -65dB interval and both speech margins are needed.
+// Keep the original take and transcribe/align the edited waveform afterwards.
 export async function tightenNewsSpeechSilence(file:string,output:string,maxPauseSeconds:number){
   if(!Number.isFinite(maxPauseSeconds)||maxPauseSeconds<.3||maxPauseSeconds>4)throw new Error('旁白停顿上限无效。');
   const beforeSeconds=await probeAudio(file);
-  const log=await runFFmpeg(['-hide_banner','-nostats','-i',file,'-vn','-af',`loudnorm=I=-16:TP=-1.5:LRA=7,silencedetect=noise=-55dB:d=${maxPauseSeconds}`,'-f','null','-']);
-  const cuts:Array<{start:number;end:number}>=[];let start:number|undefined;
-  const keptPause=Math.max(.3,Math.min(.6,maxPauseSeconds*.5));
+  const rejected=await inspectLessonSpeechGaps(file,maxPauseSeconds);
+  // Measure cut coordinates on the untouched waveform. Loudnorm may shift
+  // detector timestamps through its lookahead; normalized gaps only nominate
+  // candidates, never supply the actual cut boundaries.
+  const log=rejected.length?await runFFmpeg(['-hide_banner','-nostats','-i',file,'-vn','-af','silencedetect=noise=-65dB:d=0.25','-f','null','-']):'';
+  const nearSilence:Array<{start:number;end:number}>=[];let start:number|undefined;
+  // Remove only the excess plus a small detector margin, rather than making
+  // every pause half as long and accumulating unnecessary duration loss.
+  const keptPause=Math.max(.3,maxPauseSeconds-Math.min(.1,maxPauseSeconds*.1));
   for(const match of log.matchAll(/silence_(start|end):\s*([\d.]+)/g)){
     if(match[1]==='start')start=Number(match[2]);
     else if(start!==undefined){
       const end=Number(match[2]);
-      if(start>.12&&end<beforeSeconds-.12&&end-start>=maxPauseSeconds-.01)cuts.push({start:+(start+keptPause/2).toFixed(4),end:+(end-keptPause/2).toFixed(4)});
+      if(start>.12&&end<beforeSeconds-.12)nearSilence.push({start,end});
       start=undefined;
     }
   }
+  const cuts:Array<{start:number;end:number}>=[],margin=.12;
+  for(const gap of rejected){
+    let remaining=gap.end-gap.start-keptPause;
+    for(const silent of nearSilence){
+      const left=Math.max(gap.start,silent.start)+margin,right=Math.min(gap.end,silent.end)-margin;
+      const removed=Math.min(remaining,right-left);
+      if(removed<=.02)continue;
+      const center=(left+right)/2;
+      const cut={start:+(center-removed/2).toFixed(4),end:+(center+removed/2).toFixed(4)};
+      cuts.push(cut);remaining-=cut.end-cut.start;
+    }
+  }
+  cuts.sort((a,b)=>a.start-b.start);
   if(!cuts.length)await copyFile(file,output);
   else{
     const points=[0,...cuts.flatMap(c=>[c.start,c.end]),beforeSeconds];
@@ -67,11 +101,11 @@ export async function tightenNewsSpeechSilence(file:string,output:string,maxPaus
     const filter=spans.join(';')+';'+spans.map((_,i)=>`[s${i}]`).join('')+`concat=n=${spans.length}:v=0:a=1[out]`;
     await runFFmpeg(['-v','error','-y','-i',file,'-filter_complex',filter,'-map','[out]','-ar','48000','-ac','1','-c:a','pcm_s16le',output]);
   }
-  return {cuts,removedSeconds:+cuts.reduce((n,c)=>n+c.end-c.start,0).toFixed(3),beforeSeconds,duration:await probeAudio(output)};
+  return {cuts,silenceNoiseDb:-65,protectedMarginSeconds:margin,removedSeconds:+cuts.reduce((n,c)=>n+c.end-c.start,0).toFixed(3),beforeSeconds,duration:await probeAudio(output)};
 }
 
 // Inspect a level-normalized copy in the filter graph; keep the real file
-// intact. Long low-energy gaps trigger re-recording, never blind speech cuts.
+// intact. Low energy alone never authorizes a speech cut or a passing result.
 export async function inspectLessonSpeechGaps(file:string,maxPauseSeconds=4):Promise<Array<{start:number;end:number}>>{
   if(!Number.isFinite(maxPauseSeconds)||maxPauseSeconds<.3||maxPauseSeconds>4)throw new Error('旁白停顿上限无效。');
   const log=await runFFmpeg(['-hide_banner','-nostats','-i',file,'-vn','-af',`loudnorm=I=-16:TP=-1.5:LRA=7,silencedetect=noise=-40dB:d=${maxPauseSeconds}`,'-f','null','-']);

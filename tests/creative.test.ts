@@ -300,7 +300,7 @@ test('news pause preparation removes only confirmed blank centers and retains qu
     const raw=path.join(directory,'raw.wav'),output=path.join(directory,'prepared.wav');
     await runFFmpeg(['-v','error','-y','-f','lavfi','-i','sine=frequency=220:duration=1:sample_rate=48000','-f','lavfi','-i','anullsrc=r=48000:cl=mono:d=1.5','-f','lavfi','-i','sine=frequency=660:duration=0.8:sample_rate=48000','-f','lavfi','-i','anullsrc=r=48000:cl=mono:d=0.4','-filter_complex','[0:a]asplit=2[l1][l2];[2:a]volume=0.03[q];[l1][1:a][q][3:a][l2]concat=n=5:v=0:a=1[out]','-map','[out]',raw]);
     const original=await readFile(raw),result=await tightenNewsSpeechSilence(raw,output,.9);
-    assert.equal(result.cuts.length,1);assert.ok(result.removedSeconds>.9&&result.removedSeconds<1.2);
+    assert.equal(result.cuts.length,1);assert.ok(result.removedSeconds>.6&&result.removedSeconds<.8,'remove the excess, preserving a natural pause below the unchanged limit');
     assert.ok(Math.abs(result.duration-(result.beforeSeconds-result.removedSeconds))<.03);
     assert.deepEqual(await readFile(raw),original);
     assert.equal((await inspectLessonSpeechGaps(output,.9)).length,0);

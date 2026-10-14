@@ -6,7 +6,7 @@ import type { ResearchResult } from './researchTypes';
 import { getAgent } from './core';
 import { createToolTrace, observeToolErrors } from './toolTrace';
 import { discoverHotTopics, newsWindowHours, normalizeEvidence, verifyNewsPages } from './hotSources';
-import { mergeResearch, researchGaps } from './narrativeResearch';
+import { createNewsSearchContext, mergeResearch, newsSearchInstructions, researchGaps } from './narrativeResearch';
 import { loadEditingSkill } from './skills';
 import type { PublicReader } from './publicResearch';
 import { runRequiredTool } from './requiredTool';
@@ -88,6 +88,7 @@ export async function researchHotTopics(config:ModelConfig,prompt:string,progres
   const trace=options.trace||createToolTrace(progress||(async()=>{}),[config.apiKey]);
   const skill=await loadEditingSkill('qingjian-hot-video');
   const policy=newsSearchPolicy(prompt),daily=requiresTodayEvent(policy.subject),requested=/(\d+)\s*个.{0,25}选题/.exec(prompt),maxTopics=Math.min(3,Math.max(1,Number(requested?.[1]||1)));
+  const searchContext=createNewsSearchContext(policy.subject,daily,requestedAt);
   const discovered=await trace.run('discover_hot_topics','读取实时热榜',{sources:['baidu','hackernews']},()=>discoverHotTopics(options.read));
   let selection:{signalIds:string[];queries:string[]}|undefined;
   const choose:AgentTool={name:'select_hot_topics',label:'选择热点与查证问题',description:'根据用户领域从真实榜单选择0–2个相关ID，提交1–2条具体新闻查证查询。没有相关榜单时按用户领域查新闻；不得编造榜单ID。',parameters:Type.Object({signalIds:Type.Array(Type.String(),{maxItems:2}),queries:Type.Array(Type.String({minLength:2,maxLength:240}),{minItems:1,maxItems:2})}),execute:async(_id,args)=>{
@@ -102,7 +103,7 @@ export async function researchHotTopics(config:ModelConfig,prompt:string,progres
     try{await runRequiredTool(agent,input,{name:tool.name,label:tool.label,done,config,secrets:[config.apiKey]});}finally{await drain();}
   }
   const selectionScope=policy.scope==='fixed-topic'?`用户明确指定了${policy.anchors.join('、')}：名称、版本和事件须锁定，不能换产品。遇到网页不可读应查同一事件的官方公告或其他可读媒体。`:'用户没有指定具体对象或事件、只指定领域时，选题由你决定。第一次自行选出的候选不是用户指定主题；日期过时、无法取得正文或交叉来源时，主动淘汰它，在用户原始领域内重选其他合格事件。用户明确指定的对象与事件仍须保留。不得因为你选的新闻失败就停止整个视频需求，也不能换到仅泛泛提及AI的无关新闻。';
-  const userDemand=`用户需求：${prompt.slice(0,3000)}\n原始制作指令日期为北京时间${beijingDate(requestedAt)}，今天按该日期核验。资料截止北京时间${beijingTimestamp(asOf)}（UTC ${asOf}）；新闻时效窗口${windowHours}小时。${selectionScope}用户要求今天发生时，至少一个核心事件必须确有北京时间今天发生或首次公开的正文依据；今天报道旧事件、下载统计旧日期或无日期页面不能替代，缺少合格候选时补查后保留缺口。只要求今天值得讲或最新热点时，可以选择明确标注日期的近期事件。未核实的发布或能力传闻应查证传闻本身和官方状态，保留不确定性，不能当成已发布事实。优先可直接读取正文的当事方公告和有日期的媒体报道；讨论页、登录页、只有摘要或需执行JavaScript的页面不能当来源。\n${NEWS_OBSERVATION_POLICY}\n真实榜单观察时间：${JSON.stringify(newsObservationContext(discovered.signals))}`;
+  const userDemand=`用户需求：${prompt.slice(0,3000)}\n原始制作指令日期为北京时间${beijingDate(requestedAt)}，今天按该日期核验。资料截止北京时间${beijingTimestamp(asOf)}（UTC ${asOf}）；新闻时效窗口${windowHours}小时。${selectionScope}用户要求今天发生时，至少一个核心事件必须确有北京时间今天发生或首次公开的正文依据；今天报道旧事件、下载统计旧日期或无日期页面不能替代，缺少合格候选时补查后保留缺口。只要求今天值得讲或最新热点时，可以选择明确标注日期的近期事件。未核实的发布或能力传闻应查证传闻本身和官方状态，保留不确定性，不能当成已发布事实。优先可直接读取正文的当事方公告和有日期的媒体报道；讨论页、登录页、只有摘要或需执行JavaScript的页面不能当来源。\n${newsSearchInstructions(searchContext)}\n${NEWS_OBSERVATION_POLICY}\n真实榜单观察时间：${JSON.stringify(newsObservationContext(discovered.signals))}`;
   await plan(choose,`${userDemand}\n实际榜单：${JSON.stringify(discovered.signals)}。选择后搜索原始公告和独立报道，不以宽泛年度综述代替新闻。`,()=>Boolean(selection));
   let raw:ResearchResult|undefined;
   const failures=[...discovered.failures],readReferences=new Map<string,ResearchReference>(),searched=new Set<string>(),attempts=new Map<string,number>(),unusable=new Set<string>(),readURLs=new Set<string>(),rejected:Array<{title:string;reason:string;recovery?:ReturnType<typeof independentReportRecovery>}>=[];
@@ -119,7 +120,7 @@ export async function researchHotTopics(config:ModelConfig,prompt:string,progres
       }},`${userDemand}\n前次未找到合格选题。${policy.scope==='user-domain'?(round===2?'最后一轮必须回到用户原始领域重新选择其他事件，不围绕已失败候选反复改标题。':'若原候选过时或缺少交叉正文，优先重选其他相关事件；只有已有合格事件的交叉报道缺口才继续定向补查。'):'保留用户指定的名称、版本和事件，改查可读的一手公告与其他媒体，不反复尝试访问检查页面。'}换查询、域名或检索传闻核验与官方状态。不要再次返回以下不可用页面：${JSON.stringify([...unusable])}。已搜索：${JSON.stringify([...searched])}；已读资料：${JSON.stringify(references.map(({excerpt,...r})=>r))}；淘汰候选：${JSON.stringify(rejected)}；实际缺口：${JSON.stringify(failures.slice(-12))}。`,()=>Boolean(selection));
     }
     const queries=selection!.queries;queries.forEach(q=>searched.add(q));
-    const searches=await Promise.allSettled(queries.map(query=>trace.run('search_news','检索新闻与一手来源',{query,windowHours,asOf,attempt:round+1},()=>(options.search||researchGaps)(config,query,[`北京时间当前日期${new Date().toLocaleDateString('sv-SE',{timeZone:'Asia/Shanghai'})}，近${windowHours}小时`,`同一事件至少两家发布者的新闻正文或官方公告；列出实际链接和日期`],'news'))));
+    const searches=await Promise.allSettled(queries.map(query=>trace.run('search_news','检索新闻与一手来源',{query,windowHours,asOf,attempt:round+1,context:searchContext},()=>(options.search||researchGaps)(config,query,[`原始请求北京时间日期${searchContext.calendarDate}；近${windowHours}小时仅是资料新鲜度，不代替事件日历日要求`,`同一事件至少两家发布者的新闻正文或官方公告；列出实际链接和日期`],'news',searchContext))));
     // Reserve source slots for each query so one cannot crowd out the other.
     let candidates:ResearchResult|undefined;
     const sourceGroups:ResearchReference[][]=[];
@@ -148,7 +149,8 @@ export async function researchHotTopics(config:ModelConfig,prompt:string,progres
         return {content:[{type:'text',text:JSON.stringify(result)}],details:result};
       }};
       const sources=references.map(({excerpt,...ref})=>({...ref,passages:newsPassages({...ref,excerpt})}));
-      await plan(tool,`${userDemand}\n当前UTC ${asOf}。不得声称新闻发生于抓取日期；只有publishedAt是原文发布日期，eventDate须依据正文。制作角度是建议，不能写成事实或保证爆款。最多提交${maxTopics}个选题，每题只提交1–4条核心事实，至少两家发布者。${daily?'必须选择含今天日期或“今日/今天/today宣布”的实际正文片段作为核心事件证据，不要把过时发布当今日事件。':''}每条事实最多1–3个正文片段，超出时精简事实，只保留核心信息。evidence只填写已读正文的passageId，程序补全来源与逐字引文；不要填写referenceId。榜单编号baidu/hn只放在signalIds，不能写入evidence；热度、排名和抓取时间不要作为facts。标题与钩子也应遵循正文证据。可以区分新报道与旧背景。只使用以下已读正文，不使用以前搜索摘要的编号或事实。\n实际已读来源（以下ref-ID与passage-ID为唯一映射）：${JSON.stringify(sources)}\n真实热度信号：${JSON.stringify(discovered.signals.filter(s=>selection!.signalIds.includes(s.id)))}`,()=>submitted);
+      const proposalContext={round:round+1,selection:structuredClone(selection),actualQueries:queries,rejectedTopics:rejected.map(({title,reason})=>({title,reason}))};
+      await plan(tool,`${userDemand}\n本轮提案上下文（各阶段使用新Agent，不依赖上一阶段的对话记忆）：${JSON.stringify(proposalContext)}。选题须结合本轮实际查询与选择；累计已读资料仍可作背景，但不能无视本轮查证结果、重新用相同不合格证据给已拒主题换标题。被拒的是证据缺口，不是永久禁止该对象；用户指定的对象须保留，同事件取得能解决上述具体缺口的新正文后可以重新提交，并指出补齐的证据。不得声称新闻发生于抓取日期；只有publishedAt是原文发布日期，eventDate须依据正文。制作角度是建议，不能写成事实或保证爆款。最多提交${maxTopics}个选题，每题只提交1–4条核心事实，至少两家发布者。${daily?'必须选择含当日事件日期或“今日/今天/today宣布”的实际正文片段作为核心事件证据；西半球日期按来源明确时区换算，不改写原文日期。':''}每条事实最多1–3个正文片段，超出时精简事实，只保留核心信息。evidence只填写已读正文的passageId，程序补全来源与逐字引文；不要填写referenceId。榜单编号baidu/hn只放在signalIds，不能写入evidence；热度、排名和抓取时间不要作为facts。标题与钩子也应遵循正文证据。可以区分新报道与旧背景。只使用以下已读正文，不使用以前搜索摘要的编号或事实。\n实际已读来源（以下ref-ID与passage-ID为唯一映射）：${JSON.stringify(sources)}\n真实热度信号：${JSON.stringify(discovered.signals.filter(s=>selection!.signalIds.includes(s.id)))}`,()=>submitted);
     }
     if(brief.topics.length)break;
     failures.push(`第${round+1}轮未找到合格选题；${policy.scope==='user-domain'?'淘汰不合格候选，在用户领域内重选并更换可读来源。':'保留用户指定主题，改查其他可读来源。'}`);

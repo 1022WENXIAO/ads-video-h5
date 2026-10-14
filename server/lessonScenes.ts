@@ -7,7 +7,8 @@ import { captionsFromTranscript } from './timeline';
 import { hashBytes, renderHtmlProject, drawingHtml, authorDrawing, validateDrawing, drawingDimensions, type HtmlDrawing } from './narrativeScenes';
 import { probeVideo, runFFmpeg } from './core';
 import { motionLibrary } from './motionComponents';
-import {visualRepairTargets,speechOnlyRepair} from './visualRecovery';
+import {visualRepairTargets,speechOnlyRepair,lessonVisualBrief} from './visualRecovery';
+import {assertVisibleContent} from './visibleContent';
 import {voiceComparisonTask} from './audioQuality';
 
 const escape=(s:string)=>s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]!));
@@ -143,7 +144,7 @@ for(const node of document.querySelectorAll('[data-math-width]')){
 ${motionLibrary}window.__timelines={};const tl=gsap.timeline({paused:true});tl.from('#accent',{scaleX:0,transformOrigin:'left',duration:.6,ease:'power2.out'},.1);tl.from('#title',{y:20,duration:.6,ease:'power3.out'},.05);${side?"tl.from('#graphic',{opacity:0,y:12,duration:.6,ease:'power2.out'},.45);":''}${enters}${curves}${formula}tl.to('#title',{opacity:0,duration:.2,ease:'sine.in'},${Math.max(.8,duration-.35).toFixed(3)});tl.from('#takeaway',{opacity:0,x:-12,duration:.5,ease:'power2.out'},${takeawayAt.toFixed(3)});${urgent?`tl.to('#accent',{opacity:.55,duration:.45,repeat:${Math.min(10,Math.floor(duration/1.1))},yoyo:true,ease:'sine.inOut'},1);`:''}window.__timelines.main=tl;</script></body></html>`;
 }
 
-export function lessonRendererHash(){return hashBytes([lessonSceneHtml,newsIllustration,curveSvg,formulaSvg,drawingHtml,authorDrawing,validateDrawing,drawingDimensions,barChartSvg,validateBarChart,chapterBarChart,inferBarData,barChartDetail,visualRepairTargets,speechOnlyRepair,correctLessonTranscript,lessonCaptionAnalysis,captionsFromTranscript,voiceComparisonTask].map(fn=>fn.toString()).join('\n'));}
+export function lessonRendererHash(){return hashBytes([lessonSceneHtml,newsIllustration,curveSvg,formulaSvg,drawingHtml,authorDrawing,validateDrawing,drawingDimensions,barChartSvg,validateBarChart,chapterBarChart,inferBarData,barChartDetail,visualRepairTargets,speechOnlyRepair,lessonVisualBrief,assertVisibleContent,correctLessonTranscript,lessonCaptionAnalysis,captionsFromTranscript,voiceComparisonTask].map(fn=>fn.toString()).join('\n'));}
 
 export async function produceLessonScene(chapter:LessonChapter,index:number,total:number,format:Format,speechFile:string,analysis:AudioAnalysis,project:string,pacing?:LessonPacing,presentation?:LessonPresentation,news=false,drawing?:HtmlDrawing,barChart?:LessonBarChart){
   const lead=pacing?.leadSeconds??.35,tail=pacing?.tailSeconds??.55,duration=+(analysis.duration+lead+tail).toFixed(3);

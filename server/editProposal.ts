@@ -1,5 +1,11 @@
-import type { EditPlan, MediaItem } from '../shared/types';
+import type { EditPlan, MediaItem, SelectedScene } from '../shared/types';
 import { timelineDuration } from './timeline';
+
+/** Explicit full-frame requests disable added zoom in both automatic and
+ * manually submitted arrangements. Ordinary framing defaults are unchanged. */
+export function editFrameZoom(proposed:number,prompt:string):number {
+  return /画面完整|完整画面|(?:不要|别|不|禁止|勿|无需)(?:再|进行)?裁(?:剪|切)?(?:(?:视频|原)?画面|镜头)?(?=[，。！？；;\s]|$)|\b(?:no|without)\s+crop(?:ping)?\b|\b(?:do not|don't)\s+crop\b|\bkeep\s+(?:the\s+)?(?:entire|full)\s+frame\b/i.test(prompt)?1:proposed;
+}
 
 export function editAudioNormalization(prompt: string): boolean {
   const disabled = /(?:不要|不做|禁止|关闭|禁用|取消|无需|不用|不进行|不应用)[^，,。！？；;\n]{0,12}(?:响度(?:归一化|处理|均衡|统一)?|音量(?:归一化|平衡|均衡|统一|处理|调整)?|动态(?:处理|压缩|均衡)|压缩(?:器|人声|音频)?(?!视频|画面|图片|图像|文件)|限幅)|(?:保留|保持)[^，,。！？；;\n]{0,8}(?:原始|原有|未经处理的)(?:响度|音量|动态)|(?:no|without|disable|do not|don't)\s+(?:audio\s+)?(?:normaliz\w*|loudness\s+(?:normaliz\w*|process\w*)|dynamic\s+(?:compress\w*|process\w*)|compress\w*)/i;
@@ -35,18 +41,22 @@ export function editProposalNarrativeFeedback(plan: EditPlan, media: MediaItem[]
 }
 
 /** Bounded arithmetic assistance; the model still owns meaning and ordering. */
-export function editSentenceBudgetHint(plan: EditPlan, prompt: string, media: MediaItem[], validate: (candidate: EditPlan) => EditPlan): string {
+export function editSentenceBudgetHint(plan: EditPlan, prompt: string, media: MediaItem[], validate: (candidate: EditPlan) => EditPlan, verifiedGroups?:SelectedScene[]): string {
   const requested = /(?:约|大约|控制在|改成|改为|剪成|时长)?\s*(\d+(?:\.\d+)?)\s*(?:秒|seconds?|sec)/i.exec(prompt), target = Number(requested?.[1]);
   if (!plan.fineCut || !target || target > 60) return '';
   const sourceIds = new Set(plan.clips.map(clip => clip.sourceId));
-  const pool = media.filter(source => sourceIds.has(source.id) && source.analysis?.status === 'ready').flatMap(source => source.analysis!.sentences.filter(sentence => sentence.complete).map(sentence => ({ source, sentence }))).slice(0, 18);
+  const pool = (verifiedGroups?verifiedGroups.flatMap(group=>{
+    const source=media.find(item=>item.id===group.sourceId),sentences=group.sentenceIds.map(id=>source?.analysis?.sentences.find(sentence=>sentence.id===id));
+    if(!sourceIds.has(group.sourceId)||source?.analysis?.status!=='ready'||source.analysis.sourceHash!==group.sourceHash||!sentences.length||sentences.some(sentence=>!sentence?.complete)||group.start!==sentences[0]!.start||group.end!==sentences.at(-1)!.end||group.quote!==sentences.map(sentence=>sentence!.text).join(''))return [];
+    return [{source,start:group.start,end:group.end,sentenceIds:group.sentenceIds}];
+  }):media.filter(source => sourceIds.has(source.id) && source.analysis?.status === 'ready').flatMap(source => source.analysis!.sentences.filter(sentence => sentence.complete).map(sentence => ({ source, start:sentence.start,end:sentence.end,sentenceIds:[sentence.id] })))).slice(0, 18);
   if (!pool.length || sourceIds.size > 5) return '';
   const options: Array<{ plan: EditPlan; distance: number }> = []; let visited = 0, checked = 0;
   function search(from: number, selected: typeof pool, seconds: number) {
     if (++visited > 5000 || checked >= 240) return;
     if (selected.length >= sourceIds.size && seconds >= target - 3 && seconds <= target + 1 && new Set(selected.map(row => row.source.id)).size === sourceIds.size) {
       checked++;
-      const candidate: EditPlan = { format: plan.format, summary: '仅用于实际完整句时长预算核算，语义由模型选定', targetSeconds: 0, fineCut: true, audio: plan.audio, clips: selected.map(({ source, sentence }, index) => ({ sourceId: source.id, start: sentence.start, end: sentence.end, sentenceIds: [sentence.id], purpose: index === 0 ? 'hook' : index === selected.length - 1 ? 'conclusion' : 'argument', transition: { kind: 'cut', duration: 0 } })) };
+      const candidate: EditPlan = { format: plan.format, summary: '仅用于实际完整句时长预算核算，语义由模型选定', targetSeconds: 0, fineCut: true, audio: plan.audio, clips: selected.map(({ source,start,end,sentenceIds }, index) => ({ sourceId: source.id, start, end, sentenceIds, purpose: index === 0 ? 'hook' : index === selected.length - 1 ? 'conclusion' : 'argument', transition: { kind: 'cut', duration: 0 } })) };
       if (!editProposalNarrativeFeedback(candidate, media).length) try {
         const actual = validate(candidate), distance = Math.abs(actual.targetSeconds - target);
         // Leave encoding/padding margin; prefer the center of the allowed band.
@@ -54,7 +64,7 @@ export function editSentenceBudgetHint(plan: EditPlan, prompt: string, media: Me
       } catch { /* Never suggest an unvalidated selection. */ }
     }
     if (selected.length >= 5 || seconds > target + 1) return;
-    for (let index = from; index < pool.length; index++) search(index + 1, [...selected, pool[index]], seconds + pool[index].sentence.end - pool[index].sentence.start);
+    for (let index = from; index < pool.length; index++) search(index + 1, [...selected, pool[index]], seconds + pool[index].end - pool[index].start);
   }
   search(0, [], 0);
   options.sort((a, b) => a.distance - b.distance || a.plan.clips.length - b.plan.clips.length);

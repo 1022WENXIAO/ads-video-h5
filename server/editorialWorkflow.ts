@@ -10,6 +10,7 @@ import { loadEditingSkill } from './skills';
 import { driveWorkflow, transientWorkflowError } from './workflowDriver';
 import { createToolTrace } from './toolTrace';
 import { throwIfJobCancelled } from './jobExecution';
+import { editFrameZoom, editSentenceBudgetHint } from './editProposal';
 
 type SceneSelection = {sourceId: string; sentenceIds: string[]; reason: string; purpose: SelectedScene['purpose']};
 // Retakes may sit between useful sentences. Each retained run is a separate
@@ -79,6 +80,11 @@ export async function runEditorialWorkflow(o: WorkflowOptions) {
   let best: {plan:EditPlan;rendered:NonNullable<typeof rendered>;review:RenderReview}|undefined;
   const events: WorkflowEvent[]=[];
   let decision:string|undefined;let feedback='';
+  let manualArrange=false,arrangeCandidate:EditPlan|undefined;
+  const sceneKey=(scene:SelectedScene)=>JSON.stringify([scene.sourceId,scene.sourceHash,scene.start,scene.end,scene.sentenceIds,scene.quote]);
+  const selectionKey=(selected:SelectedScene[])=>JSON.stringify(selected.map(sceneKey));
+  const verifiedScenes=new Set<string>(),visuals=new Map<string,NonNullable<SelectedScene['visual']>>(),rejectedSelections=new Map<string,string>();
+  for(const scene of scenes){verifiedScenes.add(sceneKey(scene));if(scene.visual)visuals.set(sceneKey(scene),structuredClone(scene.visual));}
   const trace=createToolTrace(o.progress,[o.config.apiKey],events);
   const invalidate=()=>{ plan=undefined;rendered=undefined;review=undefined; };
   const result=(value: unknown)=>({content:[{type:'text' as const,text:JSON.stringify(value)}],details:{}});
@@ -89,6 +95,11 @@ export async function runEditorialWorkflow(o: WorkflowOptions) {
       try {const value=await execute(args);feedback='';if(decision===name)decision=undefined;return result(value);}
       catch(e){feedback=e instanceof Error?e.message:'工具失败';failures++;
         if(name==='arrange_timeline'&&/绘制动效/.test(feedback))decision='write_narrative';
+        else if(name==='arrange_timeline'&&!preserve&&/剪辑方案时长[\d.]+秒不符合用户要求|口播精剪只能选择已分析的完整句子|口播精剪剪点应位于完整句子外缘|口播精剪片段包含未选中的半句|剪辑方案句子ID无效/.test(feedback)){
+          const hint=arrangeCandidate?editSentenceBudgetHint(arrangeCandidate,o.prompt,o.sources,candidate=>applyTimelineRequest(validatePlan(candidate,o.sources),o.prompt+' 同步字幕',o.sources),scenes):'';
+          feedback+=' 保留已完成的素材转写、完整性核验及同一原句的画面分析；重新选择完整原句组，不能截断原话或修改目标时长。'+(hint?'\n'+hint:'');
+          rejectedSelections.set(selectionKey(scenes),feedback);decision='select_scenes';invalidate();
+        }else if(name==='arrange_timeline'&&/叠化附近没有足够的原声间隙|转场类型或时长无效/.test(feedback))manualArrange=true;
         throw e;
       }
     },id)});
@@ -107,26 +118,32 @@ export async function runEditorialWorkflow(o: WorkflowOptions) {
     return items.map((m)=>{const all=m.analysis!.sentences.filter((s)=>!keywords.length||keywords.some((q)=>s.text.toLowerCase().includes(q)));const offset=Math.max(0,a.offset||0);return{sourceId:m.id,total:all.length,nextOffset:offset+30<all.length?offset+30:null,columns:['sentenceId','start','end','originalQuote','complete'],sentences:all.slice(offset,offset+30).map((s)=>[s.id,s.start,s.end,s.text,s.complete])};});
   });
   add('select_scenes','选择分镜','用真实sourceId及连续完整sentenceIds选择原句，给出选择理由与叙事作用；程序保留原话和源时间码，不接收模型改写的原话。',Type.Object({scenes:Type.Array(Type.Object({sourceId:Type.String(),sentenceIds:Type.Array(Type.String()),reason:Type.String(),purpose:Type.Union(['hook','argument','conclusion','context','comparison'].map((v)=>Type.Literal(v)))}))}),async(a)=>{
-    if(!analyzed)throw new Error('先完成全部素材转写。');const selected=selectScenes(splitSceneSelections(a.scenes,o.sources),o.sources);await o.verifySelection?.(selected);scenes=selected;script=undefined;invalidate();return scenes;
+    if(!analyzed)throw new Error('先完成全部素材转写。');const selected=selectScenes(splitSceneSelections(a.scenes,o.sources),o.sources),rejected=rejectedSelections.get(selectionKey(selected));
+    if(rejected)throw new Error('该完整选句组合已经编排失败，仅改理由或重复提交不能修复；请按具体时长缺口调整完整句组。'+rejected);
+    const unchecked=selected.filter(scene=>!verifiedScenes.has(sceneKey(scene)));if(unchecked.length)await o.verifySelection?.(unchecked);
+    for(const scene of selected){verifiedScenes.add(sceneKey(scene));const visual=visuals.get(sceneKey(scene));if(visual)scene.visual=structuredClone(visual);}
+    scenes=selected;script=undefined;manualArrange=false;invalidate();return scenes;
   });
   add('inspect_scenes','分析画面','抽取每段已选分镜的实际画面，识别构图、遮挡风险和可用动效区域。',Type.Object({}),async()=>{
-    if(!scenes.length)throw new Error('先选择完整分镜。');for(const scene of scenes)scene.visual=await o.inspect(scene);return scenes.map(({id,visual})=>({id,visual}));
+    if(!scenes.length)throw new Error('先选择完整分镜。');for(const scene of scenes)if(!scene.visual){scene.visual=visuals.get(sceneKey(scene))||await o.inspect(scene);visuals.set(sceneKey(scene),structuredClone(scene.visual));}return scenes.map(({id,visual})=>({id,visual}));
   });
   const beat=Type.Object({sceneId:Type.String(),intent:Type.String(),graphic:Type.Union(['none','underline','circle','arrow','steps'].map((v)=>Type.Literal(v))),label:Type.String({maxLength:20})});
   add('write_narrative','生成叙事脚本','分析完成后提炼一个主题、受众、叙事与风格。beats决定原句排列和绘制动效用途；不改写原声，不编造数值和论据。',Type.Object({premise:Type.String(),audience:Type.String(),arc:Type.String(),style:Type.String(),beats:Type.Array(beat)}),async(a)=>{
     if(!scenes.length||scenes.some((s)=>!s.visual))throw new Error('先完成选句和实际画面分析。');script=validateScript(a,scenes);invalidate();return {script,scenes};
   });
   add('arrange_timeline','编排时间线','按叙事脚本生成可执行时间线、原声字幕和绘制动效。修改脚本必须重新编排，旧渲染失效。',Type.Object({format:Type.Union(['9:16','16:9','1:1'].map((v)=>Type.Literal(v))),zoom:Type.Number(),fade:Type.Number()}),async(a)=>{
+    arrangeCandidate=undefined;
     if(!script)throw new Error('先生成叙事脚本。');
     const ordered=script.beats.map((b)=>scenes.find((s)=>s.id===b.sceneId)!);
-    const base:EditPlan={format:a.format,summary:script.premise,targetSeconds:0,fineCut:true,clips:ordered.map((s,i)=>({sceneId:s.id,sourceId:s.sourceId,start:s.start,end:s.end,sentenceIds:s.sentenceIds,purpose:s.purpose,zoom:a.zoom,transition:i&&a.fade?{kind:'fade',duration:a.fade}:{kind:'cut',duration:0}})),audio:{originalVolume:1,bgmVolume:.12,narrationVolume:1,normalize:true}};
+    const base:EditPlan={format:a.format,summary:script.premise,targetSeconds:0,fineCut:true,clips:ordered.map((s,i)=>({sceneId:s.id,sourceId:s.sourceId,start:s.start,end:s.end,sentenceIds:s.sentenceIds,purpose:s.purpose,zoom:editFrameZoom(a.zoom,o.prompt),transition:i&&a.fade?{kind:'fade',duration:a.fade}:{kind:'cut',duration:0}})),audio:{originalVolume:1,bgmVolume:.12,narrationVolume:1,normalize:true}};
+    arrangeCandidate=base;
     const candidate=applyTimelineRequest(validatePlan(base,o.sources),o.prompt+' 同步字幕',o.sources);
     const offsets=timelineOffsets(candidate);
     candidate.motions=script.beats.flatMap((b,i)=>b.graphic==='none'?[]:[{sceneId:b.sceneId,kind:b.graphic,label:b.label,zone:ordered[i].visual!.safeZone,start:+(offsets[i]+.15).toFixed(3),end:+(offsets[i]+candidate.clips[i].end-candidate.clips[i].start-.1).toFixed(3)}]);
     if (/至少(?:两|2)种/.test(o.prompt) && new Set(candidate.motions.map((m)=>m.kind)).size<2) throw new Error('绘制动效需至少两种，且各自有信息用途，请修改叙事脚本。');
     candidate.editorial={scenes:structuredClone(scenes),script:structuredClone(script)};
     candidate.version=++version;
-    plan=validatePlan(o.decorate?o.decorate(candidate):candidate,o.media||o.sources);rendered=undefined;review=undefined;await o.persist(plan);return {version:plan.version,duration:plan.targetSeconds,clipCount:plan.clips.length,captionCount:plan.captions?.length||0,motions:plan.motions,planHash:planHash(plan),nextTool:o.export?'render_edit':'complete'};
+    plan=validatePlan(o.decorate?o.decorate(candidate):candidate,o.media||o.sources);manualArrange=false;rendered=undefined;review=undefined;await o.persist(plan);return {version:plan.version,duration:plan.targetSeconds,clipCount:plan.clips.length,captionCount:plan.captions?.length||0,motions:plan.motions,planHash:planHash(plan),nextTool:o.export?'render_edit':'complete'};
   });
   add('render_edit','程序化渲染','渲染最新编排时间线，实际合成原声、字幕及GSAP绘制动画；最多渲染两次。',Type.Object({}),async()=>{
     if(!o.export)throw new Error('用户尚未要求导出。');if(!plan)throw new Error('先编排时间线。');if(renderCount>=2)throw new Error('已达到一次返修上限。');const output=await o.render(plan);renderCount++;rendered={...output,hash:planHash(plan)};review=undefined;return {artifactId:output.id,planHash:rendered.hash,duration:plan.targetSeconds};
@@ -146,12 +163,12 @@ export async function runEditorialWorkflow(o: WorkflowOptions) {
   const context=()=>({feedback,userRequest:o.prompt,sourceCatalog:o.sources.map(m=>({sourceId:m.id,name:m.name,duration:m.duration,sentences:m.analysis?.sentences.slice(0,30).map(s=>({id:s.id,start:s.start,end:s.end,text:s.text,complete:s.complete}))})),scenes,script,review,priorParameters:{format:o.previous?.format,zoom:o.previous?.clips[0]?.zoom,fade:o.previous?.clips.find(c=>c.transition?.kind==='fade')?.transition?.duration}});
   async function advance(){
     const results:unknown[]=[];let retries=0;
-    for(let step=0;!complete()&&automatic.has(nextTool());step++){
+    for(let step=0;!complete()&&automatic.has(nextTool())&&!(nextTool()==='arrange_timeline'&&manualArrange);step++){
       throwIfJobCancelled();if(step>=16)throw new Error('精剪自动步骤未推进。');
       const name=nextTool(),tool=tools.find(t=>t.name===name)!;
-      const args=name==='arrange_timeline'?{format:/(?:横屏|竖屏|方形|9[:：]16|16[:：]9|1[:：]1)/.test(o.prompt)?(/横屏|16[:：]9/.test(o.prompt)?'16:9':/方形|1[:：]1/.test(o.prompt)?'1:1':'9:16'):o.previous?.format||'9:16',zoom:o.previous?.clips[0]?.zoom||1.045,fade:o.previous?.clips.find(c=>c.transition?.kind==='fade')?.transition?.duration||0}:{};
+      const args=name==='arrange_timeline'?{format:/(?:横屏|竖屏|方形|9[:：]16|16[:：]9|1[:：]1)/.test(o.prompt)?(/横屏|16[:：]9/.test(o.prompt)?'16:9':/方形|1[:：]1/.test(o.prompt)?'1:1':'9:16'):o.previous?.format||'9:16',zoom:editFrameZoom(o.previous?.clips[0]?.zoom||1.045,o.prompt),fade:o.previous?.clips.find(c=>c.transition?.kind==='fade')?.transition?.duration||0}:{};
       try{results.push({tool:name,result:await tool.execute('server-'+randomUUID(),args)});retries=0;}
-      catch(error){throwIfJobCancelled();if(nextTool()!==name)break;if(transientWorkflowError(feedback)&&retries++<2)continue;throw error;}
+      catch(error){throwIfJobCancelled();if(nextTool()!==name||manualArrange&&name==='arrange_timeline')break;if(transientWorkflowError(feedback)&&retries++<2)continue;throw error;}
     }
     return results;
   }

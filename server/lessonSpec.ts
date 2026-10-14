@@ -1,6 +1,7 @@
 import {validateBarChart} from './barChart';
 import type { AudioAnalysis, Format, LessonChapter, LessonPacing, LessonReport, LessonVisual } from '../src/types';
 import { intentText, wantsCurrentResearch } from './intents';
+import { assertVisibleContent } from './visibleContent';
 
 function durationNumber(value:string):number {
   if(value==='半')return .5;
@@ -75,6 +76,7 @@ export function validateLessonVisual(v:LessonVisual,narration:string):LessonVisu
   string(v.takeaway,64,'图解结论');
   if(!Array.isArray(v.items)||v.items.length<2||v.items.length>4)throw new Error('每章图解需要2–4个信息点。');
   const displayed=[v.takeaway,...v.items.flatMap(item=>[item.label,item.detail])];
+  assertVisibleContent(displayed);
   if(displayed.some(text=>/^(?:绘制|画出|渲染)|无商标|无数字|分层高亮|按审查|按(?:制作|渲染)要求|(?:杯身|画面)沿.{0,8}剖开|调整动画时序|字幕完整写[作成]|制作备注|按反馈(?:修改|修正)|用(?:SVG|HTML|GSAP)/i.test(text)))throw new Error('图解中出现制作指令；label、detail、takeaway须是观众可读的知识内容。制作意图放reason，图形类型用illustration；不要把绘制要求直接显示在成片。');
   for(const item of v.items){string(item.label,24,'图解标签');string(item.detail,64,'图解说明');string(item.cue,28,'动画触发原词');if(!narration.includes(item.cue))throw new Error(`动画原词「${item.cue}」不在本章旁白中。`);}
   if(v.kind==='bar-chart'&&!v.barChart)throw new Error('柱状图缺少类别、数值、单位和坐标数据。');
@@ -100,6 +102,7 @@ export function validateLesson(report:LessonReport,prompt:string,plannedPacing?:
     if(new Set(report.references.map(r=>new URL(r.url).hostname.replace(/^www\./,''))).size<2)throw new Error('热点脚本须采用至少两家来源，不能只保留一条报道。');
   }
   string(report.title,36,'教学标题');string(report.audience,160,'受众');string(report.arc,500,'教学递进');
+  assertVisibleContent([report.title]);
   const settings=lessonSettings(prompt);
   const pacing=plannedPacing?validateLessonPacing(plannedPacing):lessonPacing(prompt);report={...report,pacing};
   if(report.requestedSeconds!==settings.requestedSeconds||report.format!==settings.format)throw new Error('脚本不能修改用户目标时长或画幅。');
@@ -126,6 +129,7 @@ export function validateLesson(report:LessonReport,prompt:string,plannedPacing?:
     try{
     if(!/^[a-zA-Z][\w-]{0,63}$/.test(c.id)||!['hook','foundation','development','application','recap'].includes(c.role))throw new Error('教学章节ID或角色无效。');
     string(c.title,24,'章节标题');string(c.goal,240,'教学目标');string(c.reason,240,'编排理由');string(c.narration,220,'旁白');
+    assertVisibleContent([c.title]);
     assertClearModelDates(c.narration);
     if(!Array.isArray(c.prerequisites)||c.prerequisites.some(id=>!seen.has(id))||(i>0&&c.prerequisites.length===0))throw new Error(`章节${c.id}须引用前面已引入的知识，不能前置引用或断开递进。`);
     if(!Array.isArray(c.referenceIds)||c.referenceIds.some(id=>!refs.has(id)))throw new Error(`章节${c.id}的引用不在真实研究中。`);
