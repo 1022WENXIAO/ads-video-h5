@@ -6,6 +6,7 @@ import path from 'node:path';
 import { createReleaseEvaluations } from '../server/releaseEvaluations';
 import type { Evaluations } from '../server/evaluations';
 import type { ModelConfig } from '../server/modelRegistry';
+import { waitForBackground } from './backgroundWait';
 
 test('stopping a queued release while reservation awaits cannot start paid generation after the reservation resolves', async t => {
   const dataDir = await mkdtemp(path.join(tmpdir(), 'qingjian-release-stop-reserve-'));
@@ -31,7 +32,7 @@ test('stopping a queued release while reservation awaits cannot start paid gener
   });
   await manager.init(); t.after(() => manager.dispose());
   const queued = (await manager.enqueueCurrentRevision())!;
-  await entered;
+  await waitForBackground(entered);
   assert.equal((await manager.stop(queued.id)).status, 'cancelled');
   grant(true);
   const deadline = Date.now() + 1000;

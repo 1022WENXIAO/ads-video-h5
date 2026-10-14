@@ -9,6 +9,7 @@ import { normalizeGeneratedReleaseCases } from '../server/releaseEvaluationGener
 import type { Evaluations } from '../server/evaluations';
 import type { ModelConfig } from '../server/modelRegistry';
 import { evaluationCaseHash, evaluationSummary } from '../server/evaluationScoring';
+import { waitForBackground } from './backgroundWait';
 
 const revision = 'a'.repeat(40), implementation = { revision, implementationHash: 'implementation', skillHash: 'skill' };
 const fixture = (id: string): EvaluationFixture => ({ id, name: `${id}.mp4`, bytes: 123, duration: 20, hasAudio: true, sha256: id.repeat(64).slice(0,64), createdAt: '' });
@@ -128,7 +129,7 @@ test('automatic generation waits for a manual evaluation and holds the shared re
   const {manager,fake,generations} = await setup(t,{generate:async () => {entered();await pending;return normalizeGeneratedReleaseCases(rows(),3,fixtures);}});
   fake.setBusy(true); const release = (await manager.enqueueCurrentRevision())!; await delay(30);
   assert.equal(manager.get(release.id).status,'queued'); assert.equal(fake.starts,0); assert.equal(generations(),0);
-  fake.setBusy(false); await started; assert.equal(fake.reserved,release.id); assert.equal(await fake.reserve('manual'),false);
+  fake.setBusy(false); await waitForBackground(started); assert.equal(fake.reserved,release.id); assert.equal(await fake.reserve('manual'),false);
   releaseGeneration(); assert.equal((await terminal(manager,release.id)).status,'passed');
 });
 test('restart during generation is blocked without replaying paid calls', async t => {
