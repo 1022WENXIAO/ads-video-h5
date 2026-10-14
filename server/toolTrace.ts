@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import type { Agent, AgentTool } from '@earendil-works/pi-agent-core';
 import type { WorkflowEvent } from '../src/types';
+import { isTransientExecutionError } from './executionErrors';
 
 // Persist executable decisions and tool I/O, never hidden model reasoning,
 // credentials or media payloads. Bounds also protect state polling responses.
@@ -26,7 +27,7 @@ export function executionDiagnostics(events:WorkflowEvent[]) {
   const failures=completed.flatMap((event,index)=>{
     if(event.status!=='failed')return [];
     const detail=event.detail||'工具失败';
-    const kind=/HTTP (?:429|5\d\d)|超时|timeout|fetch failed|网络/i.test(detail)?'provider-unavailable':/参数|校验|格式|主题必须|无效|预算|须为|最多|不能为空/.test(detail)?'validation':/原片|素材|source/.test(detail)?'missing-source':/审查|错读|事实|不一致|证据/.test(detail)?'quality-gate':/取消|中断/.test(detail)?'interrupted':'tool-failure';
+    const kind=isTransientExecutionError(detail)?'provider-unavailable':/参数|校验|格式|主题必须|无效|预算|须为|最多|不能为空/.test(detail)?'validation':/原片|素材|source/.test(detail)?'missing-source':/审查|错读|事实|不一致|证据/.test(detail)?'quality-gate':/取消|中断/.test(detail)?'interrupted':'tool-failure';
     const recovered=completed.slice(index+1).find(e=>e.status==='succeeded'&&(e.tool===event.tool||event.tool==='write_lesson_script'&&e.tool==='revise_lesson_script'));
     return [{callId:event.callId,tool:event.tool,kind,detail,recovery:recovered?{callId:recovered.callId,tool:recovered.tool,status:'recovered' as const}:{status:'unresolved' as const}}];
   });

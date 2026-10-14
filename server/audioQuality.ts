@@ -1,4 +1,4 @@
-import { jobDelay } from './jobExecution';
+import { jobDelay, throwIfJobCancelled } from './jobExecution';
 import { readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import type { EditPlan, RenderReview, MediaItem } from '../src/types';
@@ -7,6 +7,7 @@ import { timelineOffsets } from './timeline';
 import type { ModelConfig } from './modelRegistry';
 import { reviewAudio } from './reviewAudio';
 import { requestReviewJson, type ReviewAssetPublisher, type ReviewObserver } from './reviewAssets';
+import { blocksModelOutputRecovery } from './executionErrors';
 
 // Editorial limits for speech videos, not a broadcast delivery specification.
 export const SOUND_LIMITS={targetLufs:-16,truePeakDb:-1.5,segmentSpreadLu:2.5,adjacentJumpLu:2,withinSpreadLu:8};
@@ -112,8 +113,9 @@ export async function inspectVoice(file:string,plan:EditPlan,referenceFile:strin
 
   return validateVoiceAssessment(JSON.parse(result.choices?.[0]?.message?.content||''),plan.clips.map((c,i)=>c.sceneId||`clip-${i+1}`));
     }catch(error){
+      throwIfJobCancelled();
       priorError=error instanceof Error?error.message:'声音审听未完成';
-      if(attempt||/^HTTP 4(?!08|29)/.test(priorError))throw error;
+      if(attempt||blocksModelOutputRecovery(error))throw error;
       await jobDelay(600);
     }
   }

@@ -5,9 +5,10 @@ import type { ModelConfig } from './modelRegistry';
 import { textThinking } from './core';
 import { jobFetch, throwIfJobCancelled } from './jobExecution';
 import { traceValue } from './toolTrace';
+import { canRetryWorkflowError } from './executionErrors';
 
 export function transientWorkflowError(detail:string):boolean {
-  return !/\b(?:401|403)\b/.test(detail)&&/\b(?:429|5\d\d)\b|timeout|timed out|temporarily unavailable|fetch failed|network|限流|服务繁忙|超时|网络/i.test(detail);
+  return canRetryWorkflowError(detail);
 }
 
 // Change the response method after repeated empty/refusal tool turns. The

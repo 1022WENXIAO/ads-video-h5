@@ -263,7 +263,14 @@ export async function runNarrativeWorkflow(o:Options) {
       const name=nextTool(),tool=tools.find(t=>t.name===name)!;
       const args=name==='research_gaps'?{topic:o.prompt,gaps:['核实原素材主题、图解与可补充的事实，不编造新增原话。']}:name==='prepare_voice'?{beatId:report!.beats.find(b=>b.evidence&&b.evidence.end-b.evidence.start>=3)?.id||''}:{};
       try{results.push({tool:name,result:await tool.execute('server-'+randomUUID(),args)});retries=0;}
-      catch(error){throwIfJobCancelled();if(nextTool()!==name)break;if(transientWorkflowError(feedback)&&retries++<2)continue;throw error;}
+      catch(error){
+        throwIfJobCancelled();if(nextTool()!==name)break;
+        // This stage may submit paid reference-voice synthesis before any file
+        // is available to cache. An ambiguous connection loss must not submit
+        // it again; a later owner retry resumes verified files/checkpoints.
+        if(name!=='produce_scenes'&&transientWorkflowError(feedback)&&retries++<2)continue;
+        throw error;
+      }
     }
     return results;
   }

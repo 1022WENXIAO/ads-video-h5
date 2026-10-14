@@ -2,6 +2,7 @@ import { jobDelay, throwIfJobCancelled } from './jobExecution';
 import type { ModelConfig } from './modelRegistry';
 import { validateSemanticReview } from './reviewResults';
 import { requestReviewJson, type ReviewObserver } from './reviewAssets';
+import { blocksModelOutputRecovery } from './executionErrors';
 
 export async function requestSemanticReview(config:ModelConfig,messages:unknown[],observe?:ReviewObserver) {
   for(let attempt=0;attempt<2;attempt++) {
@@ -10,7 +11,7 @@ export async function requestSemanticReview(config:ModelConfig,messages:unknown[
       return validateSemanticReview(JSON.parse(body.choices?.[0]?.message?.content||''));
     } catch(error) {
       throwIfJobCancelled();
-      if(attempt||error instanceof Error&&/^HTTP 4(?!08|29)/.test(error.message))throw error;
+      if(attempt||blocksModelOutputRecovery(error))throw error;
       await jobDelay(600);
     }
   }

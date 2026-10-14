@@ -12,6 +12,8 @@ import { answerWithPi,answerForSessionWithPi } from '../server/core';
 import { sessionSources } from '../server/sourceSelection';
 import { ARK_BASE_URL,TEXT_MODEL_PRESETS } from '../shared/textModels';
 import type { LessonChapter,MediaItem,WorkflowEvent } from '../src/types';
+import { getJobTransportDiagnostics, runWithJobSignal } from '../server/jobExecution';
+import type { TransportDiagnostic } from '../server/providerTransport';
 
 const config=(i=0)=>({...TEXT_MODEL_PRESETS[i],kind:'text' as const,provider:'ark',baseUrl:ARK_BASE_URL,enabled:true,apiKey:'test-private-credential'});
 let call=0;
@@ -72,18 +74,22 @@ for(let index=0;index<3;index++) {
     finally{globalThis.fetch=original;}
   });
   test(`${TEXT_MODEL_PRESETS[index].modelId}: reply provider errors are recorded and a transient failure is retried`,async()=>{
-    const original=globalThis.fetch;let requests=0;const events:WorkflowEvent[]=[];
+    const original=globalThis.fetch;let requests=0;const events:WorkflowEvent[]=[];let transport:TransportDiagnostic[]=[];
     globalThis.fetch=async()=>{
       requests++;
       if(requests===1)return new Response(JSON.stringify({error:{message:'HTTP 503 temporarily unavailable test-private-credential',type:'server_error'}}),{status:503,headers:{'Content-Type':'application/json'}});
       return reply('reply',{sections:[],summary:'没有素材也可以创作，请告诉我主题。'},config(index).modelId);
     };
     try{
-      const text=await answerForSessionWithPi({prompt:'没有素材可以制作吗？只解释。',config:config(index),media:[],history:[],plan:null,attached:[],progress:async updates=>{events.splice(0,events.length,...structuredClone(updates));}});
+      const text=await runWithJobSignal(new AbortController().signal,async()=>{
+        const result=await answerForSessionWithPi({prompt:'没有素材可以制作吗？只解释。',config:config(index),media:[],history:[],plan:null,attached:[],progress:async updates=>{events.splice(0,events.length,...structuredClone(updates));}});
+        transport=getJobTransportDiagnostics();return result;
+      });
       assert.equal(text,'没有素材也可以创作，请告诉我主题。');assert.equal(requests,2);
-      assert.ok(events.some(e=>e.tool==='answer_user'&&e.status==='failed'&&/503/.test(e.detail||'')));
-      assert.ok(events.some(e=>e.tool==='answer_user'&&e.status==='succeeded'));assert.equal(executionDiagnostics(events).recoveredFailures,1);
-      assert.doesNotMatch(JSON.stringify(events),/test-private-credential/);
+      assert.equal(events.filter(e=>e.tool==='answer_user').length,1,'network recovery must not rerun the executable reply tool');
+      assert.ok(events.some(e=>e.tool==='answer_user'&&e.status==='succeeded'));
+      assert.equal(transport.length,1);assert.equal(transport[0].outcome,'recovered');assert.equal(transport[0].attempts,2);assert.equal(transport[0].failure.status,503);
+      assert.doesNotMatch(JSON.stringify({events,transport}),/test-private-credential/);
     }finally{globalThis.fetch=original;}
   });
 }
@@ -221,7 +227,7 @@ for(let index=0;index<3;index++)test(`${TEXT_MODEL_PRESETS[index].modelId}: real
   const fingerprint=createHash('sha256').update(JSON.stringify({version:1,owner,prompt,export:false})).digest('hex');
   await writeFile(path.join(work,'checkpoint.json'),JSON.stringify({fingerprint,phase:'script',research:{summary:'受控研究夹具，非真实联网验收',queries:[],references},researchRounds:2}));
   const chapters:LessonChapter[]=Array.from({length:3},(_,i)=>({id:'c'+i,role:i===0?'hook':i===1?'foundation':'recap',title:'误差评分'+i,goal:'理解误差与评分',prerequisites:i?['c'+(i-1)]:[],narration:'误差变大损失越高。'.repeat(7),reason:'先例子再归纳',referenceIds:['r1'],claims:[{text:'误差影响评分',referenceIds:['r1']}],visual:{kind:'concept',takeaway:'误差影响评分',items:[{label:'误差',detail:'预测与实际的差',cue:'误差变大'},{label:'评分',detail:'为偏差计分',cue:'损失越高'}]}}));
-  const original=globalThis.fetch;let writes=0,reviews=0;const requests:string[]=[],events:WorkflowEvent[]=[];
+  const original=globalThis.fetch;let writes=0,reviews=0;const requests:string[]=[],events:WorkflowEvent[]=[];let transport:TransportDiagnostic[]=[];
   globalThis.fetch=async(_url,init)=>{
     const body=JSON.parse(String(init?.body));assert.equal(body.thinking.type,index===2?'enabled':'disabled');
     if(!body.stream){reviews++;if(reviews===1)return new Response('{}',{status:503});return new Response(JSON.stringify({choices:[{message:{content:JSON.stringify(reviews===2?{score:75,needsRepair:true,findings:['c1：示例表述有实际错误，请修正旁白。']}:{score:92,needsRepair:false,findings:[]})}}]}));}
@@ -236,13 +242,18 @@ for(let index=0;index<3;index++)test(`${TEXT_MODEL_PRESETS[index].modelId}: real
     assert.equal(name,'review_lesson_script');return reply(name,{},config(index).modelId);
   };
   try{
-    const result=await runLessonWorkflow({prompt,config:config(index),audioConfig:null,dataDir:directory,mediaDir:directory,ownerId:owner,checkpointKey:checkpoint,media:[],export:false,analyze:async()=>{throw new Error('script-only must not analyze audio');},register:async()=>{throw new Error('script-only must not create media');},persist:async()=>{throw new Error('script-only must not create a timeline');},saveDraft:async()=>{},progress:async e=>{events.splice(0,events.length,...structuredClone(e));},render:async()=>{throw new Error('script-only must not render');},review:async()=>{throw new Error('script-only must not review a movie');}});
+    const result=await runWithJobSignal(new AbortController().signal,async()=>{
+      const result=await runLessonWorkflow({prompt,config:config(index),audioConfig:null,dataDir:directory,mediaDir:directory,ownerId:owner,checkpointKey:checkpoint,media:[],export:false,analyze:async()=>{throw new Error('script-only must not analyze audio');},register:async()=>{throw new Error('script-only must not create media');},persist:async()=>{throw new Error('script-only must not create a timeline');},saveDraft:async()=>{},progress:async e=>{events.splice(0,events.length,...structuredClone(e));},render:async()=>{throw new Error('script-only must not render');},review:async()=>{throw new Error('script-only must not review a movie');}});
+      transport=getJobTransportDiagnostics();return result;
+    });
     assert.equal(result.report.factReview?.score,92);assert.equal(result.report.factReview?.needsRepair,false);
     assert.deepEqual(requests,['write_lesson_script','write_lesson_script','revise_lesson_script']);
     assert.ok(events.filter(e=>e.tool==='review_lesson_script').every(e=>e.callId?.startsWith('server-')));
     assert.equal(reviews,3);assert.deepEqual(result.report.chapters[0],chapters[0]);assert.deepEqual(result.report.chapters[2],chapters[2]);
     assert.notEqual(result.report.chapters[1].narration,chapters[1].narration);
-    assert.equal(executionDiagnostics(events).recoveredFailures,2);
+    assert.equal(executionDiagnostics(events).recoveredFailures,1,'invalid script is repaired once at the tool layer');
+    assert.equal(transport.length,1);assert.equal(transport[0].outcome,'recovered');assert.equal(transport[0].attempts,2);assert.equal(transport[0].failure.status,503);
+    assert.equal(events.filter(e=>e.tool==='review_lesson_script').length,2,'one factual rejection and one independent pass; transport recovery stays within its request');
     assert.equal(executionDiagnostics(events).qualityFeedback[0].status,'repaired');
     assert.equal(executionDiagnostics(events).qualityFeedback[0].repairTool,'revise_lesson_script');
     assert.doesNotMatch(JSON.stringify(events),/test-private-credential/);

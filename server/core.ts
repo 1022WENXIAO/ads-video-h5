@@ -1,7 +1,7 @@
-import { spawnForJob as spawn, currentJobSignal, onJobAbort, throwIfJobCancelled, jobFetch } from './jobExecution';
+import { spawnForJob as spawn, currentJobSignal, onJobAbort, throwIfJobCancelled, jobFetch, jobDelay } from './jobExecution';
 import ffmpegPath from 'ffmpeg-static';
 import { Agent, type AgentTool } from '@earendil-works/pi-agent-core';
-import { createModels, createProvider, type Model } from '@earendil-works/pi-ai';
+import { createAssistantMessageEventStream, createModels, createProvider, type Model } from '@earendil-works/pi-ai';
 import { openAICompletionsApi } from '@earendil-works/pi-ai/api/openai-completions.lazy';
 import { Type } from 'typebox';
 import type { AudioAnalysis, ChatMessage, EditPlan, Format, MediaItem, Shot, WorkflowEvent } from '../src/types';
@@ -11,6 +11,7 @@ import { applyTimelineRequest, validateTimeline } from './timeline';
 import { createToolTrace, observeToolErrors } from './toolTrace';
 import { sessionSources } from './sourceSelection';
 import { runRequiredTool } from './requiredTool';
+import { canRetryWorkflowError, safeErrorText } from './executionErrors';
 
 const ffmpeg = ffmpegPath || 'ffmpeg';
 
@@ -135,7 +136,7 @@ function textModel(config: ModelConfig) {
 
 export const textThinking = (config:Pick<ModelConfig,'modelId'>) => ({type:config.modelId==='glm-5-3-flash-260828'?'enabled':'disabled'});
 
-export function getAgent(config: ModelConfig, tools: AgentTool[], systemPrompt: string, requireTools = false) {
+export function getAgent(config: ModelConfig, tools: AgentTool[], systemPrompt: string, requireTools = false, requestOptions: { maxTokens?: number } = {}) {
   const { models, model } = textModel(config);
   const ark = new URL(config.baseUrl).hostname === 'ark.cn-beijing.volces.com';
   const thinkingRequired = config.modelId === 'glm-5-3-flash-260828';
@@ -147,7 +148,32 @@ export function getAgent(config: ModelConfig, tools: AgentTool[], systemPrompt: 
       throwIfJobCancelled(signal);
       return result;
     } })) },
-    streamFn: (model, messages, options) => models.streamSimple(model, messages, { ...options, fetch: jobFetch }),
+    // jobFetch owns the bounded pre-response retry. Keep SDK retries disabled
+    // so the workflow and SDK cannot multiply attempts or replay tool work.
+    streamFn: (model, messages, options) => {
+      let transportFailure: unknown;
+      let transportStatus: number | undefined;
+      const source = models.streamSimple(model, messages, { ...options, ...(requestOptions.maxTokens ? { maxTokens: Math.min(model.maxTokens, Math.max(1, Math.floor(requestOptions.maxTokens))) } : {}), maxRetries: 0, fetch: async (input, init) => {
+        try { const response = await jobFetch(input, init); if (!response.ok) transportStatus = response.status; return response; }
+        catch (error) { transportFailure = error; throw error; }
+      } });
+      const output = createAssistantMessageEventStream();
+      void (async () => {
+        for await (const event of source) {
+          // OpenAI replaces custom fetch exceptions with "Connection error"
+          // (or a timeout without its cause). Restore only the sanitized public
+          // message; private prompts/credentials never enter the transcript.
+          if (event.type === 'error' && transportFailure !== undefined) {
+            event.error.errorMessage = safeErrorText(transportFailure instanceof Error ? transportFailure.message : transportFailure, [config.apiKey]);
+          } else if (event.type === 'error' && transportStatus !== undefined) {
+            event.error.errorMessage = `模型服务 HTTP ${transportStatus}：${safeErrorText(event.error.errorMessage || '请求失败', [config.apiKey])}`;
+          }
+          output.push(event);
+        }
+        output.end(await source.result());
+      })();
+      return output;
+    },
     // GLM 5.3 Flash only supports thinking=enabled. Pi replays its reasoning
     // with tool results; answerWithPi publishes only the reply tool's fields.
     onPayload: (payload) => payload && typeof payload === 'object' ? { ...payload, ...(ark ? { thinking: textThinking(config) } : {}), ...(requireTools ? { tool_choice: 'required' } : {}) } : undefined,
@@ -315,10 +341,8 @@ export async function answerWithPi(prompt: string, config: ModelConfig, media: M
     }catch(error){
       throwIfJobCancelled();
       if(turns===previousTurns)turns++;
-      const detail=error instanceof Error?error.message:String(error);
-      const transient=/\b(?:429|5\d\d)\b|overload|server.?error|temporarily unavailable|timed?\s*out|timeout|network|connect|fetch failed|rate.?limit|限流|服务繁忙|超时/i.test(detail);
-      if(!transient||turns>=3||Date.now()>=deadline)throw new Error('对话回复暂时无法完成，请稍后重试。');
-      await new Promise(resolve=>setTimeout(resolve,500));
+      if(!canRetryWorkflowError(error)||turns>=3||Date.now()>=deadline)throw new Error('对话回复暂时无法完成，请稍后重试。',{cause:error});
+      await jobDelay(500);
     }finally{clearTimeout(timer);await drain();}
   }
   throw new Error('对话回复暂时无法完成，请稍后重试。');

@@ -75,9 +75,15 @@ test('review request diagnostics measure failures without storing credentials, p
   const config = { modelId: 'fixture', apiKey: 'private-test-key', baseUrl: 'https://provider.example.test' } as any;
   const payload = { messages: [{ content: [{ input_audio: { url: 'https://private-media.example.test/audio.mp3' } }] }] };
   try {
-    globalThis.fetch = async () => { throw new DOMException('private timeout description', 'TimeoutError'); };
-    await assert.rejects(requestReviewJson(config, payload, 'semantic', 0, metric => metrics.push(metric)), { name: 'TimeoutError' });
-    assert.equal(metrics[0].error, 'TimeoutError'); assert.equal(metrics[0].bytes, Buffer.byteLength(JSON.stringify(payload)));
+    let requests = 0;
+    globalThis.fetch = async () => { requests++; throw new DOMException('private timeout description', 'TimeoutError'); };
+    await assert.rejects(requestReviewJson(config, payload, 'semantic', 0, metric => metrics.push(metric)), error => {
+      assert.equal((error as Error).name, 'TextTransportError');
+      assert.equal(((error as Error).cause as Error).name, 'TimeoutError');
+      return true;
+    });
+    assert.equal(requests,3,'one bounded transport retry budget, retaining the original timeout cause');
+    assert.equal(metrics[0].error, 'TextTransportError'); assert.equal(metrics[0].bytes, Buffer.byteLength(JSON.stringify(payload)));
     assert.doesNotMatch(JSON.stringify(metrics), /private-test-key|private-media|private timeout description/);
     globalThis.fetch = async () => new Response(JSON.stringify({ result: 'actual judgment' }));
     assert.deepEqual(await requestReviewJson(config, payload, 'voice', 1, metric => metrics.push(metric)), { result: 'actual judgment' });

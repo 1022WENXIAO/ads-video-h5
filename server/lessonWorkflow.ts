@@ -32,6 +32,7 @@ import { beijingDate,requiresTodayEvent,todayEventFindings,requiresSelectionReas
 import { recoverToolDecision } from './workflowDriver';
 import { creationBrief } from './creationBrief';
 import { verifyCreativeResearch, researchCreativeTopic } from './creativeResearch';
+import { canRetryWorkflowError, retryBudgetExhausted } from './executionErrors';
 
 interface Options {
   prompt:string;requestedAt?:number;config:ModelConfig;audioConfig:ModelConfig|null;media:MediaItem[];
@@ -429,7 +430,12 @@ export async function runLessonWorkflow(o:Options){
         throwIfJobCancelled();if(phase!==before)break;
         if(recoveryState!==JSON.stringify({voiceRevision,chapterVoiceRevisions,pacingRetakes,gaps:[...gapRetakes]}))continue;
         const detail=String(traceValue(error instanceof Error?error.message:String(error),[o.config.apiKey,o.audioConfig?.apiKey||'']));
-        const transient=!/^热点研究缺少可核验/.test(detail)&&((error as {retryable?:boolean})?.retryable||/HTTP (?:429|5\d\d)|超时|timeout|网络|无法连接|fetch failed|音频理解第.*(?:时间码|字词|格式无效|截断)/i.test(detail));
+        // Text connection recovery already ran at the transport boundary.
+        // Replaying narration/drawing after an ambiguous paid submission can
+        // charge twice; their verified-output/revision recovery remains above.
+        const mediaSubmission=['synthesize_narration','draw_lesson_scenes'].includes(next);
+        const transient=!/^热点研究缺少可核验/.test(detail)&&!retryBudgetExhausted(error)
+          &&(!mediaSubmission&&canRetryWorkflowError(error)||/音频理解第.*(?:时间码|字词|格式无效|截断)/i.test(detail));
         if(transient&&retries++<2)continue;
         throw new Error(`${current?'新闻制作':'教学'}工作流未完成；阶段${phase}：${detail.slice(0,800)}`);
       }

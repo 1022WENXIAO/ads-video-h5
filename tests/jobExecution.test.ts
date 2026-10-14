@@ -7,7 +7,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import type { Job, Session } from '../src/types';
 import { createJobRunner, restoreInterruptedJobs } from '../server/jobRunner';
-import { jobDelay, jobFetch, JobCancelledError, runWithJobSignal, spawnForJob } from '../server/jobExecution';
+import { currentJobSignal, jobDelay, jobFetch, JobCancelledError, runWithJobSignal, spawnForJob, throwIfJobCancelled, withoutJobSignal } from '../server/jobExecution';
 import { updateReply } from '../server/replies';
 import { runFFmpeg } from '../server/core';
 
@@ -111,6 +111,16 @@ test('stop kills the real render-style subprocess before the execution promise s
   assert.throws(() => process.kill(pid, 0), (error: NodeJS.ErrnoException) => error.code === 'ESRCH');
 });
 
+test('a CLI wrapper can find the service Node runtime with an empty inherited PATH', { skip: process.platform === 'win32', timeout: 5000 }, async () => {
+  const child = spawnForJob('/bin/sh', ['-c', 'node -e "process.stdout.write(process.execPath)"'], { env: { PATH: '', QINGJIAN_CHILD_CHECK: 'kept' }, stdio: ['ignore', 'pipe', 'pipe'] });
+  let output = '', error = '';
+  child.stdout!.on('data', chunk => { output += chunk; });
+  child.stderr!.on('data', chunk => { error += chunk; });
+  const [code] = await once(child, 'close');
+  assert.equal(code, 0, error);
+  assert.equal(output, process.execPath);
+});
+
 test('interrupted ordinary work resumes after restart, but persisted stop requests never resume', () => {
   const jobs = [job('interrupted'), job('stopping', 'stopping'), { ...job('stopped-before-crash'), stopRequestedAt: timestamp }, job('waiting', 'queued'), job('done', 'succeeded'), job('stopped', 'cancelled')];
   restoreInterruptedJobs(jobs, timestamp);
@@ -144,4 +154,41 @@ test('ordinary upstream timeouts still apply independently of a user stop signal
     await assert.rejects(runWithJobSignal(controller.signal, () => jobFetch(`http://127.0.0.1:${address.port}`, { signal: AbortSignal.timeout(40) })), error => (error as Error).name === 'TimeoutError');
     assert.equal(controller.signal.aborted, false);
   } finally { server.closeAllConnections(); server.close(); }
+});
+
+test('a detached queue installs independent child context and survives coordinator cancellation while restoring its caller', async () => {
+  const coordinator = new AbortController(), runner = createJobRunner(), item = job('detached-queue');
+  let childCompleted = false, cleanupPersisted = false;
+  await assert.rejects(runWithJobSignal(coordinator.signal, async () => {
+    assert.equal(currentJobSignal(), coordinator.signal);
+    const queued = withoutJobSignal(() => {
+      assert.equal(currentJobSignal(), undefined);
+      return runner.run(item, async () => {
+        const childSignal = currentJobSignal(); assert.ok(childSignal); assert.notEqual(childSignal, coordinator.signal);
+        await jobDelay(20);
+        throwIfJobCancelled(); childCompleted = true; return 'child complete';
+      });
+    });
+    assert.equal(currentJobSignal(), coordinator.signal, 'dispatch restores the release coordinator context');
+    coordinator.abort();
+    withoutJobSignal(() => { throwIfJobCancelled(); cleanupPersisted = true; });
+    assert.equal(currentJobSignal(), coordinator.signal);
+    assert.equal(await queued, 'child complete');
+    assert.equal(currentJobSignal(), coordinator.signal, 'await restores the original coordinator context');
+  }), JobCancelledError);
+  assert.equal(childCompleted, true); assert.equal(cleanupPersisted, true); assert.equal(currentJobSignal(), undefined);
+});
+
+test('cancelling a detached child job does not cancel its release coordinator or leak its signal into queue cleanup', async () => {
+  const coordinator = new AbortController(), runner = createJobRunner(), item = job('independent-child');
+  await runWithJobSignal(coordinator.signal, async () => {
+    await withoutJobSignal(async () => {
+      const queued = runner.run(item, async () => { assert.notEqual(currentJobSignal(), coordinator.signal); await jobDelay(10_000); });
+      runner.stopSession([item], 'owner-a', 'chat-a', timestamp);
+      await assert.rejects(queued, JobCancelledError);
+      assert.equal(currentJobSignal(), undefined); throwIfJobCancelled();
+    });
+    assert.equal(currentJobSignal(), coordinator.signal); assert.equal(coordinator.signal.aborted, false);
+  });
+  assert.equal(currentJobSignal(), undefined);
 });

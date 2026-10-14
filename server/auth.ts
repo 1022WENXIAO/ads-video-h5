@@ -6,6 +6,7 @@ import type { Express, NextFunction, Request, Response } from 'express';
 import { sendRegistrationCode } from './resend';
 import type { CreditWallet } from '../shared/creditTypes';
 import { createWeChatExchange, WeChatLoginError, type WeChatIdentity } from './wechatAuth';
+import { providerTransportSettings } from './providerTransport';
 
 const scrypt = promisify(scryptCallback);
 const sessionLifetime = 30 * 24 * 60 * 60 * 1000;
@@ -258,7 +259,7 @@ export function createAuth(dataDir: string, publicBase: string, options: { excha
     response.json({ user: safeUser(user) });
   }
   function mount(app: Express, creditReadiness?: () => Promise<{ ready: boolean; initialSpecialAccountApplied: boolean }>, registrationCredits?: (user: PublicUser) => Promise<CreditWallet>) {
-    app.get('/api/health', async (_request, response) => response.set('Cache-Control', 'no-store').json({ ok: true, revision: await releaseRevision, ...(creditReadiness ? { credits: await creditReadiness() } : {}) }));
+    app.get('/api/health', async (_request, response) => response.set('Cache-Control', 'no-store').json({ ok: true, revision: await releaseRevision, transport: providerTransportSettings(), ...(creditReadiness ? { credits: await creditReadiness() } : {}) }));
     app.get('/api/auth/me', (request, response) => { const user = currentUser(request); response.status(user ? 200 : 401).json(user ? { user } : { error: '未登录。' }); });
     app.post('/api/auth/send-code', mutationGuard, (request, response, next) => { void sendCode(request, response).catch(next); });
     app.post('/api/auth/register', mutationGuard, (request, response, next) => { void register(request, response, registrationCredits).catch(next); });

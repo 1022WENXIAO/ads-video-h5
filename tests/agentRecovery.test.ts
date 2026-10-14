@@ -145,3 +145,25 @@ test('visible diagram copy rejects production instructions before rendering',asy
   assert.doesNotThrow(()=>validateLessonVisual(visual,'真空层减少传热，内壁减弱辐射。'));
   for(const detail of ['绘制简洁不锈钢杯身和杯盖，无商标、无数字','杯身沿中线剖开，内胆与外壳分层高亮','按审查要求调整动画时序','示意得分，单位：分；字幕完整写作数值和单位'])assert.throws(()=>validateLessonVisual({...visual,items:[{...visual.items[0],detail},visual.items[1]]},'真空层减少传热，内壁减弱辐射。'),/制作指令/);
 });
+
+test('narrative scene production does not replay a possibly paid submission after an ambiguous network error',async()=>{
+  const {runNarrativeWorkflow}=await import('../server/narrativeWorkflow');
+  const {ProviderError}=await import('../server/providers');
+  const directory=await mkdtemp(path.join(tmpdir(),'qingjian-paid-scene-recovery-')),original=globalThis.fetch;
+  const transcript={...structuredClone(analysis),duration:12,sentences:analysis.sentences.map((s,i)=>({...s,start:[0,3,6][i],end:[3,6,10][i],words:s.words.map(w=>({...w,start:[0,3,6][i],end:[3,6,10][i]}))}))};
+  const m={...source(),duration:12};let produced=0,renders=0,requests=0;const events:WorkflowEvent[]=[];
+  const beats=[{id:'opening',role:'hook',line:transcript.sentences[0].text,reason:'真实开头',mode:'original',sourceId:'source',sentenceIds:['s1'],referenceIds:[],visual:'person',title:'目标',visualBrief:'原片'},
+    {id:'steps',role:'recap',line:transcript.sentences.slice(1).map(s=>s.text).join(''),reason:'图解后续步骤',mode:'original',sourceId:'source',sentenceIds:['s2','s3'],referenceIds:[],visual:'html',title:'步骤',visualBrief:'流程图'}];
+  globalThis.fetch=async()=>{requests++;return stream('write_rebuilt_script',{premise:'目标到检查',audience:'初学者',arc:'目标行动检查',style:'简洁',requestedSeconds:10,beats});};
+  try{
+    await assert.rejects(runNarrativeWorkflow({prompt:'保留原声，重绘HTML流程图，制作10秒知识短片。',config:config(),audioConfig:null,sources:[m],media:[m],previous:null,dataDir:directory,mediaDir:directory,ownerId:'control-owner',export:true,voiceAuthorized:false,originalOnly:true,
+      transcribe:async()=>structuredClone(transcript),inspect:async()=>({safeZone:'top',summary:'控制夹具'} as any),verifySelection:async()=>{},register:async()=>{},persist:async()=>{},
+      // A production adapter may have already submitted paid TTS before this
+      // ambiguous error. This fixture must never make that adapter run twice.
+      produceBeat:async()=>{produced++;throw new ProviderError('无法连接模型服务，请稍后重试。','NETWORK_ERROR',undefined,true);},
+      render:async()=>{renders++;throw new Error('must not render');},review:async()=>review(88,true),progress:async updates=>{events.splice(0,events.length,...structuredClone(updates));},
+    }),/无法连接|未完成/);
+    assert.equal(produced,1);assert.equal(renders,0);assert.equal(requests,1);
+    assert.equal(events.filter(event=>event.tool==='produce_scenes').length,1);
+  }finally{globalThis.fetch=original;await rm(directory,{recursive:true,force:true});}
+});
