@@ -8,6 +8,8 @@ import type { AudioAnalysis, MediaItem, TranscriptSentence } from '../src/types'
 import { createAudioUnderstanding, regroupWords, validatePrimaryUtteranceBoundaries, validateTranscript } from '../server/audioUnderstanding';
 import { withModelSnapshot } from '../server/modelContext';
 import { runFFmpeg } from '../server/core';
+import { jobFailureMessage } from '../server/jobAttempts';
+import { isTransientExecutionError } from '../server/executionErrors';
 
 const config={id:'semantic-boundary-fixture',name:'Controlled text fixture',kind:'understanding' as const,modelId:'doubao-seed-2-1-lite-260915',provider:'ark',baseUrl:'https://example.invalid',apiKey:'fixture-only',enabled:true};
 async function incident(){
@@ -50,6 +52,18 @@ test('partial heads crossing a complete boundary are also rejected; incomplete r
   const incomplete=regroupWords(words,{groups:[{first:0,last:4,complete:false},{first:5,last:7,complete:true}]},'source');
   validatePrimaryUtteranceBoundaries(primary,incomplete);
   assert.equal(incomplete[0].complete,false,'the original unsafe remainder remains unavailable to complete-sentence selection');
+});
+
+test('quoted HTTP or network subject matter cannot relabel a typed sentence-boundary failure as a service outage',()=>{
+  for(const topic of ['网络连接已经恢复','服务返回HTTP401时']){
+    const primary=primaryOf([topic,'结论应当由证据支持']),words=primary.flatMap(sentence=>sentence.words),end=primary[0].words.length-1;
+    const grouped=regroupWords(words,{groups:[{first:0,last:end-1,complete:true},{first:end,last:words.length-1,complete:true}]},'source');
+    assert.throws(()=>validatePrimaryUtteranceBoundaries(primary,grouped),error=>{
+      assert.equal(isTransientExecutionError(error),false);
+      const message=jobFailureMessage(new Error('理解原声未完成',{cause:error}),'理解原声');
+      assert.match(message,/语义分句跨越原完整句界/);assert.doesNotMatch(message,/服务连接暂时中断|服务授权验证失败|自动恢复后/);return true;
+    });
+  }
 });
 
 test('batch carry defers only its final candidate and final validation still rejects an unresolved moved tail',()=>{

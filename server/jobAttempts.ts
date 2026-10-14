@@ -67,6 +67,8 @@ export function jobFailureMessage(error: unknown, stage: string | undefined, sec
   const parts = (value: JobFailure): JobFailure[] => [value, ...(value.causes ?? []).flatMap(parts)];
   const failures = parts(failure);
   if (/CreditError/.test(failure.name)) return failure.message;
+  const boundary = failures.find(value => value.code === 'SEMANTIC_UTTERANCE_BOUNDARY');
+  if (boundary) return boundary.message;
   if (failures.some(value => value.code === 'AUDIO_QUEUE_TIMEOUT')) return `配音服务排队超时，该次配音请求尚未提交。任务停在「${where}」，稍后可以重试；已完成的步骤会保留。`;
   if (failures.some(value => value.status === 401 || value.status === 403 || /(?:\bHTTP\s*|\bstatus(?:\s+code)?\s*[:=]?\s*)(?:401|403)\b/i.test(value.message))) return `服务授权验证失败，任务停在「${where}」。请联系管理员检查服务配置。`;
   if (failures.some(value => value.status === 429 || /\bHTTP\s*429\b/i.test(value.message))) return `服务请求受到限流（HTTP 429）${failure.retryExhausted ? '，自动恢复后仍未成功' : ''}。任务停在「${where}」，稍后可以重试；已完成的步骤会保留。`;

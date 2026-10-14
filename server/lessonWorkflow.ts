@@ -115,6 +115,7 @@ export async function runLessonWorkflow(o:Options){
   const fingerprint=hashBytes(JSON.stringify({version:1,owner:o.ownerId,prompt:o.prompt,export:o.export}));
   let research:Awaited<ReturnType<typeof researchGaps>>|undefined;
   let report:LessonReport|undefined;let phase='research',feedback='',repairRequirements='';let attempts=0,failures=0,renders=0,turns=0,voiceRevision=0;
+  const names:Record<string,string>={research:'research_topic',budget:'plan_lesson_budget',script:'write_lesson_script','fact-review':'review_lesson_script',narration:'synthesize_narration',scenes:'draw_lesson_scenes',timeline:'arrange_lesson_timeline',render:'render_lesson',review:'review_lesson',repair:'repair_lesson'};
   let researchRounds=0,pacingRetakes=0,idleTurns=0,reviewRetries=0,reselects=0;let stalledReply='',modelFailure='',requestedTool='';let chapterVoiceRevisions:Record<string,number>={};
   let rejectedNewsTopics:string[]=[];
   let scriptBudget:ReturnType<typeof lessonScriptBudget>|undefined;
@@ -166,26 +167,56 @@ export async function runLessonWorkflow(o:Options){
       }
     }catch{ /* Missing or changed files must be rebuilt and independently reviewed. */ }
   }
-  async function verifiedSpeech(){
-    const reused=new Map<string,{file:string;analysis:AudioAnalysis}>();
+  async function verifiedSpeech(allowPending=false){
+    const reused=new Map<string,{file:string;analysis:AudioAnalysis}>(),pending:Array<{chapterId:string;reason:string}>=[];
+    const defer=(chapterId:string,reason:string)=>{if(!allowPending)throw new Error(reason);pending.push({chapterId,reason});};
     for(const chapter of report!.chapters){
-      const file=path.join(work,chapter.id,'speech.mp3'),prior=JSON.parse(await readFile(path.join(work,chapter.id,'speech-analysis.json'),'utf8')) as AudioAnalysis;
-      if(prior.status!=='ready'||prior.sourceHash!==hashBytes(await readFile(file)))throw new Error('复用旁白文件哈希与实际转写不一致，不能跳过配音核验。');
-      const corrected=correctLessonTranscript(chapter,prior),aligned=alignLessonSpeech(chapter,corrected),analysis=corrected===prior?prior:lessonCaptionAnalysis(chapter,corrected);
+      throwIfJobCancelled();
+      const file=path.join(work,chapter.id,'speech.mp3');let bytes:Buffer,text:string;
+      try{bytes=await readFile(file);text=await readFile(path.join(work,chapter.id,'speech-analysis.json'),'utf8');}
+      catch(error){throwIfJobCancelled();if((error as NodeJS.ErrnoException)?.code!=='ENOENT')throw error;defer(chapter.id,`章节${chapter.id}旁白或已核验转写尚未完成，保留已有音频继续旁白核验。`);continue;}
+      let prior:AudioAnalysis;
+      try{prior=JSON.parse(text);}
+      catch(error){if(!(error instanceof SyntaxError))throw error;defer(chapter.id,`章节${chapter.id}已保存转写格式无效，保留已有音频重新核验。`);continue;}
+      if(!prior||prior.status!=='ready'||!Number.isFinite(prior.duration)||prior.duration<=0||typeof prior.transcript!=='string'||!Array.isArray(prior.warnings)||!Array.isArray(prior.sentences)||prior.sentences.some(s=>!s||typeof s.text!=='string'||!Array.isArray(s.words)||s.words.some(w=>!w||typeof w.text!=='string'||!Number.isFinite(w.start)||!Number.isFinite(w.end)||w.start<0||w.end<w.start))){defer(chapter.id,`章节${chapter.id}已保存转写尚未就绪或格式无效，保留已有音频重新核验。`);continue;}
+      if(prior.sourceHash!==hashBytes(bytes)){defer(chapter.id,`章节${chapter.id}复用旁白文件哈希与实际转写不一致，不能跳过配音核验。`);continue;}
+      let corrected:AudioAnalysis,aligned:ReturnType<typeof alignLessonSpeech>,analysis:AudioAnalysis;
+      try{corrected=correctLessonTranscript(chapter,prior);aligned=alignLessonSpeech(chapter,corrected);analysis=corrected===prior?prior:lessonCaptionAnalysis(chapter,corrected);}
+      catch(error){
+        throwIfJobCancelled();
+        // These two functions only inspect local transcript data. Defer their
+        // explicit speech-validation failures, not OS/provider/runtime errors.
+        const message=error instanceof Error?error.message:'';
+        if(!(error instanceof Error)||error.constructor!==Error||'code' in error||'status' in error||!(message.startsWith(`章节${chapter.id}`)||/^(?:实际教学旁白没有可辨识|单章音频超出对齐范围|动画原词「)/.test(message)))throw error;
+        defer(chapter.id,message);continue;
+      }
       chapter.speechMatch=aligned.similarity;chapter.cues=aligned.cues;
       if(analysis!==prior)await writeFile(path.join(work,chapter.id,'speech-analysis.json'),JSON.stringify(analysis,null,2),{mode:0o600});
       reused.set(chapter.id,{file,analysis});
-    }return reused;
+    }return {reused,pending};
   }
+  function restoreSpeechState(restored:Awaited<ReturnType<typeof verifiedSpeech>>){
+    speech=restored.reused;
+    if(restored.pending.length){phase='narration';return;}
+    const rate=lessonPacingCheck([...speech.values()].reduce((n,s)=>n+compactSpeech(s.analysis.transcript).length,0),[...speech.values()].reduce((n,s)=>n+s.analysis.duration,0),pacing);
+    if(rate.passed){phase='scenes';return;}
+    // A process can stop after the last ASR write but before the whole-track
+    // pacing gate. Resume must not mistake those files for a completed gate.
+    phase='script';feedback=rate.detail+'调整所有章节的实际信息密度并重新合成，不能仅凭目标时长放行。';repairRequirements=feedback;
+  }
+  let restoredSpeech=false;
   if(o.export&&savedCheckpoint&&(o.rebuildScenes||savedCheckpoint.rendererHash&&savedCheckpoint.rendererHash!==rendererHash)){
     await trace.run('renderer_rebuild','图解更新后重新核验检查点',{priorRendererHash:savedCheckpoint.rendererHash,currentRendererHash:rendererHash,reason:o.rebuildScenes?'explicit-evaluation-redraw':'renderer-changed'},async()=>{
-      const reusable=Boolean(report?.factReview&&!report.factReview.needsRepair);
-      if(reusable){speech=await verifiedSpeech();phase='scenes';}else{speech=new Map();phase=research?'script':'research';}
+      const reusable=Boolean(report?.factReview&&!report.factReview.needsRepair&&!['research','budget','script','fact-review'].includes(phase));
+      const restored=reusable?await verifiedSpeech(true):undefined;
+      if(restored){restoredSpeech=true;restoreSpeechState(restored);}else speech=new Map();
       plan=undefined;rendered=undefined;review=undefined;best=undefined;renderedHash='';renders=0;reviewRetries=0;
-      await persistCheckpoint();return {preservedAudio:reusable,chapters:report?.chapters.map(c=>c.id)||[],nextTool:reusable?'draw_lesson_scenes':research?(report?'revise_lesson_script':'write_lesson_script'):'research_topic'};
+      await persistCheckpoint();return {preservedAudio:Boolean(restored&&!restored.pending.length),verifiedChapters:[...speech.keys()],pendingChapters:restored?.pending||[],chapters:report?.chapters.map(c=>c.id)||[],nextTool:currentTool()};
     });
   }
-  if(o.export&&report?.factReview&&!report.factReview.needsRepair&&savedCheckpoint?.phase==='scenes'&&phase==='narration'){speech=await verifiedSpeech();phase='scenes';}
+  if(o.export&&!restoredSpeech&&report?.factReview&&!report.factReview.needsRepair&&['scenes','narration'].includes(savedCheckpoint?.phase)&&phase==='narration'){
+    restoreSpeechState(await verifiedSpeech(true));await persistCheckpoint();
+  }
   if(!current&&research&&(!report||report.factReview?.needsRepair)&&(!research.references.some(r=>['primary-page','public-page','primary-paper'].includes(r.verification))||/损失函数|loss function/i.test(o.prompt)&&!research.references.some(r=>r.verification==='primary-record'))){
     research=await trace.run('verify_sources','核对原始来源',{references:research.references.map(r=>({id:r.id,url:r.url}))},()=>verifyCreativeResearch(research!,o.prompt));
     report=undefined;phase='script';await persistCheckpoint();await writeFile(path.join(work,'research.json'),JSON.stringify(research,null,2),{mode:0o600});
@@ -273,7 +304,7 @@ export async function runLessonWorkflow(o:Options){
     const anchorLine=presentation.mood==='urgent'?'关注最新消息，先核对来源，再根据证据做出判断。':'接下来，我们从一个简单的例子开始，把问题讲清楚。';
     const anchorFile=path.join(work,'voice-anchor.mp3');const seedKey=hashBytes(JSON.stringify({model:audioConfig.modelId,revision:voiceRevision,voiceStyle,anchorLine}));
     let anchor:Buffer|undefined;
-    try{const meta=JSON.parse(await readFile(path.join(work,'voice-anchor.json'),'utf8'));const bytes=await readFile(anchorFile);if(meta.seedKey===seedKey&&meta.hash===hashBytes(bytes))anchor=bytes;}catch{}
+    try{const meta=JSON.parse(await readFile(path.join(work,'voice-anchor.json'),'utf8'));const bytes=await readFile(anchorFile);if(meta.seedKey===seedKey&&meta.hash===hashBytes(bytes))anchor=bytes;}catch(error){throwIfJobCancelled();if(!(error instanceof SyntaxError)&&(error as NodeJS.ErrnoException)?.code!=='ENOENT')throw error;}
     if(!anchor){
       const seed=(await trace.run('synthesize_voice_anchor','生成统一播报声线',{narration:anchorLine,reference:'preset'},()=>generateAudio(`${voiceStyle} 台词：${anchorLine}`,audioConfig))).bytes;
       const file=path.join(work,'voice-seed.mp3');await writeFile(file,seed,{mode:0o600});const duration=await probeAudio(file);await runFFmpeg(['-v','error','-y','-i',file,'-t',String(Math.min(20,duration)),'-ar','24000','-ac','1',anchorFile]);anchor=await readFile(anchorFile);await writeFile(path.join(work,'voice-anchor.json'),JSON.stringify({seedKey,hash:hashBytes(anchor)}),{mode:0o600});
@@ -296,7 +327,7 @@ export async function runLessonWorkflow(o:Options){
     };
     const raw=await mapLimited(report.chapters,2,async chapter=>{
       const dir=path.join(work,chapter.id);await mkdir(dir,{recursive:true});const spoken=spokenLessonText(chapter.narration),file=path.join(dir,'raw-speech.mp3'),metaFile=path.join(dir,'raw-speech.json');const key=hashBytes(JSON.stringify({line:spoken,model:audioConfig.modelId,anchorHash,voiceRevision,chapterRevision:chapterVoiceRevisions[chapter.id]||0,voiceStyle}));let cached=false;
-      try{const meta=JSON.parse(await readFile(metaFile,'utf8'));cached=meta.key===key&&meta.hash===hashBytes(await readFile(file));}catch{}
+      try{const meta=JSON.parse(await readFile(metaFile,'utf8'));cached=meta.key===key&&meta.hash===hashBytes(await readFile(file));}catch(error){throwIfJobCancelled();if(!(error instanceof SyntaxError)&&(error as NodeJS.ErrnoException)?.code!=='ENOENT')throw error;}
       if(!cached){const bytes=(await trace.run('synthesize_chapter',`合成旁白 · ${chapter.title}`,{chapterId:chapter.id,narration:spoken,anchorHash},()=>generateAudio(`使用@Audio1的同一说话者、音色、口音与录音环境。${voiceStyle} 台词：${spoken}`,audioConfig,reference))).bytes;await writeFile(file,bytes,{mode:0o600});await writeFile(metaFile,JSON.stringify({key,hash:hashBytes(bytes)}),{mode:0o600});}
       const preparedFile=path.join(dir,'prepared-speech.wav');
       const prepare=()=>prepareChapterSpeech(chapter,file,preparedFile);
@@ -329,10 +360,13 @@ export async function runLessonWorkflow(o:Options){
     await mapLimited(raw,2,async({chapter,file,preparedFile})=>{
       const dir=path.dirname(file),adjusted=path.join(dir,'speech.mp3');
       await adjustChapterSpeech(chapter,preparedFile,adjusted,tempo);
+      const prior=speech.get(chapter.id);
+      if(prior?.analysis.sourceHash===hashBytes(await readFile(adjusted)))return;
+      speech.delete(chapter.id);
       let verified=false,lastError:unknown;
       for(let attempt=0;attempt<2;attempt++){
         const hash=hashBytes(await readFile(adjusted)),duration=await probeAudio(adjusted);const metaFile=path.join(dir,'analysis-key.json');let id=randomUUID();
-        try{const meta=JSON.parse(await readFile(metaFile,'utf8'));if(meta.hash===hash)id=meta.id;}catch{}
+        try{const meta=JSON.parse(await readFile(metaFile,'utf8'));if(meta.hash===hash)id=meta.id;}catch(error){throwIfJobCancelled();if(!(error instanceof SyntaxError)&&(error as NodeJS.ErrnoException)?.code!=='ENOENT')throw error;}
         await writeFile(metaFile,JSON.stringify({hash,id}),{mode:0o600});
         const lexicon=lessonSpeechLexicon(chapter,o.prompt);
         const item:MediaItem={id,ownerId:o.ownerId,name:`教学旁白-${chapter.title}${lexicon?'；术语：'+lexicon:''}`,origin:'generated',kind:'audio',mimeType:'audio/mpeg',duration,url:'',createdAt:new Date().toISOString()};
@@ -454,7 +488,7 @@ export async function runLessonWorkflow(o:Options){
     }
     const visualTargets=visualRepairTargets(report,review);
     if(visualTargets.length){
-      speech=await verifiedSpeech();
+      speech=(await verifiedSpeech()).reused;
       for(const id of visualTargets)visualFeedback[id]=feedback;
       phase='scenes';return {redrawChapters:visualTargets,preservedAudio:true,preservedScript:true,nextTool:'draw_lesson_scenes'};
     }
@@ -465,7 +499,6 @@ export async function runLessonWorkflow(o:Options){
     else if(/错读|错字|残句|口误|漏字|遗漏|缺字|少字|没读|未读|重复残|重录|重新合成|音轨.*中断|爆音|咔声/.test(feedback))for(const id of lessonRepairTargets(report,feedback))chapterVoiceRevisions[id]=(chapterVoiceRevisions[id]||0)+1;
     phase='script';repairRequirements=`实际审查要求：${feedback}`;feedback=repairRequirements+`\n具体返修意图：${String(a.changes).slice(0,1200)}。保留未受影响的正确知识和引用，只提交所有受影响章节。`;return {feedback,priorScript:report,targets:lessonRepairTargets(report,repairRequirements),nextTool:currentTool()};
   });
-  const names:Record<string,string>={research:'research_topic',budget:'plan_lesson_budget',script:'write_lesson_script','fact-review':'review_lesson_script',narration:'synthesize_narration',scenes:'draw_lesson_scenes',timeline:'arrange_lesson_timeline',render:'render_lesson',review:'review_lesson',repair:'repair_lesson'};
   function currentTool(){return phase==='script'&&report?'revise_lesson_script':names[phase];}
   const todayEvidenceExhausted=()=>current&&requiresTodayEvent(o.prompt)&&reselects>=2&&report?.factReview?.needsRepair&&report.factReview.findings.some(f=>f.includes('用户时效要求'));
   function stageInstruction(){

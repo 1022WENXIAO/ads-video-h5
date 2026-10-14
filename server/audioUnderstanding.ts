@@ -17,6 +17,8 @@ export class AudioTranscriptOutputError extends Error {
   constructor(readonly diagnostic: { durationSeconds:number;maxTokens:number;completionTokens?:number;outputCharacters:number;finishReason:string }) { super('音频理解结果被截断，请重试识别；原音频和成功转写块已保留。'); this.name='AudioTranscriptOutputError'; }
 }
 class SemanticUtteranceBoundaryError extends Error {
+  readonly code='SEMANTIC_UTTERANCE_BOUNDARY';
+  readonly retryable=false;
   constructor(message:string,readonly diagnostic:{candidate:{first:number;last:number};primary:Array<{first:number;last:number}>}){super(message);this.name='SemanticUtteranceBoundaryError';}
 }
 const round = (n: number) => +n.toFixed(3);
