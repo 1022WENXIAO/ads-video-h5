@@ -1,0 +1,358 @@
+{
+  "provenance": "Actual isolated generic-AI news run, ch3, 2026-10-15; no source prose or credentials. Layout-only regression, not video acceptance.",
+  "drawing": {
+    "title": "热度背后的风险提示",
+    "motion": "corporate",
+    "nodes": [
+      {
+        "id": "title_card",
+        "kind": "card",
+        "x": 60,
+        "y": 230,
+        "w": 600,
+        "h": 105,
+        "text": "热度背后的风险提示",
+        "tone": "coral",
+        "fontSize": 46,
+        "highlight": true
+      },
+      {
+        "id": "period_note",
+        "kind": "text",
+        "x": 60,
+        "y": 352,
+        "w": 600,
+        "h": 56,
+        "text": "奇想无限｜2026年上半年",
+        "tone": "ink",
+        "fontSize": 24,
+        "highlight": false
+      },
+      {
+        "id": "revenue_card",
+        "kind": "card",
+        "x": 60,
+        "y": 410,
+        "w": 290,
+        "h": 160,
+        "text": "营业收入",
+        "tone": "paper",
+        "fontSize": 34,
+        "highlight": false
+      },
+      {
+        "id": "revenue_value",
+        "kind": "text",
+        "x": 90,
+        "y": 478,
+        "w": 230,
+        "h": 56,
+        "text": "2457.09万元",
+        "tone": "blue",
+        "fontSize": 24,
+        "highlight": false
+      },
+      {
+        "id": "revenue_bar",
+        "kind": "path",
+        "x": 90,
+        "y": 535,
+        "w": 230,
+        "h": 16,
+        "text": "",
+        "pathData": "M90 543 L320 543 L320 559 L90 559 Z",
+        "tone": "blue",
+        "fontSize": 24,
+        "highlight": false
+      },
+      {
+        "id": "loss_card",
+        "kind": "card",
+        "x": 370,
+        "y": 410,
+        "w": 290,
+        "h": 160,
+        "text": "净利润",
+        "tone": "paper",
+        "fontSize": 34,
+        "highlight": true
+      },
+      {
+        "id": "loss_value",
+        "kind": "text",
+        "x": 400,
+        "y": 478,
+        "w": 230,
+        "h": 56,
+        "text": "-562.17万元",
+        "tone": "coral",
+        "fontSize": 24,
+        "highlight": true
+      },
+      {
+        "id": "loss_bar",
+        "kind": "path",
+        "x": 400,
+        "y": 535,
+        "w": 53,
+        "h": 16,
+        "text": "",
+        "pathData": "M400 543 L453 543 L453 559 L400 559 Z",
+        "tone": "coral",
+        "fontSize": 24,
+        "highlight": true
+      },
+      {
+        "id": "stage_card",
+        "kind": "card",
+        "x": 60,
+        "y": 595,
+        "w": 600,
+        "h": 86,
+        "text": "仍处业务发展阶段，营收规模较小且亏损",
+        "tone": "paper",
+        "fontSize": 30,
+        "highlight": false
+      },
+      {
+        "id": "divider",
+        "kind": "line",
+        "x": 60,
+        "y": 710,
+        "w": 600,
+        "h": 0,
+        "text": "",
+        "pathData": "M60 710 L660 710",
+        "tone": "ink",
+        "fontSize": 24,
+        "highlight": false
+      },
+      {
+        "id": "wave_card",
+        "kind": "card",
+        "x": 60,
+        "y": 745,
+        "w": 290,
+        "h": 178,
+        "text": "两日涨幅偏离值累计",
+        "tone": "paper",
+        "fontSize": 32,
+        "highlight": true
+      },
+      {
+        "id": "wave_chart",
+        "kind": "path",
+        "x": 92,
+        "y": 820,
+        "w": 226,
+        "h": 52,
+        "text": "",
+        "pathData": "M92 866 C122 845 138 850 164 826 C196 797 214 815 238 792 C262 770 284 780 318 820",
+        "tone": "coral",
+        "fontSize": 24,
+        "highlight": true
+      },
+      {
+        "id": "wave_value",
+        "kind": "text",
+        "x": 126,
+        "y": 879,
+        "w": 158,
+        "h": 56,
+        "text": "累计20%",
+        "tone": "coral",
+        "fontSize": 24,
+        "highlight": true
+      },
+      {
+        "id": "main_card",
+        "kind": "card",
+        "x": 370,
+        "y": 745,
+        "w": 290,
+        "h": 178,
+        "text": "主营业务",
+        "tone": "paper",
+        "fontSize": 32,
+        "highlight": false
+      },
+      {
+        "id": "main_status",
+        "kind": "text",
+        "x": 400,
+        "y": 812,
+        "w": 230,
+        "h": 56,
+        "text": "未发生重大变化",
+        "tone": "blue",
+        "fontSize": 24,
+        "highlight": false
+      },
+      {
+        "id": "main_line",
+        "kind": "path",
+        "x": 410,
+        "y": 872,
+        "w": 210,
+        "h": 0,
+        "text": "",
+        "pathData": "M410 872 L620 872",
+        "tone": "blue",
+        "fontSize": 24,
+        "highlight": false
+      },
+      {
+        "id": "risk_tag",
+        "kind": "card",
+        "x": 60,
+        "y": 946,
+        "w": 290,
+        "h": 58,
+        "text": "构成交易异常波动",
+        "tone": "coral",
+        "fontSize": 26,
+        "highlight": true
+      },
+      {
+        "id": "conclusion",
+        "kind": "card",
+        "x": 370,
+        "y": 946,
+        "w": 290,
+        "h": 58,
+        "text": "追热点先看基本面",
+        "tone": "ink",
+        "fontSize": 26,
+        "highlight": true
+      }
+    ]
+  },
+  "report": {
+    "ok": false,
+    "layout": {
+      "findings": [
+        {
+          "code": "content_overlap",
+          "severity": "error",
+          "time": 0.372,
+          "selector": "#revenue_card",
+          "message": "Two text blocks overlap and may render unreadable.",
+          "rect": {
+            "left": 137,
+            "top": 465.91,
+            "right": 273,
+            "bottom": 513.91,
+            "width": 136,
+            "height": 48
+          },
+          "containerSelector": "#revenue_value",
+          "text": "营业收入",
+          "fixHint": "Give each block its own zone, or mark intentional layering with data-layout-allow-overlap.",
+          "dataAttributes": {},
+          "sourceFile": "index.html",
+          "bbox": {
+            "x": 137,
+            "y": 465.91,
+            "width": 136,
+            "height": 48
+          },
+          "firstSeen": 0.372,
+          "lastSeen": 15.88,
+          "occurrences": 134,
+          "heldMs": 15508
+        },
+        {
+          "code": "content_overlap",
+          "severity": "error",
+          "time": 0.496,
+          "selector": "#loss_card",
+          "message": "Two text blocks overlap and may render unreadable.",
+          "rect": {
+            "left": 464,
+            "top": 465.91,
+            "right": 566,
+            "bottom": 513.91,
+            "width": 102,
+            "height": 48
+          },
+          "containerSelector": "#loss_value",
+          "text": "净利润",
+          "fixHint": "Give each block its own zone, or mark intentional layering with data-layout-allow-overlap.",
+          "dataAttributes": {},
+          "sourceFile": "index.html",
+          "bbox": {
+            "x": 464,
+            "y": 465.91,
+            "width": 102,
+            "height": 48
+          },
+          "firstSeen": 0.496,
+          "lastSeen": 15.88,
+          "occurrences": 133,
+          "heldMs": 15384
+        },
+        {
+          "code": "content_overlap",
+          "severity": "error",
+          "time": 0.62,
+          "selector": "#main_card",
+          "message": "Two text blocks overlap and may render unreadable.",
+          "rect": {
+            "left": 451,
+            "top": 811.21,
+            "right": 579,
+            "bottom": 856.21,
+            "width": 128,
+            "height": 45
+          },
+          "containerSelector": "#main_status",
+          "text": "主营业务",
+          "fixHint": "Give each block its own zone, or mark intentional layering with data-layout-allow-overlap.",
+          "dataAttributes": {},
+          "sourceFile": "index.html",
+          "bbox": {
+            "x": 451,
+            "y": 811.21,
+            "width": 128,
+            "height": 45
+          },
+          "firstSeen": 0.62,
+          "lastSeen": 15.88,
+          "occurrences": 132,
+          "heldMs": 15260.000000000002
+        },
+        {
+          "code": "text_occluded",
+          "severity": "error",
+          "time": 6.176,
+          "selector": "#loss_card",
+          "message": "Text is hidden beneath an opaque element.",
+          "rect": {
+            "left": 464,
+            "top": 465.91,
+            "right": 566,
+            "bottom": 513.91,
+            "width": 102,
+            "height": 48
+          },
+          "containerSelector": "#loss_value",
+          "text": "净利润",
+          "fixHint": "Give the text its own zone, raise its stacking order above the covering element, or mark intentional layering with data-layout-allow-occlusion.",
+          "coveredFraction": 1,
+          "dataAttributes": {},
+          "sourceFile": "index.html",
+          "bbox": {
+            "x": 464,
+            "y": 465.91,
+            "width": 102,
+            "height": 48
+          },
+          "firstSeen": 6.176,
+          "lastSeen": 14.998,
+          "occurrences": 6,
+          "heldMs": 0
+        }
+      ]
+    }
+  }
+}

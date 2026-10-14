@@ -8,6 +8,7 @@ import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import type { EvaluationCase, EvaluationFixture, EvaluationRun, ReleaseEvaluation } from '../shared/evaluationTypes';
 import { readAdminSession, releaseApiUrl, ReleaseGateError, validateLocalReleaseRun, validateReleasePassed, waitForLocalReleaseAcceptance, waitForReleaseAcceptance } from '../tooling/release-acceptance';
+import { newsPublicationScoringFixture } from './fixtures/newsPublicationScoring';
 
 const revision = 'a'.repeat(40), token = 'private-session-for-fixture';
 const options = { url: 'https://video.example.test/qingjian/api/admin/evaluations', revision, token, timeoutMs: 10000, pollMs: 10, start: false };
@@ -70,14 +71,17 @@ test('release gate uses a private administrator session file rather than public 
 
 /** Controlled record metadata only; these unit fixtures are not a live video acceptance. */
 function localRecords() {
+  const news = newsPublicationScoringFixture();
   const fixtures: EvaluationFixture[] = ['a', 'b'].map((value, index) => ({ id: `fixture-${index}`, name: `${index}.mp4`, bytes: 100, duration: 15, hasAudio: true, sha256: value.repeat(64), createdAt: '' }));
   const generatedCases: EvaluationCase[] = (['hot-news', 'knowledge', 'multi-video'] as const).map((category, index) => ({ id: `case-${index}`, category, name: category, description: 'controlled local gate test', messages: [`制作${category}视频，完成实际成片验收`], fixtureIds: category === 'multi-video' ? fixtures.map(fixture => fixture.id) : [], expectation: { seconds: 20, toleranceSeconds: 2, format: '9:16', captions: true, html: category !== 'multi-video', originalOnly: category === 'multi-video', minSources: category === 'multi-video' ? 2 : 0, requiredWords: [] }, threshold: 80, enabled: true, version: 1, updatedAt: '' }));
+  generatedCases[0] = {...news.test,id:'case-0'};
   const release = { ...result(), implementationHash: 'implementation', generatedCases, settingsSnapshot: { maxSuiteSeconds: 300 } } as ReleaseEvaluation;
   const run: EvaluationRun = { id: release.evaluationRunId!, releaseId: release.id, releaseAttempt: release.attempt, name: 'controlled record metadata', status: 'completed', createdAt: '', maxCaseSeconds: 60, snapshot: { revision, implementationHash: 'implementation', skillHash: 'skill', rubricVersion: 'fixture', models: [] }, results: generatedCases.map((test, index) => {
     const bound = test.category === 'multi-video' ? fixtures : [];
     const caseHash = createHash('sha256').update(JSON.stringify({ category: test.category, messages: test.messages, expectation: test.expectation, threshold: test.threshold, fixtures: bound.map(fixture => fixture.sha256) })).digest('hex');
-    return { id: `result-${index}`, case: test, caseHash, fixtures: bound, repeat: 1, status: 'passed', jobIds: [], score: 100, checks: ['render', 'duration', 'stream-duration', 'format', 'captions', 'evidence', 'sound', 'quality', 'sources', 'original', 'html', 'narrative'].map(id => ({ id, name: id, passed: true, weight: id === 'stream-duration' ? 0 : 10, detail: 'controlled gate fixture' })), artifact: { id: `artifact-${index}`, kind: 'video', sessionId: 'session', messageId: 'message', name: 'fixture.mp4', createdAt: '', version: 1, format: '9:16', duration: 20, hasNarration: test.category !== 'multi-video', sha256: 'c'.repeat(64), bytes: 1000, actualDuration: 20, planHash: 'd'.repeat(64), plan: { summary: 'controlled metadata fixture', format: '9:16', targetSeconds: 20, clips: [{ sourceId: 'source', start: 0, end: 20 }] }, review: { status: 'passed', score: 90, checks: [{ name: 'fixture', passed: true, detail: 'controlled metadata' }], limitations: [], createdAt: '' } } };
+    return { id: `result-${index}`, case: test, caseHash, fixtures: bound, repeat: 1, status: 'passed', jobIds: [], score: 100, checks: ['render', 'duration', 'stream-duration', 'news-date', 'format', 'captions', 'evidence', 'sound', 'quality', 'sources', 'original', 'html', 'narrative'].map(id => ({ id, name: id, passed: true, weight: ['stream-duration','news-date'].includes(id) ? 0 : 10, detail: 'controlled gate fixture' })), artifact: { id: `artifact-${index}`, kind: 'video', sessionId: 'session', messageId: 'message', name: 'fixture.mp4', createdAt: '', version: 1, format: '9:16', duration: 20, hasNarration: test.category !== 'multi-video', sha256: 'c'.repeat(64), bytes: 1000, actualDuration: 20, planHash: 'd'.repeat(64), plan: { summary: 'controlled metadata fixture', format: '9:16', targetSeconds: 20, clips: [{ sourceId: 'source', start: 0, end: 20 }] }, review: { status: 'passed', score: 90, checks: [{ name: 'fixture', passed: true, detail: 'controlled metadata' }], limitations: [], createdAt: '' } } };
   }) };
+  run.results[0].artifact={...news.artifact,sha256:news.actualFileSha256,bytes:1000,actualDuration:news.test.expectation.seconds};
   return { release, run };
 }
 test('local gate verifies matching revision, immutable attempt, case checks and real video metadata', () => {
@@ -88,6 +92,13 @@ test('local gate verifies matching revision, immutable attempt, case checks and 
     (copy: EvaluationRun) => { copy.results[0].checks = []; },
     (copy: EvaluationRun) => { copy.results[0].checks = copy.results[0].checks!.filter(check => check.id !== 'stream-duration'); },
     (copy: EvaluationRun) => { copy.results[0].checks!.find(check => check.id === 'stream-duration')!.passed = false; },
+    (copy: EvaluationRun) => { copy.results[0].checks = copy.results[0].checks!.filter(check => check.id !== 'news-date'); },
+    (copy: EvaluationRun) => { copy.results[0].checks!.find(check => check.id === 'news-date')!.passed = false; },
+    (copy: EvaluationRun) => { copy.results[0].artifact!.review!.newsPublication = undefined; },
+    (copy: EvaluationRun) => { copy.results[0].artifact!.review!.newsPublication!.renderedSha256 = 'a'.repeat(64); },
+    (copy: EvaluationRun) => { copy.results[0].artifact!.review!.newsPublication!.frameEvidence.quote = '报道日期：2026-10-15（北京时间）'; },
+    (copy: EvaluationRun) => { copy.results[0].artifact!.requestedAt = undefined; },
+    (copy: EvaluationRun) => { copy.results[0].artifact!.requestedAt = '2026-10-14T19:00:00.000Z'; },
     (copy: EvaluationRun) => { copy.results[0].checks![0].passed = false; },
     (copy: EvaluationRun) => { copy.results[0].artifact!.bytes = 0; },
     (copy: EvaluationRun) => { copy.results[0].artifact!.sha256 = 'missing'; },

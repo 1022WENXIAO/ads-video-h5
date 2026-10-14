@@ -109,13 +109,15 @@ export function createEvaluations(options: Options) {
           verified = size.size > 0 && Boolean(output.artifact.plan && manifest.planHash === planHash(output.artifact.plan) && output.artifact.planHash === manifest.planHash);
         } catch { /* An absent or mismatched manifest is a failed gate. */ }
         signal.throwIfAborted();
-        const scored = scoreEvaluation(result.case, output.artifact, output.media, output.sourceIds, probe.duration, verified);
+        const scored = scoreEvaluation(result.case, output.artifact, output.media, output.sourceIds, probe.duration, verified, sha256);
         scored.checks.push(streamDuration); scored.passed = scored.passed && streamDuration.passed;
         const { url: _url, downloadUrl: _download, ownerId: _owner, ...artifact } = structuredClone(output.artifact);
         result.artifact = { ...artifact, sha256, bytes: size.size, actualDuration: probe.duration };
         result.workflow = structuredClone(output.workflow); result.checks = scored.checks; result.spokenText = scored.spokenText; result.score = scored.score;
-        result.status = scored.passed ? 'passed' : 'failed'; result.stage = scored.passed ? '评测通过' : streamDuration.passed ? '质量需要复核' : '实际音画流不完整';
+        const dateFailure = scored.checks.find(check => check.id === 'news-date' && !check.passed);
+        result.status = scored.passed ? 'passed' : 'failed'; result.stage = scored.passed ? '评测通过' : !streamDuration.passed ? '实际音画流不完整' : dateFailure ? '新闻报道日期未通过' : '质量需要复核';
         if (!streamDuration.passed) result.error = streamDuration.detail;
+        else if (dateFailure) result.error = dateFailure.detail;
       } catch (error) {
         result.status = controller.signal.aborted ? 'cancelled' : 'failed';
         result.error = timedOut ? `本例超过${run.maxCaseSeconds}秒，已停止实际任务。` : redact(error instanceof Error ? error.message : String(error), models);

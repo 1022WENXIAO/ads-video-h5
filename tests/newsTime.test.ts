@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import type { HotTopicSignal, LessonReport } from '../src/types';
 import { beijingTimestamp, newsObservationContext, newsObservationFindings } from '../server/newsTime';
 import { reviewLessonScript } from '../server/lessonWorkflow';
-import { canReuseNewsEvidence } from '../server/reviewResults';
+import { canReuseNewsEvidence, newsFreshAtOriginalRequest } from '../server/reviewResults';
 
 const asOf = '2026-10-14T16:57:03.000Z';
 const signal = { id: 'baidu-1', title: '双11告别算数题', source: 'baidu', observedAt: asOf, rank: 1 } as HotTopicSignal;
@@ -29,6 +29,11 @@ test('accurate chart snapshots and selection actions remain valid, including lat
   for (const text of ['截至十月十五日凌晨，榜单显示双11告别算数题位居百度热搜第一', '截至10月15日00:57，双11位居百度热搜第一', '截至今天凌晨，百度热榜显示双11位居第一', '今天我们选择双11这个热搜，因为它关系到购物门槛', '本次核验看到双11已经登上热搜']) assert.deepEqual(newsObservationFindings(make(text), Date.parse(asOf)), [], text);
   for (const text of ['截至十月十四日傍晚，榜单显示双11位居百度热搜第一', '截至十月十五日下午，榜单显示双11位居热搜第一', '截至10月15日16:57，双11位居热搜第一']) assert.equal(newsObservationFindings(make(text)).length, 1, text);
   const report = make('截至十月十五日凌晨，榜单显示双11位居热搜第一');
+  // Reusable news must now also bind a real publication date to a core fact.
+  report.references[0].dateEvidence='JSON-LD datePublished: 2026-10-13T02:56:00Z';
+  const coreQuote=report.references[0].excerpt.split('，')[0];
+  report.chapters[0].claims=[{text:coreQuote,referenceIds:['r1'],basis:'source'}];
+  report.hotResearch!.topics=[{title:'双11活动规则',hook:'新报道',angle:'规则',signalIds:['baidu-1'],facts:[{text:coreQuote,evidence:[{referenceId:'r1',quote:coreQuote}]}],visualPlan:'图解',uncertainties:[]}];
   assert.equal(canReuseNewsEvidence(report, '制作最近三天新闻视频', Date.parse(asOf), Date.parse(asOf) + 25 * 3600000), true);
 });
 
@@ -67,4 +72,17 @@ test('spoken Chinese clock values retain the exact observation hour and minute',
   const afternoon = make('截至十月十五日下午两点半，榜单显示双11位居百度热搜第一');
   afternoon.hotResearch!.signals[0] = { ...signal, observedAt: '2026-10-15T06:30:00Z' };
   assert.deepEqual(newsObservationFindings(afternoon), []);
+});
+
+
+test('original-request publication freshness keeps exact Beijing date-only boundaries and rejects future or unverifiable source dates',()=>{
+  const requestedAt=Date.parse('2026-10-14T16:00:00Z'),reviewedAt=requestedAt+2*3600000;
+  const report={hotResearch:{asOf:new Date(requestedAt+10*60000).toISOString(),windowHours:24},references:[{id:'r1',verification:'news-page',freshness:'fresh',publishedAt:'2026-10-14'}]} as unknown as LessonReport;
+  assert.equal(newsFreshAtOriginalRequest(report,requestedAt,reviewedAt),true,'date-only publication is Beijing midnight exactly 24h before the cutoff');
+  assert.equal(newsFreshAtOriginalRequest(report,requestedAt+1,reviewedAt),false,'one millisecond beyond the original window cannot pass for a new request');
+  for(const date of ['2026-10-15T00:00:00+08:00','2026-10-15T00:00:00.001+08:00','2026-02-31','unknown']){
+    report.references[0].publishedAt=date;assert.equal(newsFreshAtOriginalRequest(report,requestedAt,reviewedAt),date==='2026-10-15T00:00:00+08:00',date);
+  }
+  report.references[0].publishedAt='2026-10-14';report.references[0].verification='search-cited';assert.equal(newsFreshAtOriginalRequest(report,requestedAt,reviewedAt),false);
+  report.references[0].verification='news-page';report.references[0].freshness='stale';assert.equal(newsFreshAtOriginalRequest(report,requestedAt,reviewedAt),false);
 });

@@ -20,6 +20,7 @@ import { createEffectStore, type EffectValues } from './htmlEffects';
 import { classify, shouldUpdatePlan, excludesBgm, narrativeRequest } from './intents';
 import { createAudioUnderstanding } from './audioUnderstanding';
 import { reviewRender as reviewBaseRender } from './renderReview';
+import { artifactReviewRequestedAt } from './reviewTime';
 import { renderReviewSummary, reviewNeedsContentRepair } from './reviewResults';
 import { withReviewAssets } from './reviewAssets';
 import { recordVoiceRejection, reportsVoiceMismatch } from './audioQuality';
@@ -240,8 +241,8 @@ async function performJob(job: Job): Promise<void> {
     next.version=(session.plan.version||0)+1;session.plan=next;
     addReply(session,job,excludesAvatar(prompt)?'已从当前方案移除作者形象，发送“生成成片”可导出。':'已在当前方案加入作者动画，发送“生成成片”可导出。');await saveState();return;
   }
-  const reviewRender:typeof reviewBaseRender=(file,next,items,request)=>withReviewAssets(oss,job.ownerId!,publish=>{
-    const run=()=>reviewBaseRender(file,next,items,request,publish,Date.parse(message.createdAt));
+  const reviewRender:typeof reviewBaseRender=(file,next,items,request,_providedPublisher,trustedRequestedAt=Date.parse(message.createdAt))=>withReviewAssets(oss,job.ownerId!,publish=>{
+    const run=()=>reviewBaseRender(file,next,items,request,publish,trustedRequestedAt);
     return next.avatars?.length||job.kind==='review'
       ?avatarTrace.run(next.avatars?.length?'review_author_video':'review_existing_video',next.avatars?.length?'检查作者动画、画面与声音':'检查已有成片与声音',{planHash:planHash(next)},run)
       :run();
@@ -289,8 +290,10 @@ async function performJob(job: Job): Promise<void> {
     if (!artifact?.plan) throw new Error('请先生成成片再进行审查。');
     const file = path.join(exportDir, `${artifact.id}.mp4`); await oss?.ensure(job.ownerId!, 'exports', artifact.id, file);
     const originalRequest=session.messages.find((m)=>m.id===artifact.messageId)?.text||'';
+    const requestedAt=artifactReviewRequestedAt(artifact,session.messages);
+    artifact.requestedAt??=new Date(requestedAt).toISOString();
     recordVoiceRejection(artifact.plan,media,prompt);await saveState();
-    artifact.review = await reviewRender(file, artifact.plan, media, originalRequest+'\n本次补充审查：'+prompt);
+    artifact.review = await reviewRender(file, artifact.plan, media, originalRequest+'\n本次补充审查：'+prompt,undefined,requestedAt);
     const issues=artifact.review.checks.filter(c=>!c.passed);
     if(issues.length)updateReply(session,job,issues.map(c=>`${c.name}：${c.detail}`).join('\n\n'),'commentary','review-details');
     addReply(session, job, `${renderReviewSummary(artifact.review)}。成片可继续预览、下载，详细结果见处理过程与作品审查。`, artifact.id); return;
@@ -407,7 +410,7 @@ async function performJob(job: Job): Promise<void> {
       analyze:(item,file,options)=>audioUnderstanding.analyze(item,file,undefined,options),
       register:async item=>{throwIfJobCancelled();await oss?.put(job.ownerId!,'media',item.id,path.join(mediaDir,item.id),item.mimeType);throwIfJobCancelled();state.media.push(item);await saveState();},
       persist:async next=>{throwIfJobCancelled();session.plan=next;await saveState();},saveDraft:async next=>{throwIfJobCancelled();session.lessonDraft=structuredClone(next);await saveState();},progress:workflowProgress,stage:async stage=>{throwIfJobCancelled();job.stage=stage;await saveState();},
-      render:(next,bgm)=>renderPlan(next,media,mediaDir,exportDir,undefined,bgm),review:(file,next)=>reviewRender(file,next,media,lessonPrompt+'，字幕和声音一致性检查')});
+      render:(next,bgm)=>renderPlan(next,media,mediaDir,exportDir,undefined,bgm),review:(file,next)=>reviewRender(file,next,media,lessonPrompt+'，字幕和声音一致性检查',undefined,Date.parse(message.createdAt))});
     if(job.kind==='plan'){
       const r=workflow.report;
       addReply(session,job,`${r.hotResearch?'新闻脚本':'教学脚本'}已整理：${r.title}，${r.chapters.length}章，约${r.requestedSeconds}秒。事实审查${r.factReview?.score}/100。\n${r.chapters.map((c,i)=>`${i+1}. ${c.title}：${c.goal}`).join('\n')}\n发送“生成成片”即可制作。`);return;
@@ -415,7 +418,7 @@ async function performJob(job: Job): Promise<void> {
     const plan=workflow.plan!,result=workflow.rendered!,review=workflow.review!;
     await oss?.put(job.ownerId!,'exports',result.id,result.file,'video/mp4');
     const version=state.artifacts.filter(a=>a.sessionId===session.id&&a.kind==='video').length+1;
-    state.artifacts.push({id:result.id,ownerId:job.ownerId,sessionId:session.id,messageId:message.id,kind:'video',name:`轻剪${plan.lesson?.hotResearch?'新闻资讯':'教学'}视频-v${version}.mp4`,url:`/api/artifacts/${result.id}`,downloadUrl:`/api/download/${result.id}`,createdAt:now(),version,duration:plan.targetSeconds,format:plan.format,plan:structuredClone(plan),workflow:structuredClone(job.workflow||workflow.events),review,planHash:planHash(plan),hasNarration:true,hasBgm:Boolean(plan.lesson?.presentation?.bgm)});
+    state.artifacts.push({id:result.id,requestedAt:message.createdAt,ownerId:job.ownerId,sessionId:session.id,messageId:message.id,kind:'video',name:`轻剪${plan.lesson?.hotResearch?'新闻资讯':'教学'}视频-v${version}.mp4`,url:`/api/artifacts/${result.id}`,downloadUrl:`/api/download/${result.id}`,createdAt:now(),version,duration:plan.targetSeconds,format:plan.format,plan:structuredClone(plan),workflow:structuredClone(job.workflow||workflow.events),review,planHash:planHash(plan),hasNarration:true,hasBgm:Boolean(plan.lesson?.presentation?.bgm)});
     job.artifactId=result.id;
     addReply(session,job,`${plan.lesson?.hotResearch?'新闻资讯视频':'教学视频'} v${version} 已生成：${plan.lesson!.title}，${plan.clips.length}章，${plan.targetSeconds.toFixed(1)}秒。${plan.lesson?.hotResearch?'已核验近期报道，完成新闻图解、播报旁白'+(plan.lesson.presentation?.bgm?'与氛围配乐':''):'采用图解画面与统一旁白'}，${renderReviewSummary(review)}。可预览、下载，并展开${plan.lesson?.hotResearch?'新闻':'教学'}脚本和制作记录查看依据。`,result.id);return;
   }

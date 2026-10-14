@@ -1,23 +1,26 @@
-import type { LessonChapter, LessonReport, RenderReview } from '../src/types';
+import type { LessonChapter, LessonReport, RenderReview, NewsPublicationAnnotation } from '../src/types';
 
 // A renderer limitation can be solved without rewriting verified narration.
 // Ambiguous factual, text or audio findings still use the script/audio repair.
 export function visualRepairTargets(report:LessonReport,review:RenderReview):string[]{
   if(report.factReview?.needsRepair||!report.factReview)return [];
   const failed=review.checks.filter(check=>!check.passed);
-  if(!failed.length||failed.some(check=>check.name!=='成片语义审查'))return [];
+  if(!failed.length||failed.some(check=>!['成片语义审查','新闻报道日期可见'].includes(check.name)))return [];
+  const dateFailed=failed.some(check=>check.name==='新闻报道日期可见');
+  if(dateFailed&&failed.every(check=>check.name==='新闻报道日期可见'))return report.chapters.slice(0,1).map(chapter=>chapter.id);
   const findings=review.semantic?.findings||[];
   if(!findings.length||findings.some(text=>/事实错误|数据错误|公式错误|旁白错误|字幕|音色|音量|错读|图解说明不准确/.test(text)))return [];
   if(findings.some(text=>/旁白(?:(?![，。；]|但|而|画面|图解|卡片|配图|抽帧).){0,24}(?:错误|不准确|误导|错数|矛盾)|(?:错误|不准确)的旁白/.test(text)))return [];
   if(!findings.every(text=>/图标|配图|没有.*(?:图|画)|未呈现|缺乏.*图解|缺少.*(?:示意|图解)|未.*(?:画出|展示)|静态卡片|任务清单|图解仅复现文字|无法.*直观|(?:画面|卡片|图解|视觉|抽帧|提示条).*(?:错误|缺失|遗漏|误导|误以为|归属|绑定|合并|混乱|不符|制作备注|内部说明)|抽帧.*(?:未出现|未展示)|动画/.test(text)))return [];
   const mentions=(text:string,id:string)=>new RegExp(String.raw`(^|[^\w-])${id.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')}(?=$|[^\w-])`).test(text);
   const matched=report.chapters.filter(chapter=>findings.some(text=>mentions(text,chapter.id))).map(chapter=>chapter.id);
+  if(dateFailed&&report.chapters[0]&&!matched.includes(report.chapters[0].id))matched.push(report.chapters[0].id);
   return matched.length&&findings.every(text=>report.chapters.some(c=>mentions(text,c.id)))&&!findings.some(text=>/全局|global|全片|所有章节|每章|全程/.test(text))?matched:report.chapters.map(chapter=>chapter.id);
 }
 
-export function lessonVisualBrief(report:LessonReport,chapter:LessonChapter,request:string,reviewFeedback?:string,layoutFeedback=''){
+export function lessonVisualBrief(report:LessonReport,chapter:LessonChapter,request:string,reviewFeedback?:string,layoutFeedback='',publicationAnnotation?:NewsPublicationAnnotation){
   return {
-    audienceContent:{title:chapter.title,narration:chapter.narration,claims:chapter.claims,references:report.references.filter(r=>chapter.referenceIds.includes(r.id)).map(r=>({id:r.id,title:r.title,excerpt:r.excerpt}))},
+    audienceContent:{...(publicationAnnotation?{publicationAnnotation}:{}),title:chapter.title,narration:chapter.narration,claims:chapter.claims,references:report.references.filter(r=>chapter.referenceIds.includes(r.id)).map(r=>({id:r.id,title:r.title,excerpt:r.excerpt,...(r.publishedAt?{publishedAt:r.publishedAt}:{})}))},
     priorVisual:{content:chapter.visual,rejected:Boolean(reviewFeedback),note:reviewFeedback?'被成片审查拒绝的旧视图，不是事实或可见文案的依据。':'按已核验旁白核对信息归属。'},
     internalDesignInstructions:{request,goal:chapter.goal,designReason:chapter.reason,reviewFeedback,layoutFeedback,rules:[
       '所有本字段都是内部绘图要求，不得复制或改写成观众可见文字。避免事项通过实际布局与图形解决，不显示“不合并/不绑定”等返修口号。',

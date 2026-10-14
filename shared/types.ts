@@ -27,7 +27,7 @@ export interface MediaItem {
   hasAudio?: boolean;
   character?: { role: 'reference' | 'sprite'; referenceMediaId?: string; sprite?: SpriteSheet };
   analysis?: AudioAnalysis;
-  generation?: { workflowId: string; beatId: string; mode: 'original' | 'generated'; lineHash: string; sceneSpecHash?: string; audioHash: string; voiceRejectedAudioHash?: string; htmlHash?: string; referenceHash?: string; originalSourceId?: string; originalStart?: number; originalEnd?: number };
+  generation?: { workflowId: string; beatId: string; mode: 'original' | 'generated'; lineHash: string; sceneSpecHash?: string; audioHash: string; voiceRejectedAudioHash?: string; htmlHash?: string; referenceHash?: string; originalSourceId?: string; originalStart?: number; originalEnd?: number; newsPublication?: NewsPublicationEvidence };
 }
 
 export interface SpriteSheet {
@@ -180,11 +180,48 @@ export interface TimelineText extends TimeRange {
   style: 'subtitle' | 'keyword' | 'title' | 'lower-third';
   animation?: 'none' | 'pop' | 'rise' | 'underline';
 }
+export interface NewsPublicationFrameObservation {
+  visible: boolean;
+  chapterId: string;
+  quote: string;
+  frameTime: number;
+}
+export interface NewsPublicationAnnotation {
+  referenceId: string;
+  publishedAt: string;
+  publishedDateBeijing: string;
+  cutoffUtc: string;
+  windowHours: number;
+  label: string;
+}
+export interface NewsPublicationLayout {
+  fontSize: number; x: number; y: number; width: number; height: number; sampledTimes: number[]; minimumOpacity: number;
+}
+export interface NewsPublicationEvidence extends NewsPublicationAnnotation {
+  htmlHash: string;
+  sceneHash: string;
+  htmlVerified: true;
+  layout: NewsPublicationLayout;
+}
+export interface NewsPublicationProof extends NewsPublicationAnnotation {
+  version: 1;
+  chapterId: string;
+  sourceId: string;
+  htmlHash: string;
+  sourceHash: string;
+  planHash: string;
+  renderedSha256: string;
+  htmlVerified: true;
+  frameVerified: true;
+  layout: NewsPublicationLayout;
+  frameEvidence: { chapterId: string; quote: string; frameTime: number; sampledTimes: number[] };
+}
 export interface RenderReview {
   status: 'passed' | 'needs-review';
   score: number;
   checks: Array<{ name: string; passed: boolean; detail: string }>;
   semantic?: { score: number; findings: string[]; suggestions?: string[]; repaired?: boolean };
+  newsPublication?: NewsPublicationProof;
   transport?: { mode: 'inline' | 'hosted'; requests: Array<{stage: 'voice' | 'semantic'; attempt: number; bytes: number; durationMs: number; status?: number; error?: string}> };
   audio?: {
     limits: { targetLufs:number;truePeakDb:number;segmentSpreadLu:number;adjacentJumpLu:number;withinSpreadLu:number };
@@ -243,6 +280,8 @@ export interface MusicSearch {
 }
 
 export interface Artifact {
+  /** Original user-message time; reviewing an existing movie keeps this cutoff. */
+  requestedAt?: string;
   workflow?: WorkflowEvent[];
   ownerId?: string;
   id: string;

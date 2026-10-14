@@ -35,7 +35,7 @@ test('a fresh article about an old event cannot satisfy an explicit today-event 
 test('repair evidence retains original event date but rejects expired sources and unverified facts',()=>{
   const requested=Date.parse('2026-10-05T15:21:19Z'),reviewed=Date.parse('2026-10-05T17:00:00Z'),prompt='介绍今天发生的大模型新闻';
   const quote='2026年10月5日，机构宣布推出新的人工智能基础设施合作协议。';
-  const report={hotResearch:{asOf:new Date(requested).toISOString(),windowHours:24},factReview:{score:94,needsRepair:false,todayEvents:[{date:'2026-10-05',referenceId:'r1',quote}]},references:[{id:'r1',verification:'news-page',freshness:'fresh',excerpt:quote.repeat(8),publishedAt:new Date(requested).toISOString()}]} as unknown as LessonReport;
+  const report={hotResearch:{asOf:new Date(requested).toISOString(),windowHours:24,topics:[{facts:[{text:quote,evidence:[{referenceId:'r1',quote}]}]}]},chapters:[{claims:[{text:quote,referenceIds:['r1']}]}],factReview:{score:94,needsRepair:false,todayEvents:[{date:'2026-10-05',referenceId:'r1',quote}]},references:[{id:'r1',verification:'news-page',freshness:'fresh',excerpt:quote.repeat(8),publishedAt:new Date(requested).toISOString(),dateEvidence:'Controlled publication fixture 2026-10-05'}]} as unknown as LessonReport;
   assert.equal(canReuseNewsEvidence(report,prompt,requested,reviewed),true);
   assert.equal(canReuseNewsEvidence(report,prompt,reviewed,reviewed),false,'new instructions cannot reuse the prior day as today');
   assert.equal(canReuseNewsEvidence(report,prompt,requested,requested+25*3600000),false,'real source-age gate still applies');
@@ -70,7 +70,8 @@ test('independent review includes the original demand and cannot approve old new
 test('an explicit selection explanation must appear in the produced script rather than only internal reasoning',async()=>{
   const original=globalThis.fetch,prompt='你来选一个大模型热点，说明选它的依据，做成口播视频';
   const narration='今天选一条模型新闻。',explanation='选它，因为低显存部署的新变化会影响普通开发者。';
-  const report={hotResearch:{},chapters:[{id:'c1',narration,reason:explanation,visual:{takeaway:'模型新闻',items:[]}}],references:[]} as unknown as LessonReport;
+  const now=Date.now(),quote='受控来源：低显存部署的新变化会影响普通开发者。';
+  const report={hotResearch:{asOf:new Date(now).toISOString(),windowHours:24,topics:[{facts:[{text:quote,evidence:[{referenceId:'r1',quote}]}]}]},chapters:[{id:'c1',narration,reason:explanation,claims:[{text:quote,referenceIds:['r1']}],visual:{takeaway:'模型新闻',items:[]}}],references:[{id:'r1',verification:'news-page',freshness:'fresh',excerpt:quote,publishedAt:new Date(now).toISOString(),dateEvidence:'Controlled current publication fixture'}]} as unknown as LessonReport;
   assert.ok(requiresSelectionReason(prompt));assert.ok(requiresSelectionReason('为什么选这篇新闻的原因'));assert.ok(requiresSelectionReason('Explain why you chose it.'));assert.equal(requiresSelectionReason('不用解释选题理由'),false);
   assert.equal(selectionReasonFindings({chapterId:'c1',quote:explanation},report,prompt).length,1);
   globalThis.fetch=async()=>new Response(JSON.stringify({choices:[{message:{content:JSON.stringify({score:95,needsRepair:false,findings:[],suggestions:['可以补充选题理由'],selectionReason:{chapterId:'c1',quote:explanation}})}}]}));

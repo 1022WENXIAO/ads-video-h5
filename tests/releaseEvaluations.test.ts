@@ -10,6 +10,7 @@ import type { Evaluations } from '../server/evaluations';
 import type { ModelConfig } from '../server/modelRegistry';
 import { evaluationCaseHash, evaluationSummary } from '../server/evaluationScoring';
 import { waitForBackground } from './backgroundWait';
+import { newsPublicationScoringFixture } from './fixtures/newsPublicationScoring';
 
 const revision = 'a'.repeat(40), implementation = { revision, implementationHash: 'implementation', skillHash: 'skill' };
 const fixture = (id: string): EvaluationFixture => ({ id, name: `${id}.mp4`, bytes: 123, duration: 20, hasAudio: true, sha256: id.repeat(64).slice(0,64), createdAt: '' });
@@ -38,7 +39,7 @@ function engine(fail = false) {
     start: async (body: {caseIds: string[]}, generated: { cases: EvaluationCase[]; releaseId: string; releaseAttempt: number }) => {
       starts++;
       const timestamp = new Date().toISOString();
-      const run: EvaluationRun = { id: `run-${starts}`, releaseId: generated.releaseId, releaseAttempt: generated.releaseAttempt, name: 'orchestration fixture only', status: 'completed', createdAt: timestamp, finishedAt: timestamp, maxCaseSeconds: 60, snapshot: { ...implementation, rubricVersion: 'fixture', models: [] }, results: generated.cases.map((c,i) => ({ id: `result-${i}`, case: c, caseHash: evaluationCaseHash(c,[]), fixtures: [], repeat: 1, status: fail && i === 0 ? 'failed' : 'passed', error: fail && i === 0 ? 'actual pipeline failed in fixture' : undefined, jobIds: [], score:100, checks:[{id:'fixture-engine',name:'orchestration fixture only',passed:true,weight:1,detail:'engine completion record fixture'},{id:'stream-duration',name:'orchestration fixture only',passed:true,weight:0,detail:'controlled packet gate result fixture'}], artifact:{id:'fixture-artifact',sessionId:'',messageId:'',name:'fixture only',kind:'video',createdAt:'',version:1,sha256:'f'.repeat(64),bytes:1,actualDuration:c.expectation.seconds,planHash:'fixture-plan-hash',review:{status:'passed',score:100,checks:[{name:'fixture only',passed:true,detail:''}],limitations:[],createdAt:''}} })) };
+      const run: EvaluationRun = { id: `run-${starts}`, releaseId: generated.releaseId, releaseAttempt: generated.releaseAttempt, name: 'orchestration fixture only', status: 'completed', createdAt: timestamp, finishedAt: timestamp, maxCaseSeconds: 60, snapshot: { ...implementation, rubricVersion: 'fixture', models: [] }, results: generated.cases.map((c,i) => ({ id: `result-${i}`, case: c, caseHash: evaluationCaseHash(c,[]), fixtures: [], repeat: 1, status: fail && i === 0 ? 'failed' : 'passed', error: fail && i === 0 ? 'actual pipeline failed in fixture' : undefined, jobIds: [], score:100, checks:[{id:'fixture-engine',name:'orchestration fixture only',passed:true,weight:1,detail:'engine completion record fixture'},{id:'stream-duration',name:'orchestration fixture only',passed:true,weight:0,detail:'controlled packet gate result fixture'},...(c.category==='hot-news'?[{id:'news-date',name:'orchestration fixture only',passed:true,weight:0,detail:'controlled date gate result fixture'}]:[])], artifact:{id:'fixture-artifact',sessionId:'',messageId:'',name:'fixture only',kind:'video',createdAt:'',version:1,sha256:'f'.repeat(64),bytes:1,actualDuration:c.expectation.seconds,planHash:'fixture-plan-hash',review:{status:'passed',score:100,checks:[{name:'fixture only',passed:true,detail:''}],limitations:[],createdAt:''},...(c.category==='hot-news'?{...newsPublicationScoringFixture().artifact,sha256:'d'.repeat(64),bytes:1,actualDuration:c.expectation.seconds}:{})} })) };
       assert.deepEqual(body.caseIds,generated.cases.map(c => c.id)); runs.push(run); return run;
     },
     stop: async (id: string) => { const run = runs.find(r => r.id === id); if (run) run.status = 'cancelled'; },
@@ -75,7 +76,10 @@ test('generated user messages stay natural while all mandatory server expectatio
   assert(cases.every(c => !technicalCoaching.test(c.messages.join('\n'))));
   assert(cases.every(c => c.threshold === 80 && c.expectation.captions && c.enabled));
   assert(cases.slice(0,2).every(c => c.expectation.html && c.expectation.seconds === 30 && !c.expectation.originalOnly));
-  assert(cases[0].messages[0].includes('最近三天的真实热点'));
+  assert(cases[0].messages[0].includes('最近24小时报道的一条真实热点'));
+  assert(cases[0].messages[0].includes('在画面上标明实际报道日期'));
+  assert(!cases[0].messages[0].includes('今天发生'));
+  for(const request of ['做一条最近3天的科技热点视频','把本周的热点做成视频','帮我讲最近48小时的新闻'])assert.throws(()=>normalizeGeneratedReleaseCases([{...rows()[0],request},...rows().slice(1)],3,fixtures),/冲突的时效窗口/);
   assert(cases[2].messages[0].includes('保留完整原话和原声'));
   assert(cases[2].messages[0].includes('所选句子保留完整原话和原声'));
   assert(cases[2].expectation.originalOnly && cases[2].expectation.minSources === 2 && !cases[2].expectation.html);
@@ -123,6 +127,30 @@ test('a passed engine label cannot replace the mandatory actual stream endpoint 
     assert.equal((await terminal(manager,release.id)).status,'failed');
   }
 });
+test('a passed engine label cannot replace the mandatory news date gate', async t => {
+  for(const missing of [true,false]) {
+    const fake=engine(),start=fake.start;
+    fake.start=async(...args)=>{const run=await start(...args);for(const result of run.results.filter(r=>r.case.category==='hot-news')){if(missing)result.checks=result.checks?.filter(check=>check.id!=='news-date');else result.checks!.find(check=>check.id==='news-date')!.passed=false;}return run;};
+    const {manager}=await setup(t,{evaluations:fake as unknown as Evaluations});
+    const release=(await manager.enqueueCurrentRevision())!;
+    assert.equal((await terminal(manager,release.id)).status,'failed');
+  }
+});
+test('a passed date check cannot replace the source-bound publication proof for this movie and original message time', async t => {
+  for(const mutation of ['missing-proof','changed-movie','changed-time']) {
+    const fake=engine(),start=fake.start;
+    fake.start=async(...args)=>{
+      const run=await start(...args),artifact=run.results.find(result=>result.case.category==='hot-news')!.artifact!;
+      if(mutation==='missing-proof')delete artifact.review!.newsPublication;
+      else if(mutation==='changed-movie')artifact.sha256='e'.repeat(64);
+      else artifact.requestedAt='2026-10-14T18:01:00.000Z';
+      return run;
+    };
+    const {manager}=await setup(t,{evaluations:fake as unknown as Evaluations});
+    const release=(await manager.enqueueCurrentRevision())!;
+    assert.equal((await terminal(manager,release.id)).status,'failed',mutation);
+  }
+});
 test('automatic generation waits for a manual evaluation and holds the shared reservation', async t => {
   let releaseGeneration!: () => void, entered!: () => void;
   const pending = new Promise<void>(resolve => { releaseGeneration = resolve; }), started = new Promise<void>(resolve => {entered=resolve;});
@@ -161,6 +189,9 @@ test('corrupt acceptance storage fails closed without replacing prior records', 
 test('failed retry persistence restores the terminal record and does not schedule rejected paid work', async t => {
   const {manager,dataDir,generations} = await setup(t,{resolveModel:async () => null});
   const release = (await manager.enqueueCurrentRevision())!; await terminal(manager,release.id);
+  // Terminal memory is visible before its asynchronous write finishes. Wait
+  // through the same mutation queue before deliberately making storage fail.
+  await manager.updateSettings({});
   const before = manager.get(release.id), file = path.join(dataDir,'evaluations/releases.json'), backup = file + '.backup';
   await rename(file,backup); await mkdir(file);
   await assert.rejects(manager.retry(release.id)); assert.deepEqual(manager.get(release.id),before); await delay(30); assert.equal(generations(),0);

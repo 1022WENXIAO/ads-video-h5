@@ -1,3 +1,5 @@
+import type { NewsPublicationAnnotation } from '../src/types';
+import { newsPublicationNoteHtml, newsPublicationNoteCss } from './newsTime';
 import { jobFetch } from './jobExecution';
 import { createHash } from 'node:crypto';
 import { spawnForJob as spawn } from './jobExecution';
@@ -13,6 +15,7 @@ import { motionLibrary } from './motionComponents';
 import { loadMotionDesignContext } from './skills';
 import { safeErrorText } from './executionErrors';
 import { assertVisibleContent } from './visibleContent';
+import { numericDrawingText, assertNumericDrawingNode, NUMERIC_DRAWING_CSS, NUMERIC_DRAWING_CHECK_SCRIPT } from './drawingNumberLayout';
 
 export const hashBytes = (v: string | Buffer) => createHash('sha256').update(v).digest('hex');
 const escape = (s:string) => s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]!));
@@ -30,6 +33,7 @@ export function validateDrawing(d:HtmlDrawing,format:Format='9:16'):HtmlDrawing 
     if (!/^[a-zA-Z][a-zA-Z0-9_-]{0,63}$/.test(n.id) || !['card','text','circle','line','path'].includes(n.kind) || !Object.keys(palette).includes(n.tone) || ![n.x,n.y,n.w,n.h,n.fontSize].every(Number.isFinite) || n.x<40 || n.y<top || n.x+n.w<40 || n.y+n.h<top || n.x+n.w>width-40 || n.y+n.h>bottom || (line?Math.abs(n.w)+Math.abs(n.h)<1:n.w<1||n.h<1||n.fontSize<24||n.fontSize>64) || typeof n.text!=='string' || n.text.length>32) throw new Error(`节点${n.id}无效：${JSON.stringify(n)}。ID允许字母、数字、下划线、连字符；端点安全区(40,${top})-(${width-40},${bottom})，文字24–64px、最多32字；连线允许w/h为0或负值，但不能同时为0。`);
     if(n.kind==='path'&&(!n.pathData||!/^[MmZzLlHhVvCcSsQqTtAa0-9eE.,\s+-]{1,3000}$/.test(n.pathData)))throw new Error(`节点${n.id}必须提供仅含SVG路径命令与数字的pathData。`);
     if(!line){
+      assertNumericDrawingNode(n);
       const units=[...n.text].reduce((v,c)=>v+(/[\u0000-\u007f]/.test(c)?.55:1),0);
       const padding=n.kind==='text'?0:n.kind==='circle'?8:24;
       const required=Math.ceil(units*n.fontSize/Math.max(1,n.w-padding))*n.fontSize*1.3+padding;
@@ -40,7 +44,7 @@ export function validateDrawing(d:HtmlDrawing,format:Format='9:16'):HtmlDrawing 
   }
   return structuredClone(d);
 }
-export function drawingHtml(d:HtmlDrawing,duration:number,format:Format='9:16'):string {
+export function drawingHtml(d:HtmlDrawing,duration:number,format:Format='9:16',publicationAnnotation?:NewsPublicationAnnotation):string {
   validateDrawing(d,format);
   const [width,height]=drawingDimensions(format),portrait=height>width;
   const titleSize=d.title.length>10?42:60;
@@ -48,14 +52,14 @@ export function drawingHtml(d:HtmlDrawing,duration:number,format:Format='9:16'):
   // can self-close empty XHTML divs inside SVG, nesting later cards and notes.
   const paths=(kind:'line'|'path')=>d.nodes.filter(n=>n.kind===kind).map(n=>`<path id="${n.id}" d="${n.kind==='path'?escape(n.pathData!):`M${n.x} ${n.y} L${n.x+n.w} ${n.y+n.h}`}" fill="${n.kind==='path'?palette.paper:'none'}" stroke="${palette[n.tone]}" stroke-width="5" stroke-linecap="round"/>`).join('');
   const lines=paths('line'),products=paths('path');
-  const nodes=d.nodes.filter(n=>n.kind!=='line'&&n.kind!=='path').map(n=>`<div id="${n.id}" class="node ${n.kind}" style="left:${n.x}px;top:${n.y}px;width:${n.w}px;height:${n.h}px;font-size:${n.fontSize}px;background:${n.kind==='text'?'transparent':n.tone==='paper'?palette.paper:'#fffdfa'};color:${n.tone==='coral'?'#b43c27':n.tone==='blue'?'#28617d':palette.ink};border-color:${palette[n.tone]}">${escape(n.text)}</div>`).join('');
+  const nodes=d.nodes.filter(n=>n.kind!=='line'&&n.kind!=='path').map(n=>`<div id="${n.id}" class="node ${n.kind}" ${numericDrawingText(n.text)?'data-qj-number="true"':''} style="left:${n.x}px;top:${n.y}px;width:${n.w}px;height:${n.h}px;font-size:${n.fontSize}px;background:${n.kind==='text'?'transparent':n.tone==='paper'?palette.paper:'#fffdfa'};color:${n.tone==='coral'?'#b43c27':n.tone==='blue'?'#28617d':palette.ink};border-color:${palette[n.tone]}">${escape(n.text)}</div>`).join('');
   const profile = {corporate:['power3.out',.45],premium:['sine.out',.65],playful:['back.out(1.15)',.5],energetic:['expo.out',.32]}[d.motion||'corporate'];
   const enterDuration=Math.min(Number(profile[1]),duration*.3);
   const cards=d.nodes.filter(n=>n.kind!=='line'&&n.kind!=='path');
   const spacing=cards.length>1?Math.min(.08,.4/(cards.length-1)):0;
   const enters=d.nodes.map(n=>n.kind==='line'||n.kind==='path'?`QJMotion.connectorFlow(tl,'#${n.id}',${Math.min(.55,duration*.3)},${enterDuration});`:`QJMotion.cardSettle(tl,'#${n.id}',${(.18+cards.indexOf(n)*spacing).toFixed(3)},${enterDuration},'${profile[0]}');`).join('');
   const highlights=d.nodes.filter(n=>duration>=2&&n.highlight&&n.kind!=='line').map((n,i)=>`tl.to('#${n.id}',{${n.kind==='path'?"stroke:'#fb7353'":"backgroundColor:'#fff0e9',borderColor:'#fb7353'"},duration:.35,ease:'sine.inOut'},${Math.min(duration-.8,1.2+i*Math.max(.5,(duration-2)/Math.max(1,d.nodes.filter(n=>n.highlight).length))).toFixed(2)});${n.kind==='path'?'':`QJMotion.focusPulse(tl,'#${n.id}',${Math.min(duration-.7,1.2+i*Math.max(.5,(duration-2)/Math.max(1,d.nodes.filter(n=>n.highlight).length))).toFixed(2)},.6);`}`).join('');
-  return `<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><style>@font-face{font-family:'PingFang SC';src:local('PingFang SC')}html,body{margin:0;width:${width}px;height:${height}px;overflow:hidden;background:#fffdfa}#main{width:${width}px;height:${height}px;position:relative;font-family:'PingFang SC',Arial,sans-serif;color:#252935}.scene-content{box-sizing:border-box;width:100%;height:100%;padding:${portrait?64:28}px 0;display:flex;flex-direction:column;align-items:center;gap:10px}#title{position:relative;z-index:2;font-size:${titleSize}px;font-weight:800;width:${width-80}px;margin:0;text-align:center;line-height:1.2}.drawing-plane,svg{position:absolute;inset:0;width:${width}px;height:${height}px}svg{overflow:visible}svg.products{z-index:2;pointer-events:none}.text,.circle{z-index:3!important}.text{padding:0}.node{position:absolute;z-index:1;box-sizing:border-box;padding:12px;display:flex;align-items:center;justify-content:center;text-align:center;line-height:1.3;font-weight:700;overflow-wrap:anywhere;white-space:pre-line}.card{border:3px solid;border-radius:20px}.circle{border:3px solid;border-radius:50%;padding:4px}.ambient{position:absolute;width:360px;height:360px;border-radius:50%;background:#fff0e9;opacity:.45;pointer-events:none}.ambient-a{left:-160px;top:60px}.ambient-b{right:-220px;bottom:180px;background:#e6f1f5}#note{font-size:20px;line-height:1.4;text-align:center;width:${width-80}px;left:40px;color:#252935;position:absolute;top:${portrait?180:106}px;margin:0;z-index:2}</style><script src="./gsap.min.js"></script></head><body><section id="main" data-composition-id="main" data-width="${width}" data-height="${height}" data-start="0" data-duration="${duration}"><div id="ambient-a" class="ambient ambient-a" data-layout-ignore></div><div id="ambient-b" class="ambient ambient-b" data-layout-ignore></div><div class="scene-content"><h1 id="title">${escape(d.title)}</h1></div><div class="drawing-plane"><svg viewBox="0 0 ${width} ${height}" aria-label="${escape(d.title)}">${lines}</svg>${nodes}<svg class="products" viewBox="0 0 ${width} ${height}" aria-label="示意产品">${products}</svg></div><p id="note">流程 / 画面为示意</p></section><script>${motionLibrary}window.__timelines={};const tl=gsap.timeline({paused:true});tl.from('#title',{y:20,opacity:0,duration:.6,ease:'power3.out'},.1);tl.from('#note',{opacity:0,duration:.5,ease:'sine.out'},.25);${enters}${highlights}QJMotion.ambientFloat(tl,'#ambient-a',.1,${Math.max(.1,duration-.1)},6);QJMotion.ambientFloat(tl,'#ambient-b',.1,${Math.max(.1,duration-.1)},-4);window.__timelines.main=tl;</script></body></html>`;
+  return `<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><style>@font-face{font-family:'PingFang SC';src:local('PingFang SC')}html,body{margin:0;width:${width}px;height:${height}px;overflow:hidden;background:#fffdfa}#main{width:${width}px;height:${height}px;position:relative;font-family:'PingFang SC',Arial,sans-serif;color:#252935}.scene-content{box-sizing:border-box;width:100%;height:100%;padding:${portrait?64:28}px 0;display:flex;flex-direction:column;align-items:center;gap:10px}#title{position:relative;z-index:2;font-size:${titleSize}px;font-weight:800;width:${width-80}px;margin:0;text-align:center;line-height:1.2}.drawing-plane,svg{position:absolute;inset:0;width:${width}px;height:${height}px}svg{overflow:visible}svg.products{z-index:2;pointer-events:none}.text,.circle{z-index:3!important}.text{padding:0}.node{position:absolute;z-index:1;box-sizing:border-box;padding:12px;display:flex;align-items:center;justify-content:center;text-align:center;line-height:1.3;font-weight:700;overflow-wrap:anywhere;white-space:pre-line}${NUMERIC_DRAWING_CSS}.card{border:3px solid;border-radius:20px}.circle{border:3px solid;border-radius:50%;padding:4px}.ambient{position:absolute;width:360px;height:360px;border-radius:50%;background:#fff0e9;opacity:.45;pointer-events:none}.ambient-a{left:-160px;top:60px}.ambient-b{right:-220px;bottom:180px;background:#e6f1f5}#note{font-size:20px;line-height:1.4;text-align:center;width:${width-80}px;left:40px;color:#252935;position:absolute;top:${portrait?180:106}px;margin:0;z-index:2}${publicationAnnotation?newsPublicationNoteCss(portrait):''}</style><script src="./gsap.min.js"></script></head><body><section id="main" data-composition-id="main" data-width="${width}" data-height="${height}" data-start="0" data-duration="${duration}"><div id="ambient-a" class="ambient ambient-a" data-layout-ignore></div><div id="ambient-b" class="ambient ambient-b" data-layout-ignore></div><div class="scene-content"><h1 id="title">${escape(d.title)}</h1></div><div class="drawing-plane"><svg viewBox="0 0 ${width} ${height}" aria-label="${escape(d.title)}">${lines}</svg>${nodes}<svg class="products" viewBox="0 0 ${width} ${height}" aria-label="示意产品">${products}</svg></div>${publicationAnnotation?newsPublicationNoteHtml(publicationAnnotation):'<p id="note">流程 / 画面为示意</p>'}</section><script>${motionLibrary}window.__timelines={};const tl=gsap.timeline({paused:true});tl.from('#title',{y:20,opacity:0,duration:.6,ease:'power3.out'},.1);${publicationAnnotation?'':"tl.from('#note',{opacity:0,duration:.5,ease:'sine.out'},.25);"}${enters}${highlights}QJMotion.ambientFloat(tl,'#ambient-a',.1,${Math.max(.1,duration-.1)},6);QJMotion.ambientFloat(tl,'#ambient-b',.1,${Math.max(.1,duration-.1)},-4);window.__timelines.main=tl;${NUMERIC_DRAWING_CHECK_SCRIPT}</script></body></html>`;
 }
 export async function authorDrawing(config:ModelConfig,beat:ReconstructionBeat,format:Format='9:16'):Promise<HtmlDrawing> {
   const [width,height]=drawingDimensions(format),top=height>width?220:160,bottom=height>width?1010:height-170;
@@ -80,9 +84,9 @@ export async function authorDrawing(config:ModelConfig,beat:ReconstructionBeat,f
         if(n.kind!=='line'&&n.kind!=='path'&&Number.isFinite(n.fontSize)){
         n.text=n.text.replace(/\\n/g,'\n');
         n.fontSize=Math.max(24,Math.min(64,Math.floor(n.fontSize)));
-        const units=[...n.text].reduce((v,c)=>v+(/[\u0000-\u007f]/.test(c)?.55:1),0),padding=n.kind==='circle'?8:24;
+        const units=[...n.text].reduce((v,c)=>v+(/[\u0000-\u007f]/.test(c)?.55:1),0),padding=numericDrawingText(n.text)&&n.kind==='text'?0:n.kind==='circle'?8:24;
         const height=()=>Math.ceil(units*n.fontSize/Math.max(1,n.w-padding))*n.fontSize*1.3+padding;
-        while(n.fontSize>24&&height()>n.h)n.fontSize--;
+        if(!numericDrawingText(n.text))while(n.fontSize>24&&height()>n.h)n.fontSize--;
         if(height()>n.h)n.h=Math.ceil(height());
         const needed=Math.ceil(height());
         if(n.y+n.h>bottom&&needed<=bottom-top){n.h=Math.max(needed,Math.min(n.h,bottom-n.y));n.y=Math.max(top,Math.min(n.y,bottom-n.h));}

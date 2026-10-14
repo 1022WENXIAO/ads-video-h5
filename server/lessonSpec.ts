@@ -157,13 +157,35 @@ export function spokenLessonText(text:string):string{
   const names:Record<string,string>={'δ':'德尔塔','Δ':'德尔塔','∆':'德尔塔','γ':'伽马','τ':'陶','β':'贝塔','σ':'西格玛','π':'派','θ':'西塔'};
   return text.replace(/max\s*(?:\(\s*0\s*[,，]\s*1\s*[−-]\s*y\s*f\s*\)|零[,，、]\s*一减y\s*f)/gi,'零和一减有符号间隔两者的较大值').replace(/[（(]?\s*1\s*[−-]\s*p_t\s*[）)]?/g,'一减去正确类别概率').replace(/e(?:的)?平方/g,'残差的平方').replace(/p_t/g,'正确类别概率').replace(/\b([A-Z]\d+)_(\d+)\b/g,'$1下划线$2').replace(/易例/g,'简单样本').replace(/[δΔ∆γτβσπθ]/g,c=>names[c]);
 }
+/** A small, source-grounded company vocabulary, not a general Chinese NER.
+ * Only explicit corporate names in verified source claims and actually spoken
+ * in this chapter are mandatory. Ordinary visual labels remain paraphrasable. */
+export function lessonSpeechEntities(chapter:LessonChapter):string[]{
+  const candidates:string[]=[];
+  for(const claim of chapter.claims||[]){
+    if(typeof claim.text!=='string'||claim.basis&&claim.basis!=='source'||!claim.referenceIds?.length)continue;
+    for(const match of claim.text.matchAll(/([\p{Script=Han}]{2,16}?(?:股份(?:有限公司)?|集团(?:有限公司)?|有限责任公司|有限公司))(?=(?:因|于|在|通过|与|和|公告|宣布|发布|称|表示|控股|主营|从事|股票|[\d，,。；;：:]|$))/gu))candidates.push(match[1]);
+    // “科技” alone is an ordinary noun. Treat it as a company suffix only
+    // when this source claim explicitly names a counterparty to a venture.
+    for(const match of claim.text.matchAll(/(?:与|和)([\p{Script=Han}]{2,16}?科技)(?=(?:合资|共同|合作|签署|成立|设立|持股))/gu))candidates.push(match[1]);
+  }
+  const names=new Set<string>();
+  for(const value of candidates){
+    const name=value.split(/通过|全资子公司|控股孙公司|控股子公司|子公司|孙公司|全资|控股|公告显示|公告称|报道称|报道显示|报道|称|由|与/).at(-1)!;
+    if(name.length<4||name.length>16||/的|一家|这家|该公司|这些|多个|相关|采用|普遍|业务/.test(name)||['企业集团','控股集团','科技集团','科技股份','合资公司','项目公司','运营公司','控股公司','科技公司','新设公司','合作公司','投资公司','生产公司','制造公司'].includes(name))continue;
+    const alternatives=[name,name.replace(/(?:有限责任公司|有限公司|集团|科技)$/,'')];
+    const spoken=alternatives.find(term=>term.length>=4&&chapter.narration.includes(term));
+    if(spoken)names.add(spoken);
+  }
+  return [...names].filter(name=>![...names].some(other=>other!==name&&other.includes(name))).slice(0,8);
+}
 export function lessonSpeechLexicon(chapter:LessonChapter,prompt:string):string{
   const base=/损失函数|loss function/i.test(prompt)?['MSE','MAE','Huber','交叉熵','铰链','Focal','CPC','InfoNCE','DPO','德尔塔','伽马','陶','贝塔','西格玛','相似度','概率变化','负log']:[];
   const terms=chapter.visual.items.flatMap(item=>[item.cue,item.label]).filter(term=>term.length<=16&&!/[\n<>]/.test(term));
   const names=chapter.narration.match(/\b(?:[A-Za-z][A-Za-z0-9.-]{1,24}(?:\s+\d+(?:\.\d+)+)?|\d+[A-Za-z]+)\b/g)||[];
   // A small vocabulary hint disambiguates heard homophones; never pass the
   // expected full narration as an ASR input. The audio-match checks still run.
-  return [...new Set([...names,...base,...terms])].join('、').slice(0,160);
+  return [...new Set([...lessonSpeechEntities(chapter),...names,...base,...terms])].join('、').slice(0,160);
 }
 export function compactSpeech(text:string,normalizeNumbers=true):string{
   const spoken=spokenLessonText(text).toLowerCase().replace(/\b(?:delta|gamma|tau|beta|sigma|theta)\b/g,v=>({delta:'德尔塔',gamma:'伽马',tau:'陶',beta:'贝塔',sigma:'西格玛',theta:'西塔'}[v]!));
@@ -342,7 +364,12 @@ export function lessonCaptionAnalysis(chapter:LessonChapter,analysis:AudioAnalys
 }
 export function alignLessonSpeech(chapter:LessonChapter,analysis:AudioAnalysis):{similarity:number;cues:NonNullable<LessonChapter['cues']>}{
   if(analysis.status!=='ready'||!analysis.sentences.length)throw new Error('实际教学旁白没有可辨识的音频转写。');
-  const heardText=analysis.transcript+' '+analysis.sentences.flatMap(s=>s.words).map(w=>w.text).join('');
+  const wordText=analysis.sentences.flatMap(s=>s.words).map(w=>w.text).join('');
+  for(const name of lessonSpeechEntities(chapter)){
+    const term=compactSpeech(name),count=(value:string)=>compactSpeech(value).split(term).length-1,expectedCount=count(chapter.narration);
+    if(count(analysis.transcript)!==expectedCount||count(wordText)!==expectedCount)throw new Error(`章节${chapter.id}已核验公司专名「${name}」匹配不完整或不同，需要独立复听同一音频；不能以整章高相似度放行，也不能直接替换或补齐字幕。`);
+  }
+  const heardText=analysis.transcript+' '+wordText;
   for(const marker of heardText.match(/(?:\[|【)(?:听不清|无法辨认|无法识别|inaudible|unintelligible)(?:\]|】)/gi)||[])if(!chapter.narration.toLowerCase().includes(marker.toLowerCase()))throw new Error(`章节${chapter.id}实际转写含无法辨认的占位${marker}，不能视为匹配，需要独立复听或重录。`);
   const expected=[...compactSpeech(chapter.narration)];
   if(expected.length>=6&&!compactSpeech(analysis.transcript).endsWith(expected.slice(-4).join('')))throw new Error(`章节${chapter.id}末尾台词匹配不完整或出现额外尾词，需要独立复听或重录，不能放行漏字字幕。`);

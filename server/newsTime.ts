@@ -77,3 +77,48 @@ export function newsObservationFindings(report: LessonReport, requestedAt = Date
   }
   return [...new Set(findings)];
 }
+
+/** Bind displayed publication dates to core facts, using the original request
+ * cutoff. Publication dates never stand in for an event or chart observation. */
+export function createNewsPublicationAnnotation(report: LessonReport, requestedAt: number): import('../src/types').NewsPublicationAnnotation | undefined {
+  const news = report.hotResearch;
+  if (!news || !Number.isFinite(requestedAt) || !Number.isFinite(news.windowHours) || news.windowHours <= 0) return;
+  const used = new Set((report.chapters||[]).flatMap(chapter => (chapter.claims||[]).flatMap(claim => claim.referenceIds||[])));
+  const normalize = (value: string) => value.replace(/\s/g, '');
+  for (const topic of news.topics||[]) for (const fact of topic.facts||[]) for (const evidence of fact.evidence||[]) {
+    const ref = report.references.find(source => source.id === evidence.referenceId);
+    if (!ref || !used.has(ref.id) || ref.verification !== 'news-page' || ref.freshness !== 'fresh' || !ref.dateEvidence?.trim()) continue;
+    const quote = normalize(evidence.quote);
+    if (quote.length < 12 || !normalize(ref.excerpt).includes(quote)) continue;
+    const time = newsPublicationTimestamp(ref.publishedAt);
+    if (!Number.isFinite(time) || time > requestedAt || time < requestedAt - news.windowHours * 3600000) continue;
+    const publishedDateBeijing = beijingTimestamp(time).slice(0, 10);
+    return { referenceId: ref.id, publishedAt: ref.publishedAt!, publishedDateBeijing, cutoffUtc: new Date(requestedAt).toISOString(), windowHours: news.windowHours, label: `报道日期：${publishedDateBeijing}（北京时间）` };
+  }
+}
+
+// The verified news parser treats date-only publications as Beijing midnight.
+// Do not re-interpret them as UTC midnight or guess a timezone for naive times.
+export function newsPublicationTimestamp(value: string | undefined): number {
+  if (!value) return NaN;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    const time = Date.parse(value + 'T00:00:00+08:00');
+    return Number.isFinite(time) && beijingTimestamp(time).slice(0, 10) === value ? time : NaN;
+  }
+  return /T.*(?:Z|[+-]\d{2}:?\d{2})$/.test(value) ? Date.parse(value) : NaN;
+}
+
+export function newsPublicationSourceFindings(report: LessonReport, requestedAt: number): string[] {
+  return report.hotResearch && !createNewsPublicationAnnotation(report, requestedAt)
+    ? ['新闻报道日期缺少来源：需要本稿核心事实实际引用、正文逐字支持且位于原指令时间窗内的已核验发布日期；旧事件日期、热榜采样和搜索摘要不能替代。'] : [];
+}
+
+const publicationEscape = (value: string) => value.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]!));
+export function newsPublicationNoteHtml(annotation: import('../src/types').NewsPublicationAnnotation): string {
+  const time = newsPublicationTimestamp(annotation.publishedAt), cutoff = Date.parse(annotation.cutoffUtc);
+  if (!annotation.referenceId || !Number.isFinite(time) || !Number.isFinite(cutoff) || !(annotation.windowHours > 0) || time > cutoff || time < cutoff - annotation.windowHours * 3600000 || beijingTimestamp(time).slice(0, 10) !== annotation.publishedDateBeijing || annotation.label !== `报道日期：${annotation.publishedDateBeijing}（北京时间）`) throw new Error('新闻报道日期注释未绑定有效来源与原指令时间窗。');
+  return `<p id="note" data-news-source-id="${publicationEscape(annotation.referenceId)}" data-news-published-at="${publicationEscape(annotation.publishedAt)}" data-news-cutoff="${publicationEscape(annotation.cutoffUtc)}">${publicationEscape(annotation.label)} · 画面示意</p>`;
+}
+export function newsPublicationNoteCss(portrait: boolean): string {
+  return `#note{box-sizing:border-box;position:absolute;left:40px;top:${portrait ? 180 : 106}px;width:calc(100% - 80px);height:40px;margin:0;padding:0;font-size:24px;font-weight:500;line-height:40px;text-align:center;white-space:nowrap;color:#252935;background:#fffdfa;opacity:1;z-index:10}`;
+}

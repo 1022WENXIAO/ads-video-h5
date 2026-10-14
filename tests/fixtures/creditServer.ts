@@ -1,12 +1,13 @@
 import { createServer } from 'node:http';
-import { spawn } from 'node:child_process';
+import { spawn, type ChildProcess } from 'node:child_process';
 import { once } from 'node:events';
 import { createCipheriv, createHash, randomBytes, scryptSync } from 'node:crypto';
-import { mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { mkdtemp, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { hashPassword } from '../../server/auth';
 import { defaultTokenPrices } from '../../server/tokenPricing';
+import { disposeOwnedFixture, waitForOwnedFixtureReady } from './ownedProcess';
 
 // Real Express/queue/Pi transport, disposable local users and a controllable
 // token provider. No production credentials or external services are used.
@@ -40,6 +41,9 @@ export async function startCreditServer(options: { wechat?: boolean } = {}) {
     response.writeHead(200, { 'Content-Type': 'text/event-stream' });
     response.end(chunks.map(c => 'data: ' + JSON.stringify(c) + '\n\n').join('') + 'data: [DONE]\n\n');
   });
+  let child: ChildProcess | undefined, closing: Promise<void> | undefined;
+  const close = () => closing ||= disposeOwnedFixture(child, provider, directory);
+  try {
   provider.listen(0, '127.0.0.1'); await once(provider, 'listening');
   const providerBase = `http://127.0.0.1:${(provider.address() as { port: number }).port}`;
   const modelToken = randomBytes(32).toString('hex');
@@ -64,27 +68,29 @@ export async function startCreditServer(options: { wechat?: boolean } = {}) {
   const port = (reserve.address() as { port: number }).port; await new Promise<void>(r => reserve.close(() => r()));
   const root = path.resolve(path.dirname(new URL(import.meta.url).pathname), '../..');
   const imports = options.wechat ? ['--import', './tests/fixtures/wechatFetch.ts'] : [];
-  const child = spawn(process.execPath, ['--import', 'tsx', ...imports, 'server/index.ts'], { cwd: root, env: { ...process.env, QINGJIAN_DATA_DIR: directory, PORT: String(port), PUBLIC_BASE_PATH: '', QINGJIAN_ADMIN_PASSWORD: adminPassword,
+  child = spawn(process.execPath, ['--import', 'tsx', ...imports, 'server/index.ts'], { cwd: root, env: { ...process.env, QINGJIAN_DATA_DIR: directory, PORT: String(port), PUBLIC_BASE_PATH: '', QINGJIAN_ADMIN_PASSWORD: adminPassword,
     ...(options.wechat ? { QINGJIAN_TEST_WECHAT_PROVIDER: providerBase, QINGJIAN_WECHAT_APP_ID: 'wxf5dfb5d144bcd684', QINGJIAN_WECHAT_APP_SECRET: 'fixture-wechat-secret' } : {}),
   }, stdio: ['ignore', 'pipe', 'pipe'] });
-  let logs = ''; child.stdout.on('data', bytes => { logs += bytes; }); child.stderr.on('data', bytes => { logs += bytes; });
+  let spawnError: Error | undefined, spawned = false;
+  const startupStarted = Date.now();
+  child.once('spawn', () => { spawned = true; });
+  child.once('error', error => { spawnError = error; });
+  let logs = ''; child.stdout!.on('data', bytes => { logs += bytes; }); child.stderr!.on('data', bytes => { logs += bytes; });
   const base = `http://127.0.0.1:${port}`;
-  for (let n = 0; n < 120; n++) {
-    if (child.exitCode !== null) throw new Error('QA server failed: ' + logs);
-    try { if ((await fetch(base + '/api/health')).ok) break; } catch { /* Startup */ }
-    if (n === 119) throw new Error('QA server did not start: ' + logs);
-    await new Promise(r => setTimeout(r, 50));
-  }
+  const ready = await waitForOwnedFixtureReady(async signal => {
+    if (spawnError || child.exitCode !== null || child.signalCode !== null) throw new Error('QA server failed: ' + (spawnError?.message || logs));
+    try { return (await fetch(base + '/api/health', { signal: AbortSignal.any([signal, AbortSignal.timeout(1000)]) })).ok; } catch { return false; }
+  });
+  if (!ready) throw new Error(`QA server did not start: ${JSON.stringify({ spawned, elapsedMs: Date.now() - startupStarted, exitCode: child.exitCode, signalCode: child.signalCode })}; output: ${logs || '(no startup stdout/stderr)'}`);
   async function login(email = users[0].email) {
-    const response = await fetch(base + '/api/auth/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, password }) });
+    const response = await fetch(base + '/api/auth/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, password }), signal: AbortSignal.timeout(10000) });
     if (!response.ok) throw new Error('Fixture login failed');
     return response.headers.get('set-cookie')!.split(';')[0];
   }
-  const request = (cookie: string, route: string, body?: unknown, method = body ? 'POST' : 'GET') => fetch(base + route, { method, headers: { Cookie: cookie, ...(body ? { 'Content-Type': 'application/json' } : {}) }, body: body ? JSON.stringify(body) : undefined });
-  async function close() {
-    child.kill('SIGTERM'); if (child.exitCode === null) await once(child, 'exit');
-    provider.closeAllConnections(); await new Promise<void>(r => provider.close(() => r()));
-    await rm(directory, { recursive: true, force: true });
-  }
+  const request = (cookie: string, route: string, body?: unknown, method = body ? 'POST' : 'GET') => fetch(base + route, { method, headers: { Cookie: cookie, ...(body ? { 'Content-Type': 'application/json' } : {}) }, body: body ? JSON.stringify(body) : undefined, signal: AbortSignal.timeout(10000) });
   return { base, directory, child, providerState, password, adminPassword, registrationEmail, verificationCode, login, request, close };
+  } catch (error) {
+    try { await close(); } catch (cleanupError) { throw new AggregateError([error, cleanupError], 'Fixture startup and cleanup failed.'); }
+    throw error;
+  }
 }

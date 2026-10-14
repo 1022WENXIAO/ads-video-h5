@@ -1,6 +1,8 @@
 import { createHash } from 'node:crypto';
 import type { Artifact, MediaItem } from '../src/types';
 import type { EvaluationCase, EvaluationCheck, EvaluationFixture, EvaluationResult, EvaluationRun, EvaluationSummary } from '../src/evaluationTypes';
+import { validateNewsPublicationProof } from './newsPublicationProof';
+import { newsWindowHours } from './hotSources';
 
 export function evaluationCaseHash(test: EvaluationCase, fixtures: EvaluationFixture[]): string {
   return createHash('sha256').update(JSON.stringify({ category: test.category, messages: test.messages, expectation: test.expectation, threshold: test.threshold, fixtures: fixtures.map(f => f.sha256) })).digest('hex');
@@ -11,7 +13,7 @@ export function selectedSpeech(artifact: Artifact, media: MediaItem[]): string {
     return analysis?.sentences.flatMap(s => s.words).filter(w => w.start >= clip.start - .04 && w.end <= clip.end + .04).map(w => w.text).join('') || '';
   }).join('\n') || '';
 }
-export function scoreEvaluation(test: EvaluationCase, artifact: Artifact, media: MediaItem[], sourceIds: string[], actualDuration: number, artifactVerified: boolean) {
+export function scoreEvaluation(test: EvaluationCase, artifact: Artifact, media: MediaItem[], sourceIds: string[], actualDuration: number, artifactVerified: boolean, actualFileSha256?: string) {
   const checks: EvaluationCheck[] = [], plan = artifact.plan, review = artifact.review;
   const add = (id: string, name: string, weight: number, passed: boolean, detail: string) => checks.push({ id, name, weight, passed, detail });
   add('render', '真实成片与制作记录', 15, artifactVerified && Boolean(plan?.clips.length && artifact.planHash), '实际读取新视频、测量时长并记录SHA-256，须包含可执行方案和方案哈希。');
@@ -38,6 +40,13 @@ export function scoreEvaluation(test: EvaluationCase, artifact: Artifact, media:
     const lesson = plan?.lesson, fresh = lesson?.references.filter(r => r.verification === 'news-page' && r.freshness === 'fresh') || [];
     const publishers = new Set((lesson?.references || []).filter(r => r.verification === 'news-page').map(r => new URL(r.url).hostname.replace(/^www\./, '')));
     add('evidence', '新闻来源与时效', 10, Boolean(lesson?.hotResearch && fresh.length && publishers.size >= 2 && review?.checks.some(c => c.name === '热点来源与时效' && c.passed) && lesson.factReview && !lesson.factReview.needsRepair), `${publishers.size}家发布者、${fresh.length}条窗口内新闻；研究截止${lesson?.hotResearch?.asOf || '缺失'}。实时题目内容会变化，分数差异需结合资料日期解读。`);
+    const dateReviewPassed = Boolean(review?.checks.some(c => c.name === '新闻报道日期可见' && c.passed));
+    const requestedAt = Date.parse(artifact.requestedAt || '');
+    const dateFindings = plan && review?.newsPublication && actualFileSha256 && Number.isFinite(requestedAt) ? validateNewsPublicationProof(plan,media,review.newsPublication,actualFileSha256,requestedAt) : ['缺少原始指令时间或本轮实际成片、来源、HTML和独立日期抽帧的完整证明。'];
+    const windowRequest = [...test.messages].reverse().find(message=>/今日|今天|当日|today|(?:近|过去|最近)\s*\d+\s*(?:天|小时)|本周|近一周|一周|this week/i.test(message)) || test.messages.at(-1) || '';
+    const expectedWindow = newsWindowHours(windowRequest);
+    if(lesson?.hotResearch?.windowHours !== expectedWindow || review?.newsPublication?.windowHours !== expectedWindow) dateFindings.push(`用户要求${expectedWindow}小时报道窗口，实际研究和日期证明窗口不一致。`);
+    add('news-date', '真实报道日期展示', 0, artifactVerified && dateReviewPassed && dateFindings.length === 0, !artifactVerified ? '缺少本轮真实成片和匹配的制作清单，不能信任日期证明。' : !dateReviewPassed ? '未通过实际成片的新闻报道日期可见检查。' : dateFindings.join('；') || '已核对本轮MP4、首章HTML与来源哈希，以及实际抽帧读到的报道日期；日期metadata不能代替画面。');
   } else if (test.category === 'knowledge') {
     add('evidence', '知识事实、公式与来源', 10, Boolean(plan?.lesson?.factReview && !plan.lesson.factReview.needsRepair && plan.lesson.factReview.score >= 80 && review?.checks.some(c => c.name === '教学事实与来源' && c.passed)), `独立脚本审查${plan?.lesson?.factReview?.score ?? '缺失'}/100，成片事实检查须通过。`);
   } else {

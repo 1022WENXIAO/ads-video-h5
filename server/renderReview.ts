@@ -10,7 +10,7 @@ import { captionsFromTranscript, timelineOffsets } from './timeline';
 import { loadEditingSkill } from './skills';
 import { excludesBgm } from './intents';
 import { inspectAudioLevels, inspectVoice, soundChecks, hasRejectedVoice } from './audioQuality';
-import { newsFreshAtReview } from './reviewResults';
+import { newsFreshAtOriginalRequest } from './reviewResults';
 import { newsRenderAcceptance } from './lessonAcceptance';
 import { requestSemanticReview } from './semanticReview';
 import { reviewAudio } from './reviewAudio';
@@ -20,8 +20,11 @@ import { inspectLessonSpeechGaps, lessonPacingCheck } from './lessonAudio';
 import type { AvatarRenderRecord } from './renderAvatar';
 import { PNG } from 'pngjs';
 import { opaqueFrameDifference, spriteFrames } from './avatarAssets';
+import { createNewsPublicationCandidate, validateNewsPublicationProof } from './newsPublicationProof';
+import { newsPublicationFrameEvidence } from './newsPublicationReview';
 
 export async function reviewRender(file: string, plan: EditPlan, media: MediaItem[], prompt: string, publish?: ReviewAssetPublisher, requestedAt=Date.now()): Promise<RenderReview> {
+  const sampledMovieSha256=plan.lesson?.hotResearch?createHash('sha256').update(await readFile(file)).digest('hex'):undefined;
   const checks: RenderReview['checks'] = [];
   const requests: ReviewRequestMetric[] = [];
   const add = (name: string, passed: boolean, detail: string) => checks.push({ name, passed, detail });
@@ -106,7 +109,7 @@ export async function reviewRender(file: string, plan: EditPlan, media: MediaIte
       try{const gaps=await inspectLessonSpeechGaps(file,r.pacing.maxPauseSeconds);add('旁白停顿节奏',gaps.length===0,`停顿上限${r.pacing.maxPauseSeconds}秒；实际超限区间${JSON.stringify(gaps)}`);}catch{add('旁白停顿节奏',false,'实际成片停顿测量失败，不能视为节奏通过');}
     }
     add('教学事实与来源',Boolean(r.factReview&&!r.factReview.needsRepair&&r.factReview.score>=80)&&r.chapters.every(c=>c.claims.length>0&&c.claims.every(cl=>(cl.basis==='calculation'?Boolean(cl.explanation):cl.referenceIds.length>0)&&cl.referenceIds.every(id=>r.references.some(ref=>ref.id===id&&['search-cited','public-page','primary-page','primary-record','primary-paper','news-page'].includes(ref.verification))))),`独立脚本事实审查${r.factReview?.score??'未完成'}/100；文献事实核对来源，数学定义与课堂演算独立核算`);
-    if(r.hotResearch)add('热点来源与时效',newsFreshAtReview(r),`资料截止${r.hotResearch.asOf}；新闻窗口${r.hotResearch.windowHours}小时；检查发布日期与真实正文，榜单热度不能替代事实`);
+    if(r.hotResearch)add('热点来源与时效',newsFreshAtOriginalRequest(r,requestedAt),`资料截止${r.hotResearch.asOf}；新闻窗口${r.hotResearch.windowHours}小时；检查发布日期与真实正文，榜单热度不能替代事实`);
     add('教学HTML分镜执行',r.chapters.length>0&&r.chapters.every((c,i)=>{const m=media.find(m=>m.id===c.mediaId),g=m?.generation;return Boolean(c.id===plan.clips[i]?.sceneId&&g?.workflowId===r.workflowId&&g.htmlHash===c.htmlHash&&g.audioHash===c.audioHash&&g.referenceHash===r.voice?.anchorHash);}),`实际${r.chapters.length}段HTML/GSAP分镜；核对画面、声音哈希及统一参考`);
     add('教学旁白与动画时间码',r.chapters.every(c=>(c.speechMatch??0)>=.86&&c.cues?.length===c.visual.items.length&&c.cues.every(q=>q.start>=0&&q.end>q.start&&q.end<(c.duration??0))), '字幕和重点动画来自生成音频的真实转写匹配，未用计划文案替代转写');
     add('教学概念递进',r.chapters.every((c,i)=>i===0||c.prerequisites.length>0&&c.prerequisites.every(id=>r.chapters.slice(0,i).some(p=>p.id===id))),'后章前置知识指向先前章节；实际讲解效果另经音频与图解审查');
@@ -141,6 +144,15 @@ export async function reviewRender(file: string, plan: EditPlan, media: MediaIte
   if(plan.reconstruction)limitations.push(...plan.reconstruction.limitations);
   if(plan.lesson)limitations.push(...plan.lesson.limitations);
   let semantic: RenderReview['semantic'];
+  const newsCandidate=plan.lesson?.hotResearch?createNewsPublicationCandidate(plan,media,requestedAt):undefined;
+  let newsPublication:RenderReview['newsPublication'];
+  let newsDateDetail='ch1：缺少与已核验来源、实际HTML和分镜绑定的报道日期标注。';
+  let newsSourceMatches=false;
+  if(newsCandidate)try{
+    const sourceFile=path.join(path.dirname(path.dirname(file)),'media',newsCandidate.sourceId);
+    newsSourceMatches=createHash('sha256').update(await readFile(sourceFile)).digest('hex')===newsCandidate.sourceHash;
+    newsDateDetail=newsSourceMatches?`${newsCandidate.chapterId}：抽帧中未确认可读的“${newsCandidate.label}”，只修复日期画面并保留已核验旁白。`:`${newsCandidate.chapterId}：实际分镜文件与报道日期证据哈希不符。`;
+  }catch{newsDateDetail=`${newsCandidate?.chapterId||'ch1'}：无法读取实际日期分镜文件，不能只凭元数据通过。`;}
   const config = await getModelConfig('understanding');
   if (!config) {limitations.push('未配置音频理解模型，未进行成片音频和抽帧语义审查。');if(audio)add('声音审听完成度',false,'未配置模型，音色一致性未经审听');}
   else {
@@ -176,9 +188,19 @@ export async function reviewRender(file: string, plan: EditPlan, media: MediaIte
       }
       const result = await requestSemanticReview(config, [{ role: 'system', content: (await loadEditingSkill('qingjian-render-review'))+(plan.lesson&&!plan.lesson.hotResearch?'\n'+await loadEditingSkill('qingjian-teaching-video'):'')+(plan.lesson?.hotResearch?'\n'+newsRenderAcceptance(prompt,requestedAt):'') }, { role: 'user', content: [
         { type: 'input_audio', input_audio: audition }, ...frames,
-        { type: 'text', text: `这是成片的完整音频以及${times.length}张标有时间的抽帧，含各分镜和绘制动画早期/稳定阶段。用户要求：${prompt}。${plan.lesson?.hotResearch?"本片是简短新闻图解，按新闻快讯核验版本、日期、不确定性和播报节奏；不要求课堂式定义、推导或完整编年史。收尾可以用核心结论与行动提醒，不必逐条重复前文全部案例；可选背景与更丰富镜头放入suggestions，真实错读、错数、不可读图解、用户明确要求的音乐缺失仍为缺陷。":""}实际混音输入：${JSON.stringify({original:true,bgm:manifest.bgm,narration:manifest.narration})}；只有实际输入为true才表示有该音轨，未启用的音量参数不意味着加了音乐或配音。实际方案：${JSON.stringify(plan)}。${plan.avatars?.length?"作者形象为独立透明序列帧，严查是否显示整张网格、透明背景是否破坏、人物是否遮挡主图解或字幕、身份是否前后稳定；状态动画不需要同步口型。":""}真实剪切边界(成片秒)：${JSON.stringify(timelineOffsets(plan).slice(1))}。音频剪切只发生在这些边界附近；位于一个连续源片段内部的字幕短语切换不是硬切。原素材的口误或停顿可单独评价，不能捏造成新增剪切。${plan.lesson?.hotResearch?'本片是从新闻主题制作的图解短片，全部旁白为同一合成声音。逐章核对实际发音、数字与版本、新闻日期、字幕拼写和图解的对象及因果；用来源与实际音视频定位缺陷。图解可以是面向普通观众的明确示意，不要求课堂定义或数学推导。':plan.lesson?'这是从主题制作的教学视频，全部旁白为同一合成声音。每条实际缺陷必须注明对应章节ID（如ch7）及具体修复要求；全局问题标明global，避免返修漏掉其他章节。仅实际听到的残句、错读、不可读图解或核心概念错误要求返修；额外推导或可选背景建议不能当作错误。检查定义、公式与参数、数值例子、曲线坐标、年代、任务差异、前置概念和应用是否讲清楚；图解应解释概念，不能只重复字幕。所有章节已完整渲染，早期抽帧未出现后续节点不等于最终遗漏。检查教学节奏和朗读英文字母的准确性。':'原声与新增分镜已按mode标记；新增台词是获授权的参考声音合成，不是源录音。审查图形能否解释因果、SOP与知识库而非只重复字幕；示意成果标注示意，不能当作实测。注意合成音色与原音差异。'}所选源原话：${JSON.stringify(expected)}。用户原始指令才是必须满足的风格约束。不能把程序绘制推断成必须黑白、无彩色或不允许装饰；未遮挡内容、未与明确风格冲突的配色和装饰偏好属于suggestions。字幕遗漏须核对实际画面和完整音频，不能仅凭ASR或方案中的参考文案断言真实漏字；若只是不同抽帧的短语切换，或无法听清是否漏字，说明不确定性，不能编造精确听辨结论。只据真实音频和这些抽帧评审，无法观察的部分不要编造。评分必须严格：80分表示可发布但有改进空间，90分以上须接近专业成片。不要只罗列优点。保留原声不代表必须保留重录残句，选句中缺少谓语的半句或重复同一观点需要返修。检查标签是否拥挤、孤字换行、仅重复字幕，以及明显的近远景突跳。严审观点、论据、结论，跳句是否导致逻辑断裂，动效标签是否有信息用途、是否遮脸/字幕。输出JSON：{"score":0到100,"findings":["仅实际且需返修的缺陷，注明章节ID"],"suggestions":["非阻塞改进建议"],"needsRepair":true或false}。findings和suggestions须区分：更多历史节点、额外推导、镜头创意等可选扩展放入suggestions，实际错读、漏字、不可读画面或核心概念错误放入findings。needsRepair只用于实际缺陷或低于80分；任何实际缺陷仍必须返修，不得把错误降为建议。细微标点、语气词差异不判错；抽帧不能证明完整观看。字幕按短语分行，单帧不显示下一行不等于遗漏或硬切原音。只有听到原话被截断或实际漏字才能报告。抽帧无法验证完整推镜或每处转场，应记为未验证，不能凭此判失败。不要给未经音频核实的精确词时间码。` },
-      ] }],metric=>requests.push(metric));
+        { type: 'text', text: `这是成片的完整音频以及${times.length}张标有时间的抽帧，含各分镜和绘制动画早期/稳定阶段。用户要求：${prompt}。${plan.lesson?.hotResearch?"本片是简短新闻图解，按新闻快讯核验版本、日期、不确定性和播报节奏；不要求课堂式定义、推导或完整编年史。收尾可以用核心结论与行动提醒，不必逐条重复前文全部案例；可选背景与更丰富镜头放入suggestions，真实错读、错数、不可读图解、用户明确要求的音乐缺失仍为缺陷。":""}实际混音输入：${JSON.stringify({original:true,bgm:manifest.bgm,narration:manifest.narration})}；只有实际输入为true才表示有该音轨，未启用的音量参数不意味着加了音乐或配音。实际方案：${JSON.stringify(plan)}。${plan.avatars?.length?"作者形象为独立透明序列帧，严查是否显示整张网格、透明背景是否破坏、人物是否遮挡主图解或字幕、身份是否前后稳定；状态动画不需要同步口型。":""}真实剪切边界(成片秒)：${JSON.stringify(timelineOffsets(plan).slice(1))}。音频剪切只发生在这些边界附近；位于一个连续源片段内部的字幕短语切换不是硬切。原素材的口误或停顿可单独评价，不能捏造成新增剪切。${plan.lesson?.hotResearch?'本片是从新闻主题制作的图解短片，全部旁白为同一合成声音。逐章核对实际发音、数字与版本、新闻日期、字幕拼写和图解的对象及因果；用来源与实际音视频定位缺陷。图解可以是面向普通观众的明确示意，不要求课堂定义或数学推导。':plan.lesson?'这是从主题制作的教学视频，全部旁白为同一合成声音。每条实际缺陷必须注明对应章节ID（如ch7）及具体修复要求；全局问题标明global，避免返修漏掉其他章节。仅实际听到的残句、错读、不可读图解或核心概念错误要求返修；额外推导或可选背景建议不能当作错误。检查定义、公式与参数、数值例子、曲线坐标、年代、任务差异、前置概念和应用是否讲清楚；图解应解释概念，不能只重复字幕。所有章节已完整渲染，早期抽帧未出现后续节点不等于最终遗漏。检查教学节奏和朗读英文字母的准确性。':'原声与新增分镜已按mode标记；新增台词是获授权的参考声音合成，不是源录音。审查图形能否解释因果、SOP与知识库而非只重复字幕；示意成果标注示意，不能当作实测。注意合成音色与原音差异。'}所选源原话：${JSON.stringify(expected)}。用户原始指令才是必须满足的风格约束。不能把程序绘制推断成必须黑白、无彩色或不允许装饰；未遮挡内容、未与明确风格冲突的配色和装饰偏好属于suggestions。字幕遗漏须核对实际画面和完整音频，不能仅凭ASR或方案中的参考文案断言真实漏字；若只是不同抽帧的短语切换，或无法听清是否漏字，说明不确定性，不能编造精确听辨结论。只据真实音频和这些抽帧评审，无法观察的部分不要编造。评分必须严格：80分表示可发布但有改进空间，90分以上须接近专业成片。不要只罗列优点。保留原声不代表必须保留重录残句，选句中缺少谓语的半句或重复同一观点需要返修。检查标签是否拥挤、孤字换行、仅重复字幕，以及明显的近远景突跳。严审观点、论据、结论，跳句是否导致逻辑断裂，动效标签是否有信息用途、是否遮脸/字幕。输出JSON：{"score":0到100,"findings":["仅实际且需返修的缺陷，注明章节ID"],"suggestions":["非阻塞改进建议"],"needsRepair":true或false}。findings和suggestions须区分：更多历史节点、额外推导、镜头创意等可选扩展放入suggestions，实际错读、漏字、不可读画面或核心概念错误放入findings。needsRepair只用于实际缺陷或低于80分；任何实际缺陷仍必须返修，不得把错误降为建议。细微标点、语气词差异不判错；抽帧不能证明完整观看。字幕按短语分行，单帧不显示下一行不等于遗漏或硬切原音。只有听到原话被截断或实际漏字才能报告。抽帧无法验证完整推镜或每处转场，应记为未验证，不能凭此判失败。不要给未经音频核实的精确词时间码。${newsCandidate?` 另须返回newsPublication:{visible:boolean,chapterId:string,quote:string,frameTime:number}：只据本次首章真实抽帧读取报道日期。chapterId应为${newsCandidate.chapterId}，frameTime必须是上述实际抽帧秒数；quote逐字抄录可读的“报道日期”行，仅含该日期及北京时间标记，不含其他示意说明。期望来源标记为“${newsCandidate.label}”，但不能从方案或期望文字推定画面可见。没有清楚看到、不可读、被遮挡或日期不符时visible=false并如实填写实际所见；不自报哈希、HTML检查或证明通过。`:""}` },
+      ] }],metric=>requests.push(metric),Boolean(newsCandidate));
       semantic = { score: result.score, findings: result.findings.slice(0, 10).map((f) => f.slice(0, 500)),suggestions:result.suggestions.slice(0,10).map(f=>f.slice(0,500)) };
+      if(newsCandidate&&newsSourceMatches){
+        const first=plan.clips[0];
+        const frameEvidence=newsPublicationFrameEvidence(result.newsPublication,newsCandidate,times,{start:offsets[0],end:offsets[0]+first.end-first.start});
+        if(frameEvidence){
+          const proof={...newsCandidate,frameVerified:true as const,frameEvidence,renderedSha256:createHash('sha256').update(await readFile(file)).digest('hex')};
+          const failures=proof.renderedSha256!==sampledMovieSha256?['实际成片在抽帧审查期间改变，不能把旧抽帧证据绑定到新文件。']:validateNewsPublicationProof(plan,media,proof,proof.renderedSha256,requestedAt);
+          if(!failures.length)newsPublication=proof;
+          else newsDateDetail=`${newsCandidate.chapterId}：${failures.join('；')}`;
+        }
+      }
       add('成片语义审查', !result.needsRepair && result.score >= 80, result.findings.join('；').slice(0, 1200) || `完整音频和${times.length}张抽帧未发现需返修的问题`);
       limitations.push(`语义审查覆盖完整音频和${times.length}张关键抽帧，未逐帧审阅整片。`);
     } catch (error) {
@@ -187,8 +209,10 @@ export async function reviewRender(file: string, plan: EditPlan, media: MediaIte
       add('成片语义审查', false, `${reason}，未完成，不能视为通过`);
     } finally { await rm(temp, { recursive: true, force: true }); }
   }
+  if(newsCandidate&&newsSourceMatches&&!semantic)newsDateDetail=`${newsCandidate.chapterId}：报道日期实际抽帧审查未完成，保留现有成片重试审查，不能推定画面缺失或重新合成媒体。`;
+  if(plan.lesson?.hotResearch)add('新闻报道日期可见',Boolean(newsPublication),newsPublication?`${newsPublication.chapterId}：真实HTML可见检查及成片${newsPublication.frameEvidence.frameTime}秒抽帧确认“${newsPublication.frameEvidence.quote}”；已绑定来源、分镜、方案及成片哈希。`:newsDateDetail);
   const score = semantic ? Math.round(Math.min(semantic.score, checks.filter((c)=>c.passed).length/checks.length*100)) : 0;
-  const review: RenderReview = { status: checks.every((c) => c.passed) && Boolean(semantic) ? 'passed' : 'needs-review', score, checks, semantic, audio, transport:{mode:publish?'hosted':'inline',requests}, limitations, createdAt: new Date().toISOString() };
+  const review: RenderReview = { status: checks.every((c) => c.passed) && Boolean(semantic) ? 'passed' : 'needs-review', score, checks, semantic, audio, ...(newsPublication?{newsPublication}:{}), transport:{mode:publish?'hosted':'inline',requests}, limitations, createdAt: new Date().toISOString() };
   await writeFile(file.replace(/\.mp4$/, '.review.json'), JSON.stringify(review, null, 2), { mode: 0o600 });
   return review;
 }

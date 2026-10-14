@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { mkdir, readFile, rename, writeFile } from 'node:fs/promises';
 import path from 'node:path';
-import type { EvaluationCase, EvaluationFixture, ReleaseEvaluation, ReleaseEvaluationAttempt, ReleaseEvaluationSettings, ReleaseEvaluationState } from '../shared/evaluationTypes';
+import type { EvaluationCase, EvaluationFixture, EvaluationResult, ReleaseEvaluation, ReleaseEvaluationAttempt, ReleaseEvaluationSettings, ReleaseEvaluationState } from '../shared/evaluationTypes';
 import { EvaluationError, type Evaluations, type evaluationImplementation } from './evaluations';
 import { evaluationCaseHash, evaluationSummary } from './evaluationScoring';
 import { getModelConfig, type ModelConfig } from './modelRegistry';
@@ -10,6 +10,7 @@ import { runWithJobSignal } from './jobExecution';
 import { traceValue } from './toolTrace';
 import { generateReleaseCases } from './releaseEvaluationGeneration';
 import { ensureReleaseEvaluationFixtures } from './releaseEvaluationFixtures';
+import { validateNewsPublicationRecord } from './newsPublicationProof';
 
 export const defaultReleaseEvaluationSettings = (): ReleaseEvaluationSettings => ({ enabled: true, generatorModelId: null, caseCount: 3, maxCaseSeconds: 1800, generationTimeoutSeconds: 180, maxSuiteSeconds: 7200, maxAttempts: 2 });
 export function validateReleaseEvaluationSettings(input: unknown, current = defaultReleaseEvaluationSettings()): ReleaseEvaluationSettings {
@@ -31,6 +32,13 @@ interface Options {
   onError?: (error: unknown) => void;
 }
 const active = (release: ReleaseEvaluation) => ['queued','generating','running'].includes(release.status);
+const releaseNewsDatePassed = (result: EvaluationResult): boolean => {
+  if (result.case.category !== 'hot-news') return true;
+  const artifact = result.artifact, requestedAt = Date.parse(artifact?.requestedAt || '');
+  return Boolean(result.checks?.some(check => check.id === 'news-date' && check.passed)
+    && artifact?.plan?.lesson?.hotResearch && Number.isFinite(requestedAt)
+    && !validateNewsPublicationRecord(artifact.plan, artifact.review?.newsPublication, artifact.sha256, requestedAt).length);
+};
 const attemptSnapshot = (release: ReleaseEvaluation): ReleaseEvaluationAttempt => {
   const { id: _id, revision: _revision, implementationHash: _hash, history: _history, ...attempt } = release;
   return structuredClone(attempt);
@@ -53,7 +61,7 @@ export function createReleaseEvaluations(options: Options) {
     const run = options.evaluations.get(summary.id);
     release.evaluationRunId = run.id; release.summary = evaluationSummary(run);
     if (['running','stopping'].includes(run.status)) return false;
-    const complete = run.status === 'completed' && run.releaseId === release.id && run.releaseAttempt === release.attempt && run.snapshot.revision === release.revision && run.snapshot.implementationHash === release.implementationHash && run.results.length === release.settingsSnapshot.caseCount && release.summary.rendered === run.results.length && ['hot-news','knowledge','multi-video'].every(category => run.results.some(r => r.case.category === category)) && run.results.every(r => r.status === 'passed' && release.generatedCases.some(c => c.id === r.case.id && evaluationCaseHash(c,r.fixtures) === r.caseHash) && r.caseHash === evaluationCaseHash(r.case,r.fixtures) && r.score !== undefined && r.score >= r.case.threshold && r.checks?.length && r.checks.every(c => c.passed) && r.checks.some(c => c.id === 'stream-duration' && c.passed) && r.artifact && /^[a-f0-9]{64}$/.test(r.artifact.sha256) && r.artifact.bytes > 0 && Number.isFinite(r.artifact.actualDuration) && r.artifact.actualDuration > 0 && r.artifact.planHash && r.artifact.review?.status === 'passed' && r.artifact.review.score >= r.case.threshold && r.artifact.review.checks.length && r.artifact.review.checks.every(c => c.passed));
+    const complete = run.status === 'completed' && run.releaseId === release.id && run.releaseAttempt === release.attempt && run.snapshot.revision === release.revision && run.snapshot.implementationHash === release.implementationHash && run.results.length === release.settingsSnapshot.caseCount && release.summary.rendered === run.results.length && ['hot-news','knowledge','multi-video'].every(category => run.results.some(r => r.case.category === category)) && run.results.every(r => r.status === 'passed' && release.generatedCases.some(c => c.id === r.case.id && evaluationCaseHash(c,r.fixtures) === r.caseHash) && r.caseHash === evaluationCaseHash(r.case,r.fixtures) && r.score !== undefined && r.score >= r.case.threshold && r.checks?.length && r.checks.every(c => c.passed) && r.checks.some(c => c.id === 'stream-duration' && c.passed) && releaseNewsDatePassed(r) && r.artifact && /^[a-f0-9]{64}$/.test(r.artifact.sha256) && r.artifact.bytes > 0 && Number.isFinite(r.artifact.actualDuration) && r.artifact.actualDuration > 0 && r.artifact.planHash && r.artifact.review?.status === 'passed' && r.artifact.review.score >= r.case.threshold && r.artifact.review.checks.length && r.artifact.review.checks.every(c => c.passed));
     release.status = run.status === 'cancelled' ? 'cancelled' : complete ? 'passed' : 'failed';
     release.finishedAt = run.finishedAt || new Date().toISOString(); release.updatedAt = release.finishedAt;
     release.error = release.status === 'passed' ? undefined : run.results.filter(r => r.status !== 'passed').map(r => `${r.case.name}：${r.error || r.stage || r.status}`).join('；').slice(0,3000) || '实际成片验收未全部通过。';
