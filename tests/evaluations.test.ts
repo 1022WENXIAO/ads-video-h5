@@ -179,3 +179,24 @@ test('a failed initial record write does not start jobs or leave a phantom activ
   while(final.status==='running'&&Date.now()<deadline){await new Promise(resolve=>setTimeout(resolve,20));final=manager.get(run.id);}
   assert.equal(calls,1);assert.equal(final.status,'completed');assert.equal(final.results[0].status,'failed');
 });
+test('manual evaluations cannot overlap a release case-generation reservation', async t => {
+  const dir=await mkdtemp(path.join(tmpdir(),'qingjian-eval-reservation-'));t.after(()=>rm(dir,{recursive:true,force:true}));let calls=0;
+  const manager=createEvaluations({dataDir:dir,implementation:{revision:null,implementationHash:'code',skillHash:'skill'},models:async()=>models,execute:async()=>{calls++;throw new Error('fixture execution');},stop:async()=>{},artifactFile:()=>undefined});
+  await manager.init();assert.equal(await manager.reserve('release-owner'),true);assert.equal(await manager.reserve('other-release'),false);
+  await assert.rejects(manager.start({caseIds:['knowledge-cross-45']}),/生成用例/);assert.equal(calls,0);
+  await manager.release('other-release');await assert.rejects(manager.start({caseIds:['knowledge-cross-45']}),/生成用例/);
+  await manager.release('release-owner');const run=await manager.start({caseIds:['knowledge-cross-45']});assert.equal(await manager.reserve('release-owner'),false);
+  const deadline=Date.now()+3000;while(manager.get(run.id).status==='running'&&Date.now()<deadline)await new Promise(resolve=>setTimeout(resolve,20));
+  assert.equal(calls,1);
+});
+test('a truncated MP4 with readable metadata and a valid manifest still fails the full playback gate', {timeout:20000}, async t => {
+  const dir=await mkdtemp(path.join(tmpdir(),'qingjian-eval-corrupt-media-'));t.after(()=>rm(dir,{recursive:true,force:true}));
+  const video=path.join(dir,'truncated.mp4');
+  await runFFmpeg(['-hide_banner','-loglevel','error','-f','lavfi','-i','testsrc2=s=160x96:r=20','-f','lavfi','-i','sine=frequency=300:sample_rate=48000','-t','10','-c:v','libx264','-c:a','aac','-movflags','+faststart',video]);
+  const bytes=await readFile(video);await writeFile(video,bytes.subarray(0,Math.floor(bytes.length*.65)));
+  const o=output();o.file=video;await writeFile(video.replace('.mp4','.render.json'),JSON.stringify({planHash:o.artifact.planHash}));
+  const manager=createEvaluations({dataDir:dir,implementation:{revision:null,implementationHash:'code',skillHash:'skill'},models:async()=>models,execute:async()=>o,stop:async()=>{},artifactFile:()=>video});
+  await manager.init();const run=await manager.start({caseIds:['knowledge-cross-45']});
+  const deadline=Date.now()+5000;while(manager.get(run.id).status==='running'&&Date.now()<deadline)await new Promise(resolve=>setTimeout(resolve,20));
+  const result=manager.get(run.id).results[0];assert.equal(result.status,'failed');assert.equal(result.artifact,undefined);assert(result.error);assert.equal(result.score,undefined);
+});

@@ -267,7 +267,42 @@ export interface Artifact {
   planHash?: string;
 }
 
+export interface JobFailure {
+  name: string;
+  message: string;
+  code?: string;
+  status?: number;
+  retryable: boolean;
+  retryExhausted: boolean;
+  causes?: JobFailure[];
+}
+export interface JobAttempt {
+  id: string;
+  number: number;
+  reason: 'initial' | 'retry' | 'restart';
+  kind: JobKind;
+  status: 'running' | 'succeeded' | 'failed' | 'cancelled' | 'interrupted';
+  startedAt: string;
+  finishedAt?: string;
+  revision: string | null;
+  textModel?: Pick<PublicModel, 'id' | 'name' | 'modelId'>;
+  stage?: string;
+  error?: string;
+  failure?: JobFailure;
+  artifactId?: string;
+  inheritedArtifactId?: string;
+  artifactOrigin?: 'generated' | 'reviewed' | 'retained';
+  restoredCallIds?: string[];
+  restoredCallCount?: number;
+  workflow?: WorkflowEvent[];
+  transport?: Array<{ at: string; origin: string; path: string; attempts: number; durationMs: number; outcome: 'recovered' | 'failed'; failure: JobFailure; status?: number; requestId?: string }>;
+}
+
 export interface Job {
+  attemptId?: string;
+  attempts?: JobAttempt[];
+  legacyWorkflow?: WorkflowEvent[];
+  failure?: JobFailure;
   creditTaskId?: string;
   textModel?: Pick<PublicModel, 'id' | 'name' | 'modelId'>;
   avatarSourceId?: string;

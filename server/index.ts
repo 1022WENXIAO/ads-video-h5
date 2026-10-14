@@ -35,7 +35,9 @@ import { runLessonWorkflow } from './lessonWorkflow';
 import { sessionSources } from './sourceSelection';
 import { researchHotTopics } from './hotResearch';
 import { wantsScheduleManagement } from './scheduleIntent';
-import { jobDelay, JobCancelledError, throwIfJobCancelled } from './jobExecution';
+import { jobDelay, JobCancelledError, throwIfJobCancelled, getJobTransportDiagnostics, jobErrorDiagnostics, withoutJobSignal } from './jobExecution';
+import { beginJobAttempt, finishJobAttempt, jobFailureMessage, publicJob } from './jobAttempts';
+import { executionFailure } from './executionErrors';
 import { createJobRunner, restoreInterruptedJobs } from './jobRunner';
 import { createEvaluations, evaluationFileHash, evaluationImplementation, EvaluationError } from './evaluations';
 import { privateEvaluationStorage, isEvaluationOwner } from './evaluationIsolation';
@@ -49,6 +51,8 @@ import { mountVoiceInputRoutes } from './voiceInput';
 import { createCredits, CreditError } from './credits';
 import { withCreditUsage } from './creditUsage';
 import { mountCreditRoutes, mountCreditAdminRoutes } from './creditRoutes';
+import { createReleaseEvaluations } from './releaseEvaluations';
+import { loadApplicationState } from './stateLoading';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const dataDir = process.env.QINGJIAN_DATA_DIR ? path.resolve(process.env.QINGJIAN_DATA_DIR) : path.join(root, 'data');
@@ -90,7 +94,7 @@ function newSession(modelId: string | null): Session {
 }
 const firstSession = newSession(await getDefaultTextModelId());
 const emptyState = (): StoredState => ({ activeSessionId: firstSession.id, sessions: [firstSession], media: [], artifacts: [], jobs: [], settings: { language: 'zh-CN', chatBackground: null }, artifactFiles: {}, narrationBySession: {}, bgmBySession: {}, profiles: {} });
-let state: StoredState = await readFile(stateFile, 'utf8').then((text) => ({ ...emptyState(), ...JSON.parse(text) as Partial<StoredState> })).catch(() => emptyState());
+let state: StoredState = await loadApplicationState(stateFile, emptyState);
 function normalizePlanSummary(plan: NonNullable<Session['plan']>): NonNullable<Session['plan']> {
   const core = plan.summary.split(/[；;]/).filter((part) => !/(封面|cover|thumbnail|poster)/i.test(part)).join('；').replace(/[。.!！\s；;]+$/, '') || '已整理剪辑方案';
   const coverName = state.media.find((item) => item.id === plan.coverMediaId && item.kind === 'image')?.name;
@@ -109,8 +113,7 @@ restoreInterruptedJobs(state.jobs, now());
 const jobRunner = createJobRunner();
 const evaluationJobModels = new Map<string, ModelSnapshot>();
 let saveTail = Promise.resolve();
-function saveState(): Promise<void> {
-  throwIfJobCancelled();
+function persistState(): Promise<void> {
   const snapshot = JSON.stringify(state, null, 2);
   saveTail = saveTail.catch(() => undefined).then(async () => {
     const temp = `${stateFile}.${randomUUID()}.tmp`;
@@ -119,6 +122,7 @@ function saveState(): Promise<void> {
   });
   return saveTail;
 }
+function saveState(): Promise<void> { throwIfJobCancelled(); return persistState(); }
 await saveState();
 const owned = (item: { ownerId?: string }, ownerId: string) => item.ownerId === ownerId;
 const getSession = (id: string, ownerId?: string) => state.sessions.find((session) => session.id === id && (!ownerId || owned(session, ownerId)));
@@ -143,7 +147,7 @@ const extFor = (mime: string) => mime === 'image/jpeg' ? 'jpg' : mime === 'image
 async function publicState(user: PublicUser): Promise<AppState> {
   const [models, profile, wallet] = await Promise.all([listPublicModels(), profileOf(user), credits.snapshot(user.id)]);
   const textConfig = await getModelConfig('text', getSession(profile.activeSessionId, user.id)?.modelId);
-  return { credits: wallet, activeSessionId: profile.activeSessionId, sessions: state.sessions.filter((item) => owned(item, user.id)), media: state.media.filter((item) => owned(item, user.id)).map((item) => ({ ...item, url: item.character ? publicUrl(item.url) : assetUrl(user.id, 'media', item.id, item.url), shots: item.shots?.map((shot, index) => ({ ...shot, thumbnailUrl: assetUrl(user.id, 'shots', `${item.id}-${index}`, shot.thumbnailUrl) })) })), artifacts: state.artifacts.filter((item) => owned(item, user.id)).map((item) => ({ ...item, url: assetUrl(user.id, item.kind === 'video' ? 'exports' : 'artifacts', item.id, item.url), downloadUrl: publicUrl(item.downloadUrl), ...(item.coverUrl ? { coverUrl: assetUrl(user.id, 'covers', item.id, item.coverUrl) } : {}) })), jobs: state.jobs.filter((item) => owned(item, user.id)), settings: profile.settings, models, mode: textConfig ? 'pi' : 'unconfigured' };
+  return { credits: wallet, activeSessionId: profile.activeSessionId, sessions: state.sessions.filter((item) => owned(item, user.id)), media: state.media.filter((item) => owned(item, user.id)).map((item) => ({ ...item, url: item.character ? publicUrl(item.url) : assetUrl(user.id, 'media', item.id, item.url), shots: item.shots?.map((shot, index) => ({ ...shot, thumbnailUrl: assetUrl(user.id, 'shots', `${item.id}-${index}`, shot.thumbnailUrl) })) })), artifacts: state.artifacts.filter((item) => owned(item, user.id)).map((item) => ({ ...item, url: assetUrl(user.id, item.kind === 'video' ? 'exports' : 'artifacts', item.id, item.url), downloadUrl: publicUrl(item.downloadUrl), ...(item.coverUrl ? { coverUrl: assetUrl(user.id, 'covers', item.id, item.coverUrl) } : {}) })), jobs: state.jobs.filter((item) => owned(item, user.id)).map(publicJob), settings: profile.settings, models, mode: textConfig ? 'pi' : 'unconfigured' };
 }
 
 function addReply(session: Session, job: Job, text: string, artifactId?: string) {
@@ -614,18 +618,23 @@ async function performJob(job: Job): Promise<void> {
 }
 let processing = false;
 async function processQueue() {
+  return withoutJobSignal(async () => {
   if (processing) return;
   processing = true;
   try {
     while (true) {
       const job = state.jobs.find((item) => item.status === 'queued');
       if (!job) break;
+      const attempt = beginJobAttempt(job, runtimeImplementation.revision, now());
+      let transport: NonNullable<NonNullable<Job['attempts']>[number]['transport']> = [];
+      let modelSecrets: string[] = [];
       job.status = 'running'; job.updatedAt = now(); job.progress = 5; job.error = undefined;
       const activeSession=getSession(job.sessionId);
       if(activeSession)updateReply(activeSession,job,'收到请求，正在理解制作要求并规划执行步骤。','commentary','start');
       await saveState();
       try {
         await jobRunner.run(job, async () => {
+          try {
           let models = evaluationJobModels.get(job.id);
           if (isEvaluationOwner(job.ownerId) && !models) throw new EvaluationError('评测模型快照已中断，请重新运行评测。');
           if (!models) {
@@ -633,10 +642,12 @@ async function processQueue() {
             models = { text, image, audio, understanding };
           }
           job.textModel = models.text ? { id: models.text.id, name: models.text.name, modelId: models.text.modelId } : undefined;
+          modelSecrets = Object.values(models).flatMap(model => model?.apiKey ? [model.apiKey] : []);
           await saveState();
           if (!isEvaluationOwner(job.ownerId) && !auth.listUsers().some(user => user.id === job.ownerId)) throw new CreditError('任务所属账户不存在，无法记录积分用量。', 'CREDIT_OWNER_MISSING', 409);
           const execute = () => withModelSnapshot(models!, () => performJob(job));
-          return isEvaluationOwner(job.ownerId) ? execute() : withCreditUsage(credits, job.ownerId!, job.creditTaskId ?? job.id, execute);
+          return await (isEvaluationOwner(job.ownerId) ? execute() : withCreditUsage(credits, job.ownerId!, job.creditTaskId ?? job.id, execute));
+          } finally { transport = getJobTransportDiagnostics(); }
         });
         job.status = 'succeeded'; job.progress = 100;
       }
@@ -647,21 +658,23 @@ async function processQueue() {
           if (session) addReply(session, job, '已停止运行。已完成的步骤和生成结果已保留。');
         } else {
           job.status = 'failed'; job.progress = undefined;
-          const message = error instanceof Error ? error.message : '处理失败';
-          job.error = error instanceof CreditError ? error.message : error instanceof ProviderError
-            ? `${error.message}（${error.code}${error.status ? ` / HTTP ${error.status}` : ''}）`
-            : /API Key|模型尚未配置|会话或消息|素材|剪辑方案|Pi Agent|对话回复|图片描述|口播文案|BGM|Pixabay|音频超过|音频文件|音频理解|语义分句|字幕|分句|特效|重构工作流未完成|教学工作流未完成|教学研究|教学视频|热点研究|形象|动画/.test(message)
-              ? message : '生成失败，请检查模型配置、素材格式或网络后重试。';
+          job.failure = executionFailure(error, modelSecrets);
+          transport = transport.length ? transport : jobErrorDiagnostics(error);
+          job.error = jobFailureMessage(error, job.stage, modelSecrets);
+          console.error(JSON.stringify({ event: 'job.failed', jobId: job.id, attemptId: attempt.id, revision: attempt.revision, kind: job.kind, stage: job.stage, model: job.textModel, failure: job.failure, transport }));
           const session = getSession(job.sessionId);
           if (session) addReply(session, job, `本次处理未完成：${job.error}`);
         }
       }
       job.updatedAt = now();
+      finishJobAttempt(job, job.updatedAt, transport, job.failure);
+      if (job.status !== 'failed') console.info(JSON.stringify({ event: 'job.finished', jobId: job.id, attemptId: attempt.id, revision: attempt.revision, status: job.status, kind: job.kind, artifactId: job.artifactId, durationMs: Date.parse(job.updatedAt) - Date.parse(attempt.startedAt), recoveredRequests: transport.filter(d => d.outcome === 'recovered').length }));
       evaluationJobModels.delete(job.id);
       const session = getSession(job.sessionId); if (session) session.updatedAt = now();
       await saveState();
     }
   } finally { processing = false; }
+  });
 }
 
 async function enqueueAgentMessage(session: Session, text: string, attachmentIds: string[], voiceTicket?: string): Promise<Job> {
@@ -680,16 +693,17 @@ async function enqueueAgentMessage(session: Session, text: string, attachmentIds
   state.jobs.push(job);
   return job;
 }
+const runtimeImplementation = await evaluationImplementation(root);
 const evaluations = createEvaluations({
   dataDir,
-  implementation: await evaluationImplementation(root),
+  implementation: runtimeImplementation,
   models: async preferred => {
     const [text, audio, understanding, image] = await Promise.all([getModelConfig('text', preferred), getModelConfig('audio'), getModelConfig('understanding'), getModelConfig('image')]);
     return { text, audio, understanding, image };
   },
   stop: async runId => {
     for (const session of state.sessions.filter(s => s.ownerId?.startsWith(`evaluation:${runId}:`))) jobRunner.stopSession(state.jobs, session.ownerId!, session.id, now());
-    await saveState();
+    await persistState();
   },
   artifactFile: (runId, resultId, artifactId) => {
     const artifact = state.artifacts.find(a => a.id === artifactId && a.ownerId === `evaluation:${runId}:${resultId}`);
@@ -706,7 +720,7 @@ const evaluations = createEvaluations({
     }
     state.sessions.push(session); state.media.push(...sources); await saveState();
     const sourceIds = sources.map(m => m.id), jobs: Job[] = [];
-    const onAbort = () => { jobRunner.stopSession(state.jobs, ownerId, session.id, now()); void saveState().catch(() => undefined); };
+    const onAbort = () => { jobRunner.stopSession(state.jobs, ownerId, session.id, now()); void persistState().catch(() => undefined); };
     context.signal.addEventListener('abort', onAbort, { once: true });
     try {
       for (const text of test.messages) {
@@ -729,11 +743,14 @@ const evaluations = createEvaluations({
       const unfinished = jobs.some(job => ['queued','running','stopping'].includes(job.status));
       if (unfinished) jobRunner.stopSession(state.jobs, ownerId, session.id, now());
       for (const job of jobs) evaluationJobModels.delete(job.id);
-      if (unfinished) await saveState();
+      if (unfinished) await persistState();
     }
   },
 });
 await evaluations.init();
+const releaseEvaluations = createReleaseEvaluations({ dataDir, implementation: runtimeImplementation, evaluations, onError: error => console.error(JSON.stringify({ event: 'release-evaluation.error', failure: executionFailure(error) })) });
+try { await releaseEvaluations.init(); }
+catch (error) { console.error(JSON.stringify({ event: 'release-evaluation.init-failed', failure: executionFailure(error) })); }
 
 const app = express();
 app.set('trust proxy', 'loopback');
@@ -745,7 +762,7 @@ await credits.load(auth.listUsers());
 const adminAuth = createAdminAuth(dataDir);
 await adminAuth.load();
 adminAuth.mount(app);
-mountAdminRoutes(app, effects, adminAuth, publicBase, evaluations);
+mountAdminRoutes(app, effects, adminAuth, publicBase, evaluations, releaseEvaluations);
 mountCreditAdminRoutes(app, credits, adminAuth, auth.listUsers);
 app.get('/api/effects', (_request, response) => response.json({ effects: effects.list().filter((item) => item.enabled).map(({ id, name, description, duration, width, height }) => ({ id, name, description, duration, width, height })) }));
 app.get('/api/effects/assets/:id', async (request, response) => {
@@ -946,7 +963,13 @@ app.get('/api/media/:id/shots/:index', async (request, response) => {
     response.type('image/jpeg').sendFile(thumbnail);
   } catch { response.status(500).json({ error: '缩略图生成失败。' }); }
 });
-app.get('/api/jobs/:id', (request, response) => { const job = state.jobs.find((item) => item.id === request.params.id && owned(item, userOf(request).id)); if (!job) return response.status(404).json({ error: '任务不存在。' }); response.json(job); });
+app.get('/api/jobs/:id', (request, response) => { const job = state.jobs.find((item) => item.id === request.params.id && owned(item, userOf(request).id)); if (!job) return response.status(404).json({ error: '任务不存在。' }); response.json(publicJob(job)); });
+app.get('/api/jobs/:id/attempts/:attemptId', (request, response) => {
+  const job = state.jobs.find(item => item.id === request.params.id && owned(item, userOf(request).id));
+  const attempt = job?.attempts?.find(item => item.id === request.params.attemptId);
+  if (!attempt) return response.status(404).json({ error: '本次执行记录不存在。' });
+  response.json({ attempt });
+});
 app.post('/api/jobs/:id/retry', async (request, response) => {
   const user = userOf(request);
   const job = state.jobs.find((item) => item.id === request.params.id && owned(item, user.id));
@@ -1008,3 +1031,6 @@ app.use(((error, request, response, _next) => { if (error instanceof CreditError
 mountFrontendRoutes(app, path.join(root, 'dist'), publicBase);
 app.listen(port, '127.0.0.1', () => console.log(`轻剪 API listening on http://127.0.0.1:${port}`));
 void processQueue();
+if (process.env.QINGJIAN_RELEASE_EVAL_STARTUP !== '0' && (existsSync(path.join(root, 'dist', 'release.json')) || process.env.QINGJIAN_RELEASE_EVAL_STARTUP === '1')) {
+  void releaseEvaluations.enqueueCurrentRevision().catch(error => console.error(JSON.stringify({ event: 'release-evaluation.enqueue-failed', failure: executionFailure(error) })));
+}

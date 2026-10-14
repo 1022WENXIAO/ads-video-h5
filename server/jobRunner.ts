@@ -1,10 +1,12 @@
 import type { Job } from '../src/types';
 import { JobCancelledError, runWithJobSignal } from './jobExecution';
 import { isActiveJob } from '../src/jobStatus';
+import { interruptJobAttempt } from './jobAttempts';
 export { isActiveJob } from '../src/jobStatus';
 
 export function restoreInterruptedJobs(jobs: Job[], timestamp: string) {
   for (const job of jobs) {
+    if (job.status === 'running' || job.status === 'stopping') interruptJobAttempt(job, timestamp);
     if (job.status === 'stopping' || job.stopRequestedAt && isActiveJob(job)) {
       job.status = 'cancelled'; job.cancelledAt = timestamp; job.updatedAt = timestamp;
       job.progress = undefined; job.stage = '已停止运行';

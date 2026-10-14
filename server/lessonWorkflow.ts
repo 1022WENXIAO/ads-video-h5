@@ -319,7 +319,10 @@ export async function runLessonWorkflow(o:Options){
   add('draw_lesson_scenes',current?'绘制新闻图解与示意画面':'绘制公式、曲线与教学分镜','按脚本图解数据和实际语音时间码生成HTML/GSAP，布局检查通过后真实渲染。',Type.Object({}),async()=>{
     if(!report||speech.size!==report.chapters.length)throw new Error('先制作并核对所有旁白。');
     const commonChart=/柱状图|bar.?chart/i.test(o.prompt)?inferBarData(report.chapters):undefined;
-    await mapLimited(report.chapters,2,async(chapter,index)=>{
+    // Each HTML check/render launches Chromium. A 2GB production host can
+    // handle one renderer reliably while narration and research stay parallel.
+    const sceneConcurrency = process.env.QINGJIAN_HTML_CONCURRENCY === '2' ? 2 : 1;
+    await mapLimited(report.chapters,sceneConcurrency,async(chapter,index)=>{
       const source=speech.get(chapter.id)!;const result=await trace.run('render_html',`绘制与渲染 · ${chapter.title}`,{chapterId:chapter.id,visual:chapter.visual,cues:chapter.cues},async()=>{
         try{
           const dir=path.join(work,chapter.id),barChart=chapterBarChart(chapter,commonChart);let layoutFeedback='';

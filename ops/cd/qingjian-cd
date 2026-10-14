@@ -9,6 +9,7 @@ build_user=qingjian-build
 build_dir=
 backup_dir=
 previous_sha=
+target_sha=
 switched=0
 
 mkdir -p "$cache"
@@ -18,6 +19,11 @@ flock -n 9 || exit 0
 finish() {
   local status=$?
   trap - EXIT
+  if (( status != 0 )) && [[ "$target_sha" =~ ^[0-9a-f]{40}$ ]]; then
+    printf '%s\n' "$target_sha" > "$cache/rejected-sha.next"
+    mv "$cache/rejected-sha.next" "$cache/rejected-sha"
+    echo "Release ${target_sha:0:12} rejected; automatic retries wait for a new commit or explicit operator retry." >&2
+  fi
   if (( status != 0 && switched == 1 )); then
     echo "Deploy failed; restoring ${previous_sha:0:12}" >&2
     git -C "$repo" checkout --detach --quiet "$previous_sha" || true
@@ -47,6 +53,10 @@ if [[ "$target_sha" == "$previous_sha" ]]; then
   echo "Already deployed ${target_sha:0:12}"
   exit 0
 fi
+if [[ -f "$cache/rejected-sha" && "$(cat "$cache/rejected-sha")" == "$target_sha" ]]; then
+  echo "Release ${target_sha:0:12} previously failed deployment acceptance; waiting for a new commit or explicit operator retry."
+  exit 0
+fi
 if ! git -C "$repo" merge-base --is-ancestor "$previous_sha" "$target_sha"; then
   echo 'Remote main is not a fast-forward of the deployed commit; deployment stopped.' >&2
   exit 1
@@ -56,7 +66,7 @@ build_dir=$(mktemp -d "$cache/build.XXXXXXXX")
 git -C "$repo" archive "$target_sha" | tar -x -C "$build_dir"
 chown -R "$build_user:$build_user" "$build_dir"
 runuser -u "$build_user" -- env -i PATH="$PATH" HOME="$cache/home" XDG_CACHE_HOME="$cache/home/.cache" \
-  bash -c 'cd "$1" && pnpm install --frozen-lockfile && VITE_BASE_PATH=/qingjian/ pnpm build' _ "$build_dir"
+  bash -c 'cd "$1" && pnpm install --frozen-lockfile && node --import tsx --test --test-concurrency=2 tests/*.test.ts && VITE_BASE_PATH=/qingjian/ pnpm build' _ "$build_dir"
 test -f "$build_dir/dist/index.html"
 test -f "$build_dir/dist/admin/index.html"
 # The oneshot unit has UMask=0077. Allow the separate runtime user to traverse
@@ -72,11 +82,19 @@ mv "$build_dir/node_modules" "$repo/node_modules"
 if [[ -d "$repo/dist" ]]; then mv "$repo/dist" "$build_dir/old-dist"; fi
 mv "$build_dir/dist" "$repo/dist"
 chown -R root:root "$repo/dist" "$repo/node_modules"
+# Check the actual runtime user's native dependency access before restarting.
+# A root-only esbuild binary can otherwise leave a cached process working but
+# make the next startup fail.
+(cd "$repo" && runuser -u qingjian -- node --input-type=module -e '
+  const { createRequire } = await import("node:module");
+  const require = createRequire(process.argv[1] + "/package.json");
+  createRequire(require.resolve("tsx/package.json"))("esbuild").transformSync("const checked = true", {loader:"js"});
+' "$repo")
 systemctl restart qingjian
 
 healthy=0
 for _ in $(seq 1 30); do
-  if curl --fail --silent --output /dev/null http://127.0.0.1:8787/api/health \
+  if node --input-type=module -e 'const h=await fetch("http://127.0.0.1:8787/api/health",{signal:AbortSignal.timeout(4000)}).then(r=>r.json());if(!h.ok||h.revision!==process.argv[1])process.exit(1)' "$target_sha" \
     && curl --fail --silent --output /dev/null http://127.0.0.1:8787/qingjian/ \
     && curl --fail --silent http://127.0.0.1:8787/admin/ | grep -q '管理控制台'; then
     healthy=1
@@ -88,5 +106,9 @@ if (( healthy != 1 )); then
   echo 'New release did not pass local API, H5 and admin checks.' >&2
   exit 1
 fi
+# This reads only private server-side acceptance records. It does not create
+# administrator sessions or expose a deployment bypass over HTTP.
+(cd "$repo" && runuser -u qingjian -- node --import tsx tooling/release-acceptance.ts --data-dir /data/qingjian --revision "$target_sha")
+node --input-type=module -e 'const h=await fetch("http://127.0.0.1:8787/api/health",{signal:AbortSignal.timeout(4000)}).then(r=>r.json());if(!h.ok||h.revision!==process.argv[1])process.exit(1)' "$target_sha"
 switched=0
 echo "Deployed $target_sha"

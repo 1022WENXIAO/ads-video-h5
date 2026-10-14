@@ -8,5 +8,5 @@ RequiresMountsFor=/data/qingjian
 Type=oneshot
 EnvironmentFile=/etc/qingjian/oss.env
 ExecStart=/usr/local/sbin/qingjian-cd
-TimeoutStartSec=10min
+TimeoutStartSec=9h
 UMask=0077

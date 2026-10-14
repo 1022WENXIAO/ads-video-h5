@@ -17,7 +17,8 @@
     "eval:requests": "node --import tsx tooling/evaluate-requests.ts",
     "eval:workflow-entry": "node --import tsx tooling/evaluate-workflow-entry.ts",
     "eval:production": "node --import tsx tooling/evaluate-production.ts",
-    "eval:recovery": "node --import tsx tooling/evaluate-recovery.ts"
+    "eval:recovery": "node --import tsx tooling/evaluate-recovery.ts",
+    "eval:release": "node --import tsx tooling/release-acceptance.ts"
   },
   "dependencies": {
     "@earendil-works/pi-agent-core": "^0.87.1",

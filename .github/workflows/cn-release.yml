@@ -59,12 +59,15 @@ jobs:
           ffmpeg_binary=$(node -p 'require("path").join(require("path").dirname(require.resolve("ffmpeg-static/package.json")),"ffmpeg")')
           ln -s /usr/bin/ffmpeg "$ffmpeg_binary"
           node -e 'require("node:module").createRequire(require.resolve("tsx/package.json"))("esbuild").transformSync("const checked = true", {loader:"js"})'
-      - name: Check WeChat identity and native transport, build clients
+      - name: Check Agent recovery, generated release cases and client regressions
         shell: bash
         run: |
           bash -n ops/cn/build-release ops/cn/package-release ops/cn/activate-release ops/cn/init-data
           node --check tooling/smoke-miniprogram.mjs
-          node --import tsx --test tests/wechatAuth.test.ts tests/miniprogram.test.ts tests/voiceIntent.test.ts tests/requestRouting.test.ts
+          node --import tsx --test --test-concurrency=2 tests/*.test.ts
+      - name: Build clients (live video acceptance runs on the configured server)
+        shell: bash
+        run: |
           VITE_BASE_PATH=/qingjian/ pnpm build
           pnpm build:mini
           node -e 'const r=require("./dist/release.json");if(r.revision!==process.env.GITHUB_SHA)process.exit(1)'

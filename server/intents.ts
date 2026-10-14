@@ -19,8 +19,12 @@ export function wantsConversation(text:string):boolean {
   text=operationText(text);
   if(/^(?:请问)?(?:你|轻剪|这个工具|这个Agent)?(?:能不能|能|可以|支持)(?:制作|生成|做)(?:教学|科普|资讯|新闻)?视频(?:吗)?[?？]?$/.test(text))return true;
   if(/(?:现在|最后|改为|改成|请)\s*(?:不用解释了[，,]?\s*)?直接(?:制作|生成|出片|渲染)/.test(text))return false;
-  if(/(?:请|帮我|帮忙)(?:制作|生成|做)(?!视频(?:吗)?[?？]?$)/.test(text)&&!/(?:只|先)(?:解释|讨论|分析)/.test(text))return false;
-  return /只(?:讨论|聊|解释|分析)|(?:如何|怎么|怎样).{0,60}(?:制作|生成|剪辑|做).{0,30}(?:视频|短片)|为什么.{0,70}(?:Agent|回复|脚本|方案)|(?:视频|短片).{0,20}是否.{0,20}(?:需要|素材)|\bhow (?:can|do|to)\b|\b(?:explain|discuss).{0,30}(?:workflow|only|reason)/i.test(text)
+  const quotedFailureQuestion = /^(?:请(?:你)?(?:解释|分析)(?:一下)?[，, ]*)?为什么[^，。；,;.!?！？]{0,70}(?:Agent|回复|脚本|方案)/i.test(text);
+  if(/(?:请(?:你)?|麻烦(?:你)?|帮我|帮忙|替我|给我|为我)\s*(?:(?:从零|直接|现在|重新|再|先|给我|为我|替我)\s*){0,4}(?:制作|生成|做)(?!视频(?:吗)?[?？]?$)/.test(text)&&!/(?:只|先)(?:解释|讨论|分析)/.test(text)&&!quotedFailureQuestion)return false;
+  // A question inside the requested subject ("怎么买。做成30秒视频")
+  // must not capture a later production sentence as a workflow question.
+  // Keep advice matching inside its own clause, including ASR punctuation.
+  return /只(?:讨论|聊|解释|分析)|(?:如何|怎么|怎样)[^，。；,;.!?！？]{0,60}(?:制作|生成|剪辑|做)[^，。；,;.!?！？]{0,30}(?:视频|短片)|为什么[^，。；,;.!?！？]{0,70}(?:Agent|回复|脚本|方案)|(?:视频|短片)[^，。；,;.!?！？]{0,20}是否[^，。；,;.!?！？]{0,20}(?:需要|素材)|\bhow (?:can|do|to)\b|\b(?:explain|discuss).{0,30}(?:workflow|only|reason)/i.test(text)
     || /(?:先不要|暂不|别|不要).{0,12}(?:制作|生成).{0,12}(?:新视频|科普视频|视频|成片)/.test(text)&&!/(?:脚本|分镜|选题|资料|来源|查证|研究)/.test(text);
 }
 
@@ -44,7 +48,11 @@ export const wantsCurrentResearchOnly = (text:string) => wantsCurrentResearch(te
 export const wantsLesson = (text: string) => !excludesHtml(text) && !wantsConversation(text) && (wantsCurrentVideo(text)||wantsPlanOnly(text)&&/视频|短片|\b(?:video|film)\b/i.test(text)&&/脚本|分镜|script|storyboard/i.test(text)||/教学(?:视频|短片)|科普(?:视频|短片)|讲解.{0,50}(?:视频|短片)|(?:视频|短片).{0,50}(?:从浅入深|由浅入深)|\b(?:tutorial|educational|explainer)\s+video\b/i.test(intentText(text)));
 export const reusesFootage = (text: string) => {
   text=intentText(text).replace(/(?:不需要|无需|无须|不必|不用|不要|没有|不依赖|不靠)\s*(?:我|你|再)?\s*(?:(?:上传|提供|添加|使用|拍摄|依赖)\s*)?(?:已有|现成|真人|视频|图片|任何|额外|原始)*\s*(?:素材|真人视频|真人出镜|原片|录屏|footage)/gi,'').replace(/\b(?:no|without|no uploaded).{0,10}footage\b/gi,'');
-  return /(?:用|把|将|根据|基于|保留|剪).{0,20}(?:这些|以上|这段|上传|原声|口播|真人|素材)|精剪|只用原话|(?:use|edit|trim).{0,24}(?:uploaded|footage|original)/i.test(text);
+  // Demonstratives need an actual media object. "适用面积...这些点" and
+  // "用通俗方式解释这些概念" do not refer to uploaded footage.
+  const action = '(?:使用|采用|选用|(?<![适作费效通])用|把|将|根据|基于|保留|剪)';
+  const source = '(?:(?:这些|以上|这段|这两段|这几段)(?:的)?(?:视频|画面|素材|片段|原声|口播|录屏|照片|图片|真人)|附加(?:的)?(?:视频|画面|素材|片段|原声|口播|录屏|照片|图片)|附件|上传|原声|口播|真人|素材)';
+  return new RegExp(action + '[^，。；,;.!?！？]{0,20}' + source + '|精剪|只用原话|(?:use|edit|trim).{0,24}(?:uploaded|footage|original)', 'i').test(text);
 };
 export function selectedHotVideoRequest(prompt:string,history:ChatMessage[]):string|undefined{
   if(excludesHtml(prompt)||reusesFootage(prompt)||!/生成|制作|做成|做|脚本|方案/.test(prompt))return;

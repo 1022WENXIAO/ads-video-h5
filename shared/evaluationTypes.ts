@@ -74,6 +74,8 @@ export interface EvaluationRun {
   createdAt: string;
   finishedAt?: string;
   maxCaseSeconds: number;
+  releaseId?: string;
+  releaseAttempt?: number;
   snapshot: {
     revision: string | null;
     implementationHash: string;
@@ -90,3 +92,42 @@ export interface EvaluationSummary {
 }
 export type EvaluationRunSummary = Omit<EvaluationRun, 'results'> & { summary: EvaluationSummary };
 export interface EvaluationProgress { jobs: Pick<Job, 'id' | 'status' | 'stage' | 'progress' | 'workflow'>[] }
+
+export interface ReleaseEvaluationSettings {
+  enabled: boolean;
+  /** Registry ID; null follows the backend default text model. Never a provider key. */
+  generatorModelId: string | null;
+  caseCount: number;
+  maxCaseSeconds: number;
+  generationTimeoutSeconds: number;
+  maxSuiteSeconds: number;
+  /** Explicit administrator retries, including the initial attempt. */
+  maxAttempts: number;
+}
+export type ReleaseEvaluationStatus = 'queued' | 'generating' | 'running' | 'passed' | 'failed' | 'blocked' | 'cancelled';
+export interface ReleaseEvaluationAttempt {
+  attempt: number;
+  status: ReleaseEvaluationStatus;
+  createdAt: string;
+  updatedAt: string;
+  finishedAt?: string;
+  settingsSnapshot: ReleaseEvaluationSettings;
+  generator?: { id: string; name: string; modelId: string; provider: string };
+  generatedCases: EvaluationCase[];
+  evaluationRunId?: string;
+  summary?: EvaluationSummary;
+  error?: string;
+}
+export interface ReleaseEvaluation extends ReleaseEvaluationAttempt {
+  id: string;
+  revision: string;
+  implementationHash: string;
+  /** Earlier attempts remain immutable; a restart never silently replays paid calls. */
+  history: ReleaseEvaluationAttempt[];
+}
+export interface ReleaseEvaluationState {
+  settings: ReleaseEvaluationSettings;
+  releases: ReleaseEvaluation[];
+  currentRevision: string | null;
+  currentReleaseId?: string;
+}

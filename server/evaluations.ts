@@ -8,7 +8,8 @@ import type { EvaluationCase, EvaluationFixture, EvaluationProgress, EvaluationR
 import { initialEvaluationCases, mergeBuiltInEvaluationCases, EVALUATION_RUBRIC_VERSION } from './evaluationCases';
 import { executionDiagnostics } from './toolTrace';
 import { evaluationCaseHash, evaluationSummary, scoreEvaluation } from './evaluationScoring';
-import { probeVideo, detectShots } from './core';
+import { probeVideo, detectShots, runFFmpeg } from './core';
+import { runWithJobSignal } from './jobExecution';
 import type { ModelSnapshot } from './modelContext';
 import { MAX_MEDIA_UPLOAD_BYTES } from '../src/uploadLimits';
 import { planHash } from './renderTimeline';
@@ -35,7 +36,7 @@ async function directoryHash(directory: string): Promise<string> {
   await visit(directory); return hash.digest('hex');
 }
 export async function evaluationImplementation(root: string) {
-  const hashes = await Promise.all(['server', 'src', 'skills'].map(name => directoryHash(path.join(root, name))));
+  const hashes = await Promise.all(['server', 'src', 'skills', 'shared'].map(name => directoryHash(path.join(root, name))));
   let revision: string | null = null;
   try { const candidate = JSON.parse(await readFile(path.join(root, 'dist/release.json'), 'utf8')).revision; if (/^[a-f0-9]{40}$/.test(candidate)) revision = candidate; } catch { /* A development server may not have a build. */ }
   if (!revision) try { revision = execFileSync('git', ['rev-parse', 'HEAD'], { cwd: root, stdio: ['ignore','pipe','ignore'] }).toString().trim(); } catch { /* The archive fingerprint is still recorded. */ }
@@ -69,6 +70,7 @@ export function createEvaluations(options: Options) {
   let cases = initialEvaluationCases(), fixtures: Array<EvaluationFixture & { shots: Shot[] }> = [], runs: EvaluationRun[] = [];
   let mutation = Promise.resolve(), writes = Promise.resolve();
   const controllers = new Map<string, AbortController>();
+  let reservation: string | undefined;
   const persist = () => {
     const text = JSON.stringify({ version: 1, cases, fixtures, runs });
     writes = writes.catch(() => undefined).then(async () => { const temp = `${file}.${randomUUID()}.tmp`; await writeFile(temp, text, { mode: 0o600 }); await rename(temp, file); });
@@ -94,7 +96,11 @@ export function createEvaluations(options: Options) {
           result.workflow = update.jobs.flatMap(j => j.workflow || []); await persist();
         } });
         signal.throwIfAborted();
-        const [sha256, size, probe] = await Promise.all([evaluationFileHash(output.file), stat(output.file), probeVideo(output.file)]);
+        const [sha256, size, probe] = await runWithJobSignal(signal, async () => {
+          // Metadata and a matching manifest alone do not prove that a file plays.
+          await runFFmpeg(['-hide_banner','-v','error','-xerror','-err_detect','explode','-i',output.file,'-map','0:v:0','-map','0:a?','-f','null','-']);
+          return Promise.all([evaluationFileHash(output.file), stat(output.file), probeVideo(output.file)]);
+        });
         let verified = false;
         try {
           const manifest = JSON.parse(await readFile(output.file.replace(/\.mp4$/, '.render.json'), 'utf8'));
@@ -137,6 +143,11 @@ export function createEvaluations(options: Options) {
     catalog() { return { cases: structuredClone(cases), fixtures: fixtures.map(({ shots: _shots, ...fixture }) => fixture) }; },
     list() { return runs.slice().reverse().map(({ results: _results, ...run }) => ({ ...structuredClone(run), summary: evaluationSummary(runs.find(r => r.id === run.id)!) })); },
     get(id: string) { return structuredClone(findRun(id)); },
+    reserve(owner: string) { return serialized(async () => {
+      if (reservation && reservation !== owner || runs.some(r => ['running','stopping'].includes(r.status))) return false;
+      reservation = owner; return true;
+    }); },
+    release(owner: string) { return serialized(async () => { if (reservation === owner) reservation = undefined; }); },
     upsert(input: unknown, id?: string) { return serialized(async () => {
       const current = id ? cases.find(c => c.id === id) : undefined;
       if (id && !current) throw new EvaluationError('评测用例不存在。',404);
@@ -158,12 +169,13 @@ export function createEvaluations(options: Options) {
         fixtures.push(fixture); await persist(); const { shots: _shots, ...publicFixture } = fixture; return publicFixture;
       });
     },
-    start(input: unknown) { return serialized(async () => {
+    start(input: unknown, generated?: { reservationId: string; cases: EvaluationCase[]; releaseId: string; releaseAttempt: number }) { return serialized(async () => {
       if (!input || typeof input !== 'object') throw new EvaluationError('评测运行设置无效。');
       const body = input as { caseIds?: string[]; repeats?: number; name?: string; modelId?: string; maxCaseSeconds?: number };
-      if (runs.some(r => ['running','stopping'].includes(r.status))) throw new EvaluationError('已有评测正在执行，请等待或停止后再开始。',409);
+      if (reservation && reservation !== generated?.reservationId || generated && reservation !== generated.reservationId || runs.some(r => ['running','stopping'].includes(r.status))) throw new EvaluationError('已有评测正在执行或生成用例，请等待或停止后再开始。',409);
       if (!Array.isArray(body.caseIds) || !body.caseIds.length || body.caseIds.length > 30 || new Set(body.caseIds).size !== body.caseIds.length) throw new EvaluationError('请选择1–30个不同的评测用例。');
-      const selected = body.caseIds.map(id => { const c = cases.find(c => c.id === id && c.enabled); if (!c) throw new EvaluationError('选中的评测用例不存在或已停用。'); return c; });
+      const available = generated ? generated.cases.map(c => ({ ...validateEvaluationCase(c), id: c.id, version: c.version })) : cases;
+      const selected = body.caseIds.map(id => { const c = available.find(c => c.id === id && c.enabled); if (!c) throw new EvaluationError('选中的评测用例不存在或已停用。'); return c; });
       const repeats = body.repeats ?? 1, maxCaseSeconds = body.maxCaseSeconds ?? 1800;
       if (!Number.isInteger(repeats) || repeats < 1 || repeats > 3 || selected.length * repeats > 60 || !Number.isInteger(maxCaseSeconds) || maxCaseSeconds < 60 || maxCaseSeconds > 3600 || body.name !== undefined && (typeof body.name !== 'string' || body.name.length > 100) || body.modelId !== undefined && typeof body.modelId !== 'string') throw new EvaluationError('每例重复1–3次，每轮最多60次，单例时限60–3600秒。');
       for (const c of selected) if (c.fixtureIds.length < c.expectation.minSources || c.fixtureIds.some(id => !fixtures.some(f => f.id === id))) throw new EvaluationError(`「${c.name}」需要至少${c.expectation.minSources}段有效评测素材，请先绑定。`);
@@ -174,7 +186,7 @@ export function createEvaluations(options: Options) {
         const inputs = test.fixtureIds.map(id => { const { shots: _shots, ...f } = fixtures.find(f => f.id === id)!; return f; });
         return { id: randomUUID(), case: structuredClone(test), caseHash: evaluationCaseHash(test, inputs), fixtures: inputs, repeat: i + 1, status: 'queued', jobIds: [] };
       }));
-      const run: EvaluationRun = { id: randomUUID(), name: body.name?.trim() || `能力评测 ${new Date().toLocaleDateString('zh-CN')}`, status: 'running', createdAt: new Date().toISOString(), maxCaseSeconds, snapshot: { ...options.implementation, rubricVersion: EVALUATION_RUBRIC_VERSION, models: Object.values(models).filter(m => m !== null).map(m => ({ id: m.id, name: m.name, modelId: m.modelId, kind: m.kind, provider: m.provider })) }, results };
+      const run: EvaluationRun = { id: randomUUID(), name: body.name?.trim() || `能力评测 ${new Date().toLocaleDateString('zh-CN')}`, status: 'running', createdAt: new Date().toISOString(), maxCaseSeconds, ...(generated ? { releaseId: generated.releaseId, releaseAttempt: generated.releaseAttempt } : {}), snapshot: { ...options.implementation, rubricVersion: EVALUATION_RUBRIC_VERSION, models: Object.values(models).filter(m => m !== null).map(m => ({ id: m.id, name: m.name, modelId: m.modelId, kind: m.kind, provider: m.provider })) }, results };
       runs.push(run); const controller = new AbortController(); controllers.set(run.id, controller);
       try { await persist(); }
       catch (error) { runs.splice(runs.indexOf(run),1); controllers.delete(run.id); throw error; }

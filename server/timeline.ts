@@ -66,7 +66,7 @@ export function validateTimeline(plan: EditPlan, media: MediaItem[]): EditPlan {
     const zoom = clip.zoom ?? 1; const volume = clip.volume ?? 1;
     if (!Number.isFinite(zoom) || zoom < 1 || zoom > 1.15 || !Number.isFinite(volume) || volume < 0 || volume > 2) throw new Error('缩放需为1–1.15，片段音量需为0–2。');
     const transition = clip.transition;
-    if (transition && (!['cut', 'fade'].includes(transition.kind) || !Number.isFinite(transition.duration) || transition.duration < 0 || transition.duration > 0.5 || (transition.kind === 'fade' && (index === 0 || transition.duration < 0.05 || transition.duration > Math.min(clip.end - clip.start, plan.clips[index - 1].end - plan.clips[index - 1].start) / 2)))) throw new Error('转场类型或时长无效；叠化需为0.05–0.5秒且不得超过相邻片段的一半。');
+    if (transition && (!['cut', 'fade'].includes(transition.kind) || !Number.isFinite(transition.duration) || transition.duration < 0 || transition.duration > 0.5 || (transition.kind === 'fade' && (index === 0 || transition.duration < 0.05 || transition.duration > Math.min(clip.end - clip.start, plan.clips[index - 1].end - plan.clips[index - 1].start) / 2)))) throw new Error(`第${index + 1}个片段转场类型或时长无效：${index === 0 ? '第一片段没有前一镜头，请使用cut/0；' : ''}叠化需为0.05–0.5秒且不得超过相邻片段的一半。`);
     if (clip.purpose && !['hook', 'argument', 'conclusion', 'context', 'comparison'].includes(clip.purpose)) throw new Error('片段叙事用途无效。');
     const source = media.find((m) => m.id === clip.sourceId)!;
     const selected = clip.sentenceIds?.map((id) => source.analysis?.sentences.find((s) => s.id === id));
@@ -128,8 +128,8 @@ export function validateTimeline(plan: EditPlan, media: MediaItem[]): EditPlan {
   function validateTexts(items: TimelineText[] | undefined, caption: boolean): TimelineText[] | undefined {
     if (items === undefined) return undefined;
     if (!Array.isArray(items) || items.length > (caption ? 200 : 30)) throw new Error('字幕或覆盖层数量无效。');
-    return items.map((item) => {
-      if (!Number.isFinite(item.start) || !Number.isFinite(item.end) || item.start < 0 || item.end <= item.start || item.end > duration + 0.05 || typeof item.text !== 'string' || !item.text.trim() || item.text.length > (caption ? 40 : 60) || !['subtitle', 'keyword', 'title', 'lower-third'].includes(item.style) || (caption && item.style !== 'subtitle') || (item.animation && !['none', 'pop', 'rise', 'underline'].includes(item.animation))) throw new Error('字幕或覆盖层的时间、文字或样式无效。');
+    return items.map((item, index) => {
+      if (!Number.isFinite(item.start) || !Number.isFinite(item.end) || item.start < 0 || item.end <= item.start || item.end > duration + 0.05 || typeof item.text !== 'string' || !item.text.trim() || item.text.length > (caption ? 40 : 60) || !['subtitle', 'keyword', 'title', 'lower-third'].includes(item.style) || (caption && item.style !== 'subtitle') || (item.animation && !['none', 'pop', 'rise', 'underline'].includes(item.animation))) throw new Error(`${caption ? '字幕' : '覆盖层'}第${index + 1}条的时间、文字或样式无效。起止必须在成片0–${duration.toFixed(3)}秒内，文字1–${caption ? 40 : 60}字；${caption ? '字幕style只能为subtitle' : '覆盖层style仅支持subtitle、keyword、title、lower-third'}，animation仅支持none、pop、rise、underline。`);
       return { ...item, end: Math.min(item.end, duration), text: item.text.trim() };
     });
   }

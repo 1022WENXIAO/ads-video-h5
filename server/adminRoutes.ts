@@ -17,6 +17,8 @@ import { mountEvaluationRoutes } from './evaluationRoutes';
 import type { Evaluations } from './evaluations';
 import { effectPreview } from './effectPreview';
 import type { AdminAuth } from './adminAuth';
+import type { createReleaseEvaluations } from './releaseEvaluations';
+import { mountReleaseEvaluationRoutes } from './releaseEvaluationRoutes';
 
 function message(error: unknown): string {
   return error instanceof Error ? error.message : '操作失败，请重试。';
@@ -43,7 +45,7 @@ function parseModel(body: unknown, id?: string): Partial<ModelConfig> & Pick<Mod
   };
 }
 
-export function mountAdminRoutes(app: Express, effects: ReturnType<typeof createEffectStore>, adminAuth: AdminAuth, publicBase = '', evaluations?: Evaluations): void {
+export function mountAdminRoutes(app: Express, effects: ReturnType<typeof createEffectStore>, adminAuth: AdminAuth, publicBase = '', evaluations?: Evaluations, releases?: ReturnType<typeof createReleaseEvaluations>): void {
   const router = Router();
   const assetUpload = multer({ storage: multer.diskStorage({ destination: effects.uploadsDir, filename: (_request, _file, done) => done(null, randomUUID()) }), limits: { fileSize: MAX_MEDIA_UPLOAD_BYTES, files: 1 } });
   const previewAssetUrl = (request: Request, values?: Partial<EffectValues>) => {
@@ -56,6 +58,7 @@ export function mountAdminRoutes(app: Express, effects: ReturnType<typeof create
   router.use(adminAuth.requireAdmin);
 
   if (evaluations) mountEvaluationRoutes(router, evaluations);
+  if (releases) mountReleaseEvaluationRoutes(router, releases);
 
   router.get('/models', async (_request, response) => {
     try {

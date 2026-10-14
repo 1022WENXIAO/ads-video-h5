@@ -57,6 +57,10 @@ for attempt in $(seq 1 30); do
     for(const path of ["/qingjian/","/admin/"])if(!(await get(path)).ok)process.exit(1);
     if((await get("/api/state")).status!==401)process.exit(1);
   ' "$expected"; then
+    # Video acceptance runs in the isolated production pipeline after startup;
+    # healthy HTTP alone cannot mark this release accepted.
+    (cd "$release" && runuser -u qingjian-cn -- /opt/qingjian-cn/node/bin/node --import tsx tooling/release-acceptance.ts --data-dir /data/qingjian --revision "$expected")
+    /opt/qingjian-cn/node/bin/node --input-type=module -e 'const h=await fetch("http://127.0.0.1:8787/api/health",{signal:AbortSignal.timeout(4000)}).then(r=>r.json());if(!h.ok||h.revision!==process.argv[1])process.exit(1)' "$expected"
     switched=0
     echo "Deployed $expected"
     exit 0
