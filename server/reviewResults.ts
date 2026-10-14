@@ -1,5 +1,6 @@
 import type { LessonReport, RenderReview } from '../src/types';
 import { todayEventFindings,selectionReasonFindings } from './lessonAcceptance';
+import { newsObservationFindings } from './newsTime';
 
 export function renderReviewSummary(review:RenderReview):string {
   return review.score===0&&!review.semantic?'自动审查暂未完成，待复核':`审查${review.score}/100，${review.status==='passed'?'本次检查通过':'仍需复核'}`;
@@ -49,5 +50,5 @@ export function newsFreshAtReview(report:LessonReport,now=Date.now()):boolean {
 // The caller must also verify the existing movie hash. This is only evidence
 // reuse for repairing that dated movie, never the cache policy for a new film.
 export function canReuseNewsEvidence(report:LessonReport,prompt:string,requestedAt:number,now=Date.now()):boolean {
-  return Boolean(report.factReview&&report.factReview.score>=80&&!report.factReview.needsRepair&&newsFreshAtReview(report,now)&&!todayEventFindings(report.factReview.todayEvents,report,prompt,requestedAt).length&&!selectionReasonFindings(report.factReview.selectionReason,report,prompt).length);
+  return Boolean(report.factReview&&report.factReview.score>=80&&!report.factReview.needsRepair&&newsFreshAtReview(report,now)&&!todayEventFindings(report.factReview.todayEvents,report,prompt,requestedAt).length&&!selectionReasonFindings(report.factReview.selectionReason,report,prompt).length&&!newsObservationFindings(report,requestedAt).length);
 }

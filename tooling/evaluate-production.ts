@@ -58,7 +58,7 @@ const timer=setTimeout(()=>{timedOut=true;controller.abort();},30*60000),underst
 const save=()=>writeFile(out,JSON.stringify(report,null,2)+'\n',{mode:0o600});
 try{
   const result=await runWithJobSignal(controller.signal,()=>runLessonWorkflow({prompt:selected.prompt,requestedAt,config,audioConfig,media,dataDir:directory,mediaDir,ownerId:'workflow-entry-evaluation',checkpointKey,export:through==='movie',rebuildScenes:args.includes('--redraw'),
-    analyze:(item,file)=>understanding.analyze(item,file),register:async item=>{
+    analyze:(item,file,options)=>understanding.analyze(item,file,undefined,options),register:async item=>{
       registeredMedia.set(item.id,item);
       const snapshot=JSON.stringify([...registeredMedia.values()],null,2);
       mediaSave=mediaSave.then(()=>writeFile(path.join(directory,'media.json'),snapshot,{mode:0o600}));

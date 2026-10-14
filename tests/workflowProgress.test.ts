@@ -9,9 +9,11 @@ import { JobCancelledError,runWithJobSignal } from '../server/jobExecution';
 import { ARK_BASE_URL,TEXT_MODEL_PRESETS } from '../shared/textModels';
 import type { LessonChapter,WorkflowEvent } from '../src/types';
 import type { AudioAnalysis,RenderReview } from '../src/types';
-import { lessonSettings,validateLesson } from '../server/lessonSpec';
+import { lessonPacing, lessonSettings, spokenLessonText, validateLesson } from '../server/lessonSpec';
 import { lessonPresentation } from '../server/lessonPresentation';
-import { validatePlan } from '../server/core';
+import { runFFmpeg, validatePlan } from '../server/core';
+import { lessonVoiceStyle } from '../server/lessonAudio';
+import { NarrationAnalysisError } from '../server/narrationAnalysisRecovery';
 
 const {cases}=JSON.parse(await readFile(new URL('./fixtures/workflow-entry.json',import.meta.url),'utf8')) as {cases:{id:string;prompt:string}[]};
 const config=(i=0)=>({...TEXT_MODEL_PRESETS[i],kind:'text' as const,provider:'ark',baseUrl:ARK_BASE_URL,enabled:true,apiKey:'test-private-credential'});
@@ -127,6 +129,36 @@ async function seedRendered(directory:string,phase='review'){
   return {o,checkpoint,work};
 }
 const passedReview:RenderReview={status:'passed',score:94,checks:[{name:'成片语义审查',passed:true,detail:'受控审查'}],semantic:{score:94,findings:[],suggestions:[]},limitations:[],createdAt:new Date().toISOString()};
+
+test('exhausted recognition of an existing waveform cannot multiply through narration-stage retries or trigger another synthesis', async()=>{
+  const directory=await mkdtemp(path.join(tmpdir(),'qingjian-recognition-budget-')),original=globalThis.fetch;
+  const {o,checkpoint,work}=await seedRendered(directory,'narration'),events:WorkflowEvent[]=[];
+  const hash=(value:Buffer|string)=>createHash('sha256').update(value).digest('hex'),voiceStyle=lessonVoiceStyle(lessonPacing(o.prompt),lessonPresentation(o.prompt));
+  const anchorLine='接下来，我们从一个简单的例子开始，把问题讲清楚。',anchor=path.join(work,'voice-anchor.mp3');
+  await runFFmpeg(['-v','error','-y','-f','lavfi','-i','sine=frequency=440:sample_rate=48000','-t','2',anchor]);
+  const anchorHash=hash(await readFile(anchor));
+  await writeFile(path.join(work,'voice-anchor.json'),JSON.stringify({seedKey:hash(JSON.stringify({model:o.audioConfig.modelId,revision:0,voiceStyle,anchorLine})),hash:anchorHash}));
+  const audioBefore=new Map<string,string>();
+  for(const [index,chapter]of checkpoint.report.chapters.entries()){
+    const dir=path.join(work,chapter.id);await mkdir(dir,{recursive:true});const file=path.join(dir,'raw-speech.mp3');
+    await runFFmpeg(['-v','error','-y','-f','lavfi','-i',`sine=frequency=${440+index*110}:sample_rate=48000`,'-t','15',file]);
+    const audioHash=hash(await readFile(file));audioBefore.set(file,audioHash);
+    await writeFile(path.join(dir,'raw-speech.json'),JSON.stringify({key:hash(JSON.stringify({line:spokenLessonText(chapter.narration),model:o.audioConfig.modelId,anchorHash,voiceRevision:0,chapterRevision:0,voiceStyle})),hash:audioHash}));
+  }
+  let requests=0;const calls=new Map<string,number>();globalThis.fetch=async()=>{requests++;throw new Error('Recognition retry must never synthesize or rewrite a cached waveform');};
+  try{
+    await assert.rejects(runLessonWorkflow({...o,analyze:async(_item,file,options)=>{
+      assert.equal(options?.purpose,'generated-narration');calls.set(file,(calls.get(file)||0)+1);
+      throw new Error('音频理解第1块失败：音频理解结果被截断，请重试。');
+    },progress:async updates=>{events.splice(0,events.length,...structuredClone(updates));}}),error=>{
+      assert.ok((error as Error).cause instanceof NarrationAnalysisError);assert.match(String(error),/识别或分句未完成/);return true;
+    });
+    assert.equal(requests,0);assert(calls.size>0);assert([...calls.values()].every(count=>count===2),'each active chapter gets exactly one bounded recognition retry');
+    assert.equal(events.filter(event=>event.tool==='synthesize_narration').length,1,'the outer automatic workflow cannot reopen a spent recognition budget');
+    assert.equal(events.some(event=>event.stage?.includes('重录')||event.tool==='revise_lesson_script'),false);
+    for(const [file,before]of audioBefore)assert.equal(hash(await readFile(file)),before);
+  }finally{globalThis.fetch=original;await rm(directory,{recursive:true,force:true});}
+});
 
 for(const generation of [false,true])test(`a verified subtitle ${generation?'5G spelling':'homophone'} repairs the hashed source and rerenders without another voice or authoring request`,async()=>{
   const directory=await mkdtemp(path.join(tmpdir(),'qingjian-caption-recovery-')),original=globalThis.fetch;

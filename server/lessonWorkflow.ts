@@ -29,15 +29,18 @@ import { lessonPresentation } from './lessonPresentation';
 import { writeUrgentBgm } from './bgm';
 import { requestedModelNames } from './creativeRequest';
 import { beijingDate,requiresTodayEvent,todayEventFindings,requiresSelectionReason,selectionReasonFindings } from './lessonAcceptance';
+import { newsObservationFindings } from './newsTime';
 import { recoverToolDecision } from './workflowDriver';
 import { creationBrief } from './creationBrief';
 import { verifyCreativeResearch, researchCreativeTopic } from './creativeResearch';
 import { canRetryWorkflowError, retryBudgetExhausted } from './executionErrors';
+import { NarrationAnalysisError, recognizeExistingNarration } from './narrationAnalysisRecovery';
+import type { AudioUnderstandingOptions } from './audioUnderstanding';
 
 interface Options {
   prompt:string;requestedAt?:number;config:ModelConfig;audioConfig:ModelConfig|null;media:MediaItem[];
   dataDir:string;mediaDir:string;ownerId:string;checkpointKey:string;export:boolean;
-  analyze:(item:MediaItem,file:string)=>Promise<AudioAnalysis>;
+  analyze:(item:MediaItem,file:string,options?:AudioUnderstandingOptions)=>Promise<AudioAnalysis>;
   register:(item:MediaItem)=>Promise<void>;persist:(plan:EditPlan)=>Promise<void>;
   saveDraft:(report:LessonReport)=>Promise<void>;progress:(events:WorkflowEvent[])=>Promise<void>;
   stage?:(stage:string)=>Promise<void>;
@@ -66,7 +69,7 @@ export async function reviewLessonScript(config:ModelConfig,report:LessonReport,
   if(!response.ok)throw new Error('教学事实审查 HTTP '+response.status);
   const body=await response.json(),result=JSON.parse(body.choices?.[0]?.message?.content||'{}');
   await record?.(result);
-  const reviewed=validateLessonFactReview(result),dateFindings=todayEventFindings(result.todayEvents,report,userPrompt,requestedAt),reasonFindings=selectionReasonFindings(result.selectionReason,report,userPrompt),acceptance=[...dateFindings,...reasonFindings];
+  const reviewed=validateLessonFactReview(result),dateFindings=todayEventFindings(result.todayEvents,report,userPrompt,requestedAt),reasonFindings=selectionReasonFindings(result.selectionReason,report,userPrompt),acceptance=[...dateFindings,...reasonFindings,...newsObservationFindings(report,requestedAt)];
   const todayEvents=report.hotResearch&&requiresTodayEvent(userPrompt)&&!dateFindings.length?result.todayEvents.filter((e:unknown)=>!todayEventFindings([e],report,userPrompt,requestedAt).length).slice(0,3).map((e:any)=>({date:e.date,referenceId:e.referenceId,quote:e.quote})):undefined;
   const selectionReason=report.hotResearch&&requiresSelectionReason(userPrompt)&&!reasonFindings.length?{chapterId:result.selectionReason.chapterId,quote:result.selectionReason.quote}:undefined;
   return {...reviewed,...(todayEvents?{todayEvents}:{}),...(selectionReason?{selectionReason}:{}),needsRepair:reviewed.needsRepair||acceptance.length>0,findings:[...acceptance,...reviewed.findings]};
@@ -106,7 +109,7 @@ export async function runLessonWorkflow(o:Options){
   }
   if(settings.requestedSeconds<=60&&research&&!report&&!scriptBudget)phase='budget';
   if(current&&research&&currentResearchExpired(research)&&!datedMovieEvidence){if(report)report.factReview=undefined;phase='research';feedback='热点研究已过期，锁定已选事件重新读取当前来源并审查原稿。';}
-  if(current&&report?.factReview&&!report.factReview.needsRepair&&(todayEventFindings(report.factReview.todayEvents,report,o.prompt,requestedAt).length||selectionReasonFindings(report.factReview.selectionReason,report,o.prompt).length)){report.factReview=undefined;if(phase!=='research')phase='fact-review';}
+  if(current&&report?.factReview&&!report.factReview.needsRepair&&(todayEventFindings(report.factReview.todayEvents,report,o.prompt,requestedAt).length||selectionReasonFindings(report.factReview.selectionReason,report,o.prompt).length||newsObservationFindings(report,requestedAt).length)){report.factReview=undefined;if(phase!=='research')phase='fact-review';}
   if(report?.factReview?.needsRepair&&(!feedback||feedback.includes('超过6次')))feedback=report.factReview.findings.join('；');
   const persistCheckpoint=async()=>writeFile(path.join(work,'checkpoint.json'),JSON.stringify({fingerprint,requestedAt,rendererHash,phase,research,report,scriptBudget,voiceRevision,pacingRetakes,chapterVoiceRevisions,feedback,repairRequirements,researchRounds,reselects,rejectedNewsTopics,visualFeedback,renders,reviewRetries,plan,rendered,renderedHash,review,best,gapRetakes:[...gapRetakes]}),{mode:0o600});
   const restored=new Map<string,WorkflowEvent>();
@@ -293,18 +296,25 @@ export async function runLessonWorkflow(o:Options){
         try{
           const gaps=await trace.run('inspect_speech_gaps',`核对最终旁白停顿 · ${chapter.title}`,{chapterId:chapter.id,audioHash:hash,maxPauseSeconds:pacing.maxPauseSeconds},()=>inspectLessonSpeechGaps(adjusted,pacing.maxPauseSeconds));
           if(gaps.length)throw new Error(`章节${chapter.id}实际旁白存在超出${pacing.maxPauseSeconds}秒的长停顿${JSON.stringify(gaps)}，需要重录。`);
-          const rawAnalysis=await trace.run('transcribe_chapter',`听辨台词 · ${chapter.title}`,{chapterId:chapter.id,audioHash:hash,duration},()=>o.analyze(item,adjusted));await writeFile(path.join(dir,'speech-analysis-raw.json'),JSON.stringify(rawAnalysis,null,2),{mode:0o600});
+          const rawAnalysis=await recognizeExistingNarration(analysisAttempt=>trace.run('transcribe_chapter',`${analysisAttempt?'重试识别相同旁白':'听辨台词'} · ${chapter.title}`,{chapterId:chapter.id,audioHash:hash,duration,analysisAttempt},()=>o.analyze(item,adjusted,{purpose:'generated-narration'})));await writeFile(path.join(dir,'speech-analysis-raw.json'),JSON.stringify(rawAnalysis,null,2),{mode:0o600});
           const verify=(value:AudioAnalysis)=>{const corrected=correctLessonTranscript(chapter,value);return {corrected,aligned:alignLessonSpeech(chapter,corrected)};};let checked:ReturnType<typeof verify>;
           try{checked=verify(rawAnalysis);}catch(error){
             if(!/匹配|年份|原词|数学符号|数字|重复字/.test(String(error)))throw error;
             const recheckItem={...item,id:randomUUID()};
-            const recheck=await trace.run('transcribe_chapter',`独立复听术语 · ${chapter.title}`,{chapterId:chapter.id,audioHash:hash,duration,priorAnalysisId:item.id,analysisId:recheckItem.id,reason:String(error)},()=>o.analyze(recheckItem,adjusted));
-            await writeFile(path.join(dir,'speech-analysis-recheck.json'),JSON.stringify(recheck,null,2),{mode:0o600});checked=verify(recheck);
+            try {
+              const recheck=await recognizeExistingNarration(analysisAttempt=>trace.run('transcribe_chapter',`${analysisAttempt?'重试复听相同旁白':'独立复听术语'} · ${chapter.title}`,{chapterId:chapter.id,audioHash:hash,duration,priorAnalysisId:item.id,analysisId:recheckItem.id,reason:String(error),analysisAttempt},()=>o.analyze(recheckItem,adjusted,{purpose:'generated-narration'})));
+              await writeFile(path.join(dir,'speech-analysis-recheck.json'),JSON.stringify(recheck,null,2),{mode:0o600});checked=verify(recheck);
+            } catch (recheckError) {
+              const detail=`章节${chapter.id}初次台词核验：${String(error)}；独立复听核验：${String(recheckError)}`;
+              await writeFile(path.join(dir,'speech-verification-failure.json'),JSON.stringify({audioHash:hash,firstError:String(error),recheckError:String(recheckError)},null,2),{mode:0o600});
+              if(recheckError instanceof NarrationAnalysisError)throw new NarrationAnalysisError(detail,recheckError);
+              throw new Error(detail,{cause:recheckError});
+            }
             checked.corrected.warnings=[...checked.corrected.warnings,'初次识别存在关键术语或字词疑点，同一音频经独立复听核验；未用脚本补齐缺失字词。'];
             await writeFile(metaFile,JSON.stringify({hash,id:recheckItem.id}),{mode:0o600});
           }
           const {corrected,aligned}=checked,analysis=lessonCaptionAnalysis(chapter,corrected);chapter.speechMatch=aligned.similarity;chapter.cues=aligned.cues;speech.set(chapter.id,{file:adjusted,analysis});await writeFile(path.join(dir,'speech-analysis.json'),JSON.stringify(analysis,null,2),{mode:0o600});verified=true;break;
-        }catch(error){lastError=error;if(attempt===1||!/匹配|年份|原词|数学符号|数字|长停顿|重复字/.test(String(error))){if(/匹配|年份|原词|数学符号|数字|长停顿|重复字/.test(String(error)))phase='script';throw error;}
+        }catch(error){lastError=error;if(error instanceof NarrationAnalysisError)throw error;if(attempt===1||!/匹配|年份|原词|数学符号|数字|长停顿|重复字/.test(String(error))){if(/匹配|年份|原词|数学符号|数字|长停顿|重复字/.test(String(error)))phase='script';throw error;}
           const spoken=spokenLessonText(chapter.narration);const result=await trace.run('synthesize_chapter',`重录错字 · ${chapter.title}`,{chapterId:chapter.id,narration:spoken,correction:String(error)},()=>generateAudio(`使用@Audio1同一声音。${voiceStyle} 上次核验发现：${String(error).slice(0,300)}。必须完整准确地朗读下面的文字，日期按汉字读法，小数每一位数字清楚读出，不能增删。只朗读台词，不朗读核验意见。台词：${spoken}`,audioConfig,reference));await writeFile(file,result.bytes,{mode:0o600});await prepareChapterSpeech(chapter,file,preparedFile);await runFFmpeg(['-v','error','-y','-i',preparedFile,'-af',`atempo=${tempo}`,'-ar','48000','-ac','1',adjusted]);
         }
       }
@@ -437,10 +447,10 @@ export async function runLessonWorkflow(o:Options){
         // Replaying narration/drawing after an ambiguous paid submission can
         // charge twice; their verified-output/revision recovery remains above.
         const mediaSubmission=['synthesize_narration','draw_lesson_scenes'].includes(next);
-        const transient=!/^热点研究缺少可核验/.test(detail)&&!retryBudgetExhausted(error)
+        const transient=!(error instanceof NarrationAnalysisError)&&!/^热点研究缺少可核验/.test(detail)&&!retryBudgetExhausted(error)
           &&(!mediaSubmission&&canRetryWorkflowError(error)||/音频理解第.*(?:时间码|字词|格式无效|截断)/i.test(detail));
         if(transient&&retries++<2)continue;
-        throw new Error(`${current?'新闻制作':'教学'}工作流未完成；阶段${phase}：${detail.slice(0,800)}`);
+        throw new Error(`${current?'新闻制作':'教学'}工作流未完成；阶段${phase}：${detail.slice(0,800)}`,{cause:error});
       }
     }
     throwIfJobCancelled();return results;
@@ -502,8 +512,9 @@ export async function runLessonWorkflow(o:Options){
   try{if(phase!=='done')await agent.prompt(`${o.prompt}\n服务端制作预算：${JSON.stringify(settings)}；语速与停顿规划：${JSON.stringify(pacing)}；总旁白约${targetCharacters}字（不含标点）。先分配各章的字数，再安排真实信息和停顿；不能把语速放慢或用空白凑时长。本次画面与配音风格：${JSON.stringify(presentation)}，用户的风格优先于通用默认配色。新闻台词使用简洁口语，非必要的长英文全称改为中文介绍，核心名称与版本保留；不要堆叠术语。新闻图解选择每项illustration解释界面对照、步骤和能力示意，不能只重复字幕；旁白提到的关键版本、数字和对象必须在对应label/detail中覆盖，不能用“未见公告”省略官方已列版本的对照。示意图不代表原始实测画面。没有选定源视频；不要搜索素材库或复用他人的录屏。自主选择适合初学者的知识层次和图解，调用工具完成。${current&&requiresSelectionReason(o.prompt)?'用户明确要求解释选题依据：必须用简短自然的一句话在旁白或实际画面中说明选它的理由，例如与受众的关系、已核验的新变化或真实时点热度；不能只写在内部reason/angle，也不能仅说今天选某题。理由同样须有依据，不编造热榜排名。':''}${research?'\n已验证研究：'+JSON.stringify(research):''}${report?'\n从已验证检查点继续：'+JSON.stringify(report):''}${feedback?'\n需修正：'+feedback:''}`);}finally{clearTimeout(timer);await drainTrace();}
   throwIfJobCancelled();
   if(o.export&&best){plan=best.plan;rendered=best.rendered;review=best.review;report=plan.lesson!;await o.persist(plan);await o.saveDraft(report);}
-  if(!report||!report.factReview||report.factReview.needsRepair||todayEventFindings(report.factReview.todayEvents,report,o.prompt,requestedAt).length||selectionReasonFindings(report.factReview.selectionReason,report,o.prompt).length||!o.export&&phase!=='done'||o.export&&(!plan||!rendered||!review)){
-    const reason=String(traceValue(modelFailure||feedback||'模型未完成必要步骤',[o.config.apiKey,o.audioConfig?.apiKey||''])).slice(0,500);
+  const observationFailure=report?newsObservationFindings(report,requestedAt).join('；'):'';
+  if(!report||!report.factReview||report.factReview.needsRepair||todayEventFindings(report.factReview.todayEvents,report,o.prompt,requestedAt).length||selectionReasonFindings(report.factReview.selectionReason,report,o.prompt).length||observationFailure||!o.export&&phase!=='done'||o.export&&(!plan||!rendered||!review)){
+    const reason=String(traceValue(modelFailure||observationFailure||feedback||'模型未完成必要步骤',[o.config.apiKey,o.audioConfig?.apiKey||''])).slice(0,500);
     throw new Error(`${current?'新闻制作':'教学'}工作流未完成；阶段${phase}：${reason}`);
   }
   return {report,plan,rendered,review,events:trace.events};

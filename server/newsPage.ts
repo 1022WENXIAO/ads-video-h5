@@ -1,4 +1,5 @@
 import {parse,parseFragment,type DefaultTreeAdapterTypes as Tree} from 'parse5';
+import {canonicalNewsUrl} from './newsSourceUrls';
 
 const element=(node:Tree.Node):node is Tree.Element=>'tagName' in node;
 const attr=(node:Tree.Element,name:string)=>node.attrs.find(a=>a.name===name)?.value||'';
@@ -120,4 +121,18 @@ export function readNewsDocument(html:string):{title:string;excerpt:string;publi
 export function readPublication(html:string):{publishedAt?:string;dateEvidence?:string}{
   const elements=nodes(parse(html)),title=text(elements.find(n=>n.tagName==='title')||parseFragment(''),false);
   return publication(elements,articleData(elements,title));
+}
+
+/** A canonical link can resolve a site's own article aliases, but cannot turn
+ * a different publisher or a section/home page into the page we actually read. */
+export function readNewsCanonical(html:string, finalURL:string):string {
+  const actual=new URL(finalURL),host=(url:URL)=>url.hostname.toLowerCase().replace(/^www\./,'');
+  for(const node of nodes(parse(html)).filter(n=>n.tagName==='link'&&attr(n,'rel').toLowerCase().split(/\s+/).includes('canonical'))){
+    try{
+      const candidate=new URL(attr(node,'href'),actual);
+      if(!['https:','http:'].includes(candidate.protocol)||candidate.username||candidate.password||host(candidate)!==host(actual)||candidate.pathname==='/'||candidate.pathname!==actual.pathname&&actual.pathname.startsWith(candidate.pathname.replace(/\/?$/,'/')))continue;
+      return canonicalNewsUrl(candidate.href);
+    }catch{}
+  }
+  return canonicalNewsUrl(actual.href);
 }

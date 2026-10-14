@@ -404,7 +404,7 @@ async function performJob(job: Job): Promise<void> {
     const config=await getModelConfig('text',session.modelId);
     if(!config)throw new Error('文本模型尚未配置。');
     const workflow=await runLessonWorkflow({prompt:lessonPrompt,requestedAt:Date.parse(message.createdAt),config,audioConfig:await getModelConfig('audio'),media,dataDir,mediaDir,ownerId:job.ownerId!,checkpointKey:job.id,export:job.kind==='export',
-      analyze:(item,file)=>audioUnderstanding.analyze(item,file),
+      analyze:(item,file,options)=>audioUnderstanding.analyze(item,file,undefined,options),
       register:async item=>{throwIfJobCancelled();await oss?.put(job.ownerId!,'media',item.id,path.join(mediaDir,item.id),item.mimeType);throwIfJobCancelled();state.media.push(item);await saveState();},
       persist:async next=>{throwIfJobCancelled();session.plan=next;await saveState();},saveDraft:async next=>{throwIfJobCancelled();session.lessonDraft=structuredClone(next);await saveState();},progress:workflowProgress,stage:async stage=>{throwIfJobCancelled();job.stage=stage;await saveState();},
       render:(next,bgm)=>renderPlan(next,media,mediaDir,exportDir,undefined,bgm),review:(file,next)=>reviewRender(file,next,media,lessonPrompt+'，字幕和声音一致性检查')});

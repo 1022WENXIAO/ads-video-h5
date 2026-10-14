@@ -1,0 +1,574 @@
+{
+  "description": "Deidentified real generated-news ASR and word timings. These samples exercise pronunciation matching, not the truth of the historical script or live acceptance.",
+  "samples": [
+    {
+      "narration": "今年双11告别算数题上热搜。京东十二日晚八点已现货开卖；淘天十五日预售、二十日现货，卖到十一月十三日。",
+      "analysis": {
+        "modelId": "recorded-provider-asr-fixture",
+        "sourceHash": "552df99ac6d7f6c9916fa653a34d03d69a96003335d3c17e657271586c0c7901",
+        "duration": 8.16,
+        "timing": "model-estimated",
+        "createdAt": "",
+        "status": "ready",
+        "transcript": "今年双十一告别算术题上热搜\n京东十二日晚八点已现货开卖\n淘天十五日预售二十日现货卖到十一月十三日",
+        "sentences": [
+          {
+            "id": "recorded-sentence-0",
+            "start": 0.06,
+            "end": 2.11,
+            "words": [
+              {
+                "start": 0.06,
+                "end": 0.21,
+                "text": "今"
+              },
+              {
+                "start": 0.21,
+                "end": 0.36,
+                "text": "年"
+              },
+              {
+                "start": 0.36,
+                "end": 0.54,
+                "text": "双"
+              },
+              {
+                "start": 0.54,
+                "end": 0.68,
+                "text": "十"
+              },
+              {
+                "start": 0.68,
+                "end": 0.77,
+                "text": "一"
+              },
+              {
+                "start": 0.77,
+                "end": 0.95,
+                "text": "告"
+              },
+              {
+                "start": 0.95,
+                "end": 1.11,
+                "text": "别"
+              },
+              {
+                "start": 1.11,
+                "end": 1.29,
+                "text": "算"
+              },
+              {
+                "start": 1.29,
+                "end": 1.41,
+                "text": "术"
+              },
+              {
+                "start": 1.41,
+                "end": 1.6,
+                "text": "题"
+              },
+              {
+                "start": 1.6,
+                "end": 1.74,
+                "text": "上"
+              },
+              {
+                "start": 1.74,
+                "end": 1.92,
+                "text": "热"
+              },
+              {
+                "start": 1.92,
+                "end": 2.11,
+                "text": "搜"
+              }
+            ],
+            "text": "今年双十一告别算术题上热搜",
+            "complete": true
+          },
+          {
+            "id": "recorded-sentence-1",
+            "start": 2.22,
+            "end": 4.53,
+            "words": [
+              {
+                "start": 2.22,
+                "end": 2.46,
+                "text": "京"
+              },
+              {
+                "start": 2.46,
+                "end": 2.61,
+                "text": "东"
+              },
+              {
+                "start": 2.61,
+                "end": 2.75,
+                "text": "十"
+              },
+              {
+                "start": 2.75,
+                "end": 2.81,
+                "text": "二"
+              },
+              {
+                "start": 2.81,
+                "end": 2.87,
+                "text": "日"
+              },
+              {
+                "start": 2.87,
+                "end": 3.09,
+                "text": "晚"
+              },
+              {
+                "start": 3.09,
+                "end": 3.33,
+                "text": "八"
+              },
+              {
+                "start": 3.33,
+                "end": 3.54,
+                "text": "点"
+              },
+              {
+                "start": 3.57,
+                "end": 3.75,
+                "text": "已"
+              },
+              {
+                "start": 3.75,
+                "end": 3.99,
+                "text": "现"
+              },
+              {
+                "start": 3.99,
+                "end": 4.12,
+                "text": "货"
+              },
+              {
+                "start": 4.12,
+                "end": 4.32,
+                "text": "开"
+              },
+              {
+                "start": 4.32,
+                "end": 4.53,
+                "text": "卖"
+              }
+            ],
+            "text": "京东十二日晚八点已现货开卖",
+            "complete": true
+          },
+          {
+            "id": "recorded-sentence-2",
+            "start": 4.59,
+            "end": 8.16,
+            "words": [
+              {
+                "start": 4.59,
+                "end": 4.8,
+                "text": "淘"
+              },
+              {
+                "start": 4.8,
+                "end": 5.01,
+                "text": "天"
+              },
+              {
+                "start": 5.01,
+                "end": 5.19,
+                "text": "十"
+              },
+              {
+                "start": 5.19,
+                "end": 5.25,
+                "text": "五"
+              },
+              {
+                "start": 5.25,
+                "end": 5.38,
+                "text": "日"
+              },
+              {
+                "start": 5.38,
+                "end": 5.52,
+                "text": "预"
+              },
+              {
+                "start": 5.52,
+                "end": 5.76,
+                "text": "售"
+              },
+              {
+                "start": 5.79,
+                "end": 6.03,
+                "text": "二"
+              },
+              {
+                "start": 6.03,
+                "end": 6.15,
+                "text": "十"
+              },
+              {
+                "start": 6.15,
+                "end": 6.27,
+                "text": "日"
+              },
+              {
+                "start": 6.27,
+                "end": 6.45,
+                "text": "现"
+              },
+              {
+                "start": 6.45,
+                "end": 6.7,
+                "text": "货"
+              },
+              {
+                "start": 6.81,
+                "end": 7.02,
+                "text": "卖"
+              },
+              {
+                "start": 7.02,
+                "end": 7.17,
+                "text": "到"
+              },
+              {
+                "start": 7.17,
+                "end": 7.35,
+                "text": "十"
+              },
+              {
+                "start": 7.35,
+                "end": 7.41,
+                "text": "一"
+              },
+              {
+                "start": 7.41,
+                "end": 7.59,
+                "text": "月"
+              },
+              {
+                "start": 7.59,
+                "end": 7.74,
+                "text": "十"
+              },
+              {
+                "start": 7.74,
+                "end": 7.93,
+                "text": "三"
+              },
+              {
+                "start": 7.93,
+                "end": 8.16,
+                "text": "日"
+              }
+            ],
+            "text": "淘天十五日预售二十日现货卖到十一月十三日",
+            "complete": true
+          }
+        ],
+        "pauses": [],
+        "warnings": [
+          "字词时间码由模型估计，已校验格式、顺序和范围，尚未经独立强制对齐。",
+          "停顿是低音量检测结果，不等于已确认无人说话。"
+        ],
+        "captionBreaks": [
+          2,
+          4,
+          9,
+          12,
+          18,
+          20,
+          25,
+          30,
+          32,
+          37,
+          38,
+          42,
+          45
+        ]
+      }
+    },
+    {
+      "narration": "十月十四日傍晚，双11告别算数题登上百度热搜。京东十二日晚八点已现货开卖；淘天十五日预售、二十日现货。",
+      "analysis": {
+        "modelId": "recorded-provider-asr-fixture",
+        "sourceHash": "9aaccceb5ff01426a3c3b80810fb8b864fa03c0d22419afda24e190054b2e828",
+        "duration": 8.76,
+        "timing": "model-estimated",
+        "createdAt": "",
+        "status": "ready",
+        "transcript": "十月十四日傍晚双十一告别算术题登上百度热搜\n京东十二日晚八点已现货开卖\n淘天十五日预售二十日现货",
+        "sentences": [
+          {
+            "id": "recorded-sentence-0",
+            "start": 0.06,
+            "end": 3.6,
+            "words": [
+              {
+                "start": 0.06,
+                "end": 0.42,
+                "text": "十月"
+              },
+              {
+                "start": 0.42,
+                "end": 0.6,
+                "text": "十四"
+              },
+              {
+                "start": 0.6,
+                "end": 0.66,
+                "text": "日"
+              },
+              {
+                "start": 0.66,
+                "end": 0.84,
+                "text": "傍"
+              },
+              {
+                "start": 0.84,
+                "end": 1.05,
+                "text": "晚"
+              },
+              {
+                "start": 1.14,
+                "end": 1.35,
+                "text": "双"
+              },
+              {
+                "start": 1.35,
+                "end": 1.47,
+                "text": "十"
+              },
+              {
+                "start": 1.47,
+                "end": 1.59,
+                "text": "一"
+              },
+              {
+                "start": 1.59,
+                "end": 1.74,
+                "text": "告"
+              },
+              {
+                "start": 1.74,
+                "end": 1.89,
+                "text": "别"
+              },
+              {
+                "start": 1.89,
+                "end": 2.07,
+                "text": "算"
+              },
+              {
+                "start": 2.07,
+                "end": 2.2,
+                "text": "术"
+              },
+              {
+                "start": 2.2,
+                "end": 2.43,
+                "text": "题"
+              },
+              {
+                "start": 2.43,
+                "end": 2.64,
+                "text": "登"
+              },
+              {
+                "start": 2.64,
+                "end": 2.83,
+                "text": "上"
+              },
+              {
+                "start": 2.83,
+                "end": 3.03,
+                "text": "百"
+              },
+              {
+                "start": 3.03,
+                "end": 3.18,
+                "text": "度"
+              },
+              {
+                "start": 3.18,
+                "end": 3.33,
+                "text": "热"
+              },
+              {
+                "start": 3.33,
+                "end": 3.6,
+                "text": "搜"
+              }
+            ],
+            "text": "十月十四日傍晚双十一告别算术题登上百度热搜",
+            "complete": true
+          },
+          {
+            "id": "recorded-sentence-1",
+            "start": 3.69,
+            "end": 6,
+            "words": [
+              {
+                "start": 3.69,
+                "end": 3.9,
+                "text": "京"
+              },
+              {
+                "start": 3.9,
+                "end": 4.08,
+                "text": "东"
+              },
+              {
+                "start": 4.08,
+                "end": 4.23,
+                "text": "十"
+              },
+              {
+                "start": 4.23,
+                "end": 4.29,
+                "text": "二"
+              },
+              {
+                "start": 4.29,
+                "end": 4.5,
+                "text": "日"
+              },
+              {
+                "start": 4.5,
+                "end": 4.68,
+                "text": "晚"
+              },
+              {
+                "start": 4.68,
+                "end": 4.92,
+                "text": "八"
+              },
+              {
+                "start": 4.92,
+                "end": 5.1,
+                "text": "点"
+              },
+              {
+                "start": 5.1,
+                "end": 5.19,
+                "text": "已"
+              },
+              {
+                "start": 5.19,
+                "end": 5.43,
+                "text": "现"
+              },
+              {
+                "start": 5.43,
+                "end": 5.58,
+                "text": "货"
+              },
+              {
+                "start": 5.58,
+                "end": 5.76,
+                "text": "开"
+              },
+              {
+                "start": 5.76,
+                "end": 6,
+                "text": "卖"
+              }
+            ],
+            "text": "京东十二日晚八点已现货开卖",
+            "complete": true
+          },
+          {
+            "id": "recorded-sentence-2",
+            "start": 6.12,
+            "end": 8.49,
+            "words": [
+              {
+                "start": 6.12,
+                "end": 6.36,
+                "text": "淘"
+              },
+              {
+                "start": 6.36,
+                "end": 6.54,
+                "text": "天"
+              },
+              {
+                "start": 6.54,
+                "end": 6.72,
+                "text": "十"
+              },
+              {
+                "start": 6.72,
+                "end": 6.84,
+                "text": "五"
+              },
+              {
+                "start": 6.84,
+                "end": 6.98,
+                "text": "日"
+              },
+              {
+                "start": 6.98,
+                "end": 7.11,
+                "text": "预"
+              },
+              {
+                "start": 7.11,
+                "end": 7.42,
+                "text": "售"
+              },
+              {
+                "start": 7.5,
+                "end": 7.71,
+                "text": "二"
+              },
+              {
+                "start": 7.71,
+                "end": 7.92,
+                "text": "十"
+              },
+              {
+                "start": 7.92,
+                "end": 8.1,
+                "text": "日"
+              },
+              {
+                "start": 8.1,
+                "end": 8.28,
+                "text": "现"
+              },
+              {
+                "start": 8.28,
+                "end": 8.49,
+                "text": "货"
+              }
+            ],
+            "text": "淘天十五日预售二十日现货",
+            "complete": true
+          }
+        ],
+        "pauses": [],
+        "warnings": [
+          "字词时间码由模型估计，已校验格式、顺序和范围，尚未经独立强制对齐。",
+          "停顿是低音量检测结果，不等于已确认无人说话。"
+        ],
+        "captionBreaks": [
+          4,
+          7,
+          12,
+          18,
+          24,
+          26,
+          31,
+          36,
+          38,
+          43
+        ]
+      }
+    }
+  ]
+}

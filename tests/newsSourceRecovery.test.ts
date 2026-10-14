@@ -93,7 +93,8 @@ for(const preset of TEXT_MODEL_PRESETS)test(`${preset.modelId}: replaces an unre
         return {summary:'Controlled actual-page references',references:urls.map((url,i)=>({id:'r'+i,url,title:'Article',excerpt:'Search is not body evidence',verification:'search-cited',retrievedAt:now})),queries:[query]};
       },
     });
-    assert.equal(result.current?.topics.length,1);assert.equal(reads.filter(u=>u.includes('/login')).length,1);assert.equal(queries.length,3);assert.equal(refinements,2);
+    assert.equal(result.current?.topics.length,1);assert.equal(reads.filter(u=>u.includes('/login')).length,1);assert.equal(queries.length,4);assert.equal(refinements,2);
+    assert.ok(queries.some(q=>q.includes('今日新模型正式推出')&&q.includes('-site:example.org')),'an eligible candidate missing a publisher gets one targeted independent-report query');
     assert.ok(result.current?.topics[0].facts[0].evidence.every(e=>!e.referenceId.includes('fake')));
     assert.ok(events.some(e=>e.tool==='refine_news_search'&&e.status==='succeeded'));
     assert.ok(!result.current?.failures.some(f=>f.includes('继续锁定原主题')));

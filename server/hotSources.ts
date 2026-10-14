@@ -1,8 +1,9 @@
 import type { HotTopicSignal, ResearchReference } from '../src/types';
 import { publicResearchUrl, readPublicPage, type PublicReader } from './publicResearch';
 import { mapLimited } from './taskPool';
-import {readNewsDocument,readPublication} from './newsPage';
+import {readNewsCanonical,readNewsDocument,readPublication} from './newsPage';
 import {throwIfJobCancelled} from './jobExecution';
+import {newsSourceCandidates,newsSourceIdentity} from './newsSourceUrls';
 
 export const baiduBoard='https://top.baidu.com/board?tab=realtime';
 export const hnBoard='https://news.ycombinator.com/';
@@ -58,10 +59,10 @@ export function parseNewsPage(html:string):{title:string;excerpt:string;publishe
 }
 export async function verifyNewsPages(references:ResearchReference[],hours:number,read:PublicReader=readPublicPage,now=Date.now()){
   const pages:Array<{url:string;finalURL?:string;status:'read'|'failed';reason?:string;retryable?:boolean}>=[];
-  const failures:string[]=[];const rows=await mapLimited(references.slice(0,12),3,async ref=>{
-    try{const page=await read(ref.url),parsed=parseNewsPage(page.text);pages.push({url:ref.url,finalURL:page.url,status:'read'});return {...ref,...parsed,url:page.url,retrievedAt:new Date(now).toISOString(),verification:'news-page' as const,freshness:freshness(parsed.publishedAt,now,hours)};}
+  const failures:string[]=[];const rows=await mapLimited(newsSourceCandidates([references],()=>true,12,12),3,async ref=>{
+    try{const page=await read(ref.url),parsed=parseNewsPage(page.text),url=readNewsCanonical(page.text,page.url);pages.push({url:ref.url,finalURL:url,status:'read'});return {...ref,...parsed,url,retrievedAt:new Date(now).toISOString(),verification:'news-page' as const,freshness:freshness(parsed.publishedAt,now,hours)};}
     catch(error){throwIfJobCancelled();const reason=error instanceof Error?error.message:'读取失败';failures.push(`${ref.title}：${reason}`);pages.push({url:ref.url,status:'failed',reason,retryable:/HTTP (?:429|5\d\d)|超时|timeout|fetch failed|ECONN|网络/i.test(reason)});return;}
   });
-  const unique=new Map<string,NonNullable<typeof rows[number]>>();for(const row of rows)if(row&&!unique.has(row.url))unique.set(row.url,row);
+  const unique=new Map<string,NonNullable<typeof rows[number]>>();for(const row of rows)if(row&&!unique.has(newsSourceIdentity(row.url)))unique.set(newsSourceIdentity(row.url),row);
   return {references:[...unique.values()],failures,pages};
 }

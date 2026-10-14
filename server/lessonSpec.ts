@@ -168,7 +168,7 @@ export function compactSpeech(text:string,normalizeNumbers=true):string{
 }
 // Recognize equivalent heard quantities/ranges without treating every Chinese
 // numeral in ordinary prose as a number, or changing the original transcript.
-function speechNumberForms(){return /[\d零〇一二两三四五六七八九十百千万亿]+点[\d零〇一二三四五六七八九]+|[\d零〇一二两三四五六七八九十][\d零〇一二两三四五六七八九十百千]*(?=[a-z%年月日号天元台家人岁个次万亿]|小时|到|至)|[零〇一二三四五六七八九]{3,}/g;}
+function speechNumberForms(){return /(?<=双)(?:十[一二]|1[12])(?![\d.点零〇一二两三四五六七八九十百千万亿])|[\d零〇一二两三四五六七八九十百千万亿]+点[\d零〇一二三四五六七八九]+|[\d零〇一二两三四五六七八九十][\d零〇一二两三四五六七八九十百千]*(?=[a-z%年月日号天元台家人岁个次万亿]|小时|到|至)|[零〇一二三四五六七八九]{3,}/g;}
 function canonicalSpeechNumber(text:string){return text.includes('点')?speechDecimalText(text):String(speechNumberValue(text));}
 function spokenYears(text:string):string[]{
   const digits:Record<string,string>={'零':'0','〇':'0','一':'1','二':'2','三':'3','四':'4','五':'5','六':'6','七':'7','八':'8','九':'9'};
@@ -219,7 +219,7 @@ function spokenNumberValues(text:string):string[]{
 // Keep the original ASR separately; the replacement inherits the heard span,
 // never invents missing speech or estimates a new sentence duration.
 export function correctLessonTranscript(chapter:LessonChapter,analysis:AudioAnalysis):AudioAnalysis{
-  const aliases:Array<[string,string]>=[['智源','智元'],['报到','报道'],['cloud','Claude'],['Cloud','Claude'],['x二','X2'],['X二','X2'],['军方误差','均方误差'],['流族','留足'],['交叉商','交叉熵'],['交叉伤','交叉熵'],['交叉墒','交叉熵'],['绞链','铰链'],['饺链','铰链'],['易列','易例'],['编辑','边际'],['加码','伽马'],['加马','伽马'],['对其偏好','对齐偏好'],['复log','负log'],['sem','sim'],['派西塔','πθ'],['派ref','πref'],['德尔塔','δ'],['伽马','γ'],['陶','τ'],['贝塔','β'],['西格玛','σ']];
+  const aliases:Array<[string,string]>=[['智源','智元'],['报到','报道'],['算术题','算数题'],['算数题','算术题'],['cloud','Claude'],['Cloud','Claude'],['x二','X2'],['X二','X2'],['军方误差','均方误差'],['流族','留足'],['交叉商','交叉熵'],['交叉伤','交叉熵'],['交叉墒','交叉熵'],['绞链','铰链'],['饺链','铰链'],['易列','易例'],['编辑','边际'],['加码','伽马'],['加马','伽马'],['对其偏好','对齐偏好'],['复log','负log'],['sem','sim'],['派西塔','πθ'],['派ref','πref'],['德尔塔','δ'],['伽马','γ'],['陶','τ'],['贝塔','β'],['西格玛','σ']];
   for(const term of chapter.narration.match(/\b[A-Za-z][A-Za-z-]{1,24}(?=\b|\d)/g)||[])if(term!==term.toLowerCase())aliases.push([term.toLowerCase(),term]);
   // Single-letter labels (N卡/A卡) carry the same spoken letter in either
   // case. Require the identical adjacent Han context; never change a letter
