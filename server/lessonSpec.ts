@@ -1,7 +1,8 @@
-import {validateBarChart} from './barChart';
+import {requireBarChartData} from './barChart';
 import type { AudioAnalysis, Format, LessonChapter, LessonPacing, LessonReport, LessonVisual, ResearchReference } from '../src/types';
 import { intentText, wantsCurrentResearch } from './intents';
 import { assertVisibleContent } from './visibleContent';
+import { assertNarrationHanCoverage } from './lessonSpeechCoverage';
 
 function durationNumber(value:string):number {
   if(value==='半')return .5;
@@ -92,8 +93,7 @@ export function validateLessonVisual(v:LessonVisual,narration:string):LessonVisu
   assertVisibleContent(displayed);
   if(displayed.some(text=>/^(?:绘制|画出|渲染)|无商标|无数字|分层高亮|按审查|按(?:制作|渲染)要求|(?:杯身|画面)沿.{0,8}剖开|调整动画时序|字幕完整写[作成]|制作备注|按反馈(?:修改|修正)|用(?:SVG|HTML|GSAP)/i.test(text)))throw new Error('图解中出现制作指令；label、detail、takeaway须是观众可读的知识内容。制作意图放reason，图形类型用illustration；不要把绘制要求直接显示在成片。');
   for(const item of v.items){string(item.label,24,'图解标签');string(item.detail,64,'图解说明');string(item.cue,28,'动画触发原词');if(!narration.includes(item.cue))throw new Error(`动画原词「${item.cue}」不在本章旁白中。`);}
-  if(v.kind==='bar-chart'&&!v.barChart)throw new Error('柱状图缺少类别、数值、单位和坐标数据。');
-  if(v.barChart)validateBarChart(v.barChart);
+  requireBarChartData(v);
   if(v.kind==='curve'||v.kind==='formula'){
     if(v.items.length>3)throw new Error('公式或曲线图解最多3个信息点，确保画面可读。');
     v.items.forEach(item=>{string(item.label,16,'公式/曲线标签');string(item.detail,36,'公式/曲线说明');});
@@ -423,6 +423,7 @@ export function alignLessonSpeech(chapter:LessonChapter,analysis:AudioAnalysis):
   }
   for(const [values,isMatched] of [[expected,(k:number)=>mapped.has(k)],[heard.map(v=>v.char),(k:number)=>heardMapped.has(k)]] as const){let run='';for(let k=0;k<values.length;k++){run=isMatched(k)?'':run+values[k];if(run.length>=4)throw new Error(`章节${chapter.id}存在连续未匹配台词「${run}」，需要核对并重录，不能用全章平均匹配率掩盖残句。`);}}
   if(JSON.stringify(spokenNumberValues(chapter.narration))!==JSON.stringify(spokenNumberValues(heardNumberText(numericAnalysis))))throw new Error(`章节${chapter.id}实际旁白中的数字与脚本不一致，需要独立复听或重录，不能以整章匹配率放行。`);
+  assertNarrationHanCoverage(chapter.id,expected,mapped,{numbersVerified:true});
   const joined=expected.join('');
   const cues=chapter.visual.items.map(item=>{
     const cue=compactSpeech(item.cue),start=joined.indexOf(cue);const indices=Array.from({length:cue.length},(_,k)=>mapped.get(start+k)).filter((k):k is number=>k!==undefined);

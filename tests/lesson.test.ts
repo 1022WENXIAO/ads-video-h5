@@ -54,7 +54,7 @@ test('news homophones resolve only in matching heard sentence context and keep n
   const raw=analysis('专家项专项模块，每个词只调十个。'),before=structuredClone(raw),fixed=correctLessonTranscript(c,raw);
   assert.equal(fixed.transcript,c.narration);assert.deepEqual(raw,before);assert.equal(alignLessonSpeech(c,fixed).similarity,1);
   assert.equal(fixed.sentences[0].words[0].start,raw.sentences[0].words[0].start);assert.equal(fixed.sentences[0].words.at(-1)!.end,raw.sentences[0].words.at(-1)!.end);
-  const missing=correctLessonTranscript(c,analysis('专家项模块，每个词只调十个。'));assert.doesNotMatch(missing.transcript,/专项模块/);assert.notEqual(alignLessonSpeech(c,missing).similarity,1);
+  const missing=correctLessonTranscript(c,analysis('专家项模块，每个词只调十个。'));assert.doesNotMatch(missing.transcript,/专项模块/);assert.throws(()=>alignLessonSpeech(c,missing),/未完整匹配汉字|匹配/);
   assert.throws(()=>alignLessonSpeech(c,correctLessonTranscript(c,analysis('专家项专项模块，每个词只调十二个。'))),/数字|匹配/);
 });
 test('single-letter hardware labels retain heard spans and numbers when restoring case',()=>{
@@ -300,6 +300,10 @@ test('pace budgets distinguish news, slow requests and measured speech instead o
   assert.equal(lessonPacingCheck(161,42.34,news).passed,false);
   assert.equal(lessonPacingCheck(203,44.1,news).passed,true);
   assert.equal(lessonPacingCheck(203,24,news).passed,false);
+  const boundary=lessonPacingCheck(101,101/(news.minCharactersPerSecond-0.0004),news);
+  assert.equal(boundary.passed,false);
+  assert.match(boundary.detail,/低于下限0\.000400字\/秒/);
+  assert.match(boundary.detail,/实际101字\//);
   assert.throws(()=>lessonPacing('每秒20字'),/规划语速/);
   const current={title:'人形机器人进店卖锅',requestedSeconds:45,format:'9:16',hotResearch:{}} as LessonReport;
   const request=lessonRequest('去掉角注和尾注，语速快一点，重新生成视频',[],true,current)!;

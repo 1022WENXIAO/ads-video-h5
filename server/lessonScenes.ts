@@ -3,7 +3,7 @@ import { numericDrawingText, assertNumericDrawingNode, NUMERIC_DRAWING_CSS, NUME
 import type { NewsPublicationAnnotation, NewsPublicationEvidence } from '../src/types';
 import { newsPublicationNoteHtml, newsPublicationNoteCss, createNewsPublicationAnnotation, newsPublicationTimestamp } from './newsTime';
 import { inspectNewsPublicationHtml } from './newsPublicationHtml';
-import {barChartSvg,validateBarChart,chapterBarChart,inferBarData,barChartDetail} from './barChart';
+import {barChartSvg,validateBarChart,chapterBarChart,inferBarData,barChartDetail,quantitativeBarIntent,requireBarChartData} from './barChart';
 import { copyFile, mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import type { AudioAnalysis, Format, LessonChapter, LessonCurveFunction, LessonPacing, LessonPresentation, LessonVisual, LessonBarChart } from '../src/types';
@@ -113,7 +113,7 @@ function newsIllustration(item:LessonVisual['items'][number],index:number):strin
 export function lessonSceneHtml(chapter:LessonChapter,index:number,total:number,duration:number,format:Format,presentation?:LessonPresentation,news=false,barChart?:LessonBarChart,publicationAnnotation?:NewsPublicationAnnotation):string{
   const urgent=presentation?.mood==='urgent';
   const [w,h]=lessonDimensions(format),portrait=h>w;
-  const count=chapter.visual.items.length;barChart??=chapter.visual.barChart;
+  const count=chapter.visual.items.length;barChart=chapterBarChart(chapter,barChart);
   const smallSide=!portrait&&(Boolean(barChart)||chapter.visual.kind==='curve'||chapter.visual.kind==='formula');
   const labelSize=smallSide&&count>=3?(count===4?18:22):portrait?29:26;
   const detailSize=smallSide&&count>=3?(count===4?14:18):portrait?24:21;
@@ -123,7 +123,7 @@ export function lessonSceneHtml(chapter:LessonChapter,index:number,total:number,
   const titleSize=publicationAnnotation&&!portrait&&singleLineTitleSize>=34?Math.min(naturalTitleSize,singleLineTitleSize):naturalTitleSize;
 
   const side=Boolean(barChart)||chapter.visual.kind==='curve'||chapter.visual.kind==='formula';
-  const cards=chapter.visual.items.map((item,i)=>`<article id="item-${i}" class="teaching-item"><span class="item-number">${String(i+1).padStart(2,'0')}</span><div><h2>${escape(item.label)}</h2><p>${escape(barChartDetail(item,barChart))}</p></div>${news||!side&&(item.illustration||/保温|真空|杯壁|反射层|柱状|纵轴|横轴|零基线|读书|阅读|书页|T恤|衣服|书桌|收纳|咖啡|滤杯|月亮|地球|日食|月食|电池|杭州|地图|步骤/.test(item.label+' '+item.detail))?newsIllustration(item,i):''}</article>`).join('');
+  const cards=chapter.visual.items.map((item,i)=>`<article id="item-${i}" class="teaching-item"><span class="item-number">${String(i+1).padStart(2,'0')}</span><div><h2>${escape(item.label)}</h2><p>${escape(barChartDetail(item,barChart))}</p></div>${!barChart&&(news||!side&&(item.illustration||/保温|真空|杯壁|反射层|柱状|纵轴|横轴|零基线|读书|阅读|书页|T恤|衣服|书桌|收纳|咖啡|滤杯|月亮|地球|日食|月食|电池|杭州|地图|步骤/.test(item.label+' '+item.detail)))?newsIllustration(item,i):''}</article>`).join('');
   const graphic=barChart?barChartSvg(barChart):chapter.visual.kind==='curve'?curveSvg(chapter):chapter.visual.kind==='formula'?formulaSvg(chapter.visual.formula!):'';
   const cues=chapter.cues||chapter.visual.items.map((v,i)=>({text:v.cue,start:.4+i*Math.max(1,(duration-3)/chapter.visual.items.length),end:1+i}));
   const enters=chapter.visual.items.map((_,i)=>{
@@ -151,12 +151,15 @@ for(const node of document.querySelectorAll('[data-math-width]')){
 ${motionLibrary}window.__timelines={};const tl=gsap.timeline({paused:true});tl.from('#accent',{scaleX:0,transformOrigin:'left',duration:.6,ease:'power2.out'},.1);tl.from('#title',{y:${publicationAnnotation&&!portrait?0:20},duration:.6,ease:'power3.out'},.05);${side?"tl.from('#graphic',{opacity:0,y:12,duration:.6,ease:'power2.out'},.45);":''}${enters}${curves}${formula}tl.to('#title',{opacity:0,duration:.2,ease:'sine.in'},${Math.max(.8,duration-.35).toFixed(3)});tl.from('#takeaway',{opacity:0,x:-12,duration:.5,ease:'power2.out'},${takeawayAt.toFixed(3)});${urgent?`tl.to('#accent',{opacity:.55,duration:.45,repeat:${Math.min(10,Math.floor(duration/1.1))},yoyo:true,ease:'sine.inOut'},1);`:''}window.__timelines.main=tl;</script></body></html>`;
 }
 
-export function lessonRendererHash(){return hashBytes([CARD_LAYOUT_RENDERER_SIGNATURE,lessonSceneHtml,newsIllustration,curveSvg,formulaSvg,drawingHtml,authorDrawing,validateDrawing,drawingDimensions,barChartSvg,validateBarChart,chapterBarChart,inferBarData,barChartDetail,visualRepairTargets,speechOnlyRepair,lessonVisualBrief,createNewsPublicationAnnotation,newsPublicationTimestamp,newsPublicationNoteHtml,newsPublicationNoteCss,inspectNewsPublicationHtml,numericDrawingText,assertNumericDrawingNode,NUMERIC_DRAWING_CSS,NUMERIC_DRAWING_CHECK_SCRIPT,assertVisibleContent,correctLessonTranscript,lessonCaptionAnalysis,captionsFromTranscript,voiceComparisonTask].map(fn=>fn.toString()).join('\n'));}
+export function lessonRendererHash(){return hashBytes([CARD_LAYOUT_RENDERER_SIGNATURE,lessonSceneHtml,newsIllustration,curveSvg,formulaSvg,drawingHtml,authorDrawing,validateDrawing,drawingDimensions,barChartSvg,validateBarChart,chapterBarChart,inferBarData,barChartDetail,quantitativeBarIntent,requireBarChartData,visualRepairTargets,speechOnlyRepair,lessonVisualBrief,createNewsPublicationAnnotation,newsPublicationTimestamp,newsPublicationNoteHtml,newsPublicationNoteCss,inspectNewsPublicationHtml,numericDrawingText,assertNumericDrawingNode,NUMERIC_DRAWING_CSS,NUMERIC_DRAWING_CHECK_SCRIPT,assertVisibleContent,correctLessonTranscript,lessonCaptionAnalysis,captionsFromTranscript,voiceComparisonTask].map(fn=>fn.toString()).join('\n'));}
 
 export async function produceLessonScene(chapter:LessonChapter,index:number,total:number,format:Format,speechFile:string,analysis:AudioAnalysis,project:string,pacing?:LessonPacing,presentation?:LessonPresentation,news=false,drawing?:HtmlDrawing,barChart?:LessonBarChart,publicationAnnotation?:NewsPublicationAnnotation){
+  // Verified quantitative data takes precedence over any supplied authored
+  // drawing. Cached/model geometry cannot override the compiled chart scale.
+  barChart=chapterBarChart(chapter,barChart);
   const lead=pacing?.leadSeconds??.35,tail=pacing?.tailSeconds??.55,duration=+(analysis.duration+lead+tail).toFixed(3);
   const shifted={...chapter,cues:chapter.cues?.map(c=>({...c,start:c.start+lead,end:c.end+lead}))};
-  const html=drawing?drawingHtml(drawing,duration,format,publicationAnnotation):lessonSceneHtml(shifted,index,total,duration,format,presentation,news,barChart,publicationAnnotation),htmlHash=hashBytes(html);await mkdir(project,{recursive:true});
+  const html=drawing&&!barChart?drawingHtml(drawing,duration,format,publicationAnnotation):lessonSceneHtml(shifted,index,total,duration,format,presentation,news,barChart,publicationAnnotation),htmlHash=hashBytes(html);await mkdir(project,{recursive:true});
   const visual=path.join(project,'visual.mp4'),output=path.join(project,'scene.mp4');
   let cached=false;try{const meta=JSON.parse(await readFile(path.join(project,'visual-cache.json'),'utf8'));cached=meta.htmlHash===htmlHash&&Math.abs((await probeVideo(visual)).duration-duration)<.1;}catch{}
   let publicationCheck:Awaited<ReturnType<typeof inspectNewsPublicationHtml>>|undefined;

@@ -100,3 +100,33 @@ test('actual controlled P8 original speech uses moderate compression only after 
     assert.deepEqual(await readFile(fixture),original,'the retained source audio is never changed');
   }finally{await rm(dir,{recursive:true,force:true});}
 });
+
+test('actual P9 original speech uses the last bounded candidate only when both gentler treatments miss the unchanged margin',async()=>{
+  const dir=await mkdtemp(path.join(tmpdir(),'qingjian-p9-original-speech-')),out=path.join(dir,'exports');await mkdir(out);
+  const fixture=new URL('./fixtures/p9-original-speech-dynamics.wav',import.meta.url),original=await readFile(fixture);
+  try{
+    const provenance=JSON.parse(await readFile(new URL('./fixtures/p9-original-speech-dynamics.json',import.meta.url),'utf8'));
+    assert.equal(createHash('sha256').update(original).digest('hex'),provenance.pcmSha256);
+    assert.deepEqual(provenance.sourceWindow,{start:7.8,end:11.22,duration:3.42});
+    const source=path.join(dir,'original');
+    await runFFmpeg(['-v','error','-y','-f','lavfi','-i','color=c=blue:s=180x102:r=30','-i',fixture.pathname,'-t','3.42','-c:v','libx264','-threads','2','-pix_fmt','yuv420p','-c:a','pcm_s16le','-f','matroska',source]);
+    const media:MediaItem[]=[{id:'original',name:'controlled P9 original speech',kind:'video',mimeType:'video/x-matroska',duration:3.42,hasAudio:true,url:'',createdAt:''}];
+    const plan:EditPlan={format:'16:9',summary:'Retain the actual original selected words and timing',targetSeconds:3.42,clips:[{sourceId:'original',start:0,end:3.42}],audio:{originalVolume:1,bgmVolume:0,narrationVolume:0,normalize:true}};
+    const rendered=await renderTimeline(plan,media,dir,out),actual=await inspectAudioLevels(rendered.file,plan);
+    const manifest=JSON.parse(await readFile(rendered.file.replace('.mp4','.render.json'),'utf8')),segment=manifest.audioNormalization.segments[0];
+    assert.deepEqual(segment.candidateSpreads.map((candidate:any)=>candidate.ratio),[2,4,6]);
+    assert.ok(segment.candidateSpreads.slice(0,2).every((candidate:any)=>candidate.spreadLu>7.5),JSON.stringify(segment));
+    assert.ok(segment.candidateSpreads[2].spreadLu<=7.5,JSON.stringify(segment));
+    assert.match(segment.preparationFilter,/acompressor=threshold=0\.04:ratio=6:/);
+    assert.doesNotMatch(segment.preparationFilter,/dynaudnorm|atempo|silenceremove|atrim/,'original speech receives no generated-voice fallback, speed change or internal deletion');
+    assert.ok(soundChecks(actual).every(check=>check.passed),JSON.stringify(actual));
+    assert.ok(Math.abs(actual.segments[0].integratedLufs!+16)<.3,JSON.stringify(actual));
+    assert.ok(Math.abs((await probeVideo(rendered.file)).duration-3.42)<.05);
+    assert.equal(manifest.narration,false);assert.equal(manifest.bgm,false);
+    const excluded={...plan,audio:{...plan.audio!,normalize:false}};
+    const untreated=await renderTimeline(excluded,media,dir,out),untreatedManifest=JSON.parse(await readFile(untreated.file.replace('.mp4','.render.json'),'utf8'));
+    assert.equal(untreatedManifest.audioNormalization,undefined,'explicitly disabled normalization cannot be silently enabled by recovery');
+    assert.equal(soundChecks(await inspectAudioLevels(untreated.file,excluded)).find(check=>check.name==='段内音量稳定性')!.passed,false);
+    assert.deepEqual(await readFile(fixture),original,'the actual source recording remains unchanged');
+  }finally{await rm(dir,{recursive:true,force:true});}
+});

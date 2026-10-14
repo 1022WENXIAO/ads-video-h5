@@ -69,9 +69,10 @@ export async function renderTimeline(inputPlan: EditPlan, media: MediaItem[], me
         if(raw.integrated!==null){
           const gain=Math.max(-24,Math.min(24,-18-raw.integrated));
           // Original speech can also exceed the measured dynamic-range limit.
-          // Keep ratio 2 when it passes; try only one moderate alternative for
-          // original recordings, preserving their words, timing and identity.
-          const candidates=source.generation?.mode==='generated'?[[0.1,2],[0.05,4],[0.04,6]]:[[0.1,2],[0.05,4]];
+          // Keep the gentlest measured passing treatment. The last bounded
+          // candidate also handles original recordings whose ratio-4 result
+          // still misses the preparation margin; words and timing stay intact.
+          const candidates=[[0.1,2],[0.05,4],[0.04,6]];
           let best:{ratio:number;preparation:string;measurement:LoudnessMeasurement;filter:string;spreadLu:number|null}|undefined;
           const candidateSpreads:Array<{ratio:number;spreadLu:number|null;method?:string}>=[];
           for(const [threshold,ratio] of candidates){

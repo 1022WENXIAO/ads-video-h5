@@ -18,6 +18,10 @@ export const currentJobSignal = () => execution.getStore()?.signal;
 // immediately after this callback, including when it returns a promise.
 export function withoutJobSignal<T>(action: () => T): T { return execution.exit(action); }
 export const getJobTransportDiagnostics = (): TransportDiagnostic[] => execution.getStore()?.transport.map(diagnostic => structuredClone(diagnostic)) ?? [];
+export function recordJobTransportDiagnostic(diagnostic: TransportDiagnostic): void {
+  const transport = execution.getStore()?.transport;
+  if (transport) { transport.push(structuredClone(diagnostic)); if (transport.length > 64) transport.shift(); }
+}
 // Queue catches run outside AsyncLocalStorage. WeakMap metadata survives error
 // propagation without adding raw request data to JSON or user-visible errors.
 export const jobErrorDiagnostics = (error: unknown): TransportDiagnostic[] => error !== null && typeof error === 'object' ? failureTransport.get(error)?.map(diagnostic => structuredClone(diagnostic)) ?? [] : [];
@@ -54,10 +58,7 @@ export const jobFetch: typeof fetch = async (input, init) => {
   const inherited = init?.signal ?? (input instanceof Request ? input.signal : undefined);
   const combined = signal && inherited ? AbortSignal.any([signal, inherited]) : signal || inherited;
   try {
-    const response = await fetchWithTextRecovery(creditFetch, input, { ...init, ...(combined ? { signal: combined } : {}) }, diagnostic => {
-      const transport = execution.getStore()?.transport;
-      if (transport) { transport.push(diagnostic); if (transport.length > 64) transport.shift(); }
-    });
+    const response = await fetchWithTextRecovery(creditFetch, input, { ...init, ...(combined ? { signal: combined } : {}) }, recordJobTransportDiagnostic);
     if (signal?.aborted) await response.body?.cancel();
     throwIfJobCancelled(signal);
     return response;

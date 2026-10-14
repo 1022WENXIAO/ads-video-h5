@@ -3,6 +3,22 @@
 // for recovery and operator traces.
 export const TEXT_TRANSPORT_FINAL = 'TEXT_TRANSPORT_FINAL';
 
+export interface ExecutionOrigin { tool: string; stage: string; callId: string; }
+const failureOrigins = new WeakMap<object, ExecutionOrigin>();
+
+// Keep the first, innermost failing call. Parallel workers can finish later
+// and update progress; their stage must not become the cause of this failure.
+export function executionOrigin(value: unknown): ExecutionOrigin | undefined {
+  for (const part of errorParts(value)) {
+    const origin = failureOrigins.get(part);
+    if (origin) return { ...origin };
+  }
+}
+
+export function recordExecutionOrigin(value: unknown, origin: ExecutionOrigin): void {
+  if (value !== null && typeof value === 'object' && !executionOrigin(value)) failureOrigins.set(value, { ...origin });
+}
+
 export interface ExecutionFailure {
   name: string;
   message: string;
@@ -10,6 +26,7 @@ export interface ExecutionFailure {
   status?: number;
   retryable: boolean;
   retryExhausted: boolean;
+  origin?: ExecutionOrigin;
   causes?: ExecutionFailure[];
 }
 
@@ -69,12 +86,14 @@ export function executionFailure(value: unknown, secrets: string[] = [], depth =
   const children = [error.cause, ...(Array.isArray(error.errors) ? error.errors.slice(0, 6) : [])].filter(v => v !== undefined && !seen.has(v));
   seen.add(value);
   const status = Number(error.status);
+  const origin = executionOrigin(value);
   return {
     name: safeErrorText(error.name || 'Error', secrets),
     message: safeErrorText(error.message ?? value, secrets),
     ...(typeof error.code === 'string' ? { code: safeErrorText(error.code, secrets) } : {}),
     ...(Number.isInteger(status) && status >= 100 && status <= 599 ? { status } : {}),
     retryable: isTransientExecutionError(value), retryExhausted: retryBudgetExhausted(value),
+    ...(origin ? { origin: { tool: safeErrorText(origin.tool, secrets), stage: safeErrorText(origin.stage, secrets), callId: safeErrorText(origin.callId, secrets) } } : {}),
     ...(depth < 3 && children.length ? { causes: children.map(v => executionFailure(v, secrets, depth + 1, seen)) } : {}),
   };
 }

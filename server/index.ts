@@ -664,6 +664,7 @@ async function processQueue() {
         } else {
           job.status = 'failed'; job.progress = undefined;
           job.failure = executionFailure(error, modelSecrets);
+          job.stage = job.failure.origin?.stage || job.stage;
           transport = transport.length ? transport : jobErrorDiagnostics(error);
           job.error = jobFailureMessage(error, job.stage, modelSecrets);
           console.error(JSON.stringify({ event: 'job.failed', jobId: job.id, attemptId: attempt.id, revision: attempt.revision, kind: job.kind, stage: job.stage, model: job.textModel, failure: job.failure, transport }));

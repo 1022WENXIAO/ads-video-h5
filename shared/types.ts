@@ -313,6 +313,7 @@ export interface JobFailure {
   status?: number;
   retryable: boolean;
   retryExhausted: boolean;
+  origin?: { tool: string; stage: string; callId: string };
   causes?: JobFailure[];
 }
 export interface JobAttempt {
@@ -334,7 +335,7 @@ export interface JobAttempt {
   restoredCallIds?: string[];
   restoredCallCount?: number;
   workflow?: WorkflowEvent[];
-  transport?: Array<{ at: string; origin: string; path: string; attempts: number; durationMs: number; outcome: 'recovered' | 'failed'; failure: JobFailure; status?: number; requestId?: string }>;
+  transport?: Array<{ at: string; origin: string; path: string; attempts: number; durationMs: number; outcome: 'recovered' | 'failed'; failure: JobFailure; status?: number; requestId?: string; recoveryKind?: 'audio-rate-limit'; retryDelaysMs?: number[]; queueWaitMs?: number }>;
 }
 
 export interface Job {

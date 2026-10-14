@@ -1,6 +1,15 @@
 import type { LessonBarChart, LessonChapter, LessonReport, LessonVisual } from '../src/types';
 
 const escape=(s:string)=>s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]!));
+// A comparison may contain a quantitative chart even when its outer visual
+// kind is not bar-chart. A single reported amount retains the value-card path.
+export function quantitativeBarIntent(visual:LessonVisual):boolean {
+  return visual.kind==='bar-chart'||visual.items.filter(item=>item.illustration==='bar-chart').length>=2;
+}
+export function requireBarChartData(visual:LessonVisual,chart=visual.barChart):LessonBarChart|undefined {
+  if(!chart&&quantitativeBarIntent(visual))throw new Error('本章柱状图比较缺少结构化数值：请提供visual.barChart的bars（真实类别与数值）、unit和panels（零基线及同一刻度）。comparison中多个bar-chart信息点也须提供；不能由HTML绘图猜柱高，不能把缺失数据改成示意免责。只填写已核验来源或明确课堂演算中的数据。');
+  return chart?validateBarChart(chart):undefined;
+}
 export function validateBarChart(chart:LessonBarChart){
   if(!chart||!Array.isArray(chart.bars)||chart.bars.length<2||chart.bars.length>6||new Set(chart.bars.map(b=>b.label)).size!==chart.bars.length)throw new Error('柱状图需要2–6个不同类别。');
   if(chart.bars.some(b=>typeof b.label!=='string'||!b.label.trim()||b.label.length>12||!Number.isFinite(b.value)||b.value<0||b.value>10000))throw new Error('柱状图类别或数值无效。');
@@ -25,8 +34,8 @@ export function inferBarData(chapters:LessonReport['chapters']):LessonBarChart|u
 }
 
 export function chapterBarChart(chapter:LessonChapter,common?:LessonBarChart):LessonBarChart|undefined{
-  if(chapter.visual.barChart)return validateBarChart(chapter.visual.barChart);
-  if(!common)return;
+  if(chapter.visual.barChart)return requireBarChartData(chapter.visual);
+  if(!common)return requireBarChartData(chapter.visual);
   const ranges=chapter.visual.items.flatMap(item=>{
     const range=item.label.match(/(\d+(?:\.\d+)?)\s*[–—-]\s*(\d+(?:\.\d+)?)/);
     return range?[{title:item.label,min:Number(range[1]),max:Number(range[2])}]:[];

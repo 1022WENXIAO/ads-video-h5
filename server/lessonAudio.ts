@@ -24,7 +24,8 @@ export function lessonVoiceStyle(pacing:LessonPacing,presentation?:LessonPresent
 export function lessonPacingCheck(characters:number,seconds:number,pacing:LessonPacing):{passed:boolean;charactersPerSecond:number;detail:string}{
   const rate=seconds>0?characters/seconds:NaN;
   const passed=Number.isFinite(rate)&&rate>=pacing.minCharactersPerSecond&&rate<=pacing.maxCharactersPerSecond;
-  return {passed,charactersPerSecond:+rate.toFixed(3),detail:`实际每秒${Number.isFinite(rate)?rate.toFixed(2):'未知'}字，规划每秒${pacing.targetCharactersPerSecond}字，允许${pacing.minCharactersPerSecond}–${pacing.maxCharactersPerSecond}字；字数不含标点，音频时长包含自然停顿。`};
+  const deviation=Number.isFinite(rate)&&!passed?(rate<pacing.minCharactersPerSecond?`低于下限${(pacing.minCharactersPerSecond-rate).toPrecision(3)}`:`高于上限${(rate-pacing.maxCharactersPerSecond).toPrecision(3)}`)+'字/秒；':'';
+  return {passed,charactersPerSecond:+rate.toFixed(3),detail:`实际每秒${Number.isFinite(rate)?rate.toFixed(3):'未知'}字，规划每秒${pacing.targetCharactersPerSecond}字，允许${pacing.minCharactersPerSecond}–${pacing.maxCharactersPerSecond}字；${deviation}实际${characters}字/${seconds}秒，字数不含标点，音频时长包含自然停顿。`};
 }
 
 // Preserve the actual, already-audited waveform across recovery. Tiny timing

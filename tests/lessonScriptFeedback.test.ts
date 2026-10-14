@@ -75,6 +75,7 @@ test('actual write and partial-repair requests share one allocated budget across
     assert.ok(system.includes(instruction));assert.ok(tool.description.includes(instruction));assert.doesNotMatch(tool.description,/建议3[–-]5章|建议8[–-]12章/);
     assert.equal(tool.parameters.properties.chapters.minItems,name==='write_lesson_script'?3:1);assert.equal(tool.parameters.properties.chapters.maxItems,name==='write_lesson_script'?3:undefined);
     assert.match(tool.parameters.properties.chapters.items.properties.narration.description,new RegExp(`约${budget.perChapterTarget}字.*最多${budget.perChapterMaximum}`));
+    assert.match(tool.parameters.properties.chapters.items.properties.visual.description,/comparison.*多个items\.illustration=bar-chart.*必须同时提供barChart/);
     assert.ok(JSON.stringify(body.messages).includes(`总旁白约${budget.totalCharacters}字`));
     if(name==='write_lesson_script'){writes++;return toolResponse(name,{title:'误差评分',audience:'初学者',objectives:['理解误差','理解评分'],arc:'先误差再评分',chapters:fixture.draft},writes);}
     revisions++;assert.match(tool.description,/只提交审查反馈涉及/);return toolResponse(name,{chapters:[{...fixture.draft[1],narration:'误差变大损失越高。'.repeat(6)+'这是修正后的示例。'}]},writes+revisions);

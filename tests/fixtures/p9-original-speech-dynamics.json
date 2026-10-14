@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "source": "Controlled release-evaluation semantic fixture, not user-uploaded private speech",
+  "sourceSha256": "d08c3de9a8ad9be03eb542e3bfbdd3e7f7a97c9641459b0b6dfea1fd827099d1",
+  "sourceWindow": {
+    "start": 7.8,
+    "end": 11.22,
+    "duration": 3.42
+  },
+  "pcmSha256": "d27ace791d44b556d5ce3a7a6e0c49407fec62ee95d1023149cd19c4b742cfdd",
+  "extraction": "Unprocessed selected source window decoded to stereo 44100 Hz PCM, with no normalization, trimming inside the selected window, synthesis or speed changes",
+  "incident": "P9 actual original-video path tried ratio 2 (12.6 LU preparation) and ratio 4 (8.0 LU preparation), then exported ratio 4; the final actual AAC output measured 8.1 LU and failed the unchanged 8 LU acceptance. The same original window with bounded ratio 6 measured 6.5 LU preparation and 6.7 LU after AAC, meeting the unchanged 0.5 LU preparation margin. These measurements do not establish subjective timbre quality."
+}

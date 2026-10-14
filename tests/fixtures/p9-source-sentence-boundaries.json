@@ -1,0 +1,419 @@
+{
+  "provenance": {
+    "revision": "91d8afdb71e4b5298e1e07a65573ad230eb7a701",
+    "runId": "09f31204-40cc-410f-a37d-4247f0296d27",
+    "sourceHash": "d08c3de9a8ad9be03eb542e3bfbdd3e7f7a97c9641459b0b6dfea1fd827099d1",
+    "timing": "model-estimated; original provider words/times preserved; no new audio calls"
+  },
+  "primary": [
+    {
+      "start": 0.06,
+      "end": 4.99,
+      "text": "比较两个方案时要先保持比较条件一致再看差异来自哪里",
+      "complete": true,
+      "words": [
+        {
+          "start": 0.06,
+          "end": 0.21,
+          "text": "比"
+        },
+        {
+          "start": 0.21,
+          "end": 0.39,
+          "text": "较"
+        },
+        {
+          "start": 0.39,
+          "end": 0.53,
+          "text": "两"
+        },
+        {
+          "start": 0.53,
+          "end": 0.63,
+          "text": "个"
+        },
+        {
+          "start": 0.63,
+          "end": 0.81,
+          "text": "方"
+        },
+        {
+          "start": 0.81,
+          "end": 0.99,
+          "text": "案"
+        },
+        {
+          "start": 0.99,
+          "end": 1.41,
+          "text": "时"
+        },
+        {
+          "start": 1.59,
+          "end": 1.77,
+          "text": "要"
+        },
+        {
+          "start": 1.77,
+          "end": 2.04,
+          "text": "先"
+        },
+        {
+          "start": 2.04,
+          "end": 2.19,
+          "text": "保"
+        },
+        {
+          "start": 2.19,
+          "end": 2.34,
+          "text": "持"
+        },
+        {
+          "start": 2.34,
+          "end": 2.49,
+          "text": "比"
+        },
+        {
+          "start": 2.49,
+          "end": 2.64,
+          "text": "较"
+        },
+        {
+          "start": 2.64,
+          "end": 2.88,
+          "text": "条"
+        },
+        {
+          "start": 2.88,
+          "end": 3.03,
+          "text": "件"
+        },
+        {
+          "start": 3.03,
+          "end": 3.24,
+          "text": "一"
+        },
+        {
+          "start": 3.24,
+          "end": 3.63,
+          "text": "致"
+        },
+        {
+          "start": 3.66,
+          "end": 3.78,
+          "text": "再"
+        },
+        {
+          "start": 3.78,
+          "end": 3.96,
+          "text": "看"
+        },
+        {
+          "start": 3.96,
+          "end": 4.17,
+          "text": "差"
+        },
+        {
+          "start": 4.17,
+          "end": 4.29,
+          "text": "异"
+        },
+        {
+          "start": 4.29,
+          "end": 4.47,
+          "text": "来"
+        },
+        {
+          "start": 4.47,
+          "end": 4.59,
+          "text": "自"
+        },
+        {
+          "start": 4.59,
+          "end": 4.83,
+          "text": "哪"
+        },
+        {
+          "start": 4.83,
+          "end": 4.99,
+          "text": "里"
+        }
+      ]
+    },
+    {
+      "start": 5.7,
+      "end": 8.24,
+      "text": "这段画面也是程序绘制的示意",
+      "complete": true,
+      "words": [
+        {
+          "start": 5.7,
+          "end": 5.89,
+          "text": "这"
+        },
+        {
+          "start": 5.89,
+          "end": 6.06,
+          "text": "段"
+        },
+        {
+          "start": 6.06,
+          "end": 6.27,
+          "text": "画"
+        },
+        {
+          "start": 6.27,
+          "end": 6.57,
+          "text": "面"
+        },
+        {
+          "start": 6.57,
+          "end": 6.73,
+          "text": "也"
+        },
+        {
+          "start": 6.73,
+          "end": 6.87,
+          "text": "是"
+        },
+        {
+          "start": 6.87,
+          "end": 7.08,
+          "text": "程"
+        },
+        {
+          "start": 7.08,
+          "end": 7.29,
+          "text": "序"
+        },
+        {
+          "start": 7.29,
+          "end": 7.53,
+          "text": "绘"
+        },
+        {
+          "start": 7.53,
+          "end": 7.66,
+          "text": "制"
+        },
+        {
+          "start": 7.66,
+          "end": 7.8,
+          "text": "的"
+        },
+        {
+          "start": 7.8,
+          "end": 8.01,
+          "text": "示"
+        },
+        {
+          "start": 8.01,
+          "end": 8.24,
+          "text": "意"
+        }
+      ]
+    },
+    {
+      "start": 9,
+      "end": 11.16,
+      "text": "结论应当由证据支持",
+      "complete": true,
+      "words": [
+        {
+          "start": 9,
+          "end": 9.27,
+          "text": "结"
+        },
+        {
+          "start": 9.27,
+          "end": 9.48,
+          "text": "论"
+        },
+        {
+          "start": 9.48,
+          "end": 9.69,
+          "text": "应"
+        },
+        {
+          "start": 9.69,
+          "end": 9.84,
+          "text": "当"
+        },
+        {
+          "start": 9.84,
+          "end": 10.02,
+          "text": "由"
+        },
+        {
+          "start": 10.02,
+          "end": 10.23,
+          "text": "证"
+        },
+        {
+          "start": 10.23,
+          "end": 10.41,
+          "text": "据"
+        },
+        {
+          "start": 10.41,
+          "end": 10.62,
+          "text": "支"
+        },
+        {
+          "start": 10.62,
+          "end": 11.16,
+          "text": "持"
+        }
+      ]
+    },
+    {
+      "start": 12.21,
+      "end": 17.22,
+      "text": "暂时没有把握的部分需要保留限制不能把猜测说成事实",
+      "complete": true,
+      "words": [
+        {
+          "start": 12.21,
+          "end": 12.48,
+          "text": "暂"
+        },
+        {
+          "start": 12.48,
+          "end": 12.63,
+          "text": "时"
+        },
+        {
+          "start": 12.63,
+          "end": 12.8,
+          "text": "没"
+        },
+        {
+          "start": 12.8,
+          "end": 12.93,
+          "text": "有"
+        },
+        {
+          "start": 12.93,
+          "end": 13.14,
+          "text": "把"
+        },
+        {
+          "start": 13.14,
+          "end": 13.26,
+          "text": "握"
+        },
+        {
+          "start": 13.26,
+          "end": 13.39,
+          "text": "的"
+        },
+        {
+          "start": 13.39,
+          "end": 13.56,
+          "text": "部"
+        },
+        {
+          "start": 13.56,
+          "end": 13.87,
+          "text": "分"
+        },
+        {
+          "start": 14.01,
+          "end": 14.25,
+          "text": "需"
+        },
+        {
+          "start": 14.25,
+          "end": 14.39,
+          "text": "要"
+        },
+        {
+          "start": 14.39,
+          "end": 14.58,
+          "text": "保"
+        },
+        {
+          "start": 14.58,
+          "end": 14.79,
+          "text": "留"
+        },
+        {
+          "start": 14.79,
+          "end": 15.03,
+          "text": "限"
+        },
+        {
+          "start": 15.03,
+          "end": 15.36,
+          "text": "制"
+        },
+        {
+          "start": 15.48,
+          "end": 15.6,
+          "text": "不"
+        },
+        {
+          "start": 15.6,
+          "end": 15.75,
+          "text": "能"
+        },
+        {
+          "start": 15.75,
+          "end": 15.93,
+          "text": "把"
+        },
+        {
+          "start": 15.93,
+          "end": 16.17,
+          "text": "猜"
+        },
+        {
+          "start": 16.17,
+          "end": 16.35,
+          "text": "测"
+        },
+        {
+          "start": 16.35,
+          "end": 16.59,
+          "text": "说"
+        },
+        {
+          "start": 16.59,
+          "end": 16.74,
+          "text": "成"
+        },
+        {
+          "start": 16.74,
+          "end": 16.98,
+          "text": "事"
+        },
+        {
+          "start": 16.98,
+          "end": 17.22,
+          "text": "实"
+        }
+      ]
+    }
+  ],
+  "rejectedGrouping": [
+    {
+      "first": 0,
+      "last": 24,
+      "complete": true
+    },
+    {
+      "first": 25,
+      "last": 35,
+      "complete": true
+    },
+    {
+      "first": 36,
+      "last": 46,
+      "complete": true
+    },
+    {
+      "first": 47,
+      "last": 70,
+      "complete": true
+    }
+  ]
+}

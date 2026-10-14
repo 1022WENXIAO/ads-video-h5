@@ -27,6 +27,9 @@ export interface TransportDiagnostic {
   failure: ExecutionFailure;
   status?: number;
   requestId?: string;
+  recoveryKind?: 'audio-rate-limit';
+  retryDelaysMs?: number[];
+  queueWaitMs?: number;
 }
 
 function abort(signal?: AbortSignal | null) {

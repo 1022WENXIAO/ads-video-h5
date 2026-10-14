@@ -1,0 +1,312 @@
+{
+  "description": "Public P9 pricing chapter and actual incorrect authored chart geometry. No accounts, provider settings, signed URLs, or private paths. Structured chart is an explicit offline source-bound replay, not inferred data or a new live success.",
+  "chapter": {
+    "id": "chapter-3",
+    "title": "价格与怎么判断",
+    "role": "recap",
+    "goal": "让观众掌握优惠价、后续价格和试用判断：看任务是否真的需要长流程。",
+    "prerequisites": [
+      "chapter-1",
+      "chapter-2"
+    ],
+    "narration": "费用也要看清：到十一月三十日，每百万输入Token二美元、输出十美元；之后变为四美元和二十美元。普通问题不必追旗舰，长代码、研报和多步骤代理任务，才更适合先小范围测试。",
+    "reason": "用价格变化和使用建议完成收束，明确不采用未经官方核验的性能排名，给初学者可执行判断。",
+    "referenceIds": [
+      "ref-3",
+      "ref-1"
+    ],
+    "claims": [
+      {
+        "text": "截至2026年11月30日，Gemini 4 Argon入门价为每百万输入Token 2美元、每百万输出Token 10美元。",
+        "referenceIds": [
+          "ref-3"
+        ],
+        "basis": "source"
+      },
+      {
+        "text": "2026年12月1日起，Gemini 4 Argon价格为每百万输入Token 4美元、每百万输出Token 20美元。",
+        "referenceIds": [
+          "ref-3"
+        ],
+        "basis": "source"
+      },
+      {
+        "text": "官方文档称Argon适合复杂软件工程和知识工作任务；媒体报道也列举编程、金融、法律与网络安全等长流程场景。",
+        "referenceIds": [
+          "ref-3",
+          "ref-1"
+        ],
+        "basis": "synthesis",
+        "explanation": "综合官方任务定位和媒体场景列举，收束为长代码、研报和多步骤代理任务更值得测试；这是使用建议，不宣称性能排名。"
+      }
+    ],
+    "visual": {
+      "kind": "comparison",
+      "takeaway": "优惠期后价格翻倍，按任务复杂度选择",
+      "items": [
+        {
+          "label": "11月30日前：$2 / $10",
+          "detail": "每百万Token：输入2美元，输出10美元",
+          "cue": "每百万输入Token二美元、输出十美元",
+          "illustration": "bar-chart"
+        },
+        {
+          "label": "12月1日后：$4 / $20",
+          "detail": "每百万Token：输入4美元，输出20美元",
+          "cue": "之后变为四美元和二十美元",
+          "illustration": "bar-chart"
+        },
+        {
+          "label": "适合先测的任务",
+          "detail": "长代码、研报、多步骤代理；普通问题不必追旗舰",
+          "cue": "长代码、研报和多步骤代理任务",
+          "illustration": "steps"
+        }
+      ]
+    }
+  },
+  "rejectedDrawing": {
+    "title": "价格与怎么判断",
+    "nodes": [
+      {
+        "id": "intro_card",
+        "kind": "card",
+        "x": 40,
+        "y": 220,
+        "w": 640,
+        "h": 120,
+        "text": "每百万Token计费，12月1日起翻倍",
+        "tone": "paper",
+        "fontSize": 34,
+        "highlight": false
+      },
+      {
+        "id": "before_card",
+        "kind": "card",
+        "x": 40,
+        "y": 380,
+        "w": 305,
+        "h": 245,
+        "text": "",
+        "tone": "paper",
+        "fontSize": 36,
+        "highlight": true
+      },
+      {
+        "id": "before_label",
+        "kind": "text",
+        "x": 62,
+        "y": 404,
+        "w": 260,
+        "h": 56,
+        "text": "至11月30日",
+        "tone": "ink",
+        "fontSize": 24,
+        "highlight": true
+      },
+      {
+        "id": "before_input_bar",
+        "kind": "card",
+        "x": 82,
+        "y": 495,
+        "w": 40,
+        "h": 75,
+        "text": "",
+        "tone": "blue",
+        "fontSize": 30,
+        "highlight": false
+      },
+      {
+        "id": "before_output_bar",
+        "kind": "card",
+        "x": 188,
+        "y": 420,
+        "w": 40,
+        "h": 150,
+        "text": "",
+        "tone": "coral",
+        "fontSize": 30,
+        "highlight": false
+      },
+      {
+        "id": "before_price",
+        "kind": "text",
+        "x": 62,
+        "y": 582,
+        "w": 260,
+        "h": 56,
+        "text": "输入$2｜输出$10",
+        "tone": "ink",
+        "fontSize": 24,
+        "highlight": false
+      },
+      {
+        "id": "after_card",
+        "kind": "card",
+        "x": 375,
+        "y": 380,
+        "w": 305,
+        "h": 245,
+        "text": "",
+        "tone": "paper",
+        "fontSize": 36,
+        "highlight": true
+      },
+      {
+        "id": "after_label",
+        "kind": "text",
+        "x": 397,
+        "y": 404,
+        "w": 260,
+        "h": 56,
+        "text": "12月1日起",
+        "tone": "ink",
+        "fontSize": 24,
+        "highlight": true
+      },
+      {
+        "id": "after_input_bar",
+        "kind": "card",
+        "x": 417,
+        "y": 450,
+        "w": 40,
+        "h": 120,
+        "text": "",
+        "tone": "blue",
+        "fontSize": 30,
+        "highlight": false
+      },
+      {
+        "id": "after_output_bar",
+        "kind": "card",
+        "x": 523,
+        "y": 345,
+        "w": 40,
+        "h": 225,
+        "text": "",
+        "tone": "coral",
+        "fontSize": 30,
+        "highlight": false
+      },
+      {
+        "id": "after_price",
+        "kind": "text",
+        "x": 397,
+        "y": 582,
+        "w": 260,
+        "h": 56,
+        "text": "输入$4｜输出$20",
+        "tone": "ink",
+        "fontSize": 24,
+        "highlight": false
+      },
+      {
+        "id": "axis_line",
+        "kind": "line",
+        "x": 70,
+        "y": 570,
+        "w": 580,
+        "h": 0,
+        "text": "",
+        "tone": "ink",
+        "fontSize": 24,
+        "highlight": false
+      },
+      {
+        "id": "axis_note",
+        "kind": "text",
+        "x": 62,
+        "y": 625,
+        "w": 600,
+        "h": 56,
+        "text": "柱高对应美元，范围0–20美元/百万Token（示意）",
+        "tone": "ink",
+        "fontSize": 24,
+        "highlight": false
+      },
+      {
+        "id": "connector",
+        "kind": "line",
+        "x": 345,
+        "y": 502,
+        "w": 30,
+        "h": 0,
+        "text": "",
+        "tone": "ink",
+        "fontSize": 24,
+        "highlight": false
+      },
+      {
+        "id": "judge_title",
+        "kind": "text",
+        "x": 40,
+        "y": 680,
+        "w": 640,
+        "h": 56,
+        "text": "怎么判断要不要用旗舰？",
+        "tone": "ink",
+        "fontSize": 24,
+        "highlight": false
+      },
+      {
+        "id": "normal_card",
+        "kind": "card",
+        "x": 40,
+        "y": 750,
+        "w": 640,
+        "h": 110,
+        "text": "普通问题：不必追旗舰，先用低成本方案",
+        "tone": "paper",
+        "fontSize": 32,
+        "highlight": false
+      },
+      {
+        "id": "complex_card",
+        "kind": "card",
+        "x": 40,
+        "y": 890,
+        "w": 640,
+        "h": 110,
+        "text": "长代码、研报、多步骤代理：先小范围测试",
+        "tone": "paper",
+        "fontSize": 32,
+        "highlight": true
+      }
+    ]
+  },
+  "structuredChart": {
+    "unit": "美元/百万Token",
+    "illustrative": false,
+    "bars": [
+      {
+        "label": "优惠输入",
+        "value": 2
+      },
+      {
+        "label": "优惠输出",
+        "value": 10
+      },
+      {
+        "label": "标准输入",
+        "value": 4
+      },
+      {
+        "label": "标准输出",
+        "value": 20
+      }
+    ],
+    "panels": [
+      {
+        "title": "11月30日前与12月1日起",
+        "min": 0,
+        "max": 20
+      }
+    ]
+  },
+  "actualIncorrectHeights": [
+    75,
+    150,
+    120,
+    225
+  ]
+}

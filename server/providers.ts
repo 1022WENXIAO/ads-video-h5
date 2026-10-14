@@ -1,6 +1,7 @@
-import { jobFetch } from './jobExecution';
+import { jobFetch, throwIfJobCancelled } from './jobExecution';
 import { randomUUID } from 'node:crypto';
 import type { ModelConfig } from './modelRegistry';
+import { markAudioRateLimitRefusal, recoverAudioRequest, type AudioRecovery } from './audioRateLimit';
 
 const IMAGE_URL = 'https://ark.cn-beijing.volces.com/api/v3/images/generations';
 const AUDIO_URL = 'https://openspeech.bytedance.com/api/v3/tts/create';
@@ -8,7 +9,7 @@ const IMAGE_LIMIT = 48 * 1024 * 1024;
 const AUDIO_LIMIT = 32 * 1024 * 1024;
 const JSON_LIMIT = 68 * 1024 * 1024;
 
-export type GeneratedMedia = { bytes: Buffer; mimeType: string; durationSec?: number };
+export type GeneratedMedia = { bytes: Buffer; mimeType: string; durationSec?: number; audioRecovery?:AudioRecovery };
 export type ImageReference = { bytes: Buffer; mimeType: string };
 
 export class ProviderError extends Error {
@@ -85,7 +86,7 @@ async function readLimited(response: Response, limit: number): Promise<Buffer> {
   return Buffer.concat(chunks, size);
 }
 
-async function postJson(url: string, key: string, body: object, kind: 'image' | 'audio'): Promise<Record<string, unknown>> {
+async function postJson(url: string, key: string, body: object, kind: 'image' | 'audio', requestId?:string): Promise<Record<string, unknown>> {
   let response: Response;
   try {
     response = await jobFetch(url, {
@@ -96,11 +97,12 @@ async function postJson(url: string, key: string, body: object, kind: 'image' | 
       signal: AbortSignal.timeout(300_000),
       headers: {
         'Content-Type': 'application/json',
-        ...(kind === 'image' ? { Authorization: `Bearer ${key}` } : { 'X-Api-Key': key, 'X-Api-Request-Id': randomUUID() }),
+        ...(kind === 'image' ? { Authorization: `Bearer ${key}` } : { 'X-Api-Key': key, 'X-Api-Request-Id': requestId||randomUUID() }),
       },
       body: JSON.stringify(body),
     });
   } catch (error) {
+    throwIfJobCancelled();
     if (error instanceof Error && (error.name === 'TimeoutError' || error.name === 'AbortError')) {
       throw new ProviderError('模型请求超时，请稍后重试。', 'TIMEOUT', undefined, true);
     }
@@ -114,7 +116,9 @@ async function postJson(url: string, key: string, body: object, kind: 'image' | 
     const rawCode = typeof error?.code === 'string' ? error.code : typeof result?.code === 'string' ? result.code : 'UPSTREAM_ERROR';
     const code = rawCode.replace(/[^a-zA-Z0-9_.-]/g, '').slice(0, 80) || 'UPSTREAM_ERROR';
     const retryable = response.status === 408 || response.status === 429 || response.status >= 500;
-    throw new ProviderError(`模型服务请求失败（HTTP ${response.status}，${code}）。`, code, response.status, retryable);
+    const failure=new ProviderError(`模型服务请求失败（HTTP ${response.status}，${code}）。`, code, response.status, retryable);
+    if(kind==='audio')markAudioRateLimitRefusal(failure,response,result);
+    throw failure;
   }
   if (!result) throw new ProviderError('模型返回了无法解析的数据。', 'INVALID_RESPONSE', response.status);
   if (typeof result.code === 'number' && result.code !== 0) {
@@ -213,15 +217,17 @@ export async function generateImage(prompt: string, config: ModelConfig, referen
 export async function generateAudio(text: string, config: ModelConfig, reference?: Buffer): Promise<GeneratedMedia> {
   ensureConfig(config, 'audio');
   const url = endpoint(config, AUDIO_URL);
+  const key = config.apiKey;
   const cleanText = text.trim();
   if (!cleanText || cleanText.length > 3000) throw new ProviderError('口播文本应为 1 到 3000 个字符。', 'INVALID_INPUT');
   if (reference && (!audioMime(reference) || reference.length > 10 * 1024 * 1024)) throw new ProviderError('声音参考须为有效音频且小于10MB。', 'INVALID_INPUT');
-  const result = await postJson(url, config.apiKey, {
+  const body = {
     model: config.modelId,
     text_prompt: cleanText,
     ...(reference ? { references: [{ audio_data: reference.toString('base64') }] } : {}),
     audio_config: { format: 'mp3', sample_rate: 48000 },
-  }, 'audio');
+  };
+  const {value:result,recovery}=await recoverAudioRequest(url,key,requestId=>postJson(url,key,body,'audio',requestId));
   const bytes = typeof result.audio === 'string' && result.audio.length
     ? decodeBase64(result.audio, AUDIO_LIMIT)
     : await downloadVendorAudio(result.url);
@@ -229,5 +235,5 @@ export async function generateAudio(text: string, config: ModelConfig, reference
   if (mimeType !== 'audio/mpeg') throw new ProviderError('模型返回了与请求不一致的音频格式。', 'INVALID_RESPONSE');
   const durationSec = typeof result.duration === 'number' && Number.isFinite(result.duration) && result.duration > 0
     ? result.duration : undefined;
-  return { bytes, mimeType, durationSec };
+  return { bytes, mimeType, durationSec, audioRecovery:recovery };
 }
