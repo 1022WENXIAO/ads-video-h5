@@ -9,4 +9,5 @@ Type=oneshot
 EnvironmentFile=/etc/qingjian/oss.env
 ExecStart=/usr/local/sbin/qingjian-cd
 TimeoutStartSec=9h
+TimeoutStopSec=180
 UMask=0077

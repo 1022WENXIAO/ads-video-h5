@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 
-for (const swapped of [false, true]) test(`CD rollback preserves original dependencies when swap ${swapped ? 'completed' : 'never started'}`, async t => {
+for (const swapped of [false, true]) for (const failure of ['command', 'signal'] as const) test(`CD rollback preserves original dependencies when swap ${swapped ? 'completed' : 'never started'} after ${failure} failure`, async t => {
   const dir = await mkdtemp(path.join(tmpdir(), 'qingjian-cd-rollback-'));
   t.after(() => rm(dir, { recursive: true, force: true }));
   const repo = path.join(dir, 'live'), cache = path.join(dir, 'cache'), bin = path.join(dir, 'bin');
@@ -22,9 +22,9 @@ for (const swapped of [false, true]) test(`CD rollback preserves original depend
   const source = await readFile(new URL('../ops/cd/qingjian-cd', import.meta.url), 'utf8');
   const start = source.indexOf('finish() {'), end = source.indexOf('trap finish EXIT');
   assert.ok(start > 0 && end > start);
-  const script = `set -Eeuo pipefail\nrepo=$1;cache=$2;build_dir=$3;backup_dir=$4;browser_staging=;previous_sha=${'a'.repeat(40)};target_sha=${'b'.repeat(40)};switched=1\n${source.slice(start, end)}\ntrap finish EXIT\nfalse\n`;
+  const script = `set -Eeuo pipefail\nrepo=$1;cache=$2;build_dir=$3;backup_dir=$4;browser_staging=;previous_sha=${'a'.repeat(40)};target_sha=${'b'.repeat(40)};switched=1\n${source.slice(start, end)}\ntrap finish EXIT\n${failure === 'signal' ? 'kill -TERM $$' : 'false'}\n`;
   const result = spawnSync('/bin/bash', ['-c', script, 'rollback-test', repo, cache, build, backup], { env: { ...process.env, PATH: `${bin}:/usr/bin:/bin` }, encoding: 'utf8' });
-  assert.equal(result.status, 1, result.stderr);
+  assert.equal(result.status, failure === 'signal' ? 143 : 1, result.stderr);
   assert.equal(await readFile(path.join(repo, 'node_modules', 'original'), 'utf8'), 'original');
   assert.equal((await readFile(path.join(cache, 'rejected-sha'), 'utf8')).trim(), 'b'.repeat(40));
 });

@@ -45,6 +45,9 @@ finish() {
   if [[ "$browser_staging" == "$cache"/browser-staging.* && -d "$browser_staging" ]]; then rm -rf -- "$browser_staging"; fi
   exit "$status"
 }
+trap 'exit 130' INT
+trap 'exit 143' TERM
+trap 'exit 129' HUP
 trap finish EXIT
 
 if [[ -n "$(git -C "$repo" status --porcelain)" ]]; then

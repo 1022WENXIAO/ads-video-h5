@@ -43,6 +43,9 @@ finish() {
   fi
   exit "$status"
 }
+trap 'exit 130' INT
+trap 'exit 143' TERM
+trap 'exit 129' HUP
 trap finish EXIT
 ln -sfn "$release" /opt/qingjian-cn/current.next
 mv -Tf /opt/qingjian-cn/current.next /opt/qingjian-cn/current
