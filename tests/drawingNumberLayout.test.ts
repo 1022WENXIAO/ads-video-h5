@@ -32,7 +32,12 @@ test('actual loaded-font glyphs fit the captured numeric axis and a narrower CSS
   const project = await mkdtemp(path.join(tmpdir(), 'qingjian-numeric-glyph-gate-'));
   try {
     await copyFile(path.join(process.cwd(), 'node_modules/gsap/dist/gsap.min.js'), path.join(project, 'gsap.min.js'));
-    const html = drawingHtml(fixture.drawing, 15.88, '9:16');
+    const drawing=structuredClone(fixture.drawing);
+    // The corrected zero-padding text contract exposes this unrelated title's
+    // 312px loaded-font line in its captured 300px box. Give that title its own
+    // legal width; all original numeric values, fonts and axis widths remain.
+    drawing.nodes.find((node:any)=>node.id==='chart_title').w=324;
+    const html = drawingHtml(drawing, 15.88, '9:16');
     assert.match(html, /id="label_2500"[^>]*data-qj-number/);
     await writeFile(path.join(project, 'index.html'), html); await checkHtmlProject(project, { fullCheck: true });
     // Bypass the numeric estimate deliberately: only the actual browser can

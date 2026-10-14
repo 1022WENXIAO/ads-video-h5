@@ -30,7 +30,7 @@ test('short news allocates measured per-chapter budgets before writing instead o
   const chapters=Array.from({length:5},(_,i)=>({id:'ch'+i,narration:'核验消息。'.repeat(10)} as LessonChapter));
   assert.doesNotThrow(()=>assertLessonScriptBudget(chapters,budget));
   chapters[2].narration='Fable 5.5待确认，'.repeat(5);
-  assert.throws(()=>assertLessonScriptBudget(chapters,budget),/ch2：50字，须删减至少4字/);
+  assert.throws(()=>assertLessonScriptBudget(chapters,budget),/ch2：当前50字，目标40字，上限46字；建议删减10字达到目标，至少须删减4字/);
   assert.throws(()=>assertLessonScriptBudget(chapters.slice(1),budget),/5章/);
   assert.equal(lessonScriptBudget(45,pacing,3).perChapterTarget,68);
   assert.throws(()=>lessonScriptBudget(45,pacing,NaN),/预算/);

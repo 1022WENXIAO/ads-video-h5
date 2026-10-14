@@ -19,76 +19,170 @@ const number = (value: string) => {
   if (/^\d+$/.test(value)) return Number(value);
   const digits = '零一二三四五六七八九';
   if (value.includes('十')) { const [a, b] = value.split('十'); return (a ? digits.indexOf(a) : 1) * 10 + (b ? digits.indexOf(b) : 0); }
-  return digits.indexOf(value);
+  return value && [...value].every(char => digits.includes(char)) ? Number([...value].map(char => digits.indexOf(char)).join('')) : NaN;
 };
-const datePattern = /([\d一二三四五六七八九十]{1,3})月([\d一二三四五六七八九十]{1,3})[日号]/g;
-const dates = (text: string) => [...text.matchAll(datePattern)].map(match => ({ month: number(match[1]), day: number(match[2]) })).concat([...text.matchAll(/(?:19|20)\d{2}[-/](\d{1,2})[-/](\d{1,2})/g)].map(match => ({ month: Number(match[1]), day: Number(match[2]) })));
-const compact = (text: string) => text.replace(datePattern, (_, month, day) => `${number(month)}月${number(day)}日`).replace(/[\s，。！？；：“”‘’、,.!?;:"']/g, '');
-const isHeat = (text: string) => /热搜|热榜|榜单|上榜|HN\b|Hacker\s*News/i.test(text);
-const isOnset = (text: string) => /首次|首度|第一次|刚刚|登上|冲上|进入.*(?:榜|热搜)|上榜/.test(text);
-// Only a complete, independent warning clause may be ignored as an onset
-// assertion. Never exempt a whole sentence just because it contains negation.
-const onsetTimeNoun='(?:首次|首度|第一次)(?:上榜|登上(?:热搜|热榜|榜单))(?:的)?(?:时间|时刻|日期)';
-const warningSubject='(?:(?:该|这)(?:时间|时刻|日期)|本次(?:观察|核验|采样|抓取)|(?:快照|观察|采样|抓取)(?:时间|时点|时刻))?';
-const onsetWarning=new RegExp('^(?:但|也|然而|不过)?'+warningSubject+'(?:不(?:能)?(?:证明|代表|说明|确认|确定|推断|倒推)|无法(?:证明|确认|确定|推断))'+onsetTimeNoun+'$');
-const unknownOnset=new RegExp('^(?:其|该条目(?:的)?)?'+onsetTimeNoun+'(?:仍然|仍)?(?:未知|不明|无法确定)$');
-const isOtherDateClause=(clause:string)=>!isHeat(clause)&&!isOnset(clause)&&dates(clause).length>0&&/^(?:(?:实际|本次)?(?:警方)?(?:报道|新闻|通报|文章)(?:的)?(?:发布日期|发布时间|日期|发布)|(?:这起|该|本次)?(?:事件|事情|事发|案件)(?:的)?(?:发生日期|发生时间|日期|发生))(?:是|为|在|于|：|:)/.test(clause.trim());
-const withoutNonObservationClauses=(text:string)=>{
-  const clauses=text.split(/[，,]/).filter(clause=>{const value=clause.trim();return !onsetWarning.test(value)&&!unknownOnset.test(value);});
-  // A separate publication/event date does not date a chart snapshot. Retain
-  // it when another clause asserts onset: "that day" can refer back to it.
-  const assertsOnset=clauses.some(clause=>isOnset(clause)&&!/(?:已经|已)(?:登上|上榜)/.test(clause));
-  return (assertsOnset?clauses:clauses.filter(clause=>!isOtherDateClause(clause))).join('，');
-};
+const numeral = '[\\d零〇一二两三四五六七八九十]';
+const datePattern = new RegExp(`(${numeral}{1,3})月(${numeral}{1,3})[日号]`, 'g');
+const compact = (text: string) => text.replace(/([零〇一二两三四五六七八九]{4})年/g, (_, year) => `${number(year)}年`).replace(datePattern, (_, month, day) => `${number(month)}月${number(day)}日`).replace(/[\s，。！？；：“”‘’、,.!?;:"']/g, '');
+const isHeat = (text: string) => /热搜|热榜|榜单|上榜|登榜|HN\b|Hacker\s*News/i.test(text);
+const entryPattern = /上榜|登榜|(?:登上|冲上|冲进|进入|跻身)[^，,。！？；;\n]{0,12}?(?:热搜|热榜|榜单|排行榜)|上(?:了)?(?:百度|微博)?热搜/g;
+const observationPattern = /截至|快照|采样|抓取|观察|核验|榜单显示/g;
+// These are attribution predicates, not a whitelist of acceptable sentences.
+// Their dates remain subject to the independent fact/today/publication gates.
+const otherDatePattern = /(?:报道|新闻|通报|文章|事件|事情|案件)(?:的)?(?:发布日期|发布时间|报道日期|发生日期|发生时间|日期|时间)(?:是|为|在|于|：|:)?|发布日期|发布时间|报道日期|(?:报道|通报)(?:于|在)(?=[\d零〇一二两三四五六七八九十今昨]|北京时间)|(?:报道|通报|事件|事情|案件)(?:是|为|：|:)?(?=[\d零〇一二两三四五六七八九十])|发布|刊发|刊登|发生|事发/g;
 const periods: Array<[RegExp, (hour: number) => boolean]> = [
   [/凌晨/, hour => hour < 6], [/清晨/, hour => hour >= 5 && hour < 9], [/早上|上午/, hour => hour >= 6 && hour < 12],
   [/中午/, hour => hour >= 11 && hour < 14], [/下午/, hour => hour >= 12 && hour < 18], [/傍晚/, hour => hour >= 17 && hour < 20], [/晚上|晚间/, hour => hour >= 18], [/夜间|深夜/, hour => hour >= 18 || hour < 6],
 ];
-const dateOnly = (text: string) => text.replace(datePattern, '').replace(/(?:19|20)\d{2}年|凌晨|清晨|早上|上午|中午|下午|傍晚|晚上|晚间|夜间|深夜|在|于|截至|北京时间|\s|[，,:：]/g, '').length === 0;
+type ObservationTime = { year: number; month: number; day: number; hour: number; minute: number; second: number; value: string };
+type TimeMention = { start: number; end: number; year?: number; month?: number; day?: number; hour?: number; minute?: number; second?: number; period?: (hour: number) => boolean; relative?: 'today' | 'yesterday' };
+function timeMentions(text: string): TimeMention[] {
+  const result: TimeMention[] = [];
+  const add = (match: RegExpMatchArray, value: Omit<TimeMention, 'start' | 'end'>) => result.push({ start: match.index!, end: match.index! + match[0].length, ...value });
+  for (const match of text.matchAll(new RegExp(`(?:(\\d{4}|[零〇一二两三四五六七八九]{4})年)?(${numeral}{1,3})月(${numeral}{1,3})[日号]`, 'g'))) add(match, { year: match[1] ? number(match[1]) : undefined, month: number(match[2]), day: number(match[3]) });
+  for (const match of text.matchAll(/((?:19|20)\d{2})[-/](\d{1,2})[-/](\d{1,2})/g)) add(match, { year: Number(match[1]), month: Number(match[2]), day: Number(match[3]) });
+  for (const match of text.matchAll(/(?<!\d)(\d{1,2})[:：](\d{2})(?:[:：](\d{1,3}))?(?!\d)/g)) add(match, { hour: Number(match[1]), minute: Number(match[2]), second: match[3] === undefined ? undefined : Number(match[3]) });
+  for (const match of text.matchAll(new RegExp(`(${numeral}{1,3})(?:点|时)(半|${numeral}{1,3}分?)?(?:(${numeral}{1,3})秒)?`, 'g'))) {
+    let hour = number(match[1]);
+    if (/下午|傍晚|晚上|晚间|中午/.test(text.slice(0, match.index)) && hour < 12) hour += 12;
+    if (/凌晨/.test(text.slice(0, match.index)) && hour === 12) hour = 0;
+    add(match, { hour, minute: match[2] ? match[2] === '半' ? 30 : number(match[2].replace(/分$/, '')) : undefined, second: match[3] === undefined ? undefined : number(match[3]) });
+  }
+  for (const [pattern, accepts] of periods) for (const match of text.matchAll(new RegExp(pattern.source, 'g'))) add(match, { period: accepts });
+  for (const match of text.matchAll(/今天|今日|今早|今晨|今晚|今夜|昨天|昨日|昨晚/g)) add(match, { relative: /^昨/.test(match[0]) ? 'yesterday' : 'today' });
+  return result.sort((a, b) => a.start - b.start);
+}
+const propositions = (text: string) => text.split(/[，,]|但是|然而|不过|但|却|而且|并且|而是|同时|且|随后|接着|也(?=不|无法|不能|今日|今天|首次|首度|第一次|刚)/).map(value => value.trim()).filter(Boolean);
+const dateOnly = (text: string) => {
+  let remainder = text;
+  for (const mention of timeMentions(text).reverse()) remainder = remainder.slice(0, mention.start) + remainder.slice(mention.end);
+  return !remainder.replace(/在|于|北京时间|\s|[，,:：]/g, '');
+};
+function hasRelativeSubject(text: string): boolean {
+  const relativeEnd = text.lastIndexOf('的');
+  if (relativeEnd < 0) return false;
+  let head = text.slice(relativeEnd + 1);
+  for (const mention of timeMentions(head).reverse()) head = head.slice(0, mention.start) + head.slice(mention.end);
+  return !!head.replace(/首次|首度|第一次|刚刚|已经|并非|并不是|不是|不能|不可|无法|未能|不足以|没有|否认|确实|真的|当天|当日|那天|彼时|正在|就|才|还|已|刚|没|未|不|无|\s/g, '');
+}
+type Entry = { start: number; end: number; negative: boolean; negativeStart?: number; precise: boolean; already: boolean };
+function entries(text: string): Entry[] {
+  const result: Entry[] = [];
+  let previousEnd = 0;
+  for (const match of text.matchAll(entryPattern)) {
+    const start = match.index!, prefix = text.slice(previousEnd, start), suffix = text.slice(start + match[0].length);
+    // Scope is one proposition and one entry predicate. A denial before one
+    // entry cannot hide a second affirmative entry, even without punctuation.
+    const proof = [...prefix.matchAll(/证明|代表|说明|确认|确定|推断|倒推|断言|认定|意味着|表明|证实|判断|等于|说/g)].filter(value => { const after = prefix.slice(value.index! + value[0].length); return !/^过?的/.test(after) || !hasRelativeSubject(after); }).at(-1);
+    const objectStart = proof ? proof.index! + proof[0].length : 0;
+    const object = prefix.slice(objectStart), relativeEnd = object.lastIndexOf('的');
+    const relativeObject = hasRelativeSubject(object);
+    // A relative modifier negates a property of the subject, not the entry:
+    // "不是谣言的消息首次上榜". Keep any independent governing proof denial.
+    const scope = [
+      ...(proof && !(relativeObject && /^过?的/.test(object)) ? [{ text: prefix.slice(0, objectStart), start: previousEnd }] : []),
+      { text: relativeObject ? object.slice(relativeEnd + 1) : object, start: previousEnd + objectStart + (relativeObject ? relativeEnd + 1 : 0) },
+    ];
+    const operators = scope.flatMap(piece => [...piece.text.replace(/不但|不仅|不只|不论|不管|不妨|不久|无论/g, word => ' '.repeat(word.length)).matchAll(/并非|并不是|不是|不能|不可|无法|未能|不足以|没有|没|未|不|无|否认/g)].map(match => ({ start: piece.start + match.index! })));
+    const doubleNegative = operators.length > 0 && operators.length % 2 === 0;
+    const unknown = /^(?:的)?(?:时间|时刻|日期)?(?:仍然|仍|尚)?(?:未知|不明|不清楚|不得而知|未获证实|(?:无法|不能)(?:确定|判断|确认)|(?:尚未|未|没有)(?:披露|公布|证实|确认))/.test(suffix) || /是否|能否/.test(prefix) || /(?:是否|能否).*(?:不清楚|不得而知)/.test(suffix);
+    const negative = !doubleNegative && (operators.length % 2 === 1 || unknown);
+    const lastAttribution = [...prefix.matchAll(otherDatePattern)].at(-1);
+    const qualifier = prefix.slice(lastAttribution ? lastAttribution.index! + lastAttribution[0].length : 0);
+    const precise = /首次|首度|第一次|刚刚|刚$/.test(qualifier);
+    const selection = /(?:今天|今日)?(?:我们)?(?:选择|选取|关注|讨论|解读|拆解)/.test(prefix);
+    const datedModifier = /当天|当日|那天|彼时/.test(prefix) || !lastAttribution && !selection && timeMentions(prefix).length > 0;
+    // "上榜的新闻" describes an observed item; "今天上榜的新闻" or
+    // "首次上榜的新闻" additionally asserts an entry and still needs proof.
+    if (/^(?:上榜|登榜)$/.test(match[0]) && /^(?:的)?(?:新闻|消息|报道|话题|事件|通报|条目)/.test(suffix) && !precise && !datedModifier) { previousEnd = start + match[0].length; continue; }
+    result.push({ start, end: start + match[0].length, negative, negativeStart: negative && operators.length ? operators[0].start : undefined, precise, already: /(?:已经|已)\s*$/.test(prefix) });
+    previousEnd = start + match[0].length;
+  }
+  return result;
+}
+/** Date ownership follows an explicit predicate near the date. A heat-topic
+ * descriptor by itself does not turn an article/event date into chart time. */
+function observationMentions(text: string, frame: boolean, entry: Entry[]): TimeMention[] {
+  const anchors = [
+    ...[...text.matchAll(observationPattern)].map(match => ({ start: match.index!, end: match.index! + match[0].length, observation: true })),
+    ...[...text.matchAll(otherDatePattern)].map(match => ({ start: match.index!, end: match.index! + match[0].length, observation: false })),
+  ];
+  return timeMentions(text).filter(mention => {
+    if (entry.some(value => value.negative && value.negativeStart !== undefined && mention.start >= value.negativeStart)) return false;
+    // Dates normally follow their attribution verb. A preceding date may also
+    // be bound to the next verb, as in "十月十四日发布的报道".
+    const before = anchors.filter(anchor => anchor.end <= mention.start).sort((a, b) => b.end - a.end)[0];
+    const after = anchors.filter(anchor => anchor.start >= mention.end).sort((a, b) => a.start - b.start)[0];
+    const postfixPublication = mention.month !== undefined && after && !after.observation && after.start === mention.end && /^(?:发布|刊发|刊登|发生|事发)/.test(text.slice(after.start));
+    const owner = postfixPublication ? after : before || after;
+    if (owner) return owner.observation;
+    if (!frame && /(?:今天|今日)(?:我们)?(?:选择|选|关注|讨论|看|解读|拆解)/.test(text)) return false;
+    return frame && !entry.some(value => !value.negative) || /在榜|位居|位列|排名|(?:热搜|热榜|榜单)(?:第[\d一二三四五六七八九十]+|上有)/.test(text) && !entry.length;
+  });
+}
+function matchesObservation(mentions: TimeMention[], times: ObservationTime[], requestedAt: number): boolean {
+  return times.some(time => mentions.every(mention => {
+    let relativeDate: { year: number; month: number; day: number } | undefined;
+    if (mention.relative) {
+      if (!Number.isFinite(requestedAt)) return false;
+      const day = new Date(beijingTimestamp(requestedAt).slice(0, 10) + 'T00:00:00Z');
+      if (mention.relative === 'yesterday') day.setUTCDate(day.getUTCDate() - 1);
+      relativeDate = { year: day.getUTCFullYear(), month: day.getUTCMonth() + 1, day: day.getUTCDate() };
+    }
+    return (mention.year === undefined || mention.year === time.year) && (mention.month === undefined || mention.month === time.month) && (mention.day === undefined || mention.day === time.day) && (!relativeDate || relativeDate.year === time.year && relativeDate.month === time.month && relativeDate.day === time.day) && (!mention.period || mention.period(time.hour)) && (mention.hour === undefined || mention.hour === time.hour) && (mention.minute === undefined || mention.minute === time.minute) && (mention.second === undefined || mention.second === time.second);
+  }));
+}
 
-/** A separate, deterministic guard. Model fact-review scores cannot turn a
- * snapshot into evidence for when a headline first entered the chart. */
+/** Deterministic heat-time guard. It checks affirmative entry claims and
+ * attributed observations; publication/event dates have their own gates. */
 export function newsObservationFindings(report: LessonReport, requestedAt = Date.parse(report.hotResearch?.asOf || '')): string[] {
   if (!report.hotResearch) return [];
-  const signals = report.hotResearch.signals || [];
-  const times = signals.flatMap(signal => { try { const value = beijingTimestamp(signal.observedAt); return [{ year:Number(value.slice(0,4)),month: Number(value.slice(5, 7)), day: Number(value.slice(8, 10)), hour: Number(value.slice(11, 13)), minute: Number(value.slice(14, 16)), second:Number(value.slice(17,19)), value }]; } catch { return []; } });
+  const times: ObservationTime[] = (report.hotResearch.signals || []).flatMap(signal => { try { const value = beijingTimestamp(signal.observedAt); return [{ year: Number(value.slice(0, 4)), month: Number(value.slice(5, 7)), day: Number(value.slice(8, 10)), hour: Number(value.slice(11, 13)), minute: Number(value.slice(14, 16)), second: Number(value.slice(17, 19)), value }]; } catch { return []; } });
   const findings: string[] = [];
   for (const [index, chapter] of (report.chapters || []).entries()) {
     const texts = [index === 0 ? report.title : undefined, chapter.title, chapter.narration, ...(chapter.claims || []).map(claim => claim.text), chapter.visual?.takeaway, ...(chapter.visual?.items || []).flatMap(item => [item.label, item.detail])].filter((text): text is string => typeof text === 'string');
-    for (const text of texts) for (const [sentenceIndex, part] of text.split(/[。！？；;\n]/).entries()) {
-      const previous = sentenceIndex ? text.split(/[。！？；;\n]/)[sentenceIndex - 1] : '';
-      const sentence = isHeat(part) && previous && dateOnly(previous) ? `${previous}，${part}` : part;
-      if (!isHeat(sentence)) continue;
-      const assertion=withoutNonObservationClauses(sentence);
-      const mentionedYears=[...assertion.matchAll(/(?:19|20)\d{2}(?=年|[-/]\d{1,2}[-/])/g)].map(match=>Number(match[0]));
-      const mentionedDates = dates(assertion), period = periods.find(([pattern]) => pattern.test(assertion));
-      const relative = /今天|今日|今早|今晨|今晚|今夜|昨天|昨日|昨晚/.test(assertion), precise = /首次|首度|第一次|刚刚|刚(?:登上|冲上|进入|上榜)/.test(assertion);
-      if (!mentionedDates.length && !period && !relative && !precise) continue;
-      if (!isOnset(assertion) && !mentionedDates.length && !period && /(?:今天|今日)(?:我们)?(?:选择|选|关注|讨论|看|解读|拆解)/.test(assertion)) continue;
-      // Exact source wording is a narrow exception for an actually reported
-      // historical chart event. A page's publication header alone never is.
-      const sourceClaim = assertion.replace(/^.*?(?=(?:(?:19|20)\d{2}年)?[\d一二三四五六七八九十]{1,3}月[\d一二三四五六七八九十]{1,3}[日号])/, '').trim();
-      const sourceProvesOnset = mentionedDates.length > 0 && isOnset(sourceClaim) && report.references.some(ref => ref.verification === 'news-page' && ref.freshness !== 'future' && compact(sourceClaim).length >= 12 && compact(ref.excerpt).includes(compact(sourceClaim)));
-      if (sourceProvesOnset) continue;
-      const snapshot = /截至|快照|采样|抓取|观察到|本次观察|本次核验|榜单显示/.test(assertion);
-      const digitalClock = assertion.match(/(?:^|[^\d])(\d{1,2})[:：](\d{2})(?:[:：](\d{1,3}))?(?:[^\d]|$)/);
-      const spokenClock = assertion.match(/([\d零〇一二两三四五六七八九十]{1,3})(?:点|时)(半|[\d零〇一二两三四五六七八九十]{1,3}分?)?(?:([\d零〇一二两三四五六七八九十]{1,3})秒)?/);
-      let clock = digitalClock ? { hour: Number(digitalClock[1]), minute: Number(digitalClock[2]),second:digitalClock[3]!==undefined?Number(digitalClock[3]):undefined } : spokenClock ? { hour: number(spokenClock[1]), minute: spokenClock[2] ? spokenClock[2] === '半' ? 30 : number(spokenClock[2].replace(/分$/, '')) : undefined,second:spokenClock[3]!==undefined?number(spokenClock[3]):undefined } : undefined;
-      if (clock && spokenClock && !digitalClock) {
-        if (/下午|傍晚|晚上|晚间|中午/.test(assertion) && clock.hour < 12) clock.hour += 12;
-        if (/凌晨/.test(assertion) && clock.hour === 12) clock.hour = 0;
+    for (const text of texts) {
+      const sentences = text.split(/[。！？；;\n]/);
+      for (const [sentenceIndex, part] of sentences.entries()) {
+        const previous = sentences[sentenceIndex - 1] || '', next = sentences[sentenceIndex + 1] || '';
+        const sentence = isHeat(part) && previous && dateOnly(previous) ? `${previous}，${part}` : part;
+        if (!isHeat(sentence) && !(/截至|快照|采样|抓取|观察|核验|榜单显示/.test(sentence) && (isHeat(previous) || isHeat(next)))) continue;
+        const clauses = propositions(sentence), frame = /截至|快照|采样|抓取|观察|核验|榜单显示/.test(sentence) || /截至|快照|采样|抓取|观察|核验|榜单显示/.test(previous) && isHeat(previous);
+        let invalid = false;
+        const observation: TimeMention[] = [];
+        for (const clause of clauses) {
+          const entry = entries(clause);
+          const active = entry.filter(value => !value.negative);
+          if (active.length) {
+            // An exact, actually read historical entry quote is the sole source
+            // exception. A publication header/search snippet cannot prove entry.
+            const sourceClaim = sentence.replace(/^.*?(?=(?:(?:19|20)\d{2}年|[零〇一二两三四五六七八九]{4}年)?[\d零〇一二两三四五六七八九十]{1,3}月[\d零〇一二两三四五六七八九十]{1,3}[日号])/, '').trim();
+            const sourceProvesEntry = timeMentions(sourceClaim).some(value => value.month !== undefined) && (report.references || []).some(ref => {
+              if (ref.verification !== 'news-page' || ref.freshness === 'future') return false;
+              const claim = compact(sourceClaim);
+              if (claim.length < 12) return false;
+              for(const sourceSentence of ref.excerpt.split(/[。！？；;\n]/)){
+                const body=compact(sourceSentence),sourceEntries=entries(body);
+                for (let at = body.indexOf(claim); at >= 0; at = body.indexOf(claim, at + 1)) {
+                  // Matching words inside a source denial are not evidence
+                  // for the opposite affirmative claim. Bind the actual
+                  // matched predicate, not another entry elsewhere on a page.
+                  if(!sourceEntries.some(entry=>!entry.negative&&entry.start>=at&&entry.end<=at+claim.length))continue;
+                  const sourceYear = body.slice(0, at).match(/(\d{4})年$/);
+                  if (!sourceYear || Number.isFinite(requestedAt) && Number(sourceYear[1]) === Number(beijingTimestamp(requestedAt).slice(0, 4))) return true;
+                }
+              }
+              return false;
+            });
+            const clauseObservation = observationMentions(clause, frame, entry);
+            const ownDate = timeMentions(clause).some(value => !clauseObservation.some(observed => observed.start === value.start && observed.end === value.end));
+            if (!sourceProvesEntry && !active.every(value => value.already && !value.precise && frame && !ownDate)) invalid = true;
+          }
+          observation.push(...observationMentions(clause, frame, entry));
+        }
+        if (observation.length && (!frame || !matchesObservation(observation, times, requestedAt))) invalid = true;
+        if (invalid) findings.push(`${chapter.id}：热榜时间证据错误：“${sentence.trim()}”。实际快照为北京时间${[...new Set(times.map(time => time.value))].slice(0, 3).join('、') || '未知'}；观察时刻不能证明首次上榜或事件发生时间。改为“截至本次核验，榜单显示……”并保留真实事件的正文日期，不能推断上榜时刻。`);
       }
-      const datedOnset = assertion.split(/[，,]/).some(clause => isOnset(clause) && (dates(clause).length > 0 || periods.some(([pattern]) => pattern.test(clause)) || /今天|今日|今早|今晨|今晚|今夜|昨天|昨日|昨晚/.test(clause)) && !/^\s*截至/.test(clause));
-      const stateOnly = !isOnset(assertion) || /(?:已经|已)(?:登上|上榜)/.test(assertion) && !datedOnset;
-      let relativeDate: { month: number; day: number } | undefined;
-      if (relative && Number.isFinite(requestedAt)) {
-        const day = new Date(beijingTimestamp(requestedAt).slice(0, 10) + 'T00:00:00Z');
-        if (/昨天|昨日|昨晚/.test(assertion)) day.setUTCDate(day.getUTCDate() - 1);
-        relativeDate = { month: day.getUTCMonth() + 1, day: day.getUTCDate() };
-      }
-      const matchesObservation = snapshot && stateOnly && !precise && (!relative || Boolean(relativeDate)) && times.some(time => mentionedYears.every(year=>year===time.year)&&mentionedDates.every(date => date.month === time.month && date.day === time.day) && (!relativeDate || relativeDate.month === time.month && relativeDate.day === time.day) && (!period || period[1](time.hour)) && (!clock || clock.hour === time.hour && (clock.minute === undefined || clock.minute === time.minute)&&(clock.second===undefined||clock.second===time.second)));
-      if (matchesObservation) continue;
-      findings.push(`${chapter.id}：热榜时间证据错误：“${sentence.trim()}”。实际快照为北京时间${[...new Set(times.map(time => time.value))].slice(0, 3).join('、') || '未知'}；观察时刻不能证明首次上榜或事件发生时间。改为“截至本次核验，榜单显示……”并保留真实事件的正文日期，不能推断上榜时刻。`);
     }
   }
   return [...new Set(findings)];

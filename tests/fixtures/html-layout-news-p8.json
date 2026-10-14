@@ -1,0 +1,491 @@
+{
+  "provenance": "Two actual production news ch1 drawings and error reports from P8 aebbf53c on 2026-10-15. Only public visible layout content retained. Layout regression, not video acceptance.",
+  "attempts": [
+    {
+      "drawing": {
+        "title": "先把两个日期分清",
+        "motion": "corporate",
+        "nodes": [
+          {
+            "id": "title_card",
+            "kind": "card",
+            "x": 60,
+            "y": 240,
+            "w": 600,
+            "h": 120,
+            "text": "先把两个日期分清",
+            "tone": "paper",
+            "fontSize": 52,
+            "highlight": true
+          },
+          {
+            "id": "axis",
+            "kind": "line",
+            "x": 100,
+            "y": 470,
+            "w": 520,
+            "h": 0,
+            "text": "",
+            "tone": "ink",
+            "fontSize": 24,
+            "highlight": false
+          },
+          {
+            "id": "event_dot",
+            "kind": "circle",
+            "x": 130,
+            "y": 455,
+            "w": 30,
+            "h": 30,
+            "text": "",
+            "tone": "coral",
+            "fontSize": 24,
+            "highlight": false
+          },
+          {
+            "id": "event_card",
+            "kind": "card",
+            "x": 70,
+            "y": 505,
+            "w": 180,
+            "h": 190,
+            "text": "事件\n10月12日\n13:44",
+            "tone": "paper",
+            "fontSize": 34,
+            "highlight": true
+          },
+          {
+            "id": "event_detail",
+            "kind": "text",
+            "x": 82,
+            "y": 615,
+            "w": 156,
+            "h": 87,
+            "text": "凤祥大道128号附近",
+            "tone": "ink",
+            "fontSize": 24,
+            "highlight": false
+          },
+          {
+            "id": "report_dot",
+            "kind": "circle",
+            "x": 345,
+            "y": 455,
+            "w": 30,
+            "h": 30,
+            "text": "",
+            "tone": "blue",
+            "fontSize": 24,
+            "highlight": false
+          },
+          {
+            "id": "report_card",
+            "kind": "card",
+            "x": 270,
+            "y": 505,
+            "w": 180,
+            "h": 190,
+            "text": "报道/通报\n10月14日\n22:33",
+            "tone": "paper",
+            "fontSize": 32,
+            "highlight": true
+          },
+          {
+            "id": "report_detail",
+            "kind": "text",
+            "x": 282,
+            "y": 615,
+            "w": 156,
+            "h": 87,
+            "text": "报道发布，警方通报",
+            "tone": "ink",
+            "fontSize": 24,
+            "highlight": false
+          },
+          {
+            "id": "check_dot",
+            "kind": "circle",
+            "x": 560,
+            "y": 455,
+            "w": 30,
+            "h": 30,
+            "text": "",
+            "tone": "coral",
+            "fontSize": 24,
+            "highlight": false
+          },
+          {
+            "id": "check_card",
+            "kind": "card",
+            "x": 470,
+            "y": 505,
+            "w": 180,
+            "h": 190,
+            "text": "本次核验\n10月15日\n04:53",
+            "tone": "paper",
+            "fontSize": 30,
+            "highlight": true
+          },
+          {
+            "id": "rank_card",
+            "kind": "card",
+            "x": 170,
+            "y": 760,
+            "w": 380,
+            "h": 170,
+            "text": "百度热搜显示：第12位",
+            "tone": "coral",
+            "fontSize": 42,
+            "highlight": true
+          },
+          {
+            "id": "rank_note",
+            "kind": "text",
+            "x": 190,
+            "y": 850,
+            "w": 340,
+            "h": 56,
+            "text": "仅代表本次核验时榜单状态",
+            "tone": "ink",
+            "fontSize": 24,
+            "highlight": false
+          },
+          {
+            "id": "timeline_note",
+            "kind": "card",
+            "x": 90,
+            "y": 954,
+            "w": 540,
+            "h": 56,
+            "text": "事件日期、报道日期、核验时刻分开看",
+            "tone": "blue",
+            "fontSize": 24,
+            "highlight": false
+          }
+        ]
+      },
+      "report": {
+        "ok": false,
+        "layout": {
+          "findings": [
+            {
+              "code": "content_overlap",
+              "severity": "error",
+              "time": 0.375,
+              "selector": "#event_card",
+              "message": "Two text blocks overlap and may render unreadable.",
+              "rect": {
+                "left": 89.32,
+                "top": 536.39,
+                "right": 230.67,
+                "bottom": 665.47,
+                "width": 141.35,
+                "height": 129.08
+              },
+              "containerSelector": "#event_detail",
+              "text": "事件 10月12日 13:44",
+              "fixHint": "Give each block its own zone, or mark intentional layering with data-layout-allow-overlap.",
+              "dataAttributes": {},
+              "sourceFile": "index.html",
+              "bbox": {
+                "x": 89.32,
+                "y": 536.39,
+                "width": 141.35,
+                "height": 129.08
+              },
+              "firstSeen": 0.375,
+              "lastSeen": 8.49,
+              "occurrences": 74,
+              "heldMs": 8115
+            },
+            {
+              "code": "content_overlap",
+              "severity": "error",
+              "time": 0.472,
+              "selector": "#report_card",
+              "message": "Two text blocks overlap and may render unreadable.",
+              "rect": {
+                "left": 290.51,
+                "top": 546.18,
+                "right": 429.49,
+                "bottom": 667.1,
+                "width": 138.98,
+                "height": 120.92
+              },
+              "containerSelector": "#report_detail",
+              "text": "报道/通报 10月14日 22:33",
+              "fixHint": "Give each block its own zone, or mark intentional layering with data-layout-allow-overlap.",
+              "dataAttributes": {},
+              "sourceFile": "index.html",
+              "bbox": {
+                "x": 290.51,
+                "y": 546.18,
+                "width": 138.98,
+                "height": 120.92
+              },
+              "firstSeen": 0.472,
+              "lastSeen": 8.49,
+              "occurrences": 73,
+              "heldMs": 8018.000000000001
+            },
+            {
+              "code": "content_overlap",
+              "severity": "error",
+              "time": 0.624,
+              "selector": "#rank_card",
+              "message": "Two text blocks overlap and may render unreadable.",
+              "rect": {
+                "left": 191.98,
+                "top": 791.41,
+                "right": 528,
+                "bottom": 897,
+                "width": 336.02,
+                "height": 105.59
+              },
+              "containerSelector": "#rank_note",
+              "text": "百度热搜显示：第12位",
+              "fixHint": "Give each block its own zone, or mark intentional layering with data-layout-allow-overlap.",
+              "dataAttributes": {},
+              "sourceFile": "index.html",
+              "bbox": {
+                "x": 191.98,
+                "y": 791.41,
+                "width": 336.02,
+                "height": 105.59
+              },
+              "firstSeen": 0.624,
+              "lastSeen": 8.49,
+              "occurrences": 71,
+              "heldMs": 7866.000000000001
+            }
+          ]
+        }
+      }
+    },
+    {
+      "drawing": {
+        "title": "先把两个日期分清",
+        "motion": "corporate",
+        "nodes": [
+          {
+            "id": "title_card",
+            "kind": "card",
+            "x": 60,
+            "y": 235,
+            "w": 600,
+            "h": 110,
+            "text": "先把两个日期分清",
+            "tone": "paper",
+            "fontSize": 50,
+            "highlight": true
+          },
+          {
+            "id": "subtitle",
+            "kind": "text",
+            "x": 80,
+            "y": 360,
+            "w": 560,
+            "h": 56,
+            "text": "事件、报道、核验是三个时间点",
+            "tone": "ink",
+            "fontSize": 24,
+            "highlight": false
+          },
+          {
+            "id": "axis",
+            "kind": "line",
+            "x": 105,
+            "y": 465,
+            "w": 510,
+            "h": 0,
+            "text": "",
+            "tone": "ink",
+            "fontSize": 24,
+            "highlight": false
+          },
+          {
+            "id": "event_dot",
+            "kind": "circle",
+            "x": 132,
+            "y": 450,
+            "w": 30,
+            "h": 30,
+            "text": "",
+            "tone": "coral",
+            "fontSize": 24,
+            "highlight": false
+          },
+          {
+            "id": "event_card",
+            "kind": "card",
+            "x": 55,
+            "y": 500,
+            "w": 190,
+            "h": 215,
+            "text": "事件\n10月12日 13:44",
+            "tone": "paper",
+            "fontSize": 32,
+            "highlight": true
+          },
+          {
+            "id": "event_detail",
+            "kind": "text",
+            "x": 70,
+            "y": 640,
+            "w": 160,
+            "h": 87,
+            "text": "凤祥大道128号附近",
+            "tone": "ink",
+            "fontSize": 24,
+            "highlight": false
+          },
+          {
+            "id": "report_dot",
+            "kind": "circle",
+            "x": 345,
+            "y": 450,
+            "w": 30,
+            "h": 30,
+            "text": "",
+            "tone": "blue",
+            "fontSize": 24,
+            "highlight": false
+          },
+          {
+            "id": "report_card",
+            "kind": "card",
+            "x": 265,
+            "y": 500,
+            "w": 190,
+            "h": 215,
+            "text": "报道/通报\n10月14日 22:33",
+            "tone": "paper",
+            "fontSize": 30,
+            "highlight": true
+          },
+          {
+            "id": "report_detail",
+            "kind": "text",
+            "x": 281,
+            "y": 640,
+            "w": 160,
+            "h": 87,
+            "text": "中华网转载界面新闻",
+            "tone": "ink",
+            "fontSize": 24,
+            "highlight": false
+          },
+          {
+            "id": "check_dot",
+            "kind": "circle",
+            "x": 558,
+            "y": 450,
+            "w": 30,
+            "h": 30,
+            "text": "",
+            "tone": "coral",
+            "fontSize": 24,
+            "highlight": false
+          },
+          {
+            "id": "check_card",
+            "kind": "card",
+            "x": 475,
+            "y": 500,
+            "w": 190,
+            "h": 215,
+            "text": "本次核验\n10月15日 04:53",
+            "tone": "paper",
+            "fontSize": 29,
+            "highlight": true
+          },
+          {
+            "id": "check_detail",
+            "kind": "text",
+            "x": 490,
+            "y": 640,
+            "w": 160,
+            "h": 87,
+            "text": "观察榜单实时状态",
+            "tone": "ink",
+            "fontSize": 24,
+            "highlight": false
+          },
+          {
+            "id": "rank_card",
+            "kind": "card",
+            "x": 155,
+            "y": 760,
+            "w": 410,
+            "h": 145,
+            "text": "百度热搜显示：第12位",
+            "tone": "coral",
+            "fontSize": 42,
+            "highlight": true
+          },
+          {
+            "id": "rank_note",
+            "kind": "text",
+            "x": 185,
+            "y": 855,
+            "w": 350,
+            "h": 56,
+            "text": "仅代表本次核验时榜单状态",
+            "tone": "ink",
+            "fontSize": 24,
+            "highlight": false
+          },
+          {
+            "id": "bottom_note",
+            "kind": "card",
+            "x": 90,
+            "y": 945,
+            "w": 540,
+            "h": 60,
+            "text": "报道日期：2026-10-14（北京时间）",
+            "tone": "blue",
+            "fontSize": 24,
+            "highlight": false
+          }
+        ]
+      },
+      "report": {
+        "ok": false,
+        "layout": {
+          "findings": [
+            {
+              "code": "content_overlap",
+              "severity": "error",
+              "time": 0.624,
+              "selector": "#event_card",
+              "message": "Two text blocks overlap and may render unreadable.",
+              "rect": {
+                "left": 83.33,
+                "top": 546.11,
+                "right": 216.67,
+                "bottom": 668.3,
+                "width": 133.34,
+                "height": 122.19
+              },
+              "containerSelector": "#event_detail",
+              "text": "事件 10月12日 13:44",
+              "fixHint": "Give each block its own zone, or mark intentional layering with data-layout-allow-overlap.",
+              "dataAttributes": {},
+              "sourceFile": "index.html",
+              "bbox": {
+                "x": 83.33,
+                "y": 546.11,
+                "width": 133.34,
+                "height": 122.19
+              },
+              "firstSeen": 0.624,
+              "lastSeen": 8.49,
+              "occurrences": 71,
+              "heldMs": 7866.000000000001
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

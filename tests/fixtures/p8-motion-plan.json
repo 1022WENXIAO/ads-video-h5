@@ -1,0 +1,153 @@
+{
+  "format": "16:9",
+  "targetSeconds": 20.2,
+  "captions": [
+    {
+      "start": 0,
+      "end": 1.31,
+      "text": "观察一个现象时",
+      "style": "subtitle",
+      "animation": "none"
+    },
+    {
+      "start": 1.35,
+      "end": 2.81,
+      "text": "先记录看到了什么",
+      "style": "subtitle",
+      "animation": "none"
+    },
+    {
+      "start": 3,
+      "end": 4.76,
+      "text": "再提出可能的解释",
+      "style": "subtitle",
+      "animation": "none"
+    },
+    {
+      "start": 4.92,
+      "end": 5.79,
+      "text": "这段画面",
+      "style": "subtitle",
+      "animation": "none"
+    },
+    {
+      "start": 5.79,
+      "end": 7.46,
+      "text": "是程序绘制的示意",
+      "style": "subtitle",
+      "animation": "none"
+    },
+    {
+      "start": 7.5,
+      "end": 8.67,
+      "text": "不是真实现场",
+      "style": "subtitle",
+      "animation": "none"
+    },
+    {
+      "start": 8.83,
+      "end": 10.52,
+      "text": "把观察和推测分开",
+      "style": "subtitle",
+      "animation": "none"
+    },
+    {
+      "start": 10.75,
+      "end": 12.53,
+      "text": "可以让表达更清楚",
+      "style": "subtitle",
+      "animation": "none"
+    },
+    {
+      "start": 12.79,
+      "end": 14.06,
+      "text": "也让后续核验",
+      "style": "subtitle",
+      "animation": "none"
+    },
+    {
+      "start": 14.09,
+      "end": 15.19,
+      "text": "有明确的方向",
+      "style": "subtitle",
+      "animation": "none"
+    },
+    {
+      "start": 15.31,
+      "end": 16.94,
+      "text": "暂时没有把握的部分",
+      "style": "subtitle",
+      "animation": "none"
+    },
+    {
+      "start": 17.14,
+      "end": 17.81,
+      "text": "需要保留",
+      "style": "subtitle",
+      "animation": "none"
+    },
+    {
+      "start": 17.81,
+      "end": 18.36,
+      "text": "限制",
+      "style": "subtitle",
+      "animation": "none"
+    },
+    {
+      "start": 18.58,
+      "end": 19.45,
+      "text": "不能把猜测",
+      "style": "subtitle",
+      "animation": "none"
+    },
+    {
+      "start": 19.45,
+      "end": 20.2,
+      "text": "说成事实",
+      "style": "subtitle",
+      "animation": "none"
+    }
+  ],
+  "motions": [
+    {
+      "sceneId": "scene-1",
+      "kind": "steps",
+      "label": "先记录·再解释",
+      "zone": "bottom",
+      "start": 0.15,
+      "end": 4.72
+    },
+    {
+      "sceneId": "scene-2",
+      "kind": "circle",
+      "label": "程序示意",
+      "zone": "bottom",
+      "start": 4.97,
+      "end": 8.63
+    },
+    {
+      "sceneId": "scene-3",
+      "kind": "arrow",
+      "label": "分离→核验",
+      "zone": "bottom",
+      "start": 8.88,
+      "end": 15.11
+    },
+    {
+      "sceneId": "scene-4",
+      "kind": "circle",
+      "label": "保留不确定",
+      "zone": "bottom",
+      "start": 15.36,
+      "end": 17.71
+    },
+    {
+      "sceneId": "scene-5",
+      "kind": "underline",
+      "label": "猜测≠事实",
+      "zone": "bottom",
+      "start": 17.96,
+      "end": 20.1
+    }
+  ]
+}

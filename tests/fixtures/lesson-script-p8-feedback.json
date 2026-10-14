@@ -1,0 +1,202 @@
+{
+  "scope": "Actual P8 rejected input projection: original chapter IDs, narration and chapter reference IDs. Nested rejected claim arrays were depth-redacted in the retained trace, so they are not invented here.",
+  "prompt": "生成今天的热点 AI 新闻视频",
+  "budget": {
+    "chapters": 3,
+    "totalCharacters": 204,
+    "perChapterTarget": 68,
+    "perChapterMaximum": 77
+  },
+  "references": [
+    {
+      "id": "ref-1",
+      "title": "What's new in Gemini 4 Argon | Gemini API | Google AI for Developers",
+      "url": "https://ai.google.dev/gemini-api/docs/latest-model",
+      "verification": "news-page",
+      "freshness": "undated",
+      "publishedAt": null
+    },
+    {
+      "id": "ref-2",
+      "title": "谷歌 Gemini 4 Argon 模型全球首发|谷歌|gemini 4 argon_新浪新闻",
+      "url": "https://www.sina.cn/news/detail/5353818942342801.html",
+      "verification": "news-page",
+      "freshness": "fresh",
+      "publishedAt": "2026-10-13T23:16:00.000Z"
+    },
+    {
+      "id": "ref-4",
+      "title": "‎Gemini Apps' release updates and improvements",
+      "url": "https://gemini.google/tz/release-notes/?hl=en-GB",
+      "verification": "news-page",
+      "freshness": "undated",
+      "publishedAt": null
+    },
+    {
+      "id": "ref-5",
+      "title": "Gemini 4发布！性价比“斩杀”GPT-6和Opus 5.5，重回御三家_凤凰网",
+      "url": "https://tech.ifeng.com/c/8xAdHLHNTcl",
+      "verification": "news-page",
+      "freshness": "fresh",
+      "publishedAt": "2026-10-13T22:39:04.000Z"
+    }
+  ],
+  "attempts": [
+    {
+      "attempt": 1,
+      "status": "failed",
+      "chapters": [
+        {
+          "id": "ch1",
+          "narration": "今天的AI热点，看谷歌。官方发布说明称，Gemini 4 Argon从十月十三日起开始全球推出。截至本次核验，百度热搜也出现了Gemini 4全球上线话题，排名是三十三位。",
+          "referenceIds": [
+            "ref-4",
+            "ref-1"
+          ]
+        },
+        {
+          "id": "ch2",
+          "narration": "普通用户看入口：AI Pro和Ultra订阅用户，可在Gemini应用里使用。开发者则能通过Gemini API和AI Studio接入；中文报道还提到Android Studio和Antigravity等入口。",
+          "referenceIds": [
+            "ref-4",
+            "ref-1",
+            "ref-2"
+          ]
+        },
+        {
+          "id": "ch3",
+          "narration": "重点看规格。它把输入、思考和输出放进同一个窗口，总量为一百零四万八千五百七十六个token；长回复可接近一百万token减去输入量，思考强度有低、中、高三档。",
+          "referenceIds": [
+            "ref-1"
+          ]
+        },
+        {
+          "id": "ch4",
+          "narration": "价格也要看清：到十一月三十日，每百万输入token两美元、输出十美元；之后变为四美元和二十美元。它是分批开放，不等同所有账号立刻可用；跑分和实测，本条先不展开。",
+          "referenceIds": [
+            "ref-1"
+          ]
+        }
+      ]
+    },
+    {
+      "attempt": 2,
+      "status": "failed",
+      "chapters": [
+        {
+          "id": "ch1",
+          "narration": "今天的AI热点，看谷歌。Gemini 4 Argon从十月十三日起开始全球推出，Pro和Ultra用户可在Gemini应用使用，开发者可走API和AI Studio。截至核验，百度热搜显示它排三十三位。",
+          "referenceIds": [
+            "ref-4",
+            "ref-1"
+          ]
+        },
+        {
+          "id": "ch2",
+          "narration": "关键规格，是统一的一百万token工作空间。输入、思考和输出共享一百零四万八千五百七十六个token；长回复最高接近一百万减去输入量，思考强度可选低、中、高三档。",
+          "referenceIds": [
+            "ref-1"
+          ]
+        },
+        {
+          "id": "ch3",
+          "narration": "价格上，到十一月三十日，每百万输入token两美元、输出十美元；之后变为四美元和二十美元。注意这是分批开放，不等于所有账号立刻可用；跑分和实测，本条先不展开。",
+          "referenceIds": [
+            "ref-1",
+            "ref-4"
+          ]
+        }
+      ]
+    },
+    {
+      "attempt": 3,
+      "status": "failed",
+      "chapters": [
+        {
+          "id": "ch1",
+          "narration": "今天看谷歌新模型。官方称Gemini 4 Argon十月十三日起全球推出，Pro和Ultra可在应用里用，开发者走API和AI Studio。本次核验时，百度热搜排三十三位。",
+          "referenceIds": [
+            "ref-4",
+            "ref-1"
+          ]
+        },
+        {
+          "id": "ch2",
+          "narration": "关键规格，是统一的一百万token工作空间。输入、思考和输出共享一百零四万八千五百七十六个token；长回复最高接近一百万减去输入量，思考强度可选低、中、高三档。",
+          "referenceIds": [
+            "ref-1"
+          ]
+        },
+        {
+          "id": "ch3",
+          "narration": "价格上，到十一月三十日，每百万输入token两美元、输出十美元；之后变为四美元和二十美元。注意这是分批开放，不等于所有账号立刻可用；跑分和实测，本条先不展开。",
+          "referenceIds": [
+            "ref-1",
+            "ref-4"
+          ]
+        }
+      ]
+    },
+    {
+      "attempt": 4,
+      "status": "failed",
+      "chapters": [
+        {
+          "id": "ch1",
+          "narration": "今天看谷歌新模型。官方称Gemini 4 Argon十月十三日起全球推出，Pro和Ultra可在应用里用，开发者走API和AI Studio。核验时百度热搜排三十三位。",
+          "referenceIds": [
+            "ref-4",
+            "ref-1"
+          ]
+        },
+        {
+          "id": "ch2",
+          "narration": "关键规格，是统一的一百万token工作空间。输入、思考和输出共享一百零四万八千五百七十六个token；长回复最高接近一百万减去输入量，思考强度可选低、中、高三档。",
+          "referenceIds": [
+            "ref-1"
+          ]
+        },
+        {
+          "id": "ch3",
+          "narration": "价格上，到十一月三十日，每百万输入token两美元、输出十美元；之后变为四美元和二十美元。注意这是分批开放，不等于所有账号立刻可用；跑分和实测，本条先不展开。",
+          "referenceIds": [
+            "ref-1",
+            "ref-4"
+          ]
+        }
+      ]
+    },
+    {
+      "attempt": 5,
+      "status": "succeeded",
+      "chapters": [
+        {
+          "id": "ch1",
+          "narration": "今天看谷歌新模型。官方称Gemini 4 Argon十月十三日起全球推出，Pro和Ultra可在应用里用，开发者走API和AI Studio。核验时百度热搜排三十三位。",
+          "referenceIds": [
+            "ref-4",
+            "ref-1",
+            "ref-2"
+          ]
+        },
+        {
+          "id": "ch2",
+          "narration": "关键规格，是统一的一百万token工作空间。输入、思考和输出共享一百零四万八千五百七十六个token；长回复最高接近一百万减去输入量，思考强度可选低、中、高三档。",
+          "referenceIds": [
+            "ref-1",
+            "ref-2"
+          ]
+        },
+        {
+          "id": "ch3",
+          "narration": "价格上，到十一月三十日，每百万输入token两美元、输出十美元；之后变为四美元和二十美元。注意这是分批开放，不等于所有账号立刻可用；跑分和实测，本条先不展开。",
+          "referenceIds": [
+            "ref-1",
+            "ref-4",
+            "ref-2"
+          ]
+        }
+      ]
+    }
+  ]
+}

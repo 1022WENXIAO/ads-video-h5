@@ -1,0 +1,381 @@
+{
+  "revision": "aebbf53c2ae8ad2e09507759feba8dc6f160eaf3",
+  "runId": "f82e7f54-bf12-4c1f-bc2a-74937d84bb9c",
+  "resultId": "5f186a34-0ecc-4251-a776-3d8ebee0b859",
+  "requestedAt": 1792011203914,
+  "signal": {
+    "id": "baidu-12",
+    "title": "成都警方通报女子持U型锁打人",
+    "source": "baidu",
+    "rank": 12,
+    "observedAt": "2026-10-14T20:53:24.489Z"
+  },
+  "texts": [
+    "这条热搜报道于二零二六年十月十四日，但事情发生在十月十二日下午一点四十四分，地点是成都青白江凤祥大道。",
+    "10月15日04:53榜单快照，不代表首次上榜",
+    "该观察不能证明首次上榜时间",
+    "截至10月15日04:53:24榜单显示，不代表首次上榜",
+    "截至核验，榜单显示报道于十月十四日"
+  ],
+  "scriptDrafts": [
+    {
+      "tool": "write_lesson_script",
+      "status": "succeeded",
+      "title": "成都U型锁伤人事件：日期与谣言分清",
+      "chapters": [
+        {
+          "id": "ch1",
+          "title": "先把两个日期分清",
+          "role": "hook",
+          "goal": "让观众立刻明白报道日期和事件发生日期不是同一天",
+          "prerequisites": [],
+          "narration": "这条热搜报道于二零二六年十月十四日，但事情发生在十月十二日下午一点四十四分，地点是成都青白江凤祥大道。",
+          "reason": "开场直接处理用户最关心的日期混淆，并用实际报道日期、事件时间和地点建立事实边界；热搜信号只用于说明关注度，不夸大为全网排名。",
+          "referenceIds": [
+            "ref-1",
+            "ref-4"
+          ],
+          "claims": [
+            {
+              "text": "中华网转载界面新闻的报道时间为2026年10月14日22:33:39；警方通报也在10月14日发布。",
+              "referenceIds": [
+                "[depth limited]"
+              ],
+              "basis": "source"
+            },
+            {
+              "text": "事件发生于2026年10月12日13时44分许，地点为成都市青白江区凤祥大道128号附近。",
+              "referenceIds": [
+                "[depth limited]",
+                "[depth limited]"
+              ],
+              "basis": "source"
+            },
+            {
+              "text": "报道同时写明十多个来源转载警方通报，使事件在核验时进入百度热搜第十二位；榜单快照只代表核验时状态。",
+              "referenceIds": [
+                "[depth limited]",
+                "[depth limited]"
+              ],
+              "basis": "synthesis",
+              "explanation": "已读来源ref-1、ref-4均报道同一警方通报；本次研究的榜单快照显示该话题在2026年10月15日04:53:24位列百度热搜第12。该信号只能说明核验时榜单状态，不能倒推首次上榜、持续时间或全网播放量。"
+            }
+          ],
+          "visual": {
+            "kind": "timeline",
+            "takeaway": "报道在10月14日，事件发生在10月12日",
+            "items": [
+              {
+                "label": "[depth limited]",
+                "detail": "[depth limited]",
+                "cue": "[depth limited]",
+                "illustration": "[depth limited]"
+              },
+              {
+                "label": "[depth limited]",
+                "detail": "[depth limited]",
+                "cue": "[depth limited]",
+                "illustration": "[depth limited]"
+              },
+              {
+                "label": "[depth limited]",
+                "detail": "[depth limited]",
+                "cue": "[depth limited]",
+                "illustration": "[depth limited]"
+              }
+            ]
+          }
+        },
+        {
+          "id": "ch2",
+          "title": "警方查明了什么",
+          "role": "foundation",
+          "goal": "讲清事件起因、对象、伤情和处置状态",
+          "prerequisites": [
+            "ch1"
+          ],
+          "narration": "警方称，两名女子因电动自行车行车纠纷冲突，三十二岁曹某某用U型锁打伤三十一岁向某鼻骨和手臂，曹某某被当场控制。",
+          "reason": "在日期明确后，用一句话交代冲突双方、起因、工具、伤情和控制情况，避免加入未经证实的现场细节或渲染暴力。",
+          "referenceIds": [
+            "ref-1",
+            "ref-3",
+            "ref-4"
+          ],
+          "claims": [
+            {
+              "text": "曹某某女，32岁；向某女，31岁，二人均为警方通报中列明的当事人。",
+              "referenceIds": [
+                "[depth limited]",
+                "[depth limited]"
+              ],
+              "basis": "source"
+            },
+            {
+              "text": "冲突起因为电动自行车行车纠纷，曹某某持U型锁击打向某，造成鼻骨、手臂等处损伤。",
+              "referenceIds": [
+                "[depth limited]",
+                "[depth limited]",
+                "[depth limited]"
+              ],
+              "basis": "source"
+            },
+            {
+              "text": "案发后，曹某某被民警当场控制。",
+              "referenceIds": [
+                "[depth limited]",
+                "[depth limited]",
+                "[depth limited]"
+              ],
+              "basis": "source"
+            }
+          ],
+          "visual": {
+            "kind": "concept",
+            "takeaway": "起因是电动车纠纷，打人者已被控制",
+            "items": [
+              {
+                "label": "[depth limited]",
+                "detail": "[depth limited]",
+                "cue": "[depth limited]",
+                "illustration": "[depth limited]"
+              },
+              {
+                "label": "[depth limited]",
+                "detail": "[depth limited]",
+                "cue": "[depth limited]",
+                "illustration": "[depth limited]"
+              },
+              {
+                "label": "[depth limited]",
+                "detail": "[depth limited]",
+                "cue": "[depth limited]",
+                "illustration": "[depth limited]"
+              }
+            ]
+          }
+        },
+        {
+          "id": "ch3",
+          "title": "哪些说法不能说死",
+          "role": "recap",
+          "goal": "确认伤者状态、谣言范围和案件仍在办理的边界",
+          "prerequisites": [
+            "ch1",
+            "ch2"
+          ],
+          "narration": "通报同时明确，伤者正在医院治疗，无生命危险；被打死、眼球破裂、头骨破裂都是谣言，案件仍在办理，造谣者已被传唤。",
+          "reason": "收束到观众最容易误转的伤亡说法：用警方原文否定命案和重伤传言，同时保留案件办理、处罚结果尚未公布的不确定性。",
+          "referenceIds": [
+            "ref-1",
+            "ref-3",
+            "ref-4",
+            "ref-10"
+          ],
+          "claims": [
+            {
+              "text": "伤者正在医院接受治疗，无生命危险。",
+              "referenceIds": [
+                "[depth limited]",
+                "[depth limited]",
+                "[depth limited]"
+              ],
+              "basis": "source"
+            },
+            {
+              "text": "网传“受害者被当场打死”“眼球破裂”“头骨破裂”等说法均被警方认定为谣言。",
+              "referenceIds": [
+                "[depth limited]",
+                "[depth limited]",
+                "[depth limited]",
+                "[depth limited]"
+              ],
+              "basis": "source"
+            },
+            {
+              "text": "案件正在办理中；曾某等故意虚构事实、扰乱公共秩序人员已被传唤到案，将依法处罚。",
+              "referenceIds": [
+                "[depth limited]",
+                "[depth limited]",
+                "[depth limited]"
+              ],
+              "basis": "source"
+            },
+            {
+              "text": "“将依法处罚”不等于最终处罚结果已经公布，具体处理仍以后续警方信息为准。",
+              "referenceIds": [
+                "[depth limited]",
+                "[depth limited]"
+              ],
+              "basis": "synthesis",
+              "explanation": "来源原文为“已传唤到案并将依法处罚”，说明已采取传唤措施、处罚尚未在通报中给出最终结果；不能把未来处理表述成已完成处罚。"
+            }
+          ],
+          "visual": {
+            "kind": "comparison",
+            "takeaway": "伤者无生命危险，夸张伤亡说法是谣言",
+            "items": [
+              {
+                "label": "[depth limited]",
+                "detail": "[depth limited]",
+                "cue": "[depth limited]",
+                "illustration": "[depth limited]"
+              },
+              {
+                "label": "[depth limited]",
+                "detail": "[depth limited]",
+                "cue": "[depth limited]",
+                "illustration": "[depth limited]"
+              },
+              {
+                "label": "[depth limited]",
+                "detail": "[depth limited]",
+                "cue": "[depth limited]",
+                "illustration": "[depth limited]"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "tool": "revise_lesson_script",
+      "status": "succeeded",
+      "title": null,
+      "chapters": [
+        {
+          "id": "ch1",
+          "title": "先把两个日期分清",
+          "role": "hook",
+          "goal": "让观众立刻明白报道日期和事件发生日期不是同一天",
+          "prerequisites": [],
+          "narration": "截至核验，榜单显示报道于十月十四日；事情发生在十月十二日十三时四十四分，地点成都青白江。",
+          "reason": "按审查意见明确榜单观察口径：只说截至核验榜单显示，不推断首次上榜时间；同时压缩字数并保留报道日期、事件时间和地点。",
+          "referenceIds": [
+            "ref-1",
+            "ref-4"
+          ],
+          "claims": [
+            {
+              "text": "中华网转载界面新闻的报道时间为2026年10月14日22:33:39；警方通报也在10月14日发布。",
+              "referenceIds": [
+                "[depth limited]"
+              ],
+              "basis": "source"
+            },
+            {
+              "text": "事件发生于2026年10月12日13时44分许，地点为成都市青白江区凤祥大道128号附近。",
+              "referenceIds": [
+                "[depth limited]",
+                "[depth limited]"
+              ],
+              "basis": "source"
+            },
+            {
+              "text": "截至北京时间2026年10月15日04:53:24的榜单核验，百度热搜显示该话题位列第12；该观察不能证明首次上榜时间。",
+              "referenceIds": [
+                "[depth limited]",
+                "[depth limited]"
+              ],
+              "basis": "synthesis",
+              "explanation": "已读来源ref-1、ref-4均报道同一警方通报；本次研究的榜单观察时刻为北京时间2026年10月15日04:53:24，快照中该话题位列百度热搜第12。该信号只能说明核验时榜单状态，不能倒推首次上榜、持续时间或全网播放量。"
+            }
+          ],
+          "visual": {
+            "kind": "timeline",
+            "takeaway": "报道在10月14日，事件发生在10月12日",
+            "items": [
+              {
+                "label": "[depth limited]",
+                "detail": "[depth limited]",
+                "cue": "[depth limited]",
+                "illustration": "[depth limited]"
+              },
+              {
+                "label": "[depth limited]",
+                "detail": "[depth limited]",
+                "cue": "[depth limited]",
+                "illustration": "[depth limited]"
+              },
+              {
+                "label": "[depth limited]",
+                "detail": "[depth limited]",
+                "cue": "[depth limited]",
+                "illustration": "[depth limited]"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "tool": "revise_lesson_script",
+      "status": "succeeded",
+      "title": null,
+      "chapters": [
+        {
+          "id": "ch1",
+          "title": "先把两个日期分清",
+          "role": "hook",
+          "goal": "让观众立刻明白报道日期和事件发生日期不是同一天",
+          "prerequisites": [],
+          "narration": "截至本次核验，榜单显示该报道发布于十月十四日；事件发生在十月十二日十三时四十四分，地点成都青白江。",
+          "reason": "明确使用“截至本次核验，榜单显示”的口径，避免把榜单观察时刻误读为首次上榜时间；保留正文可证实的报道日期、事件时间和地点。",
+          "referenceIds": [
+            "ref-1",
+            "ref-4"
+          ],
+          "claims": [
+            {
+              "text": "中华网转载界面新闻的报道时间为2026年10月14日22:33:39；成都市公安局青白江区分局通报也于10月14日发布。",
+              "referenceIds": [
+                "[depth limited]"
+              ],
+              "basis": "source"
+            },
+            {
+              "text": "事件发生于2026年10月12日13时44分许，地点为成都市青白江区凤祥大道128号附近。",
+              "referenceIds": [
+                "[depth limited]",
+                "[depth limited]"
+              ],
+              "basis": "source"
+            },
+            {
+              "text": "截至北京时间2026年10月15日04:53:24本次核验，榜单显示该话题位列百度热搜第12；榜单观察不证明首次上榜时间。",
+              "referenceIds": [
+                "[depth limited]",
+                "[depth limited]"
+              ],
+              "basis": "synthesis",
+              "explanation": "已读来源ref-1、ref-4均报道同一警方通报；本次榜单观察时刻为北京时间2026年10月15日04:53:24，截至本次核验，榜单显示该话题位列第12。该信号只说明核验时榜单状态，不能推断首次上榜、持续时间或全网播放量。"
+            }
+          ],
+          "visual": {
+            "kind": "timeline",
+            "takeaway": "报道在10月14日，事件发生在10月12日",
+            "items": [
+              {
+                "label": "[depth limited]",
+                "detail": "[depth limited]",
+                "cue": "[depth limited]",
+                "illustration": "[depth limited]"
+              },
+              {
+                "label": "[depth limited]",
+                "detail": "[depth limited]",
+                "cue": "[depth limited]",
+                "illustration": "[depth limited]"
+              },
+              {
+                "label": "[depth limited]",
+                "detail": "[depth limited]",
+                "cue": "[depth limited]",
+                "illustration": "[depth limited]"
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

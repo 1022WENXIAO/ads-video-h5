@@ -1,0 +1,494 @@
+{
+  "provenance": "Actual P8 knowledge ch3 original drawings and layout findings, 2026-10-15 aebbf53c. Public diagram content only. Not movie acceptance.",
+  "attempts": [
+    {
+      "drawing": {
+        "title": "猜想引路，证据拍板",
+        "motion": "playful",
+        "nodes": [
+          {
+            "id": "stage1",
+            "kind": "card",
+            "x": 70,
+            "y": 205,
+            "w": 280,
+            "h": 210,
+            "text": "看见现象\n灯没亮，先确认事实",
+            "tone": "paper",
+            "fontSize": 36,
+            "highlight": true
+          },
+          {
+            "id": "lampIcon",
+            "kind": "path",
+            "x": 135,
+            "y": 245,
+            "w": 150,
+            "h": 120,
+            "text": "",
+            "tone": "coral",
+            "fontSize": 36,
+            "pathData": "M175 260 L245 260 M210 230 L210 260 M180 285 Q180 235 210 235 Q240 235 240 285 L230 305 L190 305 Z M198 320 L222 320",
+            "highlight": false
+          },
+          {
+            "id": "arrow1",
+            "kind": "line",
+            "x": 360,
+            "y": 310,
+            "w": 120,
+            "h": 0,
+            "text": "",
+            "tone": "ink",
+            "fontSize": 36,
+            "highlight": false
+          },
+          {
+            "id": "stage2",
+            "kind": "card",
+            "x": 490,
+            "y": 205,
+            "w": 300,
+            "h": 210,
+            "text": "提出猜想\n停电？松脱？灯泡坏？",
+            "tone": "paper",
+            "fontSize": 36,
+            "highlight": false
+          },
+          {
+            "id": "bubble1",
+            "kind": "circle",
+            "x": 535,
+            "y": 335,
+            "w": 54,
+            "h": 54,
+            "text": "猜",
+            "tone": "blue",
+            "fontSize": 32,
+            "highlight": false
+          },
+          {
+            "id": "bubble2",
+            "kind": "circle",
+            "x": 613,
+            "y": 335,
+            "w": 54,
+            "h": 54,
+            "text": "猜",
+            "tone": "blue",
+            "fontSize": 32,
+            "highlight": false
+          },
+          {
+            "id": "bubble3",
+            "kind": "circle",
+            "x": 691,
+            "y": 335,
+            "w": 54,
+            "h": 54,
+            "text": "猜",
+            "tone": "blue",
+            "fontSize": 32,
+            "highlight": false
+          },
+          {
+            "id": "arrow2",
+            "kind": "line",
+            "x": 800,
+            "y": 310,
+            "w": 120,
+            "h": 0,
+            "text": "",
+            "tone": "ink",
+            "fontSize": 36,
+            "highlight": false
+          },
+          {
+            "id": "stage3",
+            "kind": "card",
+            "x": 930,
+            "y": 205,
+            "w": 280,
+            "h": 210,
+            "text": "证据拍板\n支持才成当前结论",
+            "tone": "paper",
+            "fontSize": 36,
+            "highlight": false
+          },
+          {
+            "id": "checkIcon",
+            "kind": "path",
+            "x": 1015,
+            "y": 255,
+            "w": 110,
+            "h": 90,
+            "text": "",
+            "tone": "coral",
+            "fontSize": 36,
+            "pathData": "M1030 305 L1060 335 L1110 270",
+            "highlight": false
+          },
+          {
+            "id": "loopPath",
+            "kind": "path",
+            "x": 500,
+            "y": 430,
+            "w": 280,
+            "h": 90,
+            "text": "对不上：换个猜想再验",
+            "tone": "blue",
+            "fontSize": 30,
+            "pathData": "M760 455 C690 525 570 525 520 455",
+            "highlight": true
+          },
+          {
+            "id": "loopArrow",
+            "kind": "path",
+            "x": 500,
+            "y": 430,
+            "w": 40,
+            "h": 40,
+            "text": "",
+            "tone": "blue",
+            "fontSize": 36,
+            "pathData": "M520 455 L505 448 M520 455 L518 438",
+            "highlight": false
+          },
+          {
+            "id": "bottomNote",
+            "kind": "text",
+            "x": 240,
+            "y": 494,
+            "w": 800,
+            "h": 56,
+            "text": "观察 → 假设 → 检验：证据不支持就修正",
+            "tone": "ink",
+            "fontSize": 24,
+            "highlight": false
+          }
+        ]
+      },
+      "report": {
+        "ok": false,
+        "layout": {
+          "findings": [
+            {
+              "code": "content_overlap",
+              "severity": "error",
+              "time": 0.499,
+              "selector": "#stage2",
+              "message": "Two text blocks overlap and may render unreadable.",
+              "rect": {
+                "left": 513.82,
+                "top": 239.86,
+                "right": 766.16,
+                "bottom": 377.64,
+                "width": 252.34,
+                "height": 137.78
+              },
+              "containerSelector": "#bubble2",
+              "text": "提出猜想 停电？松脱？灯泡坏？",
+              "fixHint": "Give each block its own zone, or mark intentional layering with data-layout-allow-overlap.",
+              "dataAttributes": {},
+              "sourceFile": "index.html",
+              "bbox": {
+                "x": 513.82,
+                "y": 239.86,
+                "width": 252.34,
+                "height": 137.78
+              },
+              "firstSeen": 0.499,
+              "lastSeen": 10.1,
+              "occurrences": 87,
+              "heldMs": 9601
+            }
+          ]
+        }
+      }
+    },
+    {
+      "drawing": {
+        "title": "猜想引路，证据拍板",
+        "motion": "playful",
+        "nodes": [
+          {
+            "id": "stage1",
+            "kind": "card",
+            "x": 70,
+            "y": 190,
+            "w": 300,
+            "h": 220,
+            "text": "看见现象",
+            "tone": "paper",
+            "fontSize": 38,
+            "highlight": true
+          },
+          {
+            "id": "lampIcon",
+            "kind": "path",
+            "x": 125,
+            "y": 255,
+            "w": 190,
+            "h": 125,
+            "text": "",
+            "tone": "coral",
+            "fontSize": 36,
+            "pathData": "M170 285 L255 285 M212 255 L212 285 M176 315 Q176 270 212 270 Q248 270 248 315 L238 335 L186 335 Z M196 352 L228 352",
+            "highlight": false
+          },
+          {
+            "id": "factText",
+            "kind": "text",
+            "x": 95,
+            "y": 372,
+            "w": 250,
+            "h": 56,
+            "text": "灯没亮，先确认事实",
+            "tone": "ink",
+            "fontSize": 24,
+            "highlight": false
+          },
+          {
+            "id": "arrow1",
+            "kind": "line",
+            "x": 382,
+            "y": 300,
+            "w": 88,
+            "h": 0,
+            "text": "",
+            "tone": "ink",
+            "fontSize": 36,
+            "highlight": false
+          },
+          {
+            "id": "stage2",
+            "kind": "card",
+            "x": 480,
+            "y": 190,
+            "w": 320,
+            "h": 220,
+            "text": "提出猜想",
+            "tone": "paper",
+            "fontSize": 38,
+            "highlight": false
+          },
+          {
+            "id": "guess1",
+            "kind": "circle",
+            "x": 515,
+            "y": 268,
+            "w": 78,
+            "h": 71,
+            "text": "停电？",
+            "tone": "blue",
+            "fontSize": 24,
+            "highlight": false
+          },
+          {
+            "id": "guess2",
+            "kind": "circle",
+            "x": 605,
+            "y": 268,
+            "w": 78,
+            "h": 71,
+            "text": "松脱？",
+            "tone": "blue",
+            "fontSize": 24,
+            "highlight": false
+          },
+          {
+            "id": "guess3",
+            "kind": "circle",
+            "x": 695,
+            "y": 268,
+            "w": 78,
+            "h": 71,
+            "text": "灯泡坏？",
+            "tone": "blue",
+            "fontSize": 24,
+            "highlight": false
+          },
+          {
+            "id": "guessNote",
+            "kind": "text",
+            "x": 520,
+            "y": 352,
+            "w": 240,
+            "h": 56,
+            "text": "猜想负责引路",
+            "tone": "ink",
+            "fontSize": 24,
+            "highlight": false
+          },
+          {
+            "id": "arrow2",
+            "kind": "line",
+            "x": 812,
+            "y": 300,
+            "w": 88,
+            "h": 0,
+            "text": "",
+            "tone": "ink",
+            "fontSize": 36,
+            "highlight": false
+          },
+          {
+            "id": "stage3",
+            "kind": "card",
+            "x": 910,
+            "y": 190,
+            "w": 300,
+            "h": 220,
+            "text": "证据拍板",
+            "tone": "paper",
+            "fontSize": 38,
+            "highlight": true
+          },
+          {
+            "id": "checkIcon",
+            "kind": "path",
+            "x": 1005,
+            "y": 262,
+            "w": 110,
+            "h": 90,
+            "text": "",
+            "tone": "coral",
+            "fontSize": 36,
+            "pathData": "M1020 310 L1052 342 L1105 278",
+            "highlight": false
+          },
+          {
+            "id": "evidenceNote",
+            "kind": "text",
+            "x": 940,
+            "y": 365,
+            "w": 240,
+            "h": 56,
+            "text": "支持才成当前结论",
+            "tone": "ink",
+            "fontSize": 24,
+            "highlight": false
+          },
+          {
+            "id": "loopPath",
+            "kind": "path",
+            "x": 455,
+            "y": 430,
+            "w": 370,
+            "h": 90,
+            "text": "",
+            "tone": "blue",
+            "fontSize": 30,
+            "pathData": "M760 455 C690 525 570 525 520 455",
+            "highlight": true
+          },
+          {
+            "id": "loopLabel",
+            "kind": "card",
+            "x": 500,
+            "y": 430,
+            "w": 280,
+            "h": 60,
+            "text": "对不上：换个猜想再验",
+            "tone": "blue",
+            "fontSize": 25,
+            "highlight": true
+          },
+          {
+            "id": "loopArrow",
+            "kind": "path",
+            "x": 503,
+            "y": 438,
+            "w": 34,
+            "h": 36,
+            "text": "",
+            "tone": "blue",
+            "fontSize": 36,
+            "pathData": "M520 455 L505 448 M520 455 L518 438",
+            "highlight": false
+          },
+          {
+            "id": "bottomNote",
+            "kind": "text",
+            "x": 250,
+            "y": 494,
+            "w": 780,
+            "h": 56,
+            "text": "观察 → 假设 → 检验：不支持就修正",
+            "tone": "ink",
+            "fontSize": 24,
+            "highlight": false
+          }
+        ]
+      },
+      "report": {
+        "ok": false,
+        "layout": {
+          "findings": [
+            {
+              "code": "content_overlap",
+              "severity": "error",
+              "time": 0.374,
+              "selector": "#stage2",
+              "message": "Two text blocks overlap and may render unreadable.",
+              "rect": {
+                "left": 563.9,
+                "top": 275.55,
+                "right": 716.08,
+                "bottom": 321.6,
+                "width": 152.18,
+                "height": 46.05
+              },
+              "containerSelector": "#guess2",
+              "text": "提出猜想",
+              "fixHint": "Give each block its own zone, or mark intentional layering with data-layout-allow-overlap.",
+              "dataAttributes": {},
+              "sourceFile": "index.html",
+              "bbox": {
+                "x": 563.9,
+                "y": 275.55,
+                "width": 152.18,
+                "height": 46.05
+              },
+              "firstSeen": 0.374,
+              "lastSeen": 10.1,
+              "occurrences": 88,
+              "heldMs": 9726
+            },
+            {
+              "code": "text_occluded",
+              "severity": "error",
+              "time": 0.561,
+              "selector": "#stage2",
+              "message": "Text is hidden beneath an opaque element.",
+              "rect": {
+                "left": 563.9,
+                "top": 275.55,
+                "right": 716.08,
+                "bottom": 321.6,
+                "width": 152.18,
+                "height": 46.05
+              },
+              "containerSelector": "#guess1",
+              "text": "提出猜想",
+              "fixHint": "Give the text its own zone, raise its stacking order above the covering element, or mark intentional layering with data-layout-allow-occlusion.",
+              "coveredFraction": 0.78,
+              "dataAttributes": {},
+              "sourceFile": "index.html",
+              "bbox": {
+                "x": 563.9,
+                "y": 275.55,
+                "width": 152.18,
+                "height": 46.05
+              },
+              "firstSeen": 0.561,
+              "lastSeen": 9.539,
+              "occurrences": 9,
+              "heldMs": 0
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

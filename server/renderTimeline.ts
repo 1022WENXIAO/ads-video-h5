@@ -6,6 +6,7 @@ import type { EditPlan, MediaItem, TimelineText } from '../src/types';
 import { runFFmpeg, probeVideo } from './core';
 import { timelineDuration, validateTimeline } from './timeline';
 import { renderDrawings } from './motionDrawing';
+import { ordinarySubtitleSize, prepareTimelineTextLayout, type TimelineTextLayout } from './timelineTextLayout';
 import { renderAvatar } from './renderAvatar';
 import { lessonDimensions } from './lessonSpec';
 import { measureLoudness, parseLoudness, twoPassLoudnorm, voicedSpread, SOUND_LIMITS, type LoudnessMeasurement } from './audioQuality';
@@ -25,23 +26,25 @@ const assTime = (seconds: number) => { const n = Math.round(seconds * 100); retu
 const assText = (text: string) => text.replace(/\\/g, '＼').replace(/[{}]/g, '').replace(/\r?\n/g, '\\N');
 const filterPath = (value: string) => value.replace(/\\/g, '\\\\').replace(/:/g, '\\:').replace(/'/g, "'\\''");
 
-export function createAss(plan: EditPlan): string {
+export function createAss(plan: EditPlan, layout?:TimelineTextLayout): string {
   const [w, h] = dimensions(plan);
   const font = process.env.QINGJIAN_SUBTITLE_FONT || (process.platform === 'darwin' ? 'PingFang SC' : 'Noto Sans CJK SC');
   if (!/^[\w \u4e00-\u9fff-]{1,80}$/.test(font)) throw new Error('字幕字体配置无效。');
-  const size = plan.lesson ? (plan.format==='16:9'?34:38) : Math.round(w / 14);
-  const subtitleMargin = plan.lesson ? (plan.format==='16:9'?60:100) : Math.round(h*.13);
+  const size = plan.lesson ? (plan.format==='16:9'?34:38) : plan.reconstruction ? Math.round(w/14) : ordinarySubtitleSize(w);
+  const subtitleMargin = plan.lesson ? (plan.format==='16:9'?60:100) : Math.round(h*(plan.reconstruction ? .13 : .095));
   const header = `[Script Info]\nScriptType: v4.00+\nPlayResX: ${w}\nPlayResY: ${h}\nWrapStyle: 0\nScaledBorderAndShadow: yes\n[V4+ Styles]\nFormat: Name,Fontname,Fontsize,PrimaryColour,SecondaryColour,OutlineColour,BackColour,Bold,Italic,Underline,StrikeOut,ScaleX,ScaleY,Spacing,Angle,BorderStyle,Outline,Shadow,Alignment,MarginL,MarginR,MarginV,Encoding\nStyle: subtitle,${font},${size},&H00FFFFFF,&H000000FF,&H00181818,&H80000000,-1,0,0,0,100,100,0,0,1,2,1,2,32,32,${subtitleMargin},1\nStyle: title,${font},${Math.round(size * 1.45)},&H00FFFFFF,&H000000FF,&H00202020,&H80000000,-1,0,0,0,100,100,0,0,1,3,1,8,32,32,${Math.round(h * 0.1)},1\nStyle: keyword,${font},${Math.round(size * 1.15)},&H0053BBFF,&H000000FF,&H00202020,&H80000000,-1,0,0,0,100,100,0,0,1,3,1,8,32,32,${Math.round(h * 0.25)},1\nStyle: lower-third,${font},${size},&H00FFFFFF,&H000000FF,&H00202020,&H80000000,-1,0,0,0,100,100,0,0,1,2,1,1,32,32,${Math.round(h * 0.28)},1\n[Events]\nFormat: Layer,Start,End,Style,Name,MarginL,MarginR,MarginV,Effect,Text\n`;
-  const event = (item: TimelineText, layer: number) => {
-    let animation = '';
-    if (item.animation === 'pop') animation = '{\\fscx85\\fscy85\\t(0,180,\\fscx100\\fscy100)\\fad(80,80)}';
+  const event = (item: TimelineText, layer: number, index:number) => {
+    const box = !plan.lesson ? (layer ? layout?.overlays[index] : layout?.captions[index]) : undefined;
+    const centerY=box?box.y+(box.height-(item.animation==='rise'?16:0))/2:undefined;
+    let animation = box ? `{\\an5\\pos(${box.x+box.width/2},${centerY})}` : '';
+    if (item.animation === 'pop') animation += '{\\fscx85\\fscy85\\t(0,180,\\fscx100\\fscy100)\\fad(80,80)}';
     else if (item.animation === 'rise') {
-      const y = item.style === 'title' ? h * 0.1 : item.style === 'keyword' ? h * 0.25 : item.style === 'lower-third' ? h * 0.72 : h * 0.87;
-      animation = `{\\an5\\move(${w / 2},${Math.round(y + 16)},${w / 2},${Math.round(y)},0,180)\\fad(100,80)}`;
-    } else if (item.animation === 'underline') animation = '{\\u1\\fad(100,80)}';
-    return `Dialogue: ${layer},${assTime(item.start)},${assTime(item.end)},${item.style},,0,0,0,,${animation}${assText(item.text)}`;
+      const y = centerY ?? (item.style === 'title' ? h * 0.1 : item.style === 'keyword' ? h * 0.25 : item.style === 'lower-third' ? h * 0.72 : h * 0.87), x=box?box.x+box.width/2:w/2;
+      animation = `{\\an5\\move(${x},${Math.round(y + 16)},${x},${Math.round(y)},0,180)\\fad(100,80)}`;
+    } else if (item.animation === 'underline') animation += '{\\u1\\fad(100,80)}';
+    return `Dialogue: ${layer},${assTime(item.start)},${assTime(item.end)},${item.style},,0,0,0,,${animation}${assText(box?box.lines.join('\n'):item.text)}`;
   };
-  return header + (plan.captions || []).map((c) => event(c, 0)).concat((plan.overlays || []).map((c) => event(c, 1))).join('\n') + '\n';
+  return header + (plan.captions || []).map((c,index) => event(c, 0,index)).concat((plan.overlays || []).map((c,index) => event(c, 1,index))).join('\n') + '\n';
 }
 
 export async function renderTimeline(inputPlan: EditPlan, media: MediaItem[], mediaDir: string, exportDir: string, narrationFile?: string, bgmFile?: string): Promise<{ id: string; file: string }> {
@@ -65,7 +68,10 @@ export async function renderTimeline(inputPlan: EditPlan, media: MediaItem[], me
         const raw=await measureLoudness(input,clip.start,duration,audioBase);
         if(raw.integrated!==null){
           const gain=Math.max(-24,Math.min(24,-18-raw.integrated));
-          const candidates=source.generation?.mode==='generated'?[[0.1,2],[0.05,4],[0.04,6]]:[[0.1,2]];
+          // Original speech can also exceed the measured dynamic-range limit.
+          // Keep ratio 2 when it passes; try only one moderate alternative for
+          // original recordings, preserving their words, timing and identity.
+          const candidates=source.generation?.mode==='generated'?[[0.1,2],[0.05,4],[0.04,6]]:[[0.1,2],[0.05,4]];
           let best:{ratio:number;preparation:string;measurement:LoudnessMeasurement;filter:string;spreadLu:number|null}|undefined;
           const candidateSpreads:Array<{ratio:number;spreadLu:number|null;method?:string}>=[];
           for(const [threshold,ratio] of candidates){
@@ -133,11 +139,16 @@ export async function renderTimeline(inputPlan: EditPlan, media: MediaItem[], me
       await runFFmpeg(['-v', 'error', '-y', '-filter_complex_threads', '1', ...segments.flatMap((s) => ['-threads', '1', '-i', s]), '-filter_complex', filters.join(';'), '-map', '[finalVideo]', '-map', `[${chains.length>1?'joinedAudio':chains[0].audio}]`, '-t', String(timelineDuration(plan)), '-r', '30', '-vsync', 'cfr', '-c:v', 'libx264', '-threads', '2', '-preset', 'veryfast', '-crf', '23', '-pix_fmt', 'yuv420p', '-c:a', 'aac', merged]);
     }
     let composed = merged;
-    const drawings = await renderDrawings(plan, width, height, tempDir);
+    const textLayout=await prepareTimelineTextLayout(plan,width,height,merged);
+    if(textLayout?.sourceFit){
+      const fit=textLayout.sourceFit;composed=path.join(tempDir,'source-contained.mp4');
+      await runFFmpeg(['-v','error','-y','-i',merged,'-vf',`scale=${fit.width}:${fit.height}:force_original_aspect_ratio=decrease,pad=${width}:${height}:${fit.x}:${fit.y}:color=0x151719`,'-c:v','libx264','-threads','2','-preset','veryfast','-crf','23','-pix_fmt','yuv420p','-c:a','copy',composed]);
+    }
+    const drawings = await renderDrawings(plan, width, height, tempDir,textLayout);
     if (drawings) {
-      composed = path.join(tempDir, 'composed.mp4');
+      const source = composed; composed = path.join(tempDir, 'composed.mp4');
       // Force libvpx to decode WebM's alpha plane; the native decoder discards it.
-      await runFFmpeg(['-v','error','-y','-i',merged,'-c:v','libvpx-vp9','-i',drawings,'-filter_complex_threads','1','-filter_complex','[0:v][1:v]overlay=shortest=1:format=auto[v]','-map','[v]','-map','0:a','-c:v','libx264','-threads','2','-preset','veryfast','-crf','23','-pix_fmt','yuv420p','-c:a','copy',composed]);
+      await runFFmpeg(['-v','error','-y','-i',source,'-c:v','libvpx-vp9','-i',drawings,'-filter_complex_threads','1','-filter_complex','[0:v][1:v]overlay=shortest=1:format=auto[v]','-map','[v]','-map','0:a','-c:v','libx264','-threads','2','-preset','veryfast','-crf','23','-pix_fmt','yuv420p','-c:a','copy',composed]);
     }
     const avatarRender = await renderAvatar(composed, plan, media, mediaDir, tempDir, width, height);
     composed = avatarRender.file;
@@ -155,10 +166,10 @@ export async function renderTimeline(inputPlan: EditPlan, media: MediaItem[], me
     tracks.push(`${mix},${mixNormalize}alimiter=limit=0.95:level=0[a]`);
     const hasText = Boolean(plan.captions?.length || plan.overlays?.length);
     const assFile = path.join(tempDir, 'timeline.ass');
-    if (hasText) await writeFile(assFile, createAss(plan));
+    if (hasText) await writeFile(assFile, createAss(plan,textLayout));
     const fontsDir = process.env.QINGJIAN_FONTS_DIR || (existsSync('/System/Library/Fonts') ? '/System/Library/Fonts' : '/usr/share/fonts');
     await runFFmpeg(['-hide_banner', '-loglevel', 'error', '-y', ...inputs, '-filter_complex_threads', '1', '-filter_complex', tracks.join(';'), '-map', '0:v:0', '-map', '[a]', ...(hasText ? ['-vf', `ass=filename='${filterPath(assFile)}':fontsdir='${filterPath(fontsDir)}'`, '-c:v', 'libx264', '-threads', '2', '-preset', 'veryfast', '-crf', '23'] : ['-c:v', 'copy']), '-t', String(plan.targetSeconds), '-c:a', 'aac', '-b:a', '160k', '-movflags', '+faststart', output]);
-    await writeFile(path.join(exportDir, `${id}.render.json`), JSON.stringify({ planHash: planHash(inputPlan), width, height, duration: plan.targetSeconds, captions: plan.captions?.length || 0, overlays: plan.overlays?.length || 0, motions: plan.motions || [], drawingEngine: drawings ? 'GSAP/HyperFrames' : null, audioNormalization:audio.normalize?{mode:'segment-two-pass+mix-two-pass',targetLufs:SOUND_LIMITS.targetLufs,targetTruePeakDb:SOUND_LIMITS.truePeakDb,segments:segmentMeasurements,mix:mixMeasurement,mixFilter:mixNormalize}:undefined, narration: Boolean(narrationFile), generatedNarration: plan.reconstruction?.beats.filter(b=>b.mode==='generated').map(b=>({beatId:b.id,mediaId:b.mediaId,audioHash:b.audioHash,referenceHash:plan.reconstruction?.voiceReference?.audioHash})), avatars: avatarRender.records, htmlScenes: plan.reconstruction?.beats.filter(b=>b.visual==='html').map(b=>({beatId:b.id,mediaId:b.mediaId,htmlHash:b.htmlHash})), bgm: Boolean(bgmFile) }, null, 2));
+    await writeFile(path.join(exportDir, `${id}.render.json`), JSON.stringify({ planHash: planHash(inputPlan), width, height, duration: plan.targetSeconds, captions: plan.captions?.length || 0, overlays: plan.overlays?.length || 0, motions: plan.motions || [], drawingEngine: drawings ? 'GSAP/HyperFrames' : null, textLayout, audioNormalization:audio.normalize?{mode:'segment-two-pass+mix-two-pass',targetLufs:SOUND_LIMITS.targetLufs,targetTruePeakDb:SOUND_LIMITS.truePeakDb,segments:segmentMeasurements,mix:mixMeasurement,mixFilter:mixNormalize}:undefined, narration: Boolean(narrationFile), generatedNarration: plan.reconstruction?.beats.filter(b=>b.mode==='generated').map(b=>({beatId:b.id,mediaId:b.mediaId,audioHash:b.audioHash,referenceHash:plan.reconstruction?.voiceReference?.audioHash})), avatars: avatarRender.records, htmlScenes: plan.reconstruction?.beats.filter(b=>b.visual==='html').map(b=>({beatId:b.id,mediaId:b.mediaId,htmlHash:b.htmlHash})), bgm: Boolean(bgmFile) }, null, 2));
     return { id, file: output };
   } catch (error) { await rm(output, { force: true }); throw error; }
   finally { await rm(tempDir, { recursive: true, force: true }); }

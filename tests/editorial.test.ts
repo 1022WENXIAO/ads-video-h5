@@ -45,8 +45,12 @@ test('GSAP drawing alpha layer is rendered and composited while preserving the f
     const output=await renderPlan(plan,media,dir,path.join(dir,'out'));
     const manifest=JSON.parse(await readFile(output.file.replace('.mp4','.render.json'),'utf8'));
     assert.equal(manifest.drawingEngine,'GSAP/HyperFrames');assert.equal(manifest.motions.length,1);assert.ok((await probeVideo(output.file)).hasAudio);
-    for(const t of [.4,1.4])await runFFmpeg(['-v','error','-y','-ss',String(t),'-i',output.file,'-frames:v','1','-vf','crop=464:150:38:58','-f','rawvideo','-pix_fmt','rgb24',path.join(dir,`${t}.rgb`)]);
-    assert.notDeepEqual(await readFile(path.join(dir,'0.4.rgb')),await readFile(path.join(dir,'1.4.rgb')));
+    const bounds=manifest.textLayout.motions[0];
+    assert.ok([bounds.x,bounds.y,bounds.width,bounds.height].every(Number.isFinite));
+    const left=Math.max(0,Math.floor(bounds.x/2)*2),top=Math.max(0,Math.floor(bounds.y/2)*2),right=Math.min(manifest.width,Math.ceil((bounds.x+bounds.width)/2)*2),bottom=Math.min(manifest.height,Math.ceil((bounds.y+bounds.height)/2)*2);
+    assert.ok(right>left&&bottom>top,'sample the actual rendered motion box');
+    for(const t of [.22,1.4])await runFFmpeg(['-v','error','-y','-ss',String(t),'-i',output.file,'-frames:v','1','-vf',`crop=${right-left}:${bottom-top}:${left}:${top}`,'-f','rawvideo','-pix_fmt','rgb24',path.join(dir,`${t}.rgb`)]);
+    assert.notDeepEqual(await readFile(path.join(dir,'0.22.rgb')),await readFile(path.join(dir,'1.4.rgb')),'the actual motion region must visibly change during the alpha animation');
     await runFFmpeg(['-v','error','-y','-ss','1.4','-i',output.file,'-frames:v','1','-vf','crop=2:2:0:800','-f','rawvideo','-pix_fmt','rgb24',path.join(dir,'background.rgb')]);
     const pixel=await readFile(path.join(dir,'background.rgb'));assert.ok(pixel[2]>180&&pixel[0]<30,'transparent layer must retain blue footage outside drawing');
   }finally{await rm(dir,{recursive:true,force:true});}

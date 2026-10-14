@@ -4,6 +4,7 @@ import path from 'node:path';
 import type { Format } from '../src/types';
 import { hashBytes, validateDrawing, type HtmlDrawing } from './narrativeScenes';
 import { throwIfJobCancelled } from './jobExecution';
+import { liftCardLabels, reflowCardDetails } from './drawingCardLayout';
 
 type LayoutIssue = { code: string; severity?: string; selector?: string; containerSelector?: string };
 type LayoutReport = { issues?: LayoutIssue[]; findings?: LayoutIssue[]; layout?: { findings?: LayoutIssue[] } };
@@ -135,7 +136,10 @@ export async function recoverLessonHtml<R extends SceneResult>(options: {
       try { report = JSON.parse(await readFile(path.join(options.project, 'check-report.json'), 'utf8')); } catch {}
       const feedback = String(error) + '；仅修复报告中的实际几何布局，保留完整原话、数值、来源与旁白。上一版布局：' + JSON.stringify(drawing);
       state.failed.push({ hash, feedback, drawing, report });
-      state.pendingDrawing = report ? separateCardLabels(drawing, htmlLayoutIssues(report), options.format) : undefined;
+      if(report){
+        const issues=htmlLayoutIssues(report),proposal=separateCardLabels(drawing,issues,options.format)||liftCardLabels(drawing,issues,options.format)||reflowCardDetails(drawing,issues,options.format);
+        if(proposal&&drawingContentHash(proposal)===drawingContentHash(drawing))try{state.pendingDrawing=validateDrawing(proposal,options.format);}catch{/* Unsafe geometry requires the remaining authored redraw. */}
+      }
       await persist();
     }
   }

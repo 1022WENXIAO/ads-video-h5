@@ -1,5 +1,5 @@
 import {validateBarChart} from './barChart';
-import type { AudioAnalysis, Format, LessonChapter, LessonPacing, LessonReport, LessonVisual } from '../src/types';
+import type { AudioAnalysis, Format, LessonChapter, LessonPacing, LessonReport, LessonVisual, ResearchReference } from '../src/types';
 import { intentText, wantsCurrentResearch } from './intents';
 import { assertVisibleContent } from './visibleContent';
 
@@ -49,10 +49,23 @@ export function lessonScriptBudget(seconds:number,pacing:LessonPacing,chapters:n
   const totalCharacters=lessonNarrationBudget(seconds,pacing,chapters);
   return {chapters,totalCharacters,perChapterTarget:Math.round(totalCharacters/chapters),perChapterMaximum:Math.ceil(totalCharacters/chapters*1.12)};
 }
+export function lessonScriptBudgetInstruction(budget:ReturnType<typeof lessonScriptBudget>):string{
+  return `本轮已分配${budget.chapters}章的旁白预算，完整脚本必须恰好${budget.chapters}章，不能自行增加或减少；全片目标${budget.totalCharacters}字，每章目标${budget.perChapterTarget}字、上限${budget.perChapterMaximum}字。按目标字数组织完整句，为事实返修留出空间；去除标点空格后，中文、英文字母和数字逐字符计数。`;
+}
 export function assertLessonScriptBudget(chapters:LessonChapter[],budget:ReturnType<typeof lessonScriptBudget>){
-  if(chapters.length!==budget.chapters)throw new Error(`已分配${budget.chapters}章的旁白预算，须提交相同章数。`);
-  const excess=chapters.flatMap(c=>{const count=compactSpeech(c.narration).length;return count>budget.perChapterMaximum?[`${c.id}：${count}字，须删减至少${count-budget.perChapterMaximum}字，目标${budget.perChapterTarget}字`]:[];});
-  if(excess.length)throw new Error(`旁白分章预算超限：${excess.join('；')}。英文名称、数字均逐字符计数，不能把Fable 5.5算成一个字；保留核心信息并同步更新图解cue。`);
+  const errors:string[]=[];
+  if(chapters.length!==budget.chapters)errors.push(`已分配${budget.chapters}章的旁白预算，实际提交${chapters.length}章，须提交相同章数`);
+  const excess=chapters.flatMap(c=>{const count=compactSpeech(c.narration).length;return count>budget.perChapterMaximum?[`${c.id}：当前${count}字，目标${budget.perChapterTarget}字，上限${budget.perChapterMaximum}字；建议删减${count-budget.perChapterTarget}字达到目标，至少须删减${count-budget.perChapterMaximum}字才不超限`]:[];});
+  if(excess.length)errors.push(`旁白分章预算超限：${excess.join('；')}`);
+  if(errors.length)throw new Error(errors.join('；')+'。中文、英文字母和数字逐字符计数；保留核心事实、完整句及真实引用，并同步更新图解cue。');
+}
+export function assertLessonNewsSources(report:Pick<LessonReport,'hotResearch'|'references'|'chapters'>,availableReferences:ResearchReference[]=report.references):void{
+  if(!report.hotResearch)throw new Error('热点脚本缺少服务端已核验的热点研究记录，须先完成research_topic；不能由模型编造或复制替代真实研究。');
+  const claimed=new Set(report.chapters.flatMap(chapter=>chapter.claims?.flatMap(claim=>claim.referenceIds)||[]));
+  if(report.references.some(ref=>ref.verification==='news-page'&&ref.freshness==='fresh'&&claimed.has(ref.id)))return;
+  const selected=report.references.slice(0,8).map(ref=>({id:ref.id,freshness:ref.freshness||'未核验日期',claimed:claimed.has(ref.id)}));
+  const fresh=availableReferences.filter(ref=>ref.verification==='news-page'&&ref.freshness==='fresh').slice(0,4).map(ref=>({id:ref.id,title:ref.title.slice(0,60),publishedAt:ref.publishedAt||'未记录'}));
+  throw new Error('热点脚本的事实声明未实际引用已读取的时效窗口内新稿。已选来源（数据）：'+JSON.stringify(selected)+'。本轮可用新稿候选（数据）：'+JSON.stringify(fresh)+'。请仅将有正文支持的核心事实绑定到对应新稿的claim.referenceIds及本章referenceIds；不能只给章节附加来源或添加无关新稿凑数，不能改写来源事实。');
 }
 export const lessonDimensions=(format:Format):[number,number]=>format==='16:9'?[1280,720]:format==='9:16'?[720,1280]:[960,960];
 export function lessonRepairTargets(report:LessonReport,feedback:string):string[]{
@@ -96,9 +109,9 @@ export function validateLessonVisual(v:LessonVisual,narration:string):LessonVisu
   }else if(v.plot)throw new Error('只有curve图解可定义坐标曲线。');
   return structuredClone(v);
 }
-export function validateLesson(report:LessonReport,prompt:string,plannedPacing?:LessonPacing):LessonReport{
+export function validateLesson(report:LessonReport,prompt:string,plannedPacing?:LessonPacing,availableReferences?:ResearchReference[]):LessonReport{
   if(wantsCurrentResearch(prompt)){
-    if(!report.hotResearch||!report.references.some(r=>r.verification==='news-page'&&r.freshness==='fresh'))throw new Error('热点脚本需要实际读取的新稿与热点研究记录。');
+    assertLessonNewsSources(report,availableReferences);
     if(new Set(report.references.map(r=>new URL(r.url).hostname.replace(/^www\./,''))).size<2)throw new Error('热点脚本须采用至少两家来源，不能只保留一条报道。');
   }
   string(report.title,36,'教学标题');string(report.audience,160,'受众');string(report.arc,500,'教学递进');

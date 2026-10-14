@@ -1,0 +1,10 @@
+{
+  "description": "Unprocessed PCM from a controlled semantic video fixture used by the P8 domestic release acceptance. This is generated fixture speech, not a customer upload or an impersonation reference.",
+  "sourceSha256": "d08c3de9a8ad9be03eb542e3bfbdd3e7f7a97c9641459b0b6dfea1fd827099d1",
+  "sourceStartSeconds": 12.26,
+  "sourceEndSeconds": 14.86,
+  "sampleRate": 44100,
+  "channels": 2,
+  "pcmSha256": "43c391610b31e6ee5a8506f7e41d25d31ce10bb6fc2aac8588e0aacd270a23bc",
+  "regression": "The original-video path measured a 9 LU voiced momentary spread with its ratio-2 compressor, but did not try a moderate alternative. With the same selected words and time window, ratio 4 measures 7.4 LU after actual AAC encoding, with unchanged 8 LU final acceptance and a 0.5 LU preparation margin. These measurements do not establish subjective listening quality."
+}
