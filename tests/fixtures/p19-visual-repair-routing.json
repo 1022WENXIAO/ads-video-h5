@@ -1,0 +1,394 @@
+{
+  "provenance": {
+    "source": "Actual P19 first-candidate review and reviewed script projection. Public text only; no media or credentials. Controlled tests do not establish media quality.",
+    "artifactId": "4a233474-19be-4ba3-b31b-e296062f9511",
+    "movieSha256": "602579d5902fe18f193422c246a696fd243c02dc1b48b2c4182449587e12652d",
+    "originalScore": 72,
+    "fixtureExcerptRepresentation": "Only source excerpts are replaced by brief nonverbatim regression summaries; original private run, complete excerpts, hashes and failed scores remain unchanged.",
+    "originalExcerptSha256ByReference": {
+      "ref-1": "89d05f3c6e10c935a53887ffe9c58972463d8e96f717b89ac99a5356c0476439",
+      "ref-2": "35359f223f3ec270867ae403340722ce2666a832b9472f9a0179e8c1859412b1"
+    }
+  },
+  "report": {
+    "title": "Liquid AI把AI助手装进笔记本",
+    "audience": "想快速了解今日AI新闻、对本地大模型和智能体感兴趣的初学者",
+    "objectives": [
+      "了解LFM2.5-24B-A2B的发布时间、核心参数和本地智能体定位",
+      "理解24B总参数与约2B活跃参数之间的区别",
+      "知道本地运行的价值与内存、量化、工具调用可靠性限制"
+    ],
+    "arc": "从榜单热点切入，先说明新模型是什么，再用混合专家路由解释参数差异，最后落到本地智能体能做什么以及使用门槛。",
+    "chapters": [
+      {
+        "id": "chapter-1",
+        "title": "今天的AI热点",
+        "role": "hook",
+        "goal": "用当日媒体解读建立新闻情境，说明模型核心身份。",
+        "prerequisites": [],
+        "narration": "今天先关注一条AI报道。据CSDN文章，Liquid AI的新模型采用开源混合专家架构，总参数约二百四十亿，每个词元约二十亿参数参与，主打笔记本上的本地智能体。",
+        "reason": "将易产生异常识别的“看Liquid AI”等拗口开场改为“先关注一条AI报道”，并继续避免口播完整型号；保留媒体归因、开源混合专家、24B总参数、约2B活跃参数和本地智能体定位。",
+        "referenceIds": [
+          "ref-1",
+          "ref-2"
+        ],
+        "claims": [
+          {
+            "text": "CSDN于2026年10月15日发布开发者解读，介绍Liquid AI的LFM2.5-24B-A2B模型。",
+            "referenceIds": [
+              "ref-1"
+            ],
+            "basis": "source"
+          },
+          {
+            "text": "已读报道将LFM2.5-24B-A2B描述为开源权重混合专家模型，总参数约24B，主打端侧或本地智能体。",
+            "referenceIds": [
+              "ref-1",
+              "ref-2"
+            ],
+            "basis": "synthesis",
+            "explanation": "CSDN写明开源权重MoE、24B总参数和本地智能体定位；ShShell独立报道也称其约有240亿总参数并面向端侧智能体。"
+          },
+          {
+            "text": "ShShell报道称该模型每个词元约有20亿活跃参数。",
+            "referenceIds": [
+              "ref-2"
+            ],
+            "basis": "source"
+          }
+        ],
+        "visual": {
+          "kind": "concept",
+          "takeaway": "今天的报道聚焦一款面向本地设备的混合专家模型",
+          "items": [
+            {
+              "label": "LFM2.5-24B-A2B",
+              "detail": "CSDN今日解读的Liquid AI端侧智能体模型",
+              "cue": "新模型",
+              "illustration": "book"
+            },
+            {
+              "label": "约24B总参数",
+              "detail": "开源混合专家模型，总参数约二百四十亿",
+              "cue": "总参数约二百四十亿",
+              "illustration": "modules"
+            },
+            {
+              "label": "约2B活跃参数",
+              "detail": "ShShell称每个词元约二十亿参数参与计算",
+              "cue": "约二十亿参数参与",
+              "illustration": "signal"
+            },
+            {
+              "label": "本地智能体",
+              "detail": "目标是在用户笔记本上完成推理和工具调用",
+              "cue": "本地智能体",
+              "illustration": "hardware"
+            }
+          ]
+        },
+        "speechMatch": 1,
+        "cues": [
+          {
+            "text": "新模型",
+            "start": 5.79,
+            "end": 6.45
+          },
+          {
+            "text": "总参数约二百四十亿",
+            "start": 9.03,
+            "end": 10.8
+          },
+          {
+            "text": "约二十亿参数参与",
+            "start": 12.23,
+            "end": 13.74
+          },
+          {
+            "text": "本地智能体",
+            "start": 15.57,
+            "end": 16.68
+          }
+        ],
+        "mediaId": "d3b2b41d-7428-44ee-bd08-f76bbfcb32b5",
+        "duration": 17.34,
+        "audioHash": "5ad674ea563e0b42a968f1f1b9d6d8acb0f7e3ef0f356bc9c41033c4da5e86b1",
+        "htmlHash": "87a478f9bb77e988327a020b297401546ba058018cac9b0fb2ae6de505ee3ded"
+      },
+      {
+        "id": "chapter-2",
+        "title": "总参数不等于每步都启用",
+        "role": "foundation",
+        "goal": "解释混合专家模型的稀疏激活，让观众理解24B总参数和约2B活跃参数的差异。",
+        "prerequisites": [
+          "chapter-1"
+        ],
+        "narration": "关键在这里：模型处理每个词元，只调用少量专家。CSDN给出二十四亿五千万，另一篇写约二十亿。容量接近二十四B，单次计算却不用唤醒全部参数。",
+        "reason": "将拗口且多次核验失败的“每生成一步，不必动用整张网络”改为更顺口的“单次计算却不用唤醒全部参数”；保留两个来源的活跃参数口径和MoE稀疏激活事实。",
+        "referenceIds": [
+          "ref-1",
+          "ref-2"
+        ],
+        "claims": [
+          {
+            "text": "CSDN报道写明LFM2.5-24B-A2B的活跃参数为2.45B。",
+            "referenceIds": [
+              "ref-1"
+            ],
+            "basis": "source"
+          },
+          {
+            "text": "ShShell报道称该模型每个token约有20亿活跃参数。",
+            "referenceIds": [
+              "ref-2"
+            ],
+            "basis": "source"
+          },
+          {
+            "text": "混合专家模型通过路由为每个词元选择较小专家路径，因此单次计算不必激活整个网络。",
+            "referenceIds": [
+              "ref-1",
+              "ref-2"
+            ],
+            "basis": "synthesis",
+            "explanation": "两篇已读报道均将该模型描述为MoE：总参数约24B，而每个token只激活约2B或2.45B参数，因此总容量与单次计算量不是同一数字。"
+          }
+        ],
+        "visual": {
+          "kind": "comparison",
+          "takeaway": "24B是总容量，约2B到2.45B是单次活跃量",
+          "items": [
+            {
+              "label": "容量24B",
+              "detail": "专家网络构成总容量，权重仍需存储",
+              "cue": "容量接近二十四B",
+              "illustration": "modules"
+            },
+            {
+              "label": "活跃2.45B",
+              "detail": "CSDN口径：二十四亿五千万",
+              "cue": "二十四亿五千万",
+              "illustration": "signal"
+            },
+            {
+              "label": "活跃约2B",
+              "detail": "ShShell近似口径：约二十亿",
+              "cue": "约二十亿",
+              "illustration": "signal"
+            },
+            {
+              "label": "稀疏路由",
+              "detail": "每个词元只调用少量专家，不唤醒全部参数",
+              "cue": "只调用少量专家",
+              "illustration": "steps"
+            }
+          ]
+        },
+        "speechMatch": 1,
+        "cues": [
+          {
+            "text": "容量接近二十四B",
+            "start": 7.86,
+            "end": 9.25
+          },
+          {
+            "text": "二十四亿五千万",
+            "start": 4.95,
+            "end": 6.05
+          },
+          {
+            "text": "约二十亿",
+            "start": 6.87,
+            "end": 7.48
+          },
+          {
+            "text": "只调用少量专家",
+            "start": 2.7,
+            "end": 3.9
+          }
+        ],
+        "mediaId": "8aa27850-4f98-4878-a812-e8f5a07caa93",
+        "duration": 12.06,
+        "audioHash": "9fe4facb22b167a54a1d06aeb448984e7f13fe56d7499db7bfa58b50f0dc56e8",
+        "htmlHash": "06faf50ddc4796c128b6182660fe2888731d8640c3fcc00c9a41844a8166a064"
+      },
+      {
+        "id": "chapter-3",
+        "title": "本地能干活也有门槛",
+        "role": "recap",
+        "goal": "说明本地智能体的能力价值、上下文规格和设备限制，给出理性收束。",
+        "prerequisites": [
+          "chapter-1",
+          "chapter-2"
+        ],
+        "narration": "本地运行意味着隐私和延迟更可控，也能连接文件、日历等工具；它支持一百三十一K上下文。但四比特权重约占十二GB，十六GB电脑仍吃紧，实际效果还要看量化格式和工具调用是否稳定。",
+        "reason": "结尾把观众影响与限制讲清楚：既说明隐私、低延迟和131K上下文，也提示约12GB权重占用及16GB设备约束。",
+        "referenceIds": [
+          "ref-1",
+          "ref-2"
+        ],
+        "claims": [
+          {
+            "text": "CSDN称LFM2.5-24B-A2B上下文长度为131K。",
+            "referenceIds": [
+              "ref-1"
+            ],
+            "basis": "source"
+          },
+          {
+            "text": "本地智能体可围绕文件、日历等本地工具工作，优势包括隐私和较低、较可预测的延迟。",
+            "referenceIds": [
+              "ref-1",
+              "ref-2"
+            ],
+            "basis": "synthesis",
+            "explanation": "CSDN强调把推理和工具调用搬到用户机器上；ShShell指出端侧智能体重视隐私、可预测延迟以及日历、文件索引等本地对象。"
+          },
+          {
+            "text": "ShShell估算，240亿参数模型以四比特量化时，仅权重占用就约12GB；16GB笔记本会受限，32GB设备更从容。",
+            "referenceIds": [
+              "ref-2"
+            ],
+            "basis": "source"
+          },
+          {
+            "text": "实际本地可靠性取决于量化格式、运行时、路由开销、缓存、系统压力和工具调用表现。",
+            "referenceIds": [
+              "ref-2"
+            ],
+            "basis": "source"
+          }
+        ],
+        "visual": {
+          "kind": "concept",
+          "takeaway": "本地智能体可用，但要先算内存和工具可靠性",
+          "items": [
+            {
+              "label": "131K上下文",
+              "detail": "可容纳更长对话历史和工具返回内容",
+              "cue": "一百三十一K上下文",
+              "illustration": "book"
+            },
+            {
+              "label": "本地工具",
+              "detail": "可连接文件、日历等，模型先提出操作方案",
+              "cue": "文件、日历",
+              "illustration": "interaction"
+            },
+            {
+              "label": "约12GB权重",
+              "detail": "四比特量化的粗略权重占用，不含运行开销",
+              "cue": "约占十二GB",
+              "illustration": "battery"
+            },
+            {
+              "label": "设备门槛",
+              "detail": "16GB设备吃紧；32GB更有余量，仍需实测",
+              "cue": "十六GB电脑仍吃紧",
+              "illustration": "hardware"
+            }
+          ]
+        },
+        "speechMatch": 1,
+        "cues": [
+          {
+            "text": "一百三十一K上下文",
+            "start": 5.94,
+            "end": 7.48
+          },
+          {
+            "text": "文件、日历",
+            "start": 3.64,
+            "end": 4.46
+          },
+          {
+            "text": "约占十二GB",
+            "start": 9.03,
+            "end": 10.05
+          },
+          {
+            "text": "十六GB电脑仍吃紧",
+            "start": 10.38,
+            "end": 12.02
+          }
+        ],
+        "mediaId": "44b7f8fa-7a05-4d09-a11d-bd448dced847",
+        "duration": 15.97,
+        "audioHash": "37a0a0d10033d2c000a6e2224466642e2b72d2c58650adfabb7712e82fc93b80",
+        "htmlHash": "b965f112bc2e54c3de5763a583f0c4bf46e5f087414bdcbd1f19256a797b8052"
+      }
+    ],
+    "references": [
+      {
+        "id": "ref-1",
+        "title": "LFM2.5-24B-A2B：一个把 Agent 塞回你笔记本电脑的模型-CSDN博客",
+        "url": "https://blog.csdn.net/weixin_63115449/article/details/167999823",
+        "retrievedAt": "2026-10-15T07:57:05.671Z",
+        "verification": "news-page",
+        "excerpt": "回归用非逐字摘要：CSDN于2026年10月15日发表Liquid AI LFM2.5-24B-A2B解读。总参数24B，活跃参数2.45B，混合专家架构有64个专家并采用top-4路由；面向本地运行。发布日期与模型更早的发布事件应区分。",
+        "publishedAt": "2026-10-15T02:02:40.000Z",
+        "dateEvidence": "JSON-LD datePublished: 2026-10-15T10:02:40+08:00",
+        "freshness": "fresh"
+      },
+      {
+        "id": "ref-2",
+        "title": "Liquid AI Releases LFM2.5-24B-A2B, a 24B-Parameter Model Built for On-Device Agents | ShShell.com",
+        "url": "https://shshell.com/blog/liquid-ai-lfm25-24b-a2b-on-device-agents",
+        "retrievedAt": "2026-10-15T07:57:05.141Z",
+        "verification": "news-page",
+        "excerpt": "回归用非逐字摘要：ShShell于2026年10月14日报道Liquid AI LFM2.5-24B-A2B。总参数约240亿，每个词元约20亿参数参与计算，定位本地智能体；该近似口径须与CSDN的2.45B精确口径分别注明。",
+        "publishedAt": "2026-10-14T13:59:00.000Z",
+        "dateEvidence": "JSON-LD datePublished: 2026-10-14T13:59:00.000Z",
+        "freshness": "fresh"
+      }
+    ],
+    "factReview": {
+      "score": 95,
+      "needsRepair": false,
+      "findings": [],
+      "suggestions": [
+        "chapter-1：当前旁白未口播完整型号LFM2.5-24B-A2B，仅在图解标签中展示；面向想快速了解新闻的初学者，可在不增加事实风险的前提下口播一次完整型号，降低用户检索门槛。",
+        "chapter-1：当前旁白仅说明“今天先关注一条AI报道”，未明确区分模型10月13日发布、CSDN10月15日发解读的日期差异；可补充“这款模型此前已发布，今天有开发者解读”或“社区今日仍在讨论”，让新闻时间线更清晰。",
+        "chapter-3：当前旁白仅提示内存与工具调用稳定性门槛，可补充该模型为纯文本推理模型、不适合知识密集问答与复杂代码修复的定位，帮助初学者快速判断适用场景。",
+        "chapter-1：本版未在旁白中点出完整型号“LFM2.5-24B-A2B”，虽然图解标签已展示；为满足专有名称保留和初学者检索需要，可在不增加事实风险的情况下口播一次完整型号。",
+        "chapter-1：当前只说“今天先关注一条AI报道”，可补一句“模型是10月13日发布，CSDN今天发表解读”或“今天HN仍在讨论”，更清楚地区分核心事件发布日与今日报道/热度观察日。"
+      ],
+      "adjudication": {
+        "modelId": "doubao-seed-2-1-lite-260915",
+        "primaryScore": 94,
+        "primaryNeedsRepair": false,
+        "primaryFindings": []
+      }
+    }
+  },
+  "review": {
+    "status": "needs-review",
+    "score": 72,
+    "checks": [
+      {
+        "name": "成片语义审查",
+        "passed": false,
+        "detail": "chapter-1：0.9秒至17.14秒的同一分镜中，“报道日期：2026-10-15（北京时间）”文字行以黑色、蓝色各重复显示一次，同一日期信息冗余出现在标题下方，视觉拥挤易让观众误以为是两处不同的报道来源，应删除其中一行仅保留一处即可。；chapter-1：0.9秒至17.14秒分镜左下角“每词元约2B活跃”标签存在孤字换行，“跃”字单独成行，排版割裂，应调整文字长度或标签尺寸避免单字占一行。；chapter-2：19.572秒至27.41秒分镜右下角标签文字错写为“约2B ShShell口径”，属于渲染拼写错误，将来源名“ShShell”误写为“ShShell”，同时该标签也存在“径”字孤字换行，观众无法正确识别来源，应修正拼写并调整排版。；chapter-2：19.572秒至27.41秒分镜内路由示意图存在红色连线交叉错乱，三条路由器指向专家的连线互相穿插，无法清晰表达词元路由选择少量专家的MoE逻辑，属于图解可读性缺陷，应调整连线走向避免交叉。"
+      }
+    ],
+    "semantic": {
+      "score": 72,
+      "findings": [
+        "chapter-1：0.9秒至17.14秒的同一分镜中，“报道日期：2026-10-15（北京时间）”文字行以黑色、蓝色各重复显示一次，同一日期信息冗余出现在标题下方，视觉拥挤易让观众误以为是两处不同的报道来源，应删除其中一行仅保留一处即可。",
+        "chapter-1：0.9秒至17.14秒分镜左下角“每词元约2B活跃”标签存在孤字换行，“跃”字单独成行，排版割裂，应调整文字长度或标签尺寸避免单字占一行。",
+        "chapter-2：19.572秒至27.41秒分镜右下角标签文字错写为“约2B ShShell口径”，属于渲染拼写错误，将来源名“ShShell”误写为“ShShell”，同时该标签也存在“径”字孤字换行，观众无法正确识别来源，应修正拼写并调整排版。",
+        "chapter-2：19.572秒至27.41秒分镜内路由示意图存在红色连线交叉错乱，三条路由器指向专家的连线互相穿插，无法清晰表达词元路由选择少量专家的MoE逻辑，属于图解可读性缺陷，应调整连线走向避免交叉。"
+      ],
+      "suggestions": [
+        "chapter-1：当前旁白未口播完整型号LFM2.5-24B-A2B，仅在图解标签中展示，面向想快速了解新闻、检索模型的初学者，可在不增加事实风险的前提下口播一次完整型号，降低用户检索门槛。",
+        "chapter-1：当前旁白仅说明“今天先关注一条AI报道”，未明确区分模型2026年10月13日发布、CSDN10月15日发开发者解读的日期差异，可补充“这款模型此前已发布，今天有开发者解读”或“社区今日仍在讨论”，让新闻时间线更清晰。",
+        "chapter-3：当前旁白仅提示内存与工具调用稳定性门槛，可补充该模型为纯文本推理模型、不适合知识密集问答与复杂代码修复的定位，帮助初学者快速判断适用场景。",
+        "本版未加入背景音乐，若希望强化科技新闻的轻快播报节奏，可在不盖过人声的前提下添加低音量中性BGM，该项目未强制要求配乐，不做强制返修要求。"
+      ]
+    },
+    "limitations": [
+      "Actual P19 review text; fixture alone is not media acceptance."
+    ],
+    "createdAt": "2026-10-15T08:23:34.425Z"
+  }
+}

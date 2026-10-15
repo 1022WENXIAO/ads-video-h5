@@ -9,7 +9,7 @@ const digest=(value:unknown)=>hash(JSON.stringify(value));
 const sha=(value:unknown):value is string=>typeof value==='string'&&/^[a-f0-9]{64}$/.test(value);
 /** This is an audio-processing policy, separate from visual renderer changes. */
 export function lessonSpeechProcessingHash(){
-  return digest(['./lessonSpeechProof.ts','./lessonWorkflow.ts','./lessonAudio.ts','./lessonSpec.ts','./narrationAnalysisRecovery.ts','./lessonSpeechCoverage.ts','./lessonCommonSpelling.ts','./narrationHomophones.ts','./lessonModelVersions.ts','./lessonModelSpelling.ts','./lessonPronunciation.ts'].map(file=>readFileSync(new URL(file,import.meta.url),'utf8')));
+  return digest(['./lessonSpeechProof.ts','./lessonWorkflow.ts','./lessonAudio.ts','./lessonSpec.ts','./narrationAnalysisRecovery.ts','./narrationBatchRecovery.ts','./taskPool.ts','./lessonSpeechCoverage.ts','./lessonCommonSpelling.ts','./narrationHomophones.ts','./lessonModelVersions.ts','./lessonModelSpelling.ts','./lessonPronunciation.ts'].map(file=>readFileSync(new URL(file,import.meta.url),'utf8')));
 }
 export interface LessonSpeechBinding {
   chapterId:string;rawKey:string;rawHash:string;chapterHash:string;pacingHash:string;targetHash:string;processingHash:string;

@@ -52,6 +52,9 @@ export function validateDrawing(d:HtmlDrawing,format:Format='9:16'):HtmlDrawing 
 }
 export function drawingHtml(d:HtmlDrawing,duration:number,format:Format='9:16',publicationAnnotation?:NewsPublicationAnnotation):string {
   validateDrawing(d,format);
+  // The validated framework note owns this exact complete label. Keep the
+  // author proposal intact; other dates and text containing extra facts stay.
+  if(publicationAnnotation)d={...d,nodes:d.nodes.filter(node=>!(node.kind==='text'&&node.text===publicationAnnotation.label))};
   const [width,height]=drawingDimensions(format),portrait=height>width;
   const titleSize=d.title.length>10?42:60;
   // Logical author IDs remain intact in the drawing and diagnostic metadata.

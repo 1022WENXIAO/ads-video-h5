@@ -268,6 +268,9 @@ function speechQuantities(text:string):Array<{unit:string;value:number}>{
 function spokenNumberValues(text:string):string[]{
   return [...spokenLessonText(text).replace(/\s/g,'').matchAll(/[\d零〇一二两三四五六七八九十百千万亿]+(?:[.点][\d零〇一二三四五六七八九]+)?/g)].map(m=>/[.点]/.test(m[0])?speechDecimalText(m[0]):String(speechNumberValue(m[0])));
 }
+function speechValueDifference(expected:readonly unknown[],heard:readonly unknown[]):string {
+  return `脚本值(${expected.length})=${JSON.stringify(expected).slice(0,320)}；识别值(${heard.length})=${JSON.stringify(heard).slice(0,320)}`;
+}
 interface SpeechClock {start:number;end:number;hour:number;minute?:number;second?:number;valid:boolean;raw:string;hourText:string;minuteText?:string;secondText?:string;unit:string;parts:Array<{start:number;end:number;text:string}>;}
 function speechClocks(text:string):SpeechClock[]{
   const digit='[\\d零〇一二两三四五六七八九十]',number=`${digit}(?:\\s*${digit})*`,periods='上午|下午|凌晨|中午|早上|早晨|清晨|午后|傍晚|晚上|晚间|夜间';
@@ -490,8 +493,8 @@ export function alignLessonSpeech(chapter:LessonChapter,analysis:AudioAnalysis):
   const expectedClocks=speechClocks(chapter.narration),wordClocks=speechClocks(sourceWordText),transcriptClocks=speechClocks(analysis.transcript);
   const literalClockCues=originalCues.map(cue=>{const at=chapter.narration.indexOf(cue),index=expectedClocks.findIndex(c=>at>=c.start&&at+cue.length<=c.end),heardClock=wordClocks[index];if(!heardClock)return;const start=sourceWordText.indexOf(cue,heardClock.start);if(start<0||start+cue.length>heardClock.end)return;return clockCueSpan(analysis,sourceWordText,start,start+cue.length);});
   if(expectedClocks.length||wordClocks.length||transcriptClocks.length){
-    if([heardNumberText(analysis),analysis.transcript].some(text=>JSON.stringify(spokenDates(text))!==JSON.stringify(spokenDates(chapter.narration))))throw new Error(`章节${chapter.id}日期数字或年月日单位与脚本不同，需要独立复听或重录。`);
-    if([...expectedClocks,...wordClocks,...transcriptClocks].some(c=>!c.valid)||[wordClocks,transcriptClocks].some(clocks=>JSON.stringify(clockValues(clocks))!==JSON.stringify(clockValues(expectedClocks))))throw new Error(`章节${chapter.id}实际时钟的小时、分钟、秒或完整单位与脚本不同，需要独立复听或重录；不能把小数当作时刻。`);
+    for(const text of [heardNumberText(analysis),analysis.transcript])if(JSON.stringify(spokenDates(text))!==JSON.stringify(spokenDates(chapter.narration)))throw new Error(`章节${chapter.id}日期数字或年月日单位与脚本不同，${speechValueDifference(spokenDates(chapter.narration),spokenDates(text))}；需要独立复听或重录。`);
+    if([...expectedClocks,...wordClocks,...transcriptClocks].some(c=>!c.valid)||[wordClocks,transcriptClocks].some(clocks=>JSON.stringify(clockValues(clocks))!==JSON.stringify(clockValues(expectedClocks))))throw new Error(`章节${chapter.id}实际时钟的小时、分钟、秒或完整单位与脚本不同，${speechValueDifference(expectedClocks.map(c=>({raw:c.raw,value:clockValues([c])[0]})),wordClocks.map(c=>({raw:c.raw,value:clockValues([c])[0]})))}；转写时刻=${JSON.stringify(transcriptClocks.map(c=>c.raw)).slice(0,200)}；需要独立复听或重录，不能把小数当作时刻。`);
     analysis=clockAlignmentAnalysis(analysis,wordClocks,transcriptClocks);
     chapter={...chapter,narration:clockText(chapter.narration,expectedClocks),visual:{...chapter.visual,items:chapter.visual.items.map(item=>({...item,cue:clockCue(chapter,item.cue,expectedClocks)}))}};
   }
@@ -503,7 +506,7 @@ export function alignLessonSpeech(chapter:LessonChapter,analysis:AudioAnalysis):
   const heardText=analysis.transcript+' '+wordText;
   for(const marker of heardText.match(/(?:\[|【)(?:听不清|无法辨认|无法识别|inaudible|unintelligible)(?:\]|】)/gi)||[])if(!chapter.narration.toLowerCase().includes(marker.toLowerCase()))throw new Error(`章节${chapter.id}实际转写含无法辨认的占位${marker}，不能视为匹配，需要独立复听或重录。`);
   const expected=[...compactSpeech(chapter.narration)];
-  if(expected.length>=6&&!compactSpeech(analysis.transcript).endsWith(expected.slice(-4).join('')))throw new Error(`章节${chapter.id}末尾台词匹配不完整或出现额外尾词，需要独立复听或重录，不能放行漏字字幕。`);
+  if(expected.length>=6&&!compactSpeech(analysis.transcript).endsWith(expected.slice(-4).join('')))throw new Error(`章节${chapter.id}末尾台词匹配不完整或出现额外尾词，脚本末尾「${expected.slice(-8).join('')}」；识别末尾「${[...compactSpeech(analysis.transcript)].slice(-8).join('')}」；需要独立复听或重录，不能放行漏字字幕。`);
   const covered=new Set<number>();let literalHeard='';
   const captioned=lessonCaptionAnalysis(chapter,analysis,(start,end,text)=>{literalHeard=text;for(let k=start;k<end;k++)covered.add(k);});
   // Only complete matches covering every heard numeral may provide clause
@@ -523,9 +526,10 @@ export function alignLessonSpeech(chapter:LessonChapter,analysis:AudioAnalysis):
   // Ordinary adjacent dates retain the existing real pause/complete-clause
   // boundaries. Only the newly recognized full numeric suffix identifiers
   // additionally require a matching literal transcript occurrence.
-  if(JSON.stringify(spokenModelVersions(chapter.narration))!==JSON.stringify(spokenModelVersions(heardNumberText(numericAnalysis)))||JSON.stringify(spokenModelSuffixVersions(chapter.narration))!==JSON.stringify(spokenModelSuffixVersions(analysis.transcript)))throw new Error(`章节${chapter.id}实际型号或版本数字与脚本不同，需要独立复听或重录。`);
+  const expectedModels=spokenModelVersions(chapter.narration),heardModels=spokenModelVersions(heardNumberText(numericAnalysis)),expectedSuffixes=spokenModelSuffixVersions(chapter.narration),heardSuffixes=spokenModelSuffixVersions(analysis.transcript);
+  if(JSON.stringify(expectedModels)!==JSON.stringify(heardModels)||JSON.stringify(expectedSuffixes)!==JSON.stringify(heardSuffixes))throw new Error(`章节${chapter.id}实际型号或版本数字与脚本不同，${speechValueDifference(expectedModels,heardModels)}；完整型号${speechValueDifference(expectedSuffixes,heardSuffixes)}；需要独立复听或重录。`);
   if(JSON.stringify(decimals)!==JSON.stringify(heardDecimals))throw new Error(`章节${chapter.id}实际读出的小数数字${heardDecimals.join('、')}与脚本${decimals.join('、')}不同，需要重录。`);
-  if(JSON.stringify(spokenDates(chapter.narration))!==JSON.stringify(spokenDates(heardNumberText(numericAnalysis))))throw new Error(`章节${chapter.id}日期数字或年月日单位与脚本不同，需要独立复听或重录。`);
+  if(JSON.stringify(spokenDates(chapter.narration))!==JSON.stringify(spokenDates(heardNumberText(numericAnalysis))))throw new Error(`章节${chapter.id}日期数字或年月日单位与脚本不同，${speechValueDifference(spokenDates(chapter.narration),spokenDates(heardNumberText(numericAnalysis)))}；需要独立复听或重录。`);
   if(JSON.stringify(namedSpeechNumbers(chapter.narration))!==JSON.stringify(namedSpeechNumbers(analysis.transcript)))throw new Error(`章节${chapter.id}实际读出的残差、误差、伽马或阈值数字与脚本不同，需要核验或重录。`);
   if(JSON.stringify(speechQuantities(chapter.narration))!==JSON.stringify(speechQuantities(analysis.transcript)))throw new Error(`章节${chapter.id}金额、百分比、数量数字或单位与脚本不一致，需要独立复听或重录，不能以整章匹配率放行。`);
   for(const term of ['相似度','概率变化']){
@@ -543,7 +547,8 @@ export function alignLessonSpeech(chapter:LessonChapter,analysis:AudioAnalysis):
     if(extra.length>=2)throw new Error(`章节${chapter.id}出现连续未匹配的额外字词「${extra}」，需要独立复听或重录，不能删除真实识别结果或以平均匹配率放行。`);
   }
   for(const [values,isMatched] of [[expected,(k:number)=>mapped.has(k)],[heard.map(v=>v.char),(k:number)=>heardMapped.has(k)]] as const){let run='';for(let k=0;k<values.length;k++){run=isMatched(k)?'':run+values[k];if(run.length>=4)throw new Error(`章节${chapter.id}存在连续未匹配台词「${run}」，需要核对并重录，不能用全章平均匹配率掩盖残句。`);}}
-  if(JSON.stringify(spokenNumberValues(chapter.narration))!==JSON.stringify(spokenNumberValues(heardNumberText(numericAnalysis))))throw new Error(`章节${chapter.id}实际旁白中的数字与脚本不一致，需要独立复听或重录，不能以整章匹配率放行。`);
+  const expectedNumbers=spokenNumberValues(chapter.narration),heardNumbers=spokenNumberValues(heardNumberText(numericAnalysis));
+  if(JSON.stringify(expectedNumbers)!==JSON.stringify(heardNumbers))throw new Error(`章节${chapter.id}实际旁白中的数字与脚本不一致，${speechValueDifference(expectedNumbers,heardNumbers)}；需要独立复听或重录，不能以整章匹配率放行。`);
   assertNarrationHanCoverage(chapter.id,expected,mapped,{numbersVerified:true});
   const joined=expected.join('');
   const cues=chapter.visual.items.map((item,index)=>{

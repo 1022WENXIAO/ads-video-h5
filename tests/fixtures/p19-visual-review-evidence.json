@@ -1,0 +1,222 @@
+{
+  "scope": "P19 actual rendered movie frame and original review. Controlled review transport replay, not a new live vision model result.",
+  "revision": "1ce5cf69230b328ae3d84fe6838ff89589ef0ba0",
+  "movieSHA256": "602579d5902fe18f193422c246a696fd243c02dc1b48b2c4182449587e12652d",
+  "originalSemantic": {
+    "score": 72,
+    "findings": [
+      "chapter-1：0.9秒至17.14秒的同一分镜中，“报道日期：2026-10-15（北京时间）”文字行以黑色、蓝色各重复显示一次，同一日期信息冗余出现在标题下方，视觉拥挤易让观众误以为是两处不同的报道来源，应删除其中一行仅保留一处即可。",
+      "chapter-1：0.9秒至17.14秒分镜左下角“每词元约2B活跃”标签存在孤字换行，“跃”字单独成行，排版割裂，应调整文字长度或标签尺寸避免单字占一行。",
+      "chapter-2：19.572秒至27.41秒分镜右下角标签文字错写为“约2B ShShell口径”，属于渲染拼写错误，将来源名“ShShell”误写为“ShShell”，同时该标签也存在“径”字孤字换行，观众无法正确识别来源，应修正拼写并调整排版。",
+      "chapter-2：19.572秒至27.41秒分镜内路由示意图存在红色连线交叉错乱，三条路由器指向专家的连线互相穿插，无法清晰表达词元路由选择少量专家的MoE逻辑，属于图解可读性缺陷，应调整连线走向避免交叉。"
+    ],
+    "suggestions": [
+      "chapter-1：当前旁白未口播完整型号LFM2.5-24B-A2B，仅在图解标签中展示，面向想快速了解新闻、检索模型的初学者，可在不增加事实风险的前提下口播一次完整型号，降低用户检索门槛。",
+      "chapter-1：当前旁白仅说明“今天先关注一条AI报道”，未明确区分模型2026年10月13日发布、CSDN10月15日发开发者解读的日期差异，可补充“这款模型此前已发布，今天有开发者解读”或“社区今日仍在讨论”，让新闻时间线更清晰。",
+      "chapter-3：当前旁白仅提示内存与工具调用稳定性门槛，可补充该模型为纯文本推理模型、不适合知识密集问答与复杂代码修复的定位，帮助初学者快速判断适用场景。",
+      "本版未加入背景音乐，若希望强化科技新闻的轻快播报节奏，可在不盖过人声的前提下添加低音量中性BGM，该项目未强制要求配乐，不做强制返修要求。"
+    ]
+  },
+  "firstDrawing": {
+    "title": "今天的AI热点",
+    "nodes": [
+      {
+        "id": "date",
+        "kind": "text",
+        "x": 70,
+        "y": 235,
+        "w": 580,
+        "h": 56,
+        "text": "报道日期：2026-10-15（北京时间）",
+        "tone": "blue",
+        "fontSize": 24,
+        "highlight": false
+      },
+      {
+        "id": "modelcard",
+        "kind": "card",
+        "x": 60,
+        "y": 300,
+        "w": 600,
+        "h": 150,
+        "text": "Liquid AI 新模型\nLFM2.5-24B-A2B",
+        "tone": "coral",
+        "fontSize": 42,
+        "highlight": true
+      },
+      {
+        "id": "sourcenote",
+        "kind": "text",
+        "x": 80,
+        "y": 468,
+        "w": 560,
+        "h": 56,
+        "text": "据CSDN开发者解读，开源权重MoE模型",
+        "tone": "ink",
+        "fontSize": 24,
+        "highlight": false
+      },
+      {
+        "id": "router",
+        "kind": "circle",
+        "x": 90,
+        "y": 545,
+        "w": 90,
+        "h": 90,
+        "text": "词元",
+        "tone": "blue",
+        "fontSize": 30,
+        "highlight": false
+      },
+      {
+        "id": "expert1",
+        "kind": "circle",
+        "x": 250,
+        "y": 505,
+        "w": 70,
+        "h": 70,
+        "text": "专家",
+        "tone": "paper",
+        "fontSize": 24,
+        "highlight": true
+      },
+      {
+        "id": "expert2",
+        "kind": "circle",
+        "x": 250,
+        "y": 600,
+        "w": 70,
+        "h": 70,
+        "text": "专家",
+        "tone": "coral",
+        "fontSize": 24,
+        "highlight": true
+      },
+      {
+        "id": "expert3",
+        "kind": "circle",
+        "x": 390,
+        "y": 505,
+        "w": 70,
+        "h": 70,
+        "text": "专家",
+        "tone": "paper",
+        "fontSize": 24,
+        "highlight": false
+      },
+      {
+        "id": "expert4",
+        "kind": "circle",
+        "x": 390,
+        "y": 600,
+        "w": 70,
+        "h": 70,
+        "text": "专家",
+        "tone": "paper",
+        "fontSize": 24,
+        "highlight": false
+      },
+      {
+        "id": "arrow1",
+        "kind": "line",
+        "x": 180,
+        "y": 590,
+        "w": 70,
+        "h": -45,
+        "text": "",
+        "tone": "ink",
+        "fontSize": 24,
+        "highlight": false
+      },
+      {
+        "id": "arrow2",
+        "kind": "line",
+        "x": 180,
+        "y": 590,
+        "w": 70,
+        "h": 45,
+        "text": "",
+        "tone": "ink",
+        "fontSize": 24,
+        "highlight": false
+      },
+      {
+        "id": "bar24",
+        "kind": "card",
+        "x": 60,
+        "y": 720,
+        "w": 600,
+        "h": 118,
+        "text": "总参数约24B（240亿）",
+        "tone": "paper",
+        "fontSize": 40,
+        "highlight": true
+      },
+      {
+        "id": "bar2",
+        "kind": "card",
+        "x": 60,
+        "y": 860,
+        "w": 250,
+        "h": 110,
+        "text": "每词元约2B活跃",
+        "tone": "blue",
+        "fontSize": 33,
+        "highlight": true
+      },
+      {
+        "id": "laptop",
+        "kind": "path",
+        "x": 370,
+        "y": 835,
+        "w": 250,
+        "h": 150,
+        "text": "",
+        "tone": "ink",
+        "fontSize": 24,
+        "highlight": false,
+        "pathData": "M395 850 L595 850 L610 960 L380 960 Z M355 970 L635 970 L620 950 L370 950 Z"
+      },
+      {
+        "id": "screenlabel",
+        "kind": "text",
+        "x": 410,
+        "y": 880,
+        "w": 175,
+        "h": 56,
+        "text": "本地智能体",
+        "tone": "coral",
+        "fontSize": 24,
+        "highlight": true
+      }
+    ]
+  },
+  "annotation": {
+    "referenceId": "ref-1",
+    "publishedAt": "2026-10-15T02:02:40.000Z",
+    "publishedDateBeijing": "2026-10-15",
+    "cutoffUtc": "2026-10-15T07:55:23.428Z",
+    "windowHours": 24,
+    "label": "报道日期：2026-10-15（北京时间）"
+  },
+  "numericCheck": {
+    "chapterId": "chapter-2",
+    "frameTime": 23.19,
+    "claim": "top-4路由：不必唤醒全部参数",
+    "expectedCount": 4,
+    "observedCount": 3,
+    "observedEvidence": "实际橙色路径只连接并高亮专家1、专家3、专家6。"
+  },
+  "context": {
+    "frameTimes": [
+      23.19
+    ],
+    "chapters": [
+      {
+        "id": "chapter-2",
+        "start": 17.16,
+        "end": 29.22
+      }
+    ]
+  }
+}

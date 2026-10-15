@@ -34,9 +34,17 @@ const escaped=(text:string)=>text.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
 const mentions=(text:string,id:string)=>new RegExp(String.raw`(^|[^\w-])${escaped(id)}(?=$|[^\w-])`).test(text);
 const spoken=/(?:旁白|口播|台词|解说|原声|语音)/;
 const sourceConflict=(text:string)=>/(?:来源|原文|报道|事实|证据|claim)/i.test(text)&&/不一致|不符|矛盾|相反|错误|误导|不支持|未.*对齐/.test(text);
-const layoutDefect=(text:string)=>/遮挡|遮住|盖住|重叠|越界|截断|裁切|溢出|超出.*(?:边界|画面|安全区)|(?:字体|字号|文字|标签).*(?:过小|太小|不可读|无法辨认|难以辨认)/.test(text);
-const visualDefect=(text:string)=>layoutDefect(text)||/图标|配图|没有.*(?:图|画)|未呈现|缺乏.*图解|缺少.*(?:示意|图解)|未.*(?:画出|展示)|静态卡片|任务清单|图解仅复现文字|无法.*直观|(?:画面|卡片|图解|视觉|抽帧|提示条).*(?:错误|误写|缺失|遗漏|误导|误以为|归属|绑定|合并|混乱|不符|不一致|制作备注|内部说明)|抽帧.*(?:未出现|未展示)|动画/.test(text);
+const layoutDefect=(text:string)=>/遮挡|遮住|盖住|重叠|越界|截断|裁切|溢出|超出.*(?:边界|画面|安全区)|(?:字体|字号|文字|标签).*(?:过小|太小|不可读|无法辨认|难以辨认)|(?:孤字|单字)(?:换行|成行|占一行)/.test(text);
+const renderedSurface=(text:string)=>/画面|分镜|图解|示意图|标签|卡片|渲染|排版|连线|箭头/.test(text);
+const renderingDefect=(text:string)=>renderedSurface(text)&&/拼写错误|错写|误写|排版割裂|(?:连线|箭头).*(?:交叉|错乱|穿插)|(?:图解|图形|视觉)可读性(?:缺陷|问题)/.test(text);
+const visualDefect=(text:string)=>layoutDefect(text)||renderingDefect(text)||/图标|配图|没有.*(?:图|画)|未呈现|缺乏.*图解|缺少.*(?:示意|图解)|未.*(?:画出|展示)|静态卡片|任务清单|图解仅复现文字|无法.*直观|(?:画面|卡片|图解|视觉|抽帧|提示条).*(?:错误|误写|缺失|遗漏|误导|误以为|归属|绑定|合并|混乱|不符|不一致|制作备注|内部说明)|抽帧.*(?:未出现|未展示)|动画/.test(text);
 const unsafeVisual=(text:string)=>/事实错误|数据错误|公式错误|旁白错误|字幕|音色|音量|错读|图解说明不准确/.test(text);
+const sourceUnverified=(text:string)=>/(?:来源|原文|报道|证据|claims?)(?:本身|内容|事实|引用)?(?:尚|仍|目前|还)?(?:未核验|未核实|不可靠|无依据|缺失|不足|无法核验|不支持|不明|不明确|未知|未确认)/i.test(text);
+// A rejected citation or source-bound fact cannot be authorized by an
+// unrelated geometry defect in the same finding. A displayed source-name
+// spelling fault is a different subject ("来源标签/来源名") and stays visual.
+const sourceClaimFault=(text:string)=>/(?:来源|引用|出处|证据|claims?)(?:的)?(?:引用|来源|绑定|归属|关联|依据)?(?:有|存在)?(?:错误|不符|矛盾|无效|不支持)|(?:来源|原文|正文|报道|证据)[^，,。；;\n]{0,30}(?:未|没有|并未|未能)(?:提及|记载|证明|支持|包含|证实)|(?:报道日期|发布时间|发生时间|事实声明|核心事实|claims?)[^，,。；;\n]{0,50}(?:与|和)[^，,。；;\n]{0,30}(?:来源|原文|正文|证据)[^，,。；;\n]{0,15}(?:矛盾|不符|不一致|相反)/i.test(text);
+const displayedValueFault=/(?:画面|图解|标签|示意图)(?:中(?:的)?)?(?:数据|数值|数字)错误/g;
 const layoutOnly=(text:string)=>layoutDefect(text)&&!/事实|数据错误|公式错误|语义|归属|含义|意义|因果|误导|无关|指代|改写|替换|不准确|(?:信息|表述|说明).*(?:错误|不符|不一致)/.test(text)&&!sourceConflict(text);
 
 function narrationExplicitlyCorrect(text:string,chapters:LessonChapter[]):boolean{
@@ -79,7 +87,11 @@ export function lessonRepairPlan(report:LessonReport,review:RenderReview):Lesson
     // A literal spoken quote plus a source contradiction is a script issue,
     // even when a later clause also contains "screen" or "diagram".
     const scripted=hasSpoken&&sourceConflict(text)&&quotedNarration(text,chapters)&&!correct;
-    const pureVisual=!scripted&&!unsafeVisual(text)&&visualDefect(text)&&(!hasSpoken||correct);
+    // A wrong rendered value may be redrawn only when the review explicitly
+    // confirms a literal, current narrated line. An unscoped data/fact fault
+    // or an unknown source is not permission to freeze questionable speech.
+    const displayOnlyValue=correct&&quotedNarration(text,chapters)&&text.replace(displayedValueFault,'')!==text&&!unsafeVisual(text.replace(displayedValueFault,''));
+    const pureVisual=!scripted&&!sourceUnverified(text)&&!sourceClaimFault(text)&&(!unsafeVisual(text)||displayOnlyValue)&&visualDefect(text)&&(!hasSpoken||correct);
     if(pureVisual){for(const id of targets){visual.add(id);(result.visualFindings[id]??=[]).push(text);}continue;}
     if(!hasSpoken||!sourceConflict(text)){if(speechOnlyRepair(single)){sound.push({text,targets});continue;}}
     for(const id of targets)script.add(id);result.scriptFindings.push(text);
@@ -115,9 +127,9 @@ export function captionFormattingOnlyRepair(review:RenderReview):boolean{
 
 export function lessonVisualBrief(report:LessonReport,chapter:LessonChapter,request:string,reviewFeedback?:string,layoutFeedback='',publicationAnnotation?:NewsPublicationAnnotation){
   return {
-    audienceContent:{...(publicationAnnotation?{publicationAnnotation}:{}),title:chapter.title,narration:chapter.narration,claims:chapter.claims,references:report.references.filter(r=>chapter.referenceIds.includes(r.id)).map(r=>({id:r.id,title:r.title,excerpt:r.excerpt,...(r.publishedAt?{publishedAt:r.publishedAt}:{})}))},
+    audienceContent:{title:chapter.title,narration:chapter.narration,claims:chapter.claims,references:report.references.filter(r=>chapter.referenceIds.includes(r.id)).map(r=>({id:r.id,title:r.title,excerpt:r.excerpt,...(r.publishedAt?{publishedAt:r.publishedAt}:{})})),...(publicationAnnotation?{publicationAnnotation}:{})},
     priorVisual:{content:chapter.visual,rejected:Boolean(reviewFeedback),note:reviewFeedback?'被成片审查拒绝的旧视图，不是事实或可见文案的依据。':'按已核验旁白核对信息归属。'},
-    internalDesignInstructions:{request,goal:chapter.goal,designReason:chapter.reason,reviewFeedback,layoutFeedback,rules:[
+    internalDesignInstructions:{request,goal:chapter.goal,designReason:chapter.reason,reviewFeedback,layoutFeedback,...(publicationAnnotation?{frameworkPublicationNote:{label:publicationAnnotation.label,instruction:'框架已在安全区固定渲染此完整报道日期，仅显示一次；不要再创建日期节点或重复这行。事件日期及其它有事实作用的日期按原来源保留。'}}:{}),rules:[
       '所有本字段都是内部绘图要求，不得复制或改写成观众可见文字。避免事项通过实际布局与图形解决，不显示“不合并/不绑定”等返修口号。',
       '观众文字只承载audienceContent中已核验的事实、限制和清楚解释；旧视图被拒的归属或因果必须按旁白与来源重新组织，不能照抄。',
       '每个图形解释本章已核验的实体、数量或关系；未知外貌与身份使用明确标注的中性示意，不凭图标添加性别、职业、人数或现场事实。',

@@ -29,6 +29,7 @@ import { verifyLessonResearch, lessonResearchSummary } from './lessonResearch';
 import { lessonScriptReviewContext, selectedLessonSignalEvidence } from './lessonScriptReviewContext';
 import { reviewFindings } from './reviewResults';
 import { mapLimited } from './taskPool';
+import { NarrationBatchVerificationError, NarrationTimingRepairError, selectNarrationBatchFailure } from './narrationBatchRecovery';
 import { inspectLessonSpeechGaps, lessonTempo, lessonVoiceStyle, lessonPacingCheck, prepareLessonSpeech, preserveLessonSpeechTake, tightenNewsSpeechSilence } from './lessonAudio';
 import { reviewNeedsContentRepair, canReuseNewsEvidence } from './reviewResults';
 import { cachedLessonResearch } from './lessonResearchCache';
@@ -482,7 +483,7 @@ export async function runLessonWorkflow(o:Options){
     const budgetCheck=lessonPacingCheck(characters,settings.requestedSeconds-padding,pacing);
     if(!budgetCheck.passed){phase='script';throw new Error(`${budgetCheck.detail}总旁白应约${lessonNarrationBudget(settings.requestedSeconds,pacing,raw.length)}字，当前${characters}字。调整内容密度；不能通过放慢语速或拖长空白凑时长。`);}
     const tempo=pending.length?(frozen.length?pendingLessonSpeechTempo(rawSeconds,settings.requestedSeconds,padding,frozenSeconds,settings.explicitDuration,report.voice?.tempo,pending.every(c=>c.cached)):lessonTempo(rawSeconds,settings.requestedSeconds,padding,report.voice?.tempo,raw.every(c=>c.cached),settings.explicitDuration)):(report.voice?.tempo||frozen[0]?.frozen?.tempo||1);
-    const pendingTimingFailure=(ids:string[],detail:string):never=>{phase='script';repairRequirements=ids.map(id=>`${id}：${detail} 保留其他已核验旁白，仅定向调整本章的拗口表达与信息密度，保持真实数字和完整句。`).join('\n');throw new Error(repairRequirements);};
+    const pendingTimingFailure=(ids:string[],detail:string,defer=false):never=>{const message=ids.map(id=>`${id}：${detail} 保留其他已核验旁白，仅定向调整本章的拗口表达与信息密度，保持真实数字和完整句。`).join('\n');if(!defer){phase='script';repairRequirements=message;}throw new NarrationTimingRepairError(ids,message);};
     if(!Number.isFinite(tempo)||tempo<.8||tempo>1.25){
       if(frozen.length)pendingTimingFailure(pending.map(c=>c.chapter.id),`待制作旁白实测${rawSeconds.toFixed(3)}秒，剩余语音窗口${(settings.requestedSeconds-padding-frozenSeconds).toFixed(3)}秒，所需变速${Number.isFinite(tempo)?tempo:'不可行'}不在0.8–1.25安全范围内。`);
       if(pacingRetakes++===0){voiceRevision++;phase='narration';throw new Error(`合成旁白实测${rawSeconds.toFixed(1)}秒，所需变速${tempo}超过安全范围。保持已核验脚本，按规划每秒${pacing.targetCharactersPerSecond}字重新合成同一声线；不降低规划语速。`);}
@@ -490,7 +491,7 @@ export async function runLessonWorkflow(o:Options){
     }
     report.voice={mode:'preset',modelId:audioConfig.modelId,anchorHash,revision:voiceRevision,tempo};
     await persistCheckpoint();
-    await mapLimited(pending,2,async({chapter,file,preparedFile,duration})=>{
+    try{await mapLimited(pending,2,async({chapter,file,preparedFile,duration})=>{
       const dir=path.dirname(file),adjusted=path.join(dir,'speech.mp3');
       let chapterTempo=tempo;const allocatedSeconds=duration/tempo;
       const saveProof=async()=>writeLessonSpeechProof(dir,lessonSpeechBinding(chapter,rawSpeechKey(chapter),hashBytes(await readFile(file)),pacing,report!.references,settings,processingHash),chapterTempo);
@@ -527,15 +528,21 @@ export async function runLessonWorkflow(o:Options){
             await writeFile(metaFile,JSON.stringify({hash,id:recheckItem.id}),{mode:0o600});
           }
           const {corrected,aligned}=checked,analysis=lessonCaptionAnalysis(chapter,corrected);chapter.speechMatch=aligned.similarity;chapter.cues=aligned.cues;speech.set(chapter.id,{file:adjusted,analysis});await writeFile(path.join(dir,'speech-analysis.json'),JSON.stringify(analysis,null,2),{mode:0o600});await saveProof();verified=true;break;
-        }catch(error){lastError=error;if(error instanceof NarrationAnalysisError)throw error;const quality=error instanceof NarrationVerificationError&&error.chapterId===chapter.id;if(attempt===1||!quality){if(quality){phase='script';throw new NarrationVerificationError(error.kind,chapter.id,`${String(error)}；章节${chapter.id}已完成同一台词的有限复听和重录，下一步须定向改写拗口表达。保留已核验事实、数值含义、限定条件与用户明确要求；非必须逐字读出的难读专名可改为来源支持的通俗描述，并在图解或引用中保留正式名。明确要求念出专名或逐字保留的内容继续保留，优先使用已核验发音提示。不能将错误识别结果写成台词，也不能只缩短句子却原样重复导致失败的表达。`,{cause:error});}throw error;}
+        }catch(error){lastError=error;if(error instanceof NarrationAnalysisError)throw error;const quality=error instanceof NarrationVerificationError&&error.chapterId===chapter.id;if(attempt===1||!quality)throw error;
           const spoken=spokenLessonText(chapter.narration),pronunciation=pronunciationFor(chapter);const result=await trace.run('synthesize_chapter',`重录错字 · ${chapter.title}`,{chapterId:chapter.id,narration:spoken,correction:String(error),...(pronunciation.hints.length?{pronunciationHints:pronunciation.hints}:{})},()=>generateAudio(`使用@Audio1同一声音。${voiceStyle}${pronunciation.prompt?' '+pronunciation.prompt:''} 上次核验发现：${String(error).slice(0,300)}。必须完整准确地朗读下面的文字，日期按汉字读法，小数每一位数字清楚读出，不能增删。只朗读台词，不朗读核验意见。台词：${spoken}`,audioConfig,reference));await writeRawSpeech(chapter,file,result.bytes);await prepareChapterSpeech(chapter,file,preparedFile);
-          if(frozen.length){chapterTempo=+(await probeAudio(preparedFile)/allocatedSeconds).toFixed(5);if(chapterTempo<.8||chapterTempo>1.25)pendingTimingFailure([chapter.id],`本章重录后的变速${chapterTempo}不在0.8–1.25安全范围内。`);}
+          if(frozen.length){chapterTempo=+(await probeAudio(preparedFile)/allocatedSeconds).toFixed(5);if(chapterTempo<.8||chapterTempo>1.25)pendingTimingFailure([chapter.id],`本章重录后的变速${chapterTempo}不在0.8–1.25安全范围内。`,true);}
           await adjustChapterSpeech(chapter,preparedFile,adjusted,chapterTempo);
         }
       }
       if(!verified)throw lastError;
       await persistRawSpeech(chapter,file);
-    });
+    },failures=>selectNarrationBatchFailure(failures,pending.map(c=>c.chapter.id)));}catch(error){
+      if(error instanceof NarrationBatchVerificationError){phase='script';repairRequirements=error.message;}
+      // A parallel local quality failure must never route a provider/IO error
+      // into script repair or replay an ambiguous paid submission.
+      else phase='narration';
+      throw error;
+    }
     const spokenCharacters=[...speech.values()].reduce((n,c)=>n+compactSpeech(c.analysis.transcript).length,0),spokenSeconds=[...speech.values()].reduce((n,c)=>n+c.analysis.duration,0);
     const rate=await trace.run('verify_narration_pacing','校验实际旁白语速',{spokenCharacters,spokenSeconds,pacing},async()=>{const result=lessonPacingCheck(spokenCharacters,spokenSeconds,pacing);if(!result.passed){phase='script';throw new Error(result.detail+'调整所有章节的实际信息密度并重新合成，不能仅凭目标时长放行。');}return result;});
     report.voice={...report.voice!,spokenCharacters,spokenSeconds:+spokenSeconds.toFixed(3),charactersPerSecond:rate.charactersPerSecond};
