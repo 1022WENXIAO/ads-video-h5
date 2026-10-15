@@ -61,11 +61,37 @@ function quotedNarration(text:string,chapters:LessonChapter[]):boolean{
   const quotes=[...text.matchAll(/[“「"']([^”」"']{2,160})[”」"']/g)].map(match=>compact(match[1]));
   return chapters.some(chapter=>typeof chapter.narration==='string'&&quotes.some(quote=>compact(chapter.narration).includes(quote)));
 }
+// Scope words inside a quoted label/utterance are content, not repair targets.
+// Keep offsets so chapter-header splitting can still use the original finding.
+const scopeText=(text:string)=>text.replace(/“[^”]*”|‘[^’]*’|「[^」]*」|『[^』]*』|"[^"\n]*"|'[^'\n]*'/g,quote=>' '.repeat(quote.length));
+const chapterOrdinals=['一','二','三','四','五','六','七','八','九','十'];
+function findingChapterTargets(report:LessonReport,text:string):string[]{
+  const ids=report.chapters.map(chapter=>chapter.id),scope=scopeText(text);
+  // "This chapter's whole duration" and a "global label" do not assert a
+  // cross-chapter defect. Only an explicit whole-film/chapter scope does.
+  const positiveScope=scope
+    .replace(/(?:并非|不是|不涉及|不影响|无需|不要)\s*(?:全片|所有章节|全部章节|每章|各章|跨章)/g,'')
+    .replace(/(?:无需|不需要|不必|不用|不要|不应)\s*(?:(?:再|重新)?(?:重录|修改|返修|重做|重画|调整|修复))\s*(?:全片|所有章节|全部章节|每(?:一)?章|各(?:个)?章(?:节)?)/g,'')
+    .replace(/\b(?:(?:no need to|need not|do not|don't)\s+(?:re-?record|modify|rewrite|repair|redraw)\s+(?:the\s+)?(?:whole|entire)\s+(?:film|video)|not\s+(?:the\s+)?(?:whole|entire)\s+(?:film|video))\b/gi,'');
+  if(/(?:^|[，,。；;\n])\s*(?:全局|global)\s*[:：]|全片|所有章节|全部章节|每(?:一)?章|各(?:个)?章(?:节)?|跨章|全局(?:问题|缺陷|范围)|\ball chapters\b|\b(?:whole|entire) (?:video|film)\b|\bacross chapters\b|\bglobal (?:problem|defect|issue)\b/i.test(positiveScope))return ids;
+  const selected=new Set(ids.filter(id=>mentions(scope,id)));
+  for(const match of scope.matchAll(/(?:^|[^\w-])((?:chapter|ch)[-_]?\d+)(?=$|[^\w-])|第([一二三四五六七八九十\d]+)章/gi)){
+    const exact=match[1]&&ids.filter(id=>id===match[1]);
+    const ordinal=match[2]?(/^\d+$/.test(match[2])?Number(match[2]):chapterOrdinals.indexOf(match[2])+1):null;
+    const numericId=match[1]?.match(/\d+$/)?.[0].replace(/^0+(?=\d)/,'');
+    const candidates=exact?.length?exact:ordinal===null
+      ?ids.filter(id=>id.match(/^(?:chapter|ch)[-_]?(\d+)$/i)?.[1].replace(/^0+(?=\d)/,'')===numericId)
+      :ids.filter((_,i)=>i===ordinal-1);
+    if(candidates.length!==1)return ids;
+    selected.add(candidates[0]);
+  }
+  return selected.size?ids.filter(id=>selected.has(id)):ids;
+}
 function scopedFindings(report:LessonReport,findings:string[]):string[]{
-  const ids=report.chapters.map(chapter=>escaped(chapter.id)).join('|');
+  const ids=[...report.chapters.map(chapter=>escaped(chapter.id)),...report.chapters.flatMap((_,i)=>[`第${i+1}章`,...(chapterOrdinals[i]?[`第${chapterOrdinals[i]}章`]:[])])].join('|');
   if(!ids)return findings;
   const header=new RegExp(String.raw`(?:^|[，,。；;\n])\s*(?:${ids})\s*[:：]`,'g');
-  return findings.flatMap(text=>{const starts=[...text.matchAll(header)].map(match=>match.index!+(match[0].match(/^[，,。；;\n]/)?1:0)),boundaries=starts[0]>0?[0,...starts]:starts;return boundaries.length>1?boundaries.map((start,i)=>text.slice(start,boundaries[i+1]??text.length).trim()).filter(Boolean):[text];});
+  return findings.flatMap(text=>{const starts=[...scopeText(text).matchAll(header)].map(match=>match.index!+(match[0].match(/^[，,。；;\n]/)?1:0)),boundaries=starts[0]>0?[0,...starts]:starts;return boundaries.length>1?boundaries.map((start,i)=>text.slice(start,boundaries[i+1]??text.length).trim()).filter(Boolean):[text];});
 }
 
 // Separate chapter-local visual defects from narrated/source defects. This is
@@ -80,8 +106,7 @@ export function lessonRepairPlan(report:LessonReport,review:RenderReview):Lesson
   const findings=scopedFindings(report,review.semantic?.findings||[]);
   if(!report.factReview||report.factReview.needsRepair){result.kind='script';result.scriptChapterIds=ids;result.scriptFindings=report.factReview?.findings.length?report.factReview.findings:['原稿事实尚未核验，不能只改画面并保留旁白。'];return result;}
   for(const text of findings){
-    const scoped=/全局|global|全片|所有章节|每章|全程/i.test(text)?ids:ids.filter(id=>mentions(text,id));
-    const targets=scoped.length?scoped:ids,chapters=report.chapters.filter(chapter=>targets.includes(chapter.id));
+    const targets=findingChapterTargets(report,text),chapters=report.chapters.filter(chapter=>targets.includes(chapter.id));
     const single={...review,semantic:{...review.semantic!,findings:[text]}};
     const hasSpoken=spoken.test(text),correct=hasSpoken&&narrationExplicitlyCorrect(text,chapters);
     // A literal spoken quote plus a source contradiction is a script issue,

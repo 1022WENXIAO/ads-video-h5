@@ -1,0 +1,81 @@
+{
+  "provenance": {
+    "revision": "5ea9572a998612fe90d10c8080a478f02bf3b2e0",
+    "rawReviewSha256": "e220097093ab96f0ccd568fb86b39acb31c677ea2de4b51d47fd7f571a79fbb5",
+    "acceptedCheckpointSha256": "5cb701787b36080ef472778e310231549ffd9e6995047a86a1a49a6854a1919f",
+    "scope": "Public text projection of the actual first review and accepted narration. The raw review remains score65/needs-review; no assertion that every reviewer audio/time interpretation is correct."
+  },
+  "report": {
+    "chapters": [
+      {
+        "id": "ch1",
+        "narration": "十月十五日晚，多家媒体报道香港大埔周生生金链案有进展。案件发生在前一天下午约三点，两个时间要分开看。"
+      },
+      {
+        "id": "ch2",
+        "narration": "核心变化是警方以盗窃等罪拘捕三十七和二十九岁的一男一女。金链约六十克、值七点九万港元，监控锁定行踪后，只找回一部分。"
+      },
+      {
+        "id": "ch3",
+        "narration": "值得关注，是因为金饰被转卖分流后，追赃可能跨点位。现在剩余金链仍在追查，罪名和结果也要等警方及司法程序后续确认。"
+      }
+    ],
+    "factReview": {
+      "score": 92,
+      "needsRepair": false,
+      "findings": [],
+      "suggestions": [
+        "ch1：画面写“上游新闻21:38、每经22:09等通报警方进展”，其中上游页面显示为21:38发布、每经快讯时间为22:09，但来源摘录显示上游转载看看新闻、每经引用香港电台；建议把“通报警方进展”改为“报道/转述香港警方进展”，避免把媒体误写成警方通报的直接发布方。",
+        "ch2：旁白“监控锁定行踪后，只找回一部分”本身有来源支持；建议在字幕或画面中补一句“女子于黄昏被捕”，可让“一男一女”的抓捕时间线更完整。",
+        "ch3：“追赃可能跨点位”是依据金链被转售、交他人持有后的合理分析，不是来源原话；建议画面标注“影响分析”或改为“追赃涉及不同环节”，以区分报道事实与新闻意义解读。"
+      ],
+      "adjudication": {
+        "modelId": "doubao-seed-2-1-lite-260915",
+        "primaryScore": 92,
+        "primaryNeedsRepair": false,
+        "primaryFindings": []
+      }
+    }
+  },
+  "review": {
+    "status": "needs-review",
+    "score": 65,
+    "checks": [
+      {
+        "name": "成片语义审查",
+        "passed": false,
+        "detail": "ch2 字幕存在多余口误赘字：12.14秒抽帧实际底部字幕显示为“核心变化是他警方以盗窃等罪拘捕三十七”，对应旁白正确表述为“核心变化是警方以盗窃等罪拘捕三十七”，多出口头赘字“他”，未清理该段重录残句，属于清晰可闻的口误缺陷。；ch2 底部字幕与旁白内容不匹配：15.06秒抽帧时对应旁白为“金链约六十克、值七点九万港元，监控锁定行踪后，只找回一部分”，但画面展示的底部字幕仍停留在上一段的“核心变化是他警方以盗窃等罪拘捕三十七”，该段4条目信息画面全程未匹配对应旁白字幕，字幕覆盖与语音进度脱节。"
+      },
+      {
+        "name": "新闻报道日期可见",
+        "passed": true,
+        "detail": "ch1：真实HTML可见检查及成片0.602秒抽帧确认“报道日期：2026-10-15（北京时间）”；已绑定来源、分镜、方案及成片哈希。"
+      }
+    ],
+    "semantic": {
+      "score": 65,
+      "findings": [
+        "ch2 字幕存在多余口误赘字：12.14秒抽帧实际底部字幕显示为“核心变化是他警方以盗窃等罪拘捕三十七”，对应旁白正确表述为“核心变化是警方以盗窃等罪拘捕三十七”，多出口头赘字“他”，未清理该段重录残句，属于清晰可闻的口误缺陷。",
+        "ch2 底部字幕与旁白内容不匹配：15.06秒抽帧时对应旁白为“金链约六十克、值七点九万港元，监控锁定行踪后，只找回一部分”，但画面展示的底部字幕仍停留在上一段的“核心变化是他警方以盗窃等罪拘捕三十七”，该段4条目信息画面全程未匹配对应旁白字幕，字幕覆盖与语音进度脱节。"
+      ],
+      "suggestions": [
+        "ch3 22.024秒抽帧中“其余交29岁女性朋友持有”节点使用浅蓝色无描边，与下方“转卖分流后，追赃可能跨点位”的蓝色连线未建立视觉连接，观众容易误以为该分支赃物的去向不在转卖分流链路内，后续可优化该节点边框颜色或调整连线逻辑，让因果链路更清晰。",
+        "ch1 时间轴动画在2秒内完成左右两个节点的描边高亮，节奏偏快，普通观众来不及区分事件与报道的时间差，可适当延长动画时长或增加节点高亮停留时间。",
+        "建议在ch3收尾补充一句简短的后续关注提醒（例如“可关注警方后续通报的追回进展与司法结果”），让公众关注的落脚点更明确。"
+      ]
+    },
+    "limitations": [],
+    "createdAt": "2026-10-15T17:58:56.023Z"
+  },
+  "expectedScriptChapterIds": [
+    "ch2"
+  ],
+  "evidenceCorrection": {
+    "scope": "Retained reviewer allegations are test inputs for repair targeting, not independent media truth.",
+    "findingIndex1": "15.06秒原PNG实际无字幕，与方案15.05–15.08秒的合法空隙一致，不支持原审查的旧字幕停留/全程脱节指控。",
+    "samplePngSha256": "a28fc06c181be3878cadbcd2648884d4b4ff6bdd2604dfb0ffc6b009ab48ba61",
+    "findingIndex0": "12.14秒实际字幕多“他”有像素证据；声音是否含该字未确认。",
+    "rawReviewPreserved": true,
+    "rawScore": 65
+  }
+}
