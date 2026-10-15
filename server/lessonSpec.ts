@@ -206,6 +206,11 @@ export function compactSpeech(text:string,normalizeNumbers=true):string{
   const numbers=normalizeNumbers?spoken.replace(speechNumberForms(),canonicalSpeechNumber):spoken.replace(/[零〇一二三四五六七八九]{3,}/g,canonicalSpeechNumber);
   return numbers.replace(/[\s\p{P}\p{S}]/gu,'');
 }
+// String regex/indexOf offsets are UTF-16; heard-character/owner maps use
+// Unicode code points. Convert only when crossing that boundary. Clock parts
+// intentionally keep their existing UTF-16 offsets for string slicing.
+function speechPointOffset(text:string,utf16:number):number{return utf16<0?-1:[...text.slice(0,utf16)].length;}
+function speechPointIndexOf(text:string,phrase:string,from=0):number{return speechPointOffset(text,text.indexOf(phrase,[...text].slice(0,from).join('').length));}
 // Recognize equivalent heard quantities/ranges without treating every Chinese
 // numeral in ordinary prose as a number, or changing the original transcript.
 function speechNumberForms(){return /(?<=双)(?:十[一二]|1[12])(?![\d.点零〇一二两三四五六七八九十百千万亿])|[\d零〇一二两三四五六七八九十百千万亿]+点[\d零〇一二三四五六七八九]+|[\d零〇一二两三四五六七八九十][\d零〇一二两三四五六七八九十百千]*(?=[a-z%年月日号天元台家人岁个次万亿]|小时|到|至)|[零〇一二三四五六七八九]{3,}/g;}
@@ -342,10 +347,10 @@ export function correctLessonTranscript(chapter:LessonChapter,analysis:AudioAnal
     const from=pronoun+m[0].slice(1);if(from!==m[0]&&!chapter.narration.includes(from))aliases.push([from,m[0]]);
   }
   for(const m of chapter.narration.matchAll(/\p{Script=Han}{2}[进近]\p{Script=Han}{2}/gu)){
-    const from=m[0].slice(0,2)+(m[0][2]==='进'?'近':'进')+m[0].slice(3);if(!chapter.narration.includes(from))aliases.push([from,m[0]]);
+    const chars=[...m[0]],from=chars.slice(0,2).join('')+(chars[2]==='进'?'近':'进')+chars.slice(3).join('');if(!chapter.narration.includes(from))aliases.push([from,m[0]]);
   }
   for(const group of ['像项象','是式'])for(const m of chapter.narration.matchAll(new RegExp(`\\p{Script=Han}{2}[${group}]\\p{Script=Han}{2}`,'gu')))for(const homophone of group){
-    const from=m[0].slice(0,2)+homophone+m[0].slice(3);if(from!==m[0]&&!chapter.narration.includes(from))aliases.push([from,m[0]]);
+    const chars=[...m[0]],from=chars.slice(0,2).join('')+homophone+chars.slice(3).join('');if(from!==m[0]&&!chapter.narration.includes(from))aliases.push([from,m[0]]);
   }
   for(const match of spokenLessonText(chapter.narration).matchAll(/(?:残差|误差|伽马为|伽马等于)[一二三四五六七八九]时/g))aliases.push([match[0].slice(0,-1)+'十',match[0]]);
   const active=aliases.filter(([from,term])=>!chapter.narration.includes(from)&&(chapter.narration.includes(term)||spokenLessonText(chapter.narration).includes(term))).sort((a,b)=>b[0].length-a[0].length);const corrections=new Set<string>();
@@ -354,7 +359,7 @@ export function correctLessonTranscript(chapter:LessonChapter,analysis:AudioAnal
     const base=sourceBase;sourceBase+=sentence.words.length;
     const chars=sentence.words.flatMap((w,index)=>[...w.text].map((text,i,all)=>({text,start:w.start+(w.end-w.start)*i/all.length,end:w.start+(w.end-w.start)*(i+1)/all.length,owner:base+index})));
     const heard=chars.map(c=>c.text).join(''),replacements:Array<{start:number;length:number;term:string}>=[];
-    for(const [from,to] of active){let at=heard.indexOf(from);while(at>=0){if(!replacements.some(r=>at<r.start+r.length&&at+from.length>r.start)){replacements.push({start:at,length:from.length,term:to});corrections.add(from+'→'+to);}at=heard.indexOf(from,at+from.length);}}
+    for(const [from,to] of active){let utf16=heard.indexOf(from);const length=[...from].length;while(utf16>=0){const at=speechPointOffset(heard,utf16);if(!replacements.some(r=>at<r.start+r.length&&at+length>r.start)){replacements.push({start:at,length,term:to});corrections.add(from+'→'+to);}utf16=heard.indexOf(from,utf16+from.length);}}
     if(!replacements.length){sourceOwners.push(...sentence.words.map((_,i)=>base+i));return sentence;}
     const words:typeof sentence.words=[];
     for(let i=0;i<chars.length;){
@@ -399,7 +404,7 @@ function lessonSpeechCharacters(analysis:AudioAnalysis){
   // ASR can split a number at every syllable. Normalize across token boundaries
   // and preserve the original heard span and word owners for captions/cues.
   for(const match of text.matchAll(speechNumberForms())){
-    const start=match.index!,length=match[0].length;
+    const start=speechPointOffset(text,match.index!),length=[...match[0]].length;
     result.push(...raw.slice(position,start));
     const value=canonicalSpeechNumber(match[0]).replace(/\./g,'');
     [...value].forEach((char,i)=>{
@@ -410,20 +415,22 @@ function lessonSpeechCharacters(analysis:AudioAnalysis){
   }
   return [...result,...raw.slice(position)].filter(c=>c.char!=='\0');
 }
+/** onMatch start/end index Unicode code points in heard, not UTF-16 units. */
 export function lessonCaptionAnalysis(chapter:LessonChapter,analysis:AudioAnalysis,onMatch?:(start:number,end:number,heard:string)=>void):AudioAnalysis{
   // Match literal clauses first, then equivalent numeric spellings in a
   // bounded heard span. Normalizing the entire ASR could join numbers across
   // a verified clause boundary ("损失零；零点五"). Never change heard words.
   const words=analysis.sentences.flatMap(s=>s.words),chars=words.flatMap((w,owner)=>[...compactSpeech(w.text,false)].map(char=>({char,owner})));
   const digits:Record<string,string>={'零':'0','〇':'0','一':'1','二':'2','三':'3','四':'4','五':'5','六':'6','七':'7','八':'8','九':'9'};
-  for(const m of chars.map(c=>c.char).join('').matchAll(/[零〇一二三四五六七八九]{3,}/g))for(let i=0;i<m[0].length;i++)chars[m.index!+i].char=digits[chars[m.index!+i].char];
-  const heard=chars.map(c=>c.char).join(''),breaks:number[]=[];let position=0;
+  const digitText=chars.map(c=>c.char).join('');
+  for(const m of digitText.matchAll(/[零〇一二三四五六七八九]{3,}/g)){const start=speechPointOffset(digitText,m.index!);for(let i=0;i<[...m[0]].length;i++)chars[start+i].char=digits[chars[start+i].char];}
+  const heard=chars.map(c=>c.char).join(''),heardPoints=[...heard],breaks:number[]=[];let position=0;
   for(const clause of spokenLessonText(chapter.narration).split(/[，,；;。!?！？：:]|(?<!\d)\.|\.(?!\d)/)){
-    const phrase=compactSpeech(clause,false);if(phrase.length<3)continue;let start=heard.indexOf(phrase,position),length=phrase.length;
+    const phrase=compactSpeech(clause,false),phraseLength=[...phrase].length;if(phraseLength<3)continue;let start=speechPointIndexOf(heard,phrase,position),length=phraseLength;
     if(start<0&&/\d|点/.test(clause)){
       const canonical=compactSpeech(clause);
-      findNumber:for(let from=position;from<heard.length;from++)for(let end=from+1;end<=Math.min(heard.length,from+phrase.length*3+16);end++){
-        if(compactSpeech(heard.slice(from,end))===canonical){start=from;length=end-from;break findNumber;}
+      findNumber:for(let from=position;from<heardPoints.length;from++)for(let end=from+1;end<=Math.min(heardPoints.length,from+phraseLength*3+16);end++){
+        if(compactSpeech(heardPoints.slice(from,end).join(''))===canonical){start=from;length=end-from;break findNumber;}
       }
     }
     if(start<0)continue;
@@ -493,8 +500,8 @@ export function alignLessonSpeech(chapter:LessonChapter,analysis:AudioAnalysis):
   assertNarrationHanCoverage(chapter.id,expected,mapped,{numbersVerified:true});
   const joined=expected.join('');
   const cues=chapter.visual.items.map((item,index)=>{
-    const cue=compactSpeech(item.cue),start=joined.indexOf(cue);const indices=Array.from({length:cue.length},(_,k)=>mapped.get(start+k)).filter((k):k is number=>k!==undefined);
-    if(start<0||indices.length<Math.ceil(cue.length*.75))throw new Error(`动画原词「${item.cue}」未能与实际旁白对齐。`);
+    const cue=compactSpeech(item.cue),length=[...cue].length,start=speechPointIndexOf(joined,cue);const indices=Array.from({length},(_,k)=>mapped.get(start+k)).filter((k):k is number=>k!==undefined);
+    if(start<0||indices.length<Math.ceil(length*.75))throw new Error(`动画原词「${item.cue}」未能与实际旁白对齐。`);
     return {text:originalCues[index],start:+(literalClockCues[index]?.start??heard[indices[0]].start).toFixed(3),end:+(literalClockCues[index]?.end??heard[indices.at(-1)!].end).toFixed(3)};
   });
   return {similarity:+similarity.toFixed(4),cues};

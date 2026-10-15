@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
-import { ensureReleaseEvaluationFixtures, releaseEvaluationFixtureContext, releaseFixtureCues, releaseFixtureStoryboard, RELEASE_FIXTURE_CAPTION_ZONE, RELEASE_FIXTURE_VERSION } from '../server/releaseEvaluationFixtures';
+import { ensureReleaseEvaluationFixtures, releaseEvaluationFixtureContent, releaseEvaluationFixtureContext, releaseFixtureCues, releaseFixtureStoryboard, RELEASE_FIXTURE_CAPTION_ZONE, RELEASE_FIXTURE_VERSION } from '../server/releaseEvaluationFixtures';
 import { createEvaluations, evaluationFileHash } from '../server/evaluations';
 import { runFFmpeg } from '../server/core';
 import type { ModelConfig } from '../server/modelRegistry';
@@ -20,6 +20,29 @@ test('controlled diagrams describe actual source capabilities and carry synchron
   }
   const timing=releaseFixtureCues(1,18,[{text:'保持比较条件一致',start:2,end:4},{text:'再看差异',start:4.3,end:5.2},{text:'结论应当由证据支持',start:10.3,end:12}],.3);
   assert.equal(timing.method,'reused-recognized-word-timing');assert.equal(timing.cues[1].start,4);assert.equal(timing.cues[2].start,10);
+});
+
+test('editing-case capabilities distinguish reference speech from actual visual labels without asserting ASR completeness',()=>{
+  const content=releaseEvaluationFixtureContent(),context=releaseEvaluationFixtureContext();
+  assert.equal(content.length,2);
+  assert.equal(content[0].spoken.script,'观察一个现象时，先记录看到了什么，再提出可能的解释。这段画面是程序绘制的示意，不是真实现场。把观察和推测分开，可以让表达更清楚，也让后续核验有明确的方向。');
+  assert.equal(content[1].spoken.script,'比较两个方案时，要先保持比较条件一致，再看差异来自哪里。这段画面也是程序绘制的示意。结论应当由证据支持，暂时没有把握的部分，需要保留限制，不能把猜测说成事实。');
+  assert.match(content[0].spoken.script,/可能的解释/);
+  assert.doesNotMatch(content[0].spoken.script,/重复观[察测]|候选原因/);
+  assert.deepEqual(content[0].visual.visualOnlyConcepts,['重复观察（重复观测）']);
+  assert(content[0].visual.labels.includes('重复观察，核验解释'));
+  assert(content[1].visual.labels.includes('未知部分保留限制'));
+  for(const source of content){
+    assert.equal(source.spoken.provenance,'synthesis-script-not-current-file-asr');
+    assert(!('complete' in source.spoken),'the intended script must not manufacture recognized complete-sentence evidence');
+    const actual=releaseFixtureStoryboard(source.source-1,18);
+    for(const label of source.visual.labels)assert(actual.labels.includes(label),`capability label ${label} must really be drawn`);
+  }
+  assert.match(context,/不是本次素材已经通过ASR的完整句证明/);
+  assert.match(context,/不能当成原声台词/);
+  assert.match(context,/原话“可能的解释”表达同一意思/);
+  assert.match(context,/不要强制选入特定台词、末句或每个阶段的完整句/);
+  assert.doesNotMatch(context,/配有完整普通话原声/);
 });
 test('essential diagram conclusions and limitations stay outside the final subtitle band',()=>{
   const essential=[['观察 ≠ 推测','重复观察，核验解释'],['证据支持的结论','未知部分保留限制']];

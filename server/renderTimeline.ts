@@ -47,6 +47,11 @@ export function createAss(plan: EditPlan, layout?:TimelineTextLayout): string {
   return header + (plan.captions || []).map((c,index) => event(c, 0,index)).concat((plan.overlays || []).map((c,index) => event(c, 1,index))).join('\n') + '\n';
 }
 
+// FFmpeg 4.4 lacks alimiter's newer latency option. At the explicit 44.1 kHz
+// rate its 5 ms lookahead delays 219 samples. Flush those buffered tail samples
+// before removing only the added head delay, preserving the original word grid.
+export const FINAL_AUDIO_LIMITER_FILTER='aformat=sample_rates=44100:channel_layouts=stereo,apad=pad_len=219,alimiter=attack=5:limit=0.95:level=0,atrim=start_sample=219,asetpts=PTS-STARTPTS';
+
 export async function renderTimeline(inputPlan: EditPlan, media: MediaItem[], mediaDir: string, exportDir: string, narrationFile?: string, bgmFile?: string): Promise<{ id: string; file: string }> {
   const plan = validateTimeline(inputPlan, media);
   const id = randomUUID(); const tempDir = path.join(exportDir, `tmp-${id}`);
@@ -164,7 +169,7 @@ export async function renderTimeline(inputPlan: EditPlan, media: MediaItem[], me
       const log=await runFFmpeg(['-hide_banner','-nostats',...inputs,'-filter_complex_threads','1','-filter_complex',[...tracks,`${mix},loudnorm=I=-16:TP=-1.5:LRA=7:print_format=json[measure]`].join(';'),'-map','[measure]','-t',String(plan.targetSeconds),'-f','null','-']);
       mixMeasurement=parseLoudness(log);if(mixMeasurement.integrated!==null)mixNormalize=twoPassLoudnorm(mixMeasurement)+',';
     }
-    tracks.push(`${mix},${mixNormalize}alimiter=limit=0.95:level=0[a]`);
+    tracks.push(`${mix},${mixNormalize}${FINAL_AUDIO_LIMITER_FILTER}[a]`);
     const hasText = Boolean(plan.captions?.length || plan.overlays?.length);
     const assFile = path.join(tempDir, 'timeline.ass');
     if (hasText) await writeFile(assFile, createAss(plan,textLayout));

@@ -34,39 +34,58 @@ async function atomicJson(file: string, value: unknown) {
   await rename(tmp, file);
 }
 
+const transcriptActual=(value:unknown):string=>value===null?'null':Array.isArray(value)?`array(length=${value.length})`:typeof value==='string'?`string(length=${value.length})`:typeof value==='number'?`number(${String(value)})`:typeof value;
+function transcriptSentences(raw:unknown):unknown[]{
+  if(!raw||typeof raw!=='object'||Array.isArray(raw))throw new Error(`音频理解格式无效：$必须为object；实际${transcriptActual(raw)}。`);
+  const sentences=(raw as {sentences?:unknown}).sentences;
+  if(!Array.isArray(sentences))throw new Error(`音频理解格式无效：sentences必须为array；实际${transcriptActual(sentences)}。`);
+  if(sentences.length>200)throw new Error(`音频理解句子数超出范围：sentences.length实际${sentences.length}，必须≤200。`);
+  return sentences;
+}
+function transcriptFields(item:unknown,index:number,requireText=true):{sentence:Record<string,unknown>;words:Array<Record<string,unknown>>}{
+  const at=`sentences[${index}]`;
+  if(!item||typeof item!=='object'||Array.isArray(item))throw new Error(`音频理解句子格式无效：${at}必须为object；实际${transcriptActual(item)}。`);
+  const s=item as Record<string,unknown>,issues:string[]=[];
+  if(requireText&&(typeof s.text!=='string'||!s.text.trim()))issues.push(`${at}.text必须为非空string；实际${transcriptActual(s.text)}`);
+  if(typeof s.complete!=='boolean')issues.push(`${at}.complete必须为boolean（true或false）；实际${transcriptActual(s.complete)}`);
+  if(!Array.isArray(s.words)||!s.words.length||s.words.length>500)issues.push(`${at}.words必须为长度1–500的array；实际${transcriptActual(s.words)}`);
+  else for(const [wordIndex,item]of s.words.entries()){
+    const wordAt=`${at}.words[${wordIndex}]`;
+    if(!item||typeof item!=='object'||Array.isArray(item))issues.push(`${wordAt}必须为object；实际${transcriptActual(item)}`);
+    else{const text=(item as Record<string,unknown>).text;if(typeof text!=='string'||!text.trim()||text.length>30)issues.push(`${wordAt}.text必须为非空string且长度≤30；实际${transcriptActual(text)}`);}
+    if(issues.length>=8)break;
+  }
+  if(issues.length)throw new Error('音频理解字词/句子格式无效：'+issues.join('；')+'。不得补字或推断complete，须依据原音返回有效字段。');
+  return{sentence:s,words:s.words as Array<Record<string,unknown>>};
+}
+
 export function validateTranscript(raw: unknown, duration: number): Omit<TranscriptSentence, 'id'>[] {
-  if (!raw || typeof raw !== 'object' || !Array.isArray((raw as { sentences?: unknown }).sentences)) throw new Error('音频理解结果缺少 sentences。');
-  const sentences = (raw as { sentences: unknown[] }).sentences;
-  if (sentences.length > 200) throw new Error('音频理解句子数超出范围。');
+  const sentences=transcriptSentences(raw);
   let priorEnd = 0;
-  const range = (r: Record<string, unknown>, low: number, high: number): TimeRange => {
+  const range = (r: Record<string, unknown>, low: number, high: number,at:string): TimeRange => {
     // Some provider responses encode decimal seconds as JSON strings. Parse
     // only literal decimal values; retain every range/ordering constraint and
     // never infer a missing time from text or planned narration.
     const seconds=(v:unknown)=>typeof v==='string'&&/^-?\d+(?:\.\d+)?$/.test(v)?Number(v):v;
     const start=seconds(r.start),end=seconds(r.end);
-    if (typeof start !== 'number' || typeof end !== 'number' || !Number.isFinite(start) || !Number.isFinite(end) || start < low - 0.08 || end > high + 0.08 || end <= start) throw new Error(`音频理解时间码越界、倒序或格式无效：start=${JSON.stringify(r.start)}（${typeof r.start}），end=${JSON.stringify(r.end)}（${typeof r.end}），有效范围${low.toFixed(3)}–${high.toFixed(3)}秒；须满足start≥前词end，end>start且不超出音频。`);
+    const invalid=typeof start!=='number'||!Number.isFinite(start)?`${at}.start必须为有限number或字面十进制string`:typeof end!=='number'||!Number.isFinite(end)?`${at}.end必须为有限number或字面十进制string`:start<low-.08?`${at}.start必须≥${(low-.08).toFixed(3)}`:end>high+.08?`${at}.end必须≤${(high+.08).toFixed(3)}`:end<=start?`${at}.end必须>${at}.start`:undefined;
+    if(invalid)throw new Error(`音频理解时间码越界、倒序或格式无效：${invalid}；${at}.start实际${transcriptActual(r.start)}，${at}.end实际${transcriptActual(r.end)}；有效范围${low.toFixed(3)}–${high.toFixed(3)}秒，仅保留原0.08秒边缘容差，须满足顺序且不超出音频。`);
     // Only tolerate encoding/decimal rounding at an edge, never repair drift.
-    return { start: round(Math.max(low, start)), end: round(Math.min(high, end)) };
+    return { start: round(Math.max(low, start as number)), end: round(Math.min(high, end as number)) };
   };
-  return sentences.map((item) => {
-    if (!item || typeof item !== 'object') throw new Error('音频理解句子格式无效。');
-    const s = item as Record<string, unknown>;
-    if (typeof s.text !== 'string' || !s.text.trim() || typeof s.complete !== 'boolean' || !Array.isArray(s.words) || !s.words.length || s.words.length > 500) throw new Error('音频理解缺少原话、字词时间码或句子完整性标识。');
-    const r = range(s, priorEnd, duration);
+  return sentences.map((item,index) => {
+    const {sentence:s,words:sourceWords}=transcriptFields(item,index),at=`sentences[${index}]`;
+    const r = range(s, priorEnd, duration,at);
     let wordEnd = r.start;
-    const words = s.words.map((item): TranscriptWord => {
-      if (!item || typeof item !== 'object') throw new Error('字词时间码格式无效。');
-      const w = item as Record<string, unknown>;
-      if (typeof w.text !== 'string' || !w.text.trim() || w.text.length > 30) throw new Error(`字词内容无效（text类型${typeof w.text}，长度${typeof w.text === 'string' ? w.text.length : 0}）。`);
-      const wr = range(w, wordEnd, r.end); wordEnd = wr.end;
-      if (wr.end <= wr.start) throw new Error('字词时间码重叠。');
-      return { ...wr, text: w.text };
+    const words = sourceWords.map((w,wordIndex): TranscriptWord => {
+      const wordAt=`${at}.words[${wordIndex}]`,wr = range(w, wordEnd, r.end,wordAt); wordEnd = wr.end;
+      if (wr.end <= wr.start) throw new Error(`字词时间码重叠：${wordAt}.end必须>${wordAt}.start（边缘取整后亦须有效）。`);
+      return { ...wr, text: w.text as string };
     });
-    if (cleanText(words.map((w) => w.text).join('')) !== cleanText(s.text)) throw new Error('字词稿与句子原话不一致。');
-    if (r.end <= r.start) throw new Error('句子时间码无效。');
+    if (cleanText(words.map((w) => w.text).join('')) !== cleanText(s.text as string)) throw new Error(`字词稿与句子原话不一致：${at}.words[*].text按原序连接后必须与${at}.text一致（仅忽略既有空白和标点）。`);
+    if (r.end <= r.start) throw new Error(`句子时间码无效：${at}.end必须>${at}.start（边缘取整后亦须有效）。`);
     priorEnd = r.end;
-    return { ...r, text: s.text, complete: s.complete, words };
+    return { ...r, text: s.text as string, complete: s.complete as boolean, words };
   });
 }
 
@@ -235,11 +254,11 @@ export async function transcribe(bytes: Buffer, duration: number, config: ModelC
     throw new AudioTranscriptOutputError({durationSeconds:duration,maxTokens:10000,...(Number.isInteger(tokens)&&tokens!>=0?{completionTokens:tokens}:{}),outputCharacters:choice.message?.content?.length||0,finishReason:'length'});
   }
   const content = choice?.message?.content?.replace(/^```(?:json)?\s*|\s*```$/g, '') || '';
-  const raw = JSON.parse(content) as { sentences?: Array<{ complete?: boolean; words?: TranscriptWord[] }> };
-  const normalized = { sentences: raw.sentences?.map((sentence) => ({
-    ...sentence, start: sentence.words?.[0]?.start, end: sentence.words?.at(-1)?.end,
-    text: sentence.words?.map((w) => w.text).join(''),
-  })) };
+  const raw:unknown = JSON.parse(content);
+  const normalized = { sentences: transcriptSentences(raw).map((item,index) => {
+    const {sentence,words}=transcriptFields(item,index,false);
+    return{...sentence,start:words[0].start,end:words.at(-1)!.end,text:words.map(w=>w.text).join('')};
+  }) };
   return validateTranscript(normalized, duration);
 }
 

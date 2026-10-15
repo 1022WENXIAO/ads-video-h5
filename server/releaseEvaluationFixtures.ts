@@ -22,8 +22,24 @@ const lines = [
   '比较两个方案时，要先保持比较条件一致，再看差异来自哪里。这段画面也是程序绘制的示意。结论应当由证据支持，暂时没有把握的部分，需要保留限制，不能把猜测说成事实。',
 ];
 const hash = (value: string | Buffer) => createHash('sha256').update(value).digest('hex');
+
+/** The synthesis script describes intended speech, not recognized complete
+ * sentences in a particular cached MP4. Keep picture capabilities separate so
+ * the case generator cannot turn a visual label into required spoken words. */
+export function releaseEvaluationFixtureContent() {
+  const visuals = [
+    { summary: '小球运动、位置记录、斜坡/外力两种候选解释和重复观察图解，展示观察→解释→证据。', labels: ['观察 ≠ 推测','可能的解释','斜坡？','外力？','重复观察，核验解释'], visualOnlyConcepts: ['重复观察（重复观测）'] },
+    { summary: '相同起点、相同计时的双轨道小车对比，展示条件一致→比较→结论，并标注证据边界。', labels: ['相同起点 · 相同计时','同一条件','证据支持的结论','未知部分保留限制'], visualOnlyConcepts: [] },
+  ];
+  return lines.map((script,index) => ({
+    source: index + 1,
+    spoken: { provenance: 'synthesis-script-not-current-file-asr' as const, script },
+    visual: visuals[index],
+  }));
+}
+
 export function releaseEvaluationFixtureContext() {
-  return '两段素材均为横屏动态图解，配有完整普通话原声，明确标注程序示意、非真实现场。第一段以小球运动、观测轨迹、候选原因和重复观测展示“观察→解释→证据”，强调把观察和推测分开；第二段以同条件双轨道、小车对比和证据边界展示“条件一致→比较→结论”，强调保留不确定限制。可以做这两种方法的说明、对照或重点精剪；没有真人、品牌产品、实景、采访或具体新闻事件画面，不应要求不存在的内容。';
+  return `两段素材均为横屏动态图解，带普通话原声，画面明确标注程序示意、非真实现场。素材内容按声音与画面分开：${JSON.stringify(releaseEvaluationFixtureContent())}。spoken.script只是生成原声时的参考台词，不是本次素材已经通过ASR的完整句证明；可选完整原句与可剪时长必须以实际文件分析为准。visual及visualOnlyConcepts描述画面，不能当成原声台词：第一段“重复观察（重复观测）”仅在画面中表达，没有说出这几个字；“候选原因”是画面的概括，原话“可能的解释”表达同一意思，不能要求字面出现“候选原因”。发题可要求两种方法的说明、对照或重点精剪，以及保留某种已有画面，但不要强制选入特定台词、末句或每个阶段的完整句；用实际合格完整原句表达核心主题即可，不要求保留所有内容。没有真人、品牌产品、实景、采访或具体新闻事件画面，不应要求不存在的内容。`;
 }
 
 type WordTiming = { text: string; start: number; end: number };

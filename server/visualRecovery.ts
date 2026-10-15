@@ -1,4 +1,25 @@
-import type { LessonChapter, LessonReport, RenderReview, NewsPublicationAnnotation } from '../src/types';
+import type { EditPlan, LessonChapter, LessonReport, RenderReview, NewsPublicationAnnotation } from '../src/types';
+
+// A measured level problem is repaired by rendering the existing verified
+// sources again, not by rewriting or resynthesizing the lesson. Missing sound,
+// uncertain listening, audible distortion and factual/speech defects do not
+// qualify for this narrow route.
+export function audioLevelOnlyRepair(review:RenderReview,plan?:EditPlan):boolean{
+  if(review.status!=='needs-review'||plan?.audio?.normalize!==true||!plan.lesson?.factReview||plan.lesson.factReview.needsRepair)return false;
+  const levels=['分段人声响度一致性','段落衔接音量跳变','段内音量稳定性','声音峰值与削波'];
+  const failed=review.checks.filter(c=>!c.passed);
+  if(!failed.length||failed.some(c=>!levels.includes(c.name))||levels.some(name=>review.checks.filter(c=>c.name===name).length!==1))return false;
+  for(const name of ['画幅与音轨','教学事实与来源','完整句子','字幕原话','人声响度','段落音色一致性','成片语义审查'])if(review.checks.filter(c=>c.name===name&&c.passed).length!==1)return false;
+  if(!review.semantic||!Number.isFinite(review.semantic.score)||review.semantic.score<80||review.semantic.findings.length)return false;
+  const audio=review.audio,ids=plan.clips.map((c,i)=>c.sceneId||`clip-${i+1}`),finite=(v:unknown)=>typeof v==='number'&&Number.isFinite(v);
+  if(!audio||audio.userReportedMismatch||audio.segments.length!==ids.length||new Set(ids).size!==ids.length||new Set(audio.segments.map(s=>s.id)).size!==ids.length||audio.segments.some(s=>!ids.includes(s.id)||![s.integratedLufs,s.truePeakDb,s.voicedSpreadLu].every(finite)||(s.truePeakDb??0)>=0))return false;
+  if(!finite(audio.segmentSpreadLu)||audio.jumps.length!==Math.max(0,ids.length-1)||audio.jumps.some(j=>!finite(j.integratedDeltaLu)))return false;
+  const voice=audio.voice;
+  if(voice?.consistency.status!=='passed'||voice.segments.length!==ids.length||new Set(voice.segments.map(s=>s.id)).size!==ids.length||voice.segments.some(s=>!ids.includes(s.id)||s.status!=='passed'))return false;
+  const evidence=[...failed.map(c=>c.detail),voice.consistency.detail,...voice.segments.map(s=>s.detail)].join('\n');
+  if(/存在(?:可闻)?(?:削波|失真|爆音|破音)|(?:发生|出现)(?:了)?(?:削波|失真|爆音|破音)|(?:^|[，。；:：\s])(?:明显|严重|可闻)(?:削波|失真|爆音|破音)|音轨缺失|缺少音轨|没有有效人声/.test(evidence))return false;
+  return true;
+}
 
 // A renderer limitation can be solved without rewriting verified narration.
 // Ambiguous factual, text or audio findings still use the script/audio repair.

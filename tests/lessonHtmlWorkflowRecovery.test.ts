@@ -79,3 +79,38 @@ for(const unsafe of [false,true])test('HTML workflow ' + (unsafe?'stops at scene
     for(const[file,hash]of speechHashes)assert.equal(hashBytes(await readFile(file)),hash);
   }finally{globalThis.fetch=original;await rm(directory,{recursive:true,force:true});}
 });
+
+for(const repairedStatus of ['passed','needs-review'] as const)test('level-only repair preserves verified script, sources and voice, then independently reviews one new candidate: '+repairedStatus,async()=>{
+  const directory=await mkdtemp(path.join(tmpdir(),'qingjian-level-workflow-')),original=globalThis.fetch;
+  const {o,checkpoint,work}=await seedRendered(directory);
+  Object.assign(checkpoint,{rendererHash:lessonRendererHash()});
+  checkpoint.plan.audio={...checkpoint.plan.audio,normalize:true};
+  await writeFile(path.join(work,'checkpoint.json'),JSON.stringify(checkpoint));
+  const canonical=(value:unknown)=>JSON.parse(JSON.stringify(value));
+  const before=canonical(checkpoint.plan),oldHash=hashBytes(await readFile(checkpoint.rendered.file)),events:WorkflowEvent[]=[];
+  let renderCalls=0,reviewCalls=0;
+  const review=(status:'passed'|'needs-review'):RenderReview=>({
+    status,score:status==='passed'?94:85,createdAt:new Date().toISOString(),limitations:[],
+    checks:['画幅与音轨','教学事实与来源','完整句子','字幕原话','人声响度','段落音色一致性','成片语义审查','分段人声响度一致性','段落衔接音量跳变','段内音量稳定性','声音峰值与削波'].map(name=>({name,passed:status==='passed'||name!=='段内音量稳定性',detail:name==='段内音量稳定性'?'c0有声窗8.1LU，限值8LU。':'受控独立检查通过'})),
+    semantic:{score:94,findings:[],suggestions:[]},
+    audio:{segments:checkpoint.plan.clips.map((clip,i)=>({id:clip.sceneId!,integratedLufs:-16,truePeakDb:-2,voicedSpreadLu:i===0&&status!=='passed'?8.1:7})),segmentSpreadLu:0,jumps:checkpoint.plan.clips.slice(1).map((clip,i)=>({from:checkpoint.plan.clips[i].sceneId!,to:clip.sceneId!,integratedDeltaLu:0})),voice:{consistency:{status:'passed',detail:'实际审听声线一致。'},segments:checkpoint.plan.clips.map(clip=>({id:clip.sceneId!,status:'passed',detail:'完整人声清楚，无明显失真。'}))}},
+  } as RenderReview);
+  globalThis.fetch=async()=>{throw new Error('Level-only repair must not call script, TTS, ASR or drawing providers');};
+  try{
+    const result=await runLessonWorkflow({...o,
+      progress:async(updates:WorkflowEvent[])=>{events.splice(0,events.length,...updates);},
+      authorVisual:async()=>{throw new Error('Level-only repair must not redraw verified scenes');},
+      produceScene:async()=>{throw new Error('Level-only repair must reuse verified scene files');},
+      render:async(plan)=>{renderCalls++;assert.deepEqual(canonical(plan),before);const file=path.join(directory,'remastered-fixture.mp4');await writeFile(file,'CONTROLLED new candidate, not actual audio/video acceptance');return{id:'remastered-fixture',file};},
+      review:async(file,plan)=>{reviewCalls++;assert.deepEqual(canonical(plan),before);assert.equal(file,reviewCalls===1?checkpoint.rendered.file:path.join(directory,'remastered-fixture.mp4'));return review(reviewCalls===1?'needs-review':repairedStatus);},
+    });
+    assert.equal(renderCalls,1);assert.equal(reviewCalls,2);assert.equal(result.review!.status,repairedStatus);
+    const saved=JSON.parse(await readFile(path.join(work,'checkpoint.json'),'utf8'));
+    assert.equal(saved.renders,2);assert.equal(saved.phase,'done');assert.deepEqual(saved.plan,before);assert.deepEqual(saved.report,canonical(checkpoint.report));
+    assert.equal(hashBytes(await readFile(checkpoint.rendered.file)),oldHash);
+    const provenance=JSON.parse(await readFile(path.join(work,'audio-level-recovery.json'),'utf8'));
+    assert.equal(provenance.sourceCandidateHash,oldHash);assert.equal(provenance.sourcePlanHash,hashBytes(JSON.stringify(before)));
+    assert.equal(provenance.preservedAudioSources,true);assert.equal(provenance.preservedVoice,true);
+    assert.equal(events.some(event=>['synthesize_narration','synthesize_chapter','transcribe_chapter','revise_lesson_script','draw_lesson_scenes'].includes(event.tool)),false);
+  }finally{globalThis.fetch=original;await rm(directory,{recursive:true,force:true});}
+});

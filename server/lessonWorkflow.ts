@@ -10,9 +10,10 @@ import { getModelConfig, type ModelConfig } from './modelRegistry';
 import { getAgent, probeAudio, runFFmpeg, validatePlan, textThinking } from './core';
 import { mergeResearch, researchGaps } from './narrativeResearch';
 import { hashBytes, authorDrawing, type HtmlDrawing } from './narrativeScenes';
-import { visualRepairTargets, speechOnlyRepair, lessonVisualBrief } from './visualRecovery';
+import { audioLevelOnlyRepair, visualRepairTargets, speechOnlyRepair, lessonVisualBrief } from './visualRecovery';
 import { recoverLessonHtml } from './lessonHtmlRecovery';
 import { nativeLessonFallbackAllowed } from './lessonHtmlFallbackPolicy';
+import { sourcePronunciationHints, sourcePronunciationPrompt } from './lessonPronunciation';
 import { alignLessonSpeech, compactSpeech, lessonSettings, lessonPacing, lessonPadding, lessonNarrationBudget, lessonScriptBudget, lessonScriptBudgetInstruction, assertLessonScriptBudget, validateLesson, spokenLessonText, lessonSpeechLexicon, correctLessonTranscript, lessonCaptionAnalysis, applyLessonChapterRepairs, lessonRepairTargets } from './lessonSpec';
 import { produceLessonScene, NEWS_ILLUSTRATIONS, lessonRendererHash } from './lessonScenes';
 import { loadEditingSkill, loadMotionDesignContext } from './skills';
@@ -314,6 +315,16 @@ export async function runLessonWorkflow(o:Options){
       const file=path.join(work,'voice-seed.mp3');await writeFile(file,seed,{mode:0o600});const duration=await probeAudio(file);await runFFmpeg(['-v','error','-y','-i',file,'-t',String(Math.min(20,duration)),'-ar','24000','-ac','1',anchorFile]);anchor=await readFile(anchorFile);await writeFile(path.join(work,'voice-anchor.json'),JSON.stringify({seedKey,hash:hashBytes(anchor)}),{mode:0o600});
     }
     const reference=anchor,anchorHash=hashBytes(reference);
+    const pronunciationFor=(chapter:LessonChapter)=>{const hints=sourcePronunciationHints(chapter,report!.references);return {hints,prompt:sourcePronunciationPrompt(hints)};};
+    const rawSpeechKey=(chapter:LessonChapter)=>{const pronunciation=pronunciationFor(chapter);return hashBytes(JSON.stringify({line:spokenLessonText(chapter.narration),model:audioConfig.modelId,anchorHash,voiceRevision,chapterRevision:chapterVoiceRevisions[chapter.id]||0,voiceStyle,...(pronunciation.prompt?{pronunciation:pronunciation.prompt}:{})}));};
+    const persistRawSpeech=async(chapter:LessonChapter,file:string,confirmed?:Buffer)=>{
+      const bytes=await readFile(file);if(!bytes.length||confirmed&&!bytes.equals(confirmed))throw new Error('已确认的旁白字节未完整写入原音频，不能标记缓存完成。');
+      const pronunciation=pronunciationFor(chapter);await writeFile(path.join(path.dirname(file),'raw-speech.json'),JSON.stringify({key:rawSpeechKey(chapter),hash:hashBytes(bytes),...(pronunciation.hints.length?{pronunciationHints:pronunciation.hints}:{})}),{mode:0o600});
+    };
+    const writeRawSpeech=async(chapter:LessonChapter,file:string,bytes:Buffer)=>{
+      if(!Buffer.isBuffer(bytes)||!bytes.length)throw new Error('旁白未返回已确认的有效音频字节，不能标记缓存完成。');
+      await writeFile(file,bytes,{mode:0o600});await persistRawSpeech(chapter,file,bytes);
+    };
     const prepareChapterSpeech=async(chapter:LessonChapter,file:string,preparedFile:string)=>{
       // Preserve every paid take before any later retry replaces the active file.
       const {hash:takeHash}=await preserveLessonSpeechTake(file);
@@ -330,16 +341,16 @@ export async function runLessonWorkflow(o:Options){
       await runFFmpeg(['-v','error','-y','-i',pacedFile,'-ar','48000','-ac','1',adjusted]);
     };
     const raw=await mapLimited(report.chapters,2,async chapter=>{
-      const dir=path.join(work,chapter.id);await mkdir(dir,{recursive:true});const spoken=spokenLessonText(chapter.narration),file=path.join(dir,'raw-speech.mp3'),metaFile=path.join(dir,'raw-speech.json');const key=hashBytes(JSON.stringify({line:spoken,model:audioConfig.modelId,anchorHash,voiceRevision,chapterRevision:chapterVoiceRevisions[chapter.id]||0,voiceStyle}));let cached=false;
+      const dir=path.join(work,chapter.id);await mkdir(dir,{recursive:true});const spoken=spokenLessonText(chapter.narration),file=path.join(dir,'raw-speech.mp3'),metaFile=path.join(dir,'raw-speech.json'),pronunciation=pronunciationFor(chapter);const key=rawSpeechKey(chapter);let cached=false;
       try{const meta=JSON.parse(await readFile(metaFile,'utf8'));cached=meta.key===key&&meta.hash===hashBytes(await readFile(file));}catch(error){throwIfJobCancelled();if(!(error instanceof SyntaxError)&&(error as NodeJS.ErrnoException)?.code!=='ENOENT')throw error;}
-      if(!cached){const bytes=(await trace.run('synthesize_chapter',`合成旁白 · ${chapter.title}`,{chapterId:chapter.id,narration:spoken,anchorHash},()=>generateAudio(`使用@Audio1的同一说话者、音色、口音与录音环境。${voiceStyle} 台词：${spoken}`,audioConfig,reference))).bytes;await writeFile(file,bytes,{mode:0o600});await writeFile(metaFile,JSON.stringify({key,hash:hashBytes(bytes)}),{mode:0o600});}
+      if(!cached){const bytes=(await trace.run('synthesize_chapter',`合成旁白 · ${chapter.title}`,{chapterId:chapter.id,narration:spoken,anchorHash,...(pronunciation.hints.length?{pronunciationHints:pronunciation.hints}:{})},()=>generateAudio(`使用@Audio1的同一说话者、音色、口音与录音环境。${voiceStyle}${pronunciation.prompt?' '+pronunciation.prompt:''} 台词：${spoken}`,audioConfig,reference))).bytes;await writeRawSpeech(chapter,file,bytes);}
       const preparedFile=path.join(dir,'prepared-speech.wav');
       const prepare=()=>prepareChapterSpeech(chapter,file,preparedFile);
       await prepare();
       let gaps=await trace.run('inspect_speech_gaps',`检查旁白停顿 · ${chapter.title}`,{chapterId:chapter.id,maxPauseSeconds:pacing.maxPauseSeconds},()=>inspectLessonSpeechGaps(preparedFile,pacing.maxPauseSeconds));
       for(let retry=0;gaps.length&&retry<2;retry++){
-        const bytes=(await trace.run('synthesize_chapter',`重录长停顿 · ${chapter.title}`,{chapterId:chapter.id,gaps},()=>generateAudio(`使用@Audio1同一声音。${voiceStyle} 连续完整地朗读，句间停顿不超过${pacing.maxPauseSeconds}秒，不插入长空白。只朗读台词：${spoken}`,audioConfig,reference))).bytes;
-        await writeFile(file,bytes,{mode:0o600});cached=false;await prepare();gaps=await inspectLessonSpeechGaps(preparedFile,pacing.maxPauseSeconds);
+        const bytes=(await trace.run('synthesize_chapter',`重录长停顿 · ${chapter.title}`,{chapterId:chapter.id,gaps,...(pronunciation.hints.length?{pronunciationHints:pronunciation.hints}:{})},()=>generateAudio(`使用@Audio1同一声音。${voiceStyle}${pronunciation.prompt?' '+pronunciation.prompt:''} 连续完整地朗读，句间停顿不超过${pacing.maxPauseSeconds}秒，不插入长空白。只朗读台词：${spoken}`,audioConfig,reference))).bytes;
+        await writeRawSpeech(chapter,file,bytes);cached=false;await prepare();gaps=await inspectLessonSpeechGaps(preparedFile,pacing.maxPauseSeconds);
       }
       if(gaps.length){
         const key=hashBytes(chapter.id+chapter.narration+voiceRevision);
@@ -347,7 +358,7 @@ export async function runLessonWorkflow(o:Options){
         chapterVoiceRevisions[chapter.id]=(chapterVoiceRevisions[chapter.id]||0)+1;
         throw new Error(`章节${chapter.id}存在超出${pacing.maxPauseSeconds}秒的实测低能量停顿${JSON.stringify(gaps)}。${phase==='narration'?'保留已核验脚本与其他旁白，仅重录本章。':'本章重录后仍有长停顿，改写拗口表达再重录。'}不能靠静止画面掩盖。`);
       }
-      await writeFile(metaFile,JSON.stringify({key,hash:hashBytes(await readFile(file))}),{mode:0o600});
+      await persistRawSpeech(chapter,file);
       return {chapter,file,preparedFile,duration:await probeAudio(preparedFile),cached};
     });
     const rawSeconds=raw.reduce((n,c)=>n+c.duration,0),padding=lessonPadding(raw.length,pacing);
@@ -395,12 +406,12 @@ export async function runLessonWorkflow(o:Options){
             await writeFile(metaFile,JSON.stringify({hash,id:recheckItem.id}),{mode:0o600});
           }
           const {corrected,aligned}=checked,analysis=lessonCaptionAnalysis(chapter,corrected);chapter.speechMatch=aligned.similarity;chapter.cues=aligned.cues;speech.set(chapter.id,{file:adjusted,analysis});await writeFile(path.join(dir,'speech-analysis.json'),JSON.stringify(analysis,null,2),{mode:0o600});verified=true;break;
-        }catch(error){lastError=error;if(error instanceof NarrationAnalysisError)throw error;if(attempt===1||!/匹配|年份|原词|数学符号|数字|长停顿|重复字/.test(String(error))){if(/匹配|年份|原词|数学符号|数字|长停顿|重复字/.test(String(error)))phase='script';throw error;}
-          const spoken=spokenLessonText(chapter.narration);const result=await trace.run('synthesize_chapter',`重录错字 · ${chapter.title}`,{chapterId:chapter.id,narration:spoken,correction:String(error)},()=>generateAudio(`使用@Audio1同一声音。${voiceStyle} 上次核验发现：${String(error).slice(0,300)}。必须完整准确地朗读下面的文字，日期按汉字读法，小数每一位数字清楚读出，不能增删。只朗读台词，不朗读核验意见。台词：${spoken}`,audioConfig,reference));await writeFile(file,result.bytes,{mode:0o600});await prepareChapterSpeech(chapter,file,preparedFile);await adjustChapterSpeech(chapter,preparedFile,adjusted,tempo);
+        }catch(error){lastError=error;if(error instanceof NarrationAnalysisError)throw error;if(attempt===1||!/匹配|年份|原词|数学符号|数字|长停顿|重复字/.test(String(error))){if(/匹配|年份|原词|数学符号|数字|长停顿|重复字/.test(String(error))){phase='script';throw new Error(`${String(error)}；章节${chapter.id}已完成同一台词的有限复听和重录，下一步须定向改写拗口表达。保留已核验事实、数值含义、限定条件与用户明确要求；非必须逐字读出的难读专名可改为来源支持的通俗描述，并在图解或引用中保留正式名。明确要求念出专名或逐字保留的内容继续保留，优先使用已核验发音提示。不能将错误识别结果写成台词，也不能只缩短句子却原样重复导致失败的表达。`,{cause:error});}throw error;}
+          const spoken=spokenLessonText(chapter.narration),pronunciation=pronunciationFor(chapter);const result=await trace.run('synthesize_chapter',`重录错字 · ${chapter.title}`,{chapterId:chapter.id,narration:spoken,correction:String(error),...(pronunciation.hints.length?{pronunciationHints:pronunciation.hints}:{})},()=>generateAudio(`使用@Audio1同一声音。${voiceStyle}${pronunciation.prompt?' '+pronunciation.prompt:''} 上次核验发现：${String(error).slice(0,300)}。必须完整准确地朗读下面的文字，日期按汉字读法，小数每一位数字清楚读出，不能增删。只朗读台词，不朗读核验意见。台词：${spoken}`,audioConfig,reference));await writeRawSpeech(chapter,file,result.bytes);await prepareChapterSpeech(chapter,file,preparedFile);await adjustChapterSpeech(chapter,preparedFile,adjusted,tempo);
         }
       }
       if(!verified)throw lastError;
-      await writeFile(path.join(dir,'raw-speech.json'),JSON.stringify({key:hashBytes(JSON.stringify({line:spokenLessonText(chapter.narration),model:audioConfig.modelId,anchorHash,voiceRevision,chapterRevision:chapterVoiceRevisions[chapter.id]||0,voiceStyle})),hash:hashBytes(await readFile(file))}),{mode:0o600});
+      await persistRawSpeech(chapter,file);
     });
     const spokenCharacters=[...speech.values()].reduce((n,c)=>n+compactSpeech(c.analysis.transcript).length,0),spokenSeconds=[...speech.values()].reduce((n,c)=>n+c.analysis.duration,0);
     const rate=await trace.run('verify_narration_pacing','校验实际旁白语速',{spokenCharacters,spokenSeconds,pacing},async()=>{const result=lessonPacingCheck(spokenCharacters,spokenSeconds,pacing);if(!result.passed){phase='script';throw new Error(result.detail+'调整所有章节的实际信息密度并重新合成，不能仅凭目标时长放行。');}return result;});
@@ -462,6 +473,15 @@ export async function runLessonWorkflow(o:Options){
   });
   add('repair_lesson',current?'修复新闻成片':'返修教学脚本或声音','根据实际审查修复一次，重新生成受影响画面和声音，再审查真实新文件。',Type.Object({changes:Type.String()}),async a=>{
     if(renders!==1||!review||!report)throw new Error('只有首版审查后可自动返修一次。');
+    if(plan&&rendered&&audioLevelOnlyRepair(review,plan)){
+      await writeFile(path.join(work,'audio-level-recovery.json'),JSON.stringify({
+        sourceArtifactId:rendered.id,sourceCandidateHash:renderedHash,sourcePlanHash:hashBytes(JSON.stringify(plan)),
+        failedChecks:review.checks.filter(c=>!c.passed),
+        sources:plan.clips.map(clip=>{const item=o.media.find(m=>m.id===clip.sourceId);return {sourceId:clip.sourceId,sourceHash:item?.analysis?.sourceHash,audioHash:item?.generation?.audioHash};}),
+        preservedScript:true,preservedAudioSources:true,preservedVoice:true,
+      },null,2),{mode:0o600});
+      phase='render';return {preservedScript:true,preservedAudioSources:true,preservedVoice:true,nextTool:'render_lesson'};
+    }
     // A verified same-sound subtitle spelling can be repaired without another
     // TTS/ASR round. Only reuse unchanged generated files, retain raw analyses,
     // and independently review the newly rendered captions before acceptance.
