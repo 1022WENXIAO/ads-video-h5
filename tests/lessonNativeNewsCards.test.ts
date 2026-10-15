@@ -60,6 +60,13 @@ test('the actual P27 news chart incident keeps original HTML/check bytes and all
   // This preserves a real server incident, not a claim that every host font
   // wraps the historical HTML identically.
   assert.equal(JSON.parse(actual.originalCheckJson).ok,false);
+  // Read-only actual P28 Linux observer: source geometry SHA
+  // 384d98cfd4404a89c82d6f10472155dccc641436963be6cfac0a3a9f179768d3.
+  // CLI exit0 did not establish this stricter content-zone invariant.
+  const failed={time:.51,contentBottom:1005,cardBottom:1012.5883178710938,enterY:7.5883};
+  assert.ok(failed.cardBottom>failed.contentBottom+6);
+  assert.ok(Math.abs(failed.cardBottom-failed.contentBottom-failed.enterY)<.0001);
+
 });
 
 test('native news charts preserve typography, chart scale, dates and timing in real one-to-four-card layouts',{timeout:240000},async()=>{
@@ -79,7 +86,7 @@ test('native news charts preserve typography, chart scale, dates and timing in r
     const baselineDir=path.join(project,'original-incident');await mkdir(baselineDir,{recursive:true});
     await copyFile(path.join(process.cwd(),'node_modules/gsap/dist/gsap.min.js'),path.join(baselineDir,'gsap.min.js'));await writeFile(path.join(baselineDir,'index.html'),actual.originalHtml);
     await page.setViewport({width:720,height:1280});await page.goto(pathToFileURL(path.join(baselineDir,'index.html')).href);await page.evaluate(()=>document.fonts.ready);
-    const originalChartRect=await page.evaluate(()=>{const r=document.querySelector('#graphic svg')!.getBoundingClientRect();return{width:r.width,height:r.height};});
+    const originalChartRect=await page.evaluate(()=>{const svg=document.querySelector('#graphic svg')!,r=svg.getBoundingClientRect(),style=getComputedStyle(svg);return{width:r.width,height:r.height,cssWidth:style.width,cssHeight:style.height};});
     for(const item of cases){
       const dir=path.join(project,item.name);await mkdir(dir,{recursive:true});
       await copyFile(path.join(process.cwd(),'node_modules/gsap/dist/gsap.min.js'),path.join(dir,'gsap.min.js'));
@@ -92,15 +99,23 @@ test('native news charts preserve typography, chart scale, dates and timing in r
       await page.goto(pathToFileURL(path.join(dir,'index.html')).href);await page.evaluate(()=>document.fonts.ready);await tagLeafText(page);
       const originalChart=await page.evaluate((source:string)=>new DOMParser().parseFromString(source,'text/html').querySelector('#graphic')!.innerHTML,actual.originalHtml);
       const audits=[];
-      for(const time of [.6,3.94,6.079,7.28,actual.duration-.1]){
+      const oldTimes=[.6,3.94,6.079,7.28,actual.duration-.1];
+      const earlyAndFocus=item.format==='9:16'?[
+        ...Array.from({length:9},(_,i)=>+(actual.duration*(i+.5)/9).toFixed(6)),
+        0,.479,.48,.481,.51,
+        ...chapter.visual.items.flatMap((_,i)=>{const start=.12+i*.12;return[start,start+(item.urgent?.24:.45)];}),
+        ...chapter.cues!.flatMap(c=>{const start=c.start+.1;return[start,start+.3,start+.6];}),
+      ]:[];
+      const times=[...new Set([...oldTimes,...earlyAndFocus].map(t=>+t.toFixed(6)))].filter(t=>t>=0&&t<actual.duration).sort((a,b)=>a-b);
+      for(const time of times){
         const frame=await page.evaluate((at:number)=>{
           (window as any).__timelines.main.pause().seek(at,false);
           const rect=(e:Element)=>e.getBoundingClientRect().toJSON();
-          return {content:rect(document.querySelector('.lesson-content')!),takeaway:rect(document.querySelector('#takeaway')!),
-            items:Array.from(document.querySelectorAll<HTMLElement>('.teaching-item'),e=>({rect:rect(e),label:e.querySelector('h2')!.textContent,detail:e.querySelector('p')!.textContent,labelFont:parseFloat(getComputedStyle(e.querySelector('h2')!).fontSize),detailFont:parseFloat(getComputedStyle(e.querySelector('p')!).fontSize),number:rect(e.querySelector('.item-number')!)})),
+          return {content:rect(document.querySelector('.lesson-content')!),teachingItems:rect(document.querySelector('.teaching-items')!),teachingPaddingBottom:getComputedStyle(document.querySelector('.teaching-items')!).paddingBottom,takeaway:rect(document.querySelector('#takeaway')!),
+            items:Array.from(document.querySelectorAll<HTMLElement>('.teaching-item'),e=>({rect:rect(e),label:e.querySelector('h2')!.textContent,detail:e.querySelector('p')!.textContent,labelFont:parseFloat(getComputedStyle(e.querySelector('h2')!).fontSize),detailFont:parseFloat(getComputedStyle(e.querySelector('p')!).fontSize),transform:getComputedStyle(e).transform,number:rect(e.querySelector('.item-number')!)})),
             texts:Array.from(document.querySelectorAll<HTMLElement>('[data-drawing-id].node'),e=>({id:e.id,text:e.textContent,rect:rect(e),font:getComputedStyle(e).font})),
             bars:Array.from(document.querySelectorAll('[data-value]'),e=>({value:Number(e.getAttribute('data-value')),baseline:Number(e.getAttribute('data-axis-min'))})),
-            chart:document.querySelector('#graphic')!.innerHTML,chartRect:rect(document.querySelector('#graphic svg')!),note:document.querySelector('#note')?.textContent,
+            chart:document.querySelector('#graphic')!.innerHTML,chartRect:rect(document.querySelector('#graphic svg')!),chartCssSize:{width:getComputedStyle(document.querySelector('#graphic svg')!).width,height:getComputedStyle(document.querySelector('#graphic svg')!).height},note:document.querySelector('#note')?.textContent,
             illustrations:document.querySelectorAll('.teaching-item .news-illustration').length};
         },time);
         const ink=await page.evaluate(auditDrawingTextLayout,{time});audits.push({time,frame,ink});
@@ -121,7 +136,27 @@ test('native news charts preserve typography, chart scale, dates and timing in r
         // The graphics and cue-driven GSAP expressions are not rescaled or
         // delayed to make room for the text cards.
         assert.equal(frame.chart,originalChart);
-        if(item.name==='actual-four'){assert.equal(frame.chartRect.width,originalChartRect.width);assert.equal(frame.chartRect.height,originalChartRect.height,'preserve the actual original chart scale');}
+        if(item.name==='actual-four'){
+          assert.equal(frame.chartCssSize.width,originalChartRect.cssWidth);assert.equal(frame.chartCssSize.height,originalChartRect.cssHeight,'preserve the exact computed SVG dimensions');
+          // The already frozen service probe uses <.01px for raw DOMRects:
+          // a pure fractional translate can quantize their endpoints by 1/32768px.
+          assert.ok(Math.abs(frame.chartRect.width-originalChartRect.width)<.01);assert.ok(Math.abs(frame.chartRect.height-originalChartRect.height)<.01,'retain the original service-probe physical SVG size contract');
+        }
+      }
+      if(item.format==='9:16')for(const [i,cue]of chapter.cues!.entries()){
+        const peak=audits.find(a=>Math.abs(a.time-(cue.start+.4))<.000001)!;
+        assert.ok(peak,'actual focus peak was sampled');
+        assert.ok(Number(peak.frame.items[i].transform.match(/matrix\(([^,]+)/)?.[1])>1.024,'retain the actual focus scale instead of disabling motion');
+      }
+      if(item.name==='actual-four'){
+        await page.evaluate(()=>document.querySelector<HTMLElement>('.teaching-items')!.style.paddingBottom='0px');
+        const unreserved=await page.evaluate(()=>{(window as any).__timelines.main.pause().seek(.51,false);return{cardBottom:document.querySelector('#item-3')!.getBoundingClientRect().bottom,contentBottom:document.querySelector('.lesson-content')!.getBoundingClientRect().bottom};});
+        assert.ok(unreserved.cardBottom>unreserved.contentBottom+6,'the same actual .51 rect contract must reject the original missing-gutter state');
+        const unreservedInk=await page.evaluate(auditDrawingTextLayout,{time:.51});
+        await writeFile(path.join(dir,'original-entry-negative-control.json'),JSON.stringify({time:.51,unreserved,ink:unreservedInk,meaning:'content-zone boundary failure, not automatically a glyph collision'},null,2));
+        await page.evaluate(()=>{document.querySelector<HTMLElement>('.teaching-items')!.style.removeProperty('padding-bottom');(window as any).__timelines.main.pause().seek(.51,false);});
+        await page.screenshot({path:path.join(dir,'entry-0_51.png')});
+        await page.evaluate((at:number)=>(window as any).__timelines.main.pause().seek(at,false),actual.duration-.1);
       }
       const animation=html.slice(html.indexOf('});window.__timelines'));
       if(item.name==='actual-four')assert.equal(animation,actual.originalHtml.slice(actual.originalHtml.indexOf('});window.__timelines')));
