@@ -13,11 +13,15 @@ function completed(value:string,action:string):boolean{
   });
 }
 function pending(value:string,action:string):boolean{
-  return clauses(value).some(clause=>new RegExp(`(?:正在|仍在|正|计划|准备|预计|将要|即将|将|拟|尚未|还未|仍未)(?:实施|进行|着手|推进)?[^，,。；;！？!?]{0,12}${action}`).test(clause));
+  return clauses(value).some(clause=>[...clause.matchAll(new RegExp(`(?:正在|仍在|正|计划|准备|预计|将要|即将|将|拟|尚未|还未|仍未)(?:实施|进行|着手|推进)?[^，,。；;！？!?]{0,12}${action}`,'g'))].some(match=>
+    // Only the actual pending predicate's local prefix is inspected. An
+    // unrelated "未披露" later in the source cannot negate its repair status.
+    !/(?:并非|并不|不是|不再|没有|未|不)[^，,。；;！？!?]{0,4}$/.test(clause.slice(Math.max(0,match.index!-12),match.index))));
 }
 function scope(value:string):'all'|'partial'|undefined{
-  if(/全部|所有|全体|全量|全站|全面/.test(value))return'all';
-  if(/部分|局部|少量|某些|试点|分批/.test(value))return'partial';
+  const affirmed=(pattern:RegExp)=>[...value.matchAll(pattern)].some(match=>!/(?:并非|并不|不是|不再|没有|未|不)(?:向|对|为|面向|供)?\s*$/.test(value.slice(Math.max(0,match.index!-12),match.index)));
+  if(affirmed(/全部|所有|全体|全量|全站|全面/g))return'all';
+  if(affirmed(/部分|局部|少量|某些|试点|分批/g))return'partial';
 }
 const actor=(value:string)=>compact(value.split(/已|正在|仍在|计划|准备|预计|将|拟|尚未|还未|仍未/)[0]).replace(/[“”「」『』：:]/g,'');
 function anchors(script:string,action:string):string[]{

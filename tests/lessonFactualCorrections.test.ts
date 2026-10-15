@@ -63,6 +63,17 @@ test('different actors or historical incidents cannot be joined by a shared repa
   const wrongSource=report(original,claim,'乙平台已定位原因，正在实施修复。');assert.deepEqual(lessonFactualCorrectionFindings(wrongSource,[suggestion]),[],'a model-authored source claim cannot donate the official actor absent from the actual excerpt');
 });
 
+test('negated pending predicates and negated all-user scope cannot become mandatory factual corrections',()=>{
+  for(const [script,evidence] of [
+    ['甲平台已经不向所有用户开放服务','甲平台已经向部分用户开放服务'],
+    ['官方已定位原因并修复','官方已定位原因，并非正在实施修复'],
+  ]){
+    const value=report(script,evidence,evidence),issue=`chapter-2：原句“${script}”与来源“${evidence}”相比，建议改为“${evidence}”。`;
+    assert.deepEqual(lessonFactualCorrectionFindings(value,[issue]),[]);
+  }
+  assert.equal(lessonFactualCorrectionFindings(report(),primary.suggestions).length,1,'the actual P14 pending repair stays blocking despite an unrelated later 未披露');
+});
+
 test('missing, ambiguous, search-only, unrelated chapter and nonverbatim evidence never manufacture a hard correction',()=>{
   const examples:Array<LessonReport>=[];
   const missing=report();missing.references=[];examples.push(missing);
