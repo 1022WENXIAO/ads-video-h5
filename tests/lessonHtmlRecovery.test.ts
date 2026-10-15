@@ -4,7 +4,7 @@ import { copyFile, mkdtemp, readFile, readdir, rm, stat, writeFile } from 'node:
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { drawingContentHash, htmlLayoutIssues, recoverLessonHtml, separateCardLabels } from '../server/lessonHtmlRecovery';
-import { checkHtmlProject, drawingHtml, hashBytes, type HtmlDrawing } from '../server/narrativeScenes';
+import { checkHtmlProject, drawingDomId, drawingHtml, hashBytes, type HtmlDrawing } from '../server/narrativeScenes';
 
 const fixture = JSON.parse(await readFile(new URL('./fixtures/html-layout-card-overlap.json', import.meta.url), 'utf8'));
 
@@ -28,6 +28,17 @@ test('unsafe layouts and unknown checker failures require a bounded real redraw,
   assert.equal(separateCardLabels(fixture.drawing, [{ code: 'text_overflow', selector: '#revenue_card' }], '9:16'), undefined);
 });
 
+test('card/value recovery resolves whole compiled IDs and never assigns framework or mixed selectors to author nodes',()=>{
+  const drawing=structuredClone(fixture.drawing) as HtmlDrawing;
+  drawing.nodes.find(node=>node.id==='revenue_card')!.id='note';
+  drawing.nodes.find(node=>node.id==='revenue_value')!.id='qj-author-note';
+  const before=structuredClone(drawing),issues=[{code:'content_overlap',selector:'#'+drawingDomId('note'),containerSelector:'#'+drawingDomId('qj-author-note')}];
+  const fixed=separateCardLabels(drawing,issues,'9:16');assert.ok(fixed);assert.deepEqual(drawing,before);
+  assert.equal(fixed.nodes.find(node=>node.id==='note')!.text,'');assert.equal(fixed.nodes.find(node=>node.id==='note_label')!.text,before.nodes.find(node=>node.id==='note')!.text);assert.equal(drawingContentHash(fixed),drawingContentHash(drawing));
+  assert.equal(separateCardLabels(drawing,[{code:'content_overlap',selector:'#note',containerSelector:'#qj-author-note'}],'9:16'),undefined);
+  assert.equal(separateCardLabels(drawing,[{code:'content_overlap',selector:'#'+drawingDomId('note'),containerSelector:'#unknown'}],'9:16'),undefined);
+});
+
 test('real HyperFrames gate rejects the captured overlap and accepts only the unchanged-content geometry repair', async () => {
   const project = await mkdtemp(path.join(tmpdir(), 'qingjian-html-actual-gate-'));
   try {
@@ -35,6 +46,7 @@ test('real HyperFrames gate rejects the captured overlap and accepts only the un
     await writeFile(path.join(project, 'index.html'), drawingHtml(fixture.drawing, 15.88, '9:16'));
     await assert.rejects(checkHtmlProject(project, { fullCheck: true }), /content_overlap/);
     const actual = JSON.parse(await readFile(path.join(project, 'check-report.json'), 'utf8'));
+    assert.ok(htmlLayoutIssues(actual).some(issue=>issue.selector?.startsWith('#qj-author-')&&issue.containerSelector?.startsWith('#qj-author-')),'real checker reports the compiled namespace');
     const fixed = separateCardLabels(fixture.drawing, htmlLayoutIssues(actual), '9:16'); assert.ok(fixed);
     assert.equal(drawingContentHash(fixed), drawingContentHash(fixture.drawing));
     await writeFile(path.join(project, 'index.html'), drawingHtml(fixed, 15.88, '9:16'));

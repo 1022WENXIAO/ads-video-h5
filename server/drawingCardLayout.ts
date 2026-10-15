@@ -1,4 +1,5 @@
 import type { HtmlDrawing } from './narrativeScenes';
+import {drawingDomId} from './narrativeScenes';
 import type { Format } from '../src/types';
 
 type Node = HtmlDrawing['nodes'][number];
@@ -12,6 +13,19 @@ const associated = (card:Node,text:Node) => {
   const inside=Math.max(0,Math.min(card.y+card.h,text.y+text.h)-text.y);
   return inside>=text.h*.8&&text.y+text.h<=card.y+card.h+Math.min(24,card.h*.1);
 };
+const issueNodes=(drawing:HtmlDrawing,issue:Issue):Node[]|undefined=>{
+  const selectors=[issue.selector,issue.containerSelector];
+  if(selectors.some(s=>!s||!/^#[a-zA-Z][a-zA-Z0-9_-]*$/.test(s)))return;
+  // Resolve complete compiled IDs, including logical IDs already carrying the
+  // prefix. Never strip a prefix and accidentally select a different node.
+  const compiled=selectors.map(s=>drawing.nodes.filter(n=>'#'+drawingDomId(n.id)===s));
+  if(compiled.some(matches=>matches.length))return compiled.every(matches=>matches.length===1)?compiled.map(matches=>matches[0]):undefined;
+  // Captured pre-namespace reports remain useful for their original layouts.
+  // Framework IDs and mixed/unknown selectors cannot identify author nodes.
+  if(selectors.some(s=>/^#(?:main|title|note|ambient-a|ambient-b)$/.test(s!)))return;
+  const legacy=selectors.map(s=>drawing.nodes.filter(n=>'#'+n.id===s));
+  return legacy.every(matches=>matches.length===1)?legacy.map(matches=>matches[0]):undefined;
+};
 
 /** Give an existing card label an empty upper zone without moving any of its
  * diagram entities. If necessary the card expands upward into unused space. */
@@ -20,7 +34,7 @@ export function liftCardLabels(drawing:HtmlDrawing,issues:Issue[],format:Format)
   const next=structuredClone(drawing),cards=new Set<string>();
   const inset=(card:Node,n:Node)=>n.x>=card.x+12&&n.x+n.w<=card.x+card.w-12&&n.y>=card.y+12&&n.y+n.h<=card.y+card.h-12;
   for(const issue of issues){
-    const pair=[issue.selector,issue.containerSelector].map(s=>next.nodes.find(n=>n.id===s?.replace(/^#/,'')));
+    const pair=issueNodes(next,issue);if(!pair)return;
     const card=pair.find(n=>n?.kind==='card'&&n.text.trim()),child=pair.find(n=>n&&(n.kind==='text'||n.kind==='circle'));
     if(!card||!child||!inset(card,child))return;cards.add(card.id);
   }
@@ -57,7 +71,7 @@ export function reflowCardDetails(drawing:HtmlDrawing,issues:Issue[],format:Form
     if(parents.length===1){if(pairs.has(parents[0].id))return;pairs.set(parents[0].id,text.id);}
   }
   for(const issue of issues){
-    const ids=[issue.selector,issue.containerSelector].map(s=>s?.match(/^#([a-zA-Z][a-zA-Z0-9_-]*)$/)?.[1]);
+    const ids=issueNodes(drawing,issue)?.map(n=>n.id);if(!ids)return;
     if(ids.some(id=>!id)||!ids.some(id=>id&&pairs.has(id)&&pairs.get(id)===ids.find(other=>other!==id)))return;
   }
   const next=structuredClone(drawing),labels=new Map<string,Node>();
@@ -88,4 +102,4 @@ export function reflowCardDetails(drawing:HtmlDrawing,issues:Issue[],format:Form
   return next;
 }
 
-export const CARD_LAYOUT_RENDERER_SIGNATURE=[box,overlap,lines,textHeight,associated,liftCardLabels,reflowCardDetails].map(fn=>fn.toString()).join('\n');
+export const CARD_LAYOUT_RENDERER_SIGNATURE=[box,overlap,lines,textHeight,associated,drawingDomId,issueNodes,liftCardLabels,reflowCardDetails].map(fn=>fn.toString()).join('\n');

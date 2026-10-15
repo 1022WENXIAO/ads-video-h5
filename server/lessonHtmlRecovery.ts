@@ -3,7 +3,7 @@ import { mkdir, readFile, rename, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { parse } from 'parse5';
 import type { Format } from '../src/types';
-import { hashBytes, validateDrawing, type HtmlDrawing } from './narrativeScenes';
+import { drawingDomId, hashBytes, validateDrawing, type HtmlDrawing } from './narrativeScenes';
 import { currentJobSignal, throwIfJobCancelled } from './jobExecution';
 import { liftCardLabels, reflowCardDetails } from './drawingCardLayout';
 import {AuthoredDrawingGeometryError} from './drawingGeometry';
@@ -24,8 +24,15 @@ export function separateCardLabels(drawing: HtmlDrawing, issues: LayoutIssue[], 
   if (!issues.length || issues.some(issue => !['content_overlap', 'text_occluded'].includes(issue.code))) return;
   const next = structuredClone(drawing), cards = new Set<string>();
   for (const issue of issues) {
-    const ids = [issue.selector, issue.containerSelector].map(selector => selector?.match(/^#([a-zA-Z][a-zA-Z0-9_-]*)$/)?.[1]);
-    const pair = ids.map(id => next.nodes.find(node => node.id === id));
+    const selectors = [issue.selector, issue.containerSelector];
+    if(selectors.some(selector=>!selector||!/^#[a-zA-Z][a-zA-Z0-9_-]*$/.test(selector)))return;
+    const compiled=selectors.map(selector=>next.nodes.filter(node=>'#'+drawingDomId(node.id)===selector));
+    // Match whole generated IDs, including logical IDs already containing the
+    // namespace. Mixed/unknown selectors and framework nodes are not evidence.
+    const legacy=()=>selectors.some(selector=>/^#(?:main|title|note|ambient-a|ambient-b)$/.test(selector!))?undefined:selectors.map(selector=>next.nodes.filter(node=>'#'+node.id===selector));
+    const matches=compiled.some(nodes=>nodes.length)?compiled:legacy();
+    if(!matches||matches.some(nodes=>nodes.length!==1))return;
+    const pair = matches.map(nodes=>nodes[0]);
     const card = pair.find(node => node?.kind === 'card' && node.text.trim());
     const value = pair.find(node => node?.kind === 'text');
     if (!card || !value || !contains(card, value)) return;

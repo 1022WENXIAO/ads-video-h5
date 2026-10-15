@@ -38,11 +38,11 @@ test('actual loaded-font glyphs fit the captured numeric axis and a narrower CSS
     // legal width; all original numeric values, fonts and axis widths remain.
     drawing.nodes.find((node:any)=>node.id==='chart_title').w=324;
     const html = drawingHtml(drawing, 15.88, '9:16');
-    assert.match(html, /id="label_2500"[^>]*data-qj-number/);
+    assert.match(html, /id="qj-author-label_2500"[^>]*data-qj-number/);
     await writeFile(path.join(project, 'index.html'), html); await checkHtmlProject(project, { fullCheck: true });
     // Bypass the numeric estimate deliberately: only the actual browser can
     // detect a later CSS/font/content-box disagreement.
-    await writeFile(path.join(project, 'index.html'), html.replace('</style>', '#label_2500{width:40px!important}</style>'));
+    await writeFile(path.join(project, 'index.html'), html.replace('</style>', '#qj-author-label_2500{width:40px!important}</style>'));
     await assert.rejects(checkHtmlProject(project, { fullCheck: true }), /数字字形溢出/);
   } finally { await rm(project, { recursive: true, force: true }); }
 });

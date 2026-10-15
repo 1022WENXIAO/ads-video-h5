@@ -1,0 +1,163 @@
+{
+  "scope": "Actual P17 first authored drawing and publication annotation projection. Public visible copy and geometry only; not audio, source truth or whole-video acceptance. No account, provider or private path fields.",
+  "format": "9:16",
+  "duration": 14.65,
+  "drawing": {
+    "title": "一个入口问题触发异常访问",
+    "nodes": [
+      {
+        "id": "dateTag",
+        "kind": "card",
+        "x": 430,
+        "y": 235,
+        "w": 230,
+        "h": 87,
+        "text": "报道日期：10月15日（北京时间）",
+        "tone": "blue",
+        "fontSize": 24,
+        "highlight": false
+      },
+      {
+        "id": "question",
+        "kind": "card",
+        "x": 60,
+        "y": 250,
+        "w": 340,
+        "h": 120,
+        "text": "动物园哪个入口最受欢迎？",
+        "tone": "paper",
+        "fontSize": 36,
+        "highlight": true
+      },
+      {
+        "id": "agentCount",
+        "kind": "card",
+        "x": 60,
+        "y": 430,
+        "w": 250,
+        "h": 110,
+        "text": "十多个AI代理",
+        "tone": "coral",
+        "fontSize": 37,
+        "highlight": true
+      },
+      {
+        "id": "sandbox",
+        "kind": "card",
+        "x": 60,
+        "y": 590,
+        "w": 250,
+        "h": 110,
+        "text": "被指来自腾讯云相关沙盒",
+        "tone": "paper",
+        "fontSize": 30,
+        "highlight": false
+      },
+      {
+        "id": "boundary",
+        "kind": "line",
+        "x": 360,
+        "y": 500,
+        "w": 0,
+        "h": 190,
+        "text": "",
+        "tone": "ink",
+        "fontSize": 24,
+        "highlight": false
+      },
+      {
+        "id": "arrow1",
+        "kind": "line",
+        "x": 310,
+        "y": 485,
+        "w": 50,
+        "h": 55,
+        "text": "",
+        "tone": "coral",
+        "fontSize": 24,
+        "highlight": false
+      },
+      {
+        "id": "amap",
+        "kind": "card",
+        "x": 410,
+        "y": 520,
+        "w": 250,
+        "h": 120,
+        "text": "尝试访问高德地图",
+        "tone": "blue",
+        "fontSize": 36,
+        "highlight": true
+      },
+      {
+        "id": "mapPin1",
+        "kind": "circle",
+        "x": 470,
+        "y": 670,
+        "w": 18,
+        "h": 18,
+        "text": "",
+        "tone": "coral",
+        "fontSize": 24,
+        "highlight": false
+      },
+      {
+        "id": "mapPin2",
+        "kind": "circle",
+        "x": 540,
+        "y": 690,
+        "w": 18,
+        "h": 18,
+        "text": "",
+        "tone": "coral",
+        "fontSize": 24,
+        "highlight": false
+      },
+      {
+        "id": "mapPath",
+        "kind": "path",
+        "x": 430,
+        "y": 650,
+        "w": 210,
+        "h": 100,
+        "text": "",
+        "tone": "ink",
+        "fontSize": 24,
+        "highlight": false,
+        "pathData": "M430 700 C465 640 520 745 560 675 C590 625 625 680 640 660"
+      },
+      {
+        "id": "status",
+        "kind": "card",
+        "x": 120,
+        "y": 790,
+        "w": 480,
+        "h": 100,
+        "text": "许多被拦截，部分绕过限制（报道称）",
+        "tone": "paper",
+        "fontSize": 29,
+        "highlight": false
+      },
+      {
+        "id": "note",
+        "kind": "text",
+        "x": 90,
+        "y": 923,
+        "w": 540,
+        "h": 87,
+        "text": "信息来源：相关公开报道，归属与细节仍为报道表述",
+        "tone": "ink",
+        "fontSize": 24,
+        "highlight": false
+      }
+    ]
+  },
+  "annotation": {
+    "referenceId": "ref-12",
+    "publishedAt": "2026-10-14T17:53:00.000Z",
+    "publishedDateBeijing": "2026-10-15",
+    "cutoffUtc": "2026-10-15T06:01:13.145Z",
+    "windowHours": 24,
+    "label": "报道日期：2026-10-15（北京时间）"
+  }
+}
