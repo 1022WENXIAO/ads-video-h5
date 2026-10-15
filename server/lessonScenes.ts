@@ -5,6 +5,7 @@ import { newsPublicationNoteHtml, newsPublicationNoteCss, createNewsPublicationA
 import { inspectNewsPublicationHtml } from './newsPublicationHtml';
 import {barChartSvg,validateBarChart,chapterBarChart,inferBarData,barChartDetail,quantitativeBarIntent,requireBarChartData} from './barChart';
 import { copyFile, mkdir, readFile, writeFile } from 'node:fs/promises';
+import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import type { AudioAnalysis, Format, LessonChapter, LessonCurveFunction, LessonPacing, LessonPresentation, LessonVisual, LessonBarChart } from '../src/types';
 import { lessonDimensions, correctLessonTranscript, lessonCaptionAnalysis } from './lessonSpec';
@@ -151,7 +152,12 @@ for(const node of document.querySelectorAll('[data-math-width]')){
 ${motionLibrary}window.__timelines={};const tl=gsap.timeline({paused:true});tl.from('#accent',{scaleX:0,transformOrigin:'left',duration:.6,ease:'power2.out'},.1);tl.from('#title',{y:${publicationAnnotation&&!portrait?0:20},duration:.6,ease:'power3.out'},.05);${side?"tl.from('#graphic',{opacity:0,y:12,duration:.6,ease:'power2.out'},.45);":''}${enters}${curves}${formula}tl.to('#title',{opacity:0,duration:.2,ease:'sine.in'},${Math.max(.8,duration-.35).toFixed(3)});tl.from('#takeaway',{opacity:0,x:-12,duration:.5,ease:'power2.out'},${takeawayAt.toFixed(3)});${urgent?`tl.to('#accent',{opacity:.55,duration:.45,repeat:${Math.min(10,Math.floor(duration/1.1))},yoyo:true,ease:'sine.inOut'},1);`:''}window.__timelines.main=tl;</script></body></html>`;
 }
 
-export function lessonRendererHash(){return hashBytes([CARD_LAYOUT_RENDERER_SIGNATURE,lessonSceneHtml,newsIllustration,curveSvg,formulaSvg,drawingHtml,authorDrawing,validateDrawing,drawingDimensions,barChartSvg,validateBarChart,chapterBarChart,inferBarData,barChartDetail,quantitativeBarIntent,requireBarChartData,visualRepairTargets,speechOnlyRepair,lessonVisualBrief,createNewsPublicationAnnotation,newsPublicationTimestamp,newsPublicationNoteHtml,newsPublicationNoteCss,inspectNewsPublicationHtml,numericDrawingText,assertNumericDrawingNode,NUMERIC_DRAWING_CSS,NUMERIC_DRAWING_CHECK_SCRIPT,assertVisibleContent,correctLessonTranscript,lessonCaptionAnalysis,captionsFromTranscript,voiceComparisonTask].map(fn=>fn.toString()).join('\n'));}
+export function lessonRendererHash(){
+  // Include helpers behind the renderer/caption functions as well as their
+  // entry points: a changed closure policy must invalidate prior evidence.
+  const policies=['./lessonHtmlRecovery.ts','./lessonHtmlFallbackPolicy.ts','./narrationHomophones.ts','./lessonSpec.ts','./lessonSpeechCoverage.ts','./newsTime.ts','../package.json'].map(file=>readFileSync(new URL(file,import.meta.url),'utf8'));
+  return hashBytes([...policies,CARD_LAYOUT_RENDERER_SIGNATURE,lessonSceneHtml,newsIllustration,curveSvg,formulaSvg,drawingHtml,authorDrawing,validateDrawing,drawingDimensions,barChartSvg,validateBarChart,chapterBarChart,inferBarData,barChartDetail,quantitativeBarIntent,requireBarChartData,visualRepairTargets,speechOnlyRepair,lessonVisualBrief,createNewsPublicationAnnotation,newsPublicationTimestamp,newsPublicationNoteHtml,newsPublicationNoteCss,inspectNewsPublicationHtml,numericDrawingText,assertNumericDrawingNode,NUMERIC_DRAWING_CSS,NUMERIC_DRAWING_CHECK_SCRIPT,assertVisibleContent,correctLessonTranscript,lessonCaptionAnalysis,captionsFromTranscript,voiceComparisonTask].map(fn=>fn.toString()).join('\n'));
+}
 
 export async function produceLessonScene(chapter:LessonChapter,index:number,total:number,format:Format,speechFile:string,analysis:AudioAnalysis,project:string,pacing?:LessonPacing,presentation?:LessonPresentation,news=false,drawing?:HtmlDrawing,barChart?:LessonBarChart,publicationAnnotation?:NewsPublicationAnnotation){
   // Verified quantitative data takes precedence over any supplied authored

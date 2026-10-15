@@ -12,6 +12,7 @@ import { mergeResearch, researchGaps } from './narrativeResearch';
 import { hashBytes, authorDrawing, type HtmlDrawing } from './narrativeScenes';
 import { visualRepairTargets, speechOnlyRepair, lessonVisualBrief } from './visualRecovery';
 import { recoverLessonHtml } from './lessonHtmlRecovery';
+import { nativeLessonFallbackAllowed } from './lessonHtmlFallbackPolicy';
 import { alignLessonSpeech, compactSpeech, lessonSettings, lessonPacing, lessonPadding, lessonNarrationBudget, lessonScriptBudget, lessonScriptBudgetInstruction, assertLessonScriptBudget, validateLesson, spokenLessonText, lessonSpeechLexicon, correctLessonTranscript, lessonCaptionAnalysis, applyLessonChapterRepairs, lessonRepairTargets } from './lessonSpec';
 import { produceLessonScene, NEWS_ILLUSTRATIONS, lessonRendererHash } from './lessonScenes';
 import { loadEditingSkill, loadMotionDesignContext } from './skills';
@@ -19,7 +20,7 @@ import { captionsFromTranscript } from './timeline';
 import { createToolTrace, observeToolErrors, traceValue } from './toolTrace';
 import { generateAudio } from './providers';
 import { verifyLessonResearch, lessonResearchSummary } from './lessonResearch';
-import { lessonScriptReviewContext } from './lessonScriptReviewContext';
+import { lessonScriptReviewContext, selectedLessonSignalEvidence } from './lessonScriptReviewContext';
 import { reviewFindings } from './reviewResults';
 import { mapLimited } from './taskPool';
 import { inspectLessonSpeechGaps, lessonTempo, lessonVoiceStyle, lessonPacingCheck, prepareLessonSpeech, preserveLessonSpeechTake, tightenNewsSpeechSilence } from './lessonAudio';
@@ -96,7 +97,7 @@ export async function reviewLessonScript(config:ModelConfig,report:LessonReport,
   if(!response.ok)throw new Error('教学事实审查 HTTP '+response.status);
   const body=await response.json(),result=JSON.parse(body.choices?.[0]?.message?.content||'{}');
   await record?.(result);
-  const reviewed=validateLessonFactReview(result),dateFindings=todayEventFindings(result.todayEvents,report,userPrompt,requestedAt),reasonFindings=selectionReasonFindings(result.selectionReason,report,userPrompt),acceptance=[...dateFindings,...reasonFindings,...newsObservationFindings(report,requestedAt),...newsPublicationSourceFindings(report,requestedAt).map(f=>NEWS_PUBLICATION_GAP+'：'+f)];
+  const reviewed=validateLessonFactReview(result),dateFindings=todayEventFindings(result.todayEvents,report,userPrompt,requestedAt),reasonFindings=selectionReasonFindings(result.selectionReason,report,userPrompt),signalFindings=selectedLessonSignalEvidence(report).selectedSignalEvidenceGaps.map(gap=>`所选热榜信号${gap.signalId}的实际观察证据${gap.reason==='missing'?'缺失':gap.reason==='ambiguous'?'存在重复歧义':'无效'}，不能凭新闻正文、研究摘要或脚本补齐。`),acceptance=[...dateFindings,...reasonFindings,...signalFindings,...newsObservationFindings(report,requestedAt),...newsPublicationSourceFindings(report,requestedAt).map(f=>NEWS_PUBLICATION_GAP+'：'+f)];
   const todayEvents=report.hotResearch&&requiresTodayEvent(userPrompt)&&!dateFindings.length?result.todayEvents.filter((e:unknown)=>!todayEventFindings([e],report,userPrompt,requestedAt).length).slice(0,3).map((e:any)=>({date:e.date,referenceId:e.referenceId,quote:e.quote})):undefined;
   const selectionReason=report.hotResearch&&requiresSelectionReason(userPrompt)&&!reasonFindings.length?{chapterId:result.selectionReason.chapterId,quote:result.selectionReason.quote}:undefined;
   return {...reviewed,...(todayEvents?{todayEvents}:{}),...(selectionReason?{selectionReason}:{}),needsRepair:reviewed.needsRepair||acceptance.length>0,findings:[...acceptance,...reviewed.findings]};
@@ -181,7 +182,7 @@ export async function runLessonWorkflow(o:Options){
       if(!prior||prior.status!=='ready'||!Number.isFinite(prior.duration)||prior.duration<=0||typeof prior.transcript!=='string'||!Array.isArray(prior.warnings)||!Array.isArray(prior.sentences)||prior.sentences.some(s=>!s||typeof s.text!=='string'||!Array.isArray(s.words)||s.words.some(w=>!w||typeof w.text!=='string'||!Number.isFinite(w.start)||!Number.isFinite(w.end)||w.start<0||w.end<w.start))){defer(chapter.id,`章节${chapter.id}已保存转写尚未就绪或格式无效，保留已有音频重新核验。`);continue;}
       if(prior.sourceHash!==hashBytes(bytes)){defer(chapter.id,`章节${chapter.id}复用旁白文件哈希与实际转写不一致，不能跳过配音核验。`);continue;}
       let corrected:AudioAnalysis,aligned:ReturnType<typeof alignLessonSpeech>,analysis:AudioAnalysis;
-      try{corrected=correctLessonTranscript(chapter,prior);aligned=alignLessonSpeech(chapter,corrected);analysis=corrected===prior?prior:lessonCaptionAnalysis(chapter,corrected);}
+      try{corrected=correctLessonTranscript(chapter,prior,report!.references);aligned=alignLessonSpeech(chapter,corrected);analysis=corrected===prior?prior:lessonCaptionAnalysis(chapter,corrected);}
       catch(error){
         throwIfJobCancelled();
         // These two functions only inspect local transcript data. Defer their
@@ -377,7 +378,7 @@ export async function runLessonWorkflow(o:Options){
           const gaps=await trace.run('inspect_speech_gaps',`核对最终旁白停顿 · ${chapter.title}`,{chapterId:chapter.id,audioHash:hash,maxPauseSeconds:pacing.maxPauseSeconds},()=>inspectLessonSpeechGaps(adjusted,pacing.maxPauseSeconds));
           if(gaps.length)throw new Error(`章节${chapter.id}实际旁白存在超出${pacing.maxPauseSeconds}秒的长停顿${JSON.stringify(gaps)}，需要重录。`);
           const rawAnalysis=await recognizeExistingNarration(analysisAttempt=>trace.run('transcribe_chapter',`${analysisAttempt?'重试识别相同旁白':'听辨台词'} · ${chapter.title}`,{chapterId:chapter.id,audioHash:hash,duration,analysisAttempt},()=>o.analyze(item,adjusted,{purpose:'generated-narration'})));await writeFile(path.join(dir,'speech-analysis-raw.json'),JSON.stringify(rawAnalysis,null,2),{mode:0o600});
-          const verify=(value:AudioAnalysis,analysisId:string)=>trace.run('verify_chapter_speech',`核对台词 · ${chapter.title}`,{chapterId:chapter.id,audioHash:hash,analysisId},async()=>{const corrected=correctLessonTranscript(chapter,value);return {corrected,aligned:alignLessonSpeech(chapter,corrected)};});let checked:Awaited<ReturnType<typeof verify>>;
+          const verify=(value:AudioAnalysis,analysisId:string)=>trace.run('verify_chapter_speech',`核对台词 · ${chapter.title}`,{chapterId:chapter.id,audioHash:hash,analysisId},async()=>{const corrected=correctLessonTranscript(chapter,value,report!.references);return {corrected,aligned:alignLessonSpeech(chapter,corrected)};});let checked:Awaited<ReturnType<typeof verify>>;
           try{checked=await verify(rawAnalysis,item.id);}catch(error){
             if(!/匹配|年份|原词|数学符号|数字|重复字/.test(String(error)))throw error;
             const recheckItem={...item,id:randomUUID()};
@@ -422,7 +423,7 @@ export async function runLessonWorkflow(o:Options){
         if(!custom)return produce();
         await mkdir(dir,{recursive:true});
         const contextHash=hashBytes(JSON.stringify({version:1,rendererHash,prompt:o.prompt,title:chapter.title,narration:chapter.narration,visual:chapter.visual,reason:chapter.reason,cues:chapter.cues,feedback:visualFeedback[chapter.id],audioHash:hashBytes(await readFile(source.file)),analysis:source.analysis,format:report!.format,references:report!.references,asOf:report!.hotResearch?.asOf,publicationAnnotation:annotation}));
-        return recoverLessonHtml({project:dir,chapterId:chapter.id,contextHash,format:report!.format,produce,author:async(layoutFeedback)=>{
+        return recoverLessonHtml({project:dir,chapterId:chapter.id,contextHash,format:report!.format,produce,nativeFallback:nativeLessonFallbackAllowed(o.prompt,chapter,visualFeedback[chapter.id])?()=>trace.run('render_native_html',`采用内置图解 · ${chapter.title}`,{chapterId:chapter.id,rendererKind:'native',reason:'two-authored-layout-failures',preservedScript:true,preservedNarration:true},()=>produce()):undefined,author:async(layoutFeedback)=>{
           const key=hashBytes(JSON.stringify({rendererHash,prompt:o.prompt,narration:chapter.narration,visual:chapter.visual,reason:chapter.reason,feedback:visualFeedback[chapter.id],layoutFeedback,publicationAnnotation:annotation}));
           try{const cache=JSON.parse(await readFile(path.join(dir,'drawing-cache.json'),'utf8'));if(cache.key===key)return cache.drawing as HtmlDrawing;}catch{}
           const drawing=await trace.run('author_lesson_visual','设计与旁白对应的实际图解',{chapterId:chapter.id,format:report!.format,narration:chapter.narration,visual:chapter.visual,feedback:visualFeedback[chapter.id],layoutFeedback},()=>
@@ -469,7 +470,7 @@ export async function runLessonWorkflow(o:Options){
       for(const chapter of report.chapters){
         const item=o.media.find(m=>m.id===chapter.mediaId&&m.generation?.workflowId===report!.workflowId);
         if(!item?.analysis||item.analysis.status!=='ready')continue;
-        const analysis=correctLessonTranscript(chapter,item.analysis);if(analysis.transcript===item.analysis.transcript)continue;
+        const analysis=correctLessonTranscript(chapter,item.analysis,report.factReview&&!report.factReview.needsRepair?report.references:[]);if(analysis.transcript===item.analysis.transcript)continue;
         try{const bytes=await readFile(path.join(o.mediaDir,item.id));if(hashBytes(bytes)!==item.analysis.sourceHash)continue;alignLessonSpeech(chapter,analysis);corrections.push({chapter,item,analysis,bytes});}catch{}
       }
       if(corrections.length){

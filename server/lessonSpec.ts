@@ -3,6 +3,7 @@ import type { AudioAnalysis, Format, LessonChapter, LessonPacing, LessonReport, 
 import { intentText, wantsCurrentResearch } from './intents';
 import { assertVisibleContent } from './visibleContent';
 import { assertNarrationHanCoverage } from './lessonSpeechCoverage';
+import { correctNarrationHomophones } from './narrationHomophones';
 
 function durationNumber(value:string):number {
   if(value==='半')return .5;
@@ -245,7 +246,7 @@ function namedSpeechNumbers(text:string):number[]{
 }
 function speechQuantities(text:string):Array<{unit:string;value:number}>{
   const number='[\\d零〇一二两三四五六七八九十百千万亿]+(?:[.点][\\d零〇一二三四五六七八九]+)?';
-  const pattern=new RegExp(`百分之(${number})|(${number})(?:(?:到|至|[-~～—])(${number}))?(%|元|台|家|小时|天|次|个|人|条|倍|参数|[GMT]B)`,'gi');
+  const pattern=new RegExp(`百分之(${number})|(${number})(?:(?:到|至|[-~～—])(${number}))?(%|元|台|家|小时|天|次|个|人|条|倍|分|秒|参数|[GMT]B)`,'gi');
   return [...spokenLessonText(text).replace(/\s/g,'').matchAll(pattern)].flatMap(m=>{
     const unit=m[1]?'%':m[4].toLowerCase(),values=m[1]?[m[1]]:m[3]?[m[2],m[3]]:[m[2]];
     return values.map(value=>({unit,value:speechNumberValue(value)}));
@@ -254,10 +255,67 @@ function speechQuantities(text:string):Array<{unit:string;value:number}>{
 function spokenNumberValues(text:string):string[]{
   return [...spokenLessonText(text).replace(/\s/g,'').matchAll(/[\d零〇一二两三四五六七八九十百千万亿]+(?:[.点][\d零〇一二三四五六七八九]+)?/g)].map(m=>/[.点]/.test(m[0])?speechDecimalText(m[0]):String(speechNumberValue(m[0])));
 }
+interface SpeechClock {start:number;end:number;hour:number;minute:number;second?:number;valid:boolean;raw:string;hourText:string;minuteText:string;secondText?:string;unit:string;parts:Array<{start:number;end:number;text:string}>;}
+function speechClocks(text:string):SpeechClock[]{
+  const digit='[\\d零〇一二两三四五六七八九十]',number=`${digit}(?:\\s*${digit})*`,periods='上午|下午|凌晨|中午|早上|早晨|清晨|午后|傍晚|晚上|晚间|夜间';
+  const boundary='[A-Za-z\\d.:点零〇一二两三四五六七八九十百千万亿]';
+  const pattern=new RegExp(`(?<!${boundary})(?:(${periods})\\s*)?(${number})\\s*(点|时)\\s*(${number})\\s*分(?:\\s*(${number})\\s*秒)?|(?<!${boundary})(?:(${periods})\\s*)?(\\d(?:\\s*\\d)?)\\s*:\\s*(\\d\\s*\\d)(?:\\s*:\\s*(\\d\\s*\\d))?(?![\\d.:])`,'gd');
+  const result:SpeechClock[]=[];
+  for(const m of text.matchAll(pattern)){
+    const colon=m[7]!==undefined,period=m[1]||m[6]||'',hourText=colon?m[7]:m[2],minuteText=colon?m[8]:m[4],secondText=colon?m[9]:m[5],unit=colon?':':m[3];
+    const prefix=text.slice(Math.max(0,m.index!-24),m.index!).split(/[，,。；;！？!?]/).at(-1)||'';
+    // A score, ratio or money amount is not a clock just because it ends in
+    // 分. Dotted decimals never enter this parser, nor do embedded model IDs.
+    if(!colon&&/^(?:之|米|贝|钟)/.test(text.slice(m.index!+m[0].length)))continue;
+    if(/得分|评分|分数|分值|小数|数值|比值|比例|比率|比分|配比|价格|价钱|单价|金额|售价/.test(prefix)&&!period&&!/时间|时刻|北京时间|发生|事发|截至/.test(prefix))continue;
+    let hour=speechNumberValue(hourText.replace(/\s/g,''));const minute=speechNumberValue(minuteText.replace(/\s/g,'')),second=secondText===undefined?undefined:speechNumberValue(secondText.replace(/\s/g,''));
+    let valid=Number.isInteger(hour)&&hour>=0&&hour<=23&&Number.isInteger(minute)&&minute>=0&&minute<=59&&(second===undefined||Number.isInteger(second)&&second>=0&&second<=59);
+    if(period==='上午')valid&&=hour<12;
+    else if(['早上','早晨','清晨'].includes(period))valid&&=hour>=5&&hour<12;
+    else if(period==='凌晨'){if(hour===12)hour=0;valid&&=hour<=5;}
+    else if(period==='中午'){if(hour===1)hour=13;valid&&=hour>=11&&hour<=13;}
+    else if(['下午','午后'].includes(period)){if(hour>=1&&hour<12)hour+=12;valid&&=hour>=12&&hour<=23;}
+    else if(period==='傍晚'){if(hour>=5&&hour<=7)hour+=12;valid&&=hour>=17&&hour<=19;}
+    else if(['晚上','晚间','夜间'].includes(period)){if(hour===12)hour=0;else if(hour>=6&&hour<12)hour+=12;valid&&=hour<=5||hour>=18&&hour<=23;}
+    const start=m.index!,end=start+m[0].length,minuteStart=m.indices![colon?8:4]![0],secondStart=secondText===undefined?end:m.indices![colon?9:5]![0];
+    const parts=[{start,end:minuteStart,text:`${hour}时`},{start:minuteStart,end:secondStart,text:`${minute}分`},...(second===undefined?[]:[{start:secondStart,end,text:`${second}秒`}])];
+    result.push({start,end,hour,minute,second,valid,raw:m[0],hourText,minuteText,secondText,unit,parts});
+  }
+  return result;
+}
+const clockValues=(clocks:SpeechClock[])=>clocks.map(c=>[c.hour,c.minute,c.second??null]);
+function clockText(text:string,clocks:SpeechClock[]):string{
+  let result='',at=0;for(const clock of clocks){result+=text.slice(at,clock.start)+clock.parts.map(p=>p.text).join('');at=clock.end;}return result+text.slice(at);
+}
+function clockCue(chapter:LessonChapter,cue:string,clocks:SpeechClock[]):string{
+  const at=chapter.narration.indexOf(cue),end=at+cue.length;
+  for(const clock of clocks)if(at>=clock.start&&end<=clock.end)return clock.parts.filter(part=>at<part.end&&end>part.start).map(part=>part.text).join('');
+  return clockText(cue,speechClocks(cue));
+}
+function clockCueSpan(analysis:AudioAnalysis,text:string,start:number,end:number):{start:number;end:number}|undefined{
+  let offset=0,begin:number|undefined,finish:number|undefined;
+  for(const w of analysis.sentences.flatMap(s=>s.words)){const chars=[...w.text];for(let i=0;i<chars.length;i++){const next=offset+chars[i].length;if(offset===start)begin=w.start+(w.end-w.start)*i/chars.length;if(next===end)finish=w.start+(w.end-w.start)*(i+1)/chars.length;offset=next;}}
+  return begin===undefined||finish===undefined||text.slice(start,end).length===0?undefined:{start:begin,end:finish};
+}
+function clockAlignmentAnalysis(analysis:AudioAnalysis,clocks:SpeechClock[],transcriptClocks:SpeechClock[]):AudioAnalysis{
+  if(!clocks.length)return analysis;
+  const words=analysis.sentences.flatMap(s=>s.words),chars:Array<{text:string;start:number;end:number;owner:number;offset:number}>=[];let offset=0;
+  words.forEach((w,owner)=>{const value=[...w.text];value.forEach((text,i)=>{chars.push({text,start:w.start+(w.end-w.start)*i/value.length,end:w.start+(w.end-w.start)*(i+1)/value.length,owner,offset});offset+=text.length;});});
+  const parts=clocks.flatMap(c=>c.parts),mapped:typeof words=[];let at=0;
+  for(const part of parts){
+    while(at<chars.length&&chars[at].offset<part.start){const first=at;while(at<chars.length&&chars[at].offset<part.start&&chars[at].owner===chars[first].owner)at++;mapped.push({text:chars.slice(first,at).map(c=>c.text).join(''),start:chars[first].start,end:chars[at-1].end});}
+    const first=at;while(at<chars.length&&chars[at].offset<part.end)at++;
+    if(at>first)mapped.push({text:part.text,start:chars[first].start,end:chars[at-1].end});
+  }
+  while(at<chars.length){const first=at;while(at<chars.length&&chars[at].owner===chars[first].owner)at++;mapped.push({text:chars.slice(first,at).map(c=>c.text).join(''),start:chars[first].start,end:chars[at-1].end});}
+  // Working alignment only: original ASR, caption words and all source times
+  // remain untouched. Each canonical clock field inherits its own heard span.
+  return {...analysis,transcript:clockText(analysis.transcript,transcriptClocks),captionBreaks:undefined,captionBoundarySource:undefined,sentences:[{...analysis.sentences[0],text:mapped.map(w=>w.text).join(''),words:mapped,start:mapped[0]?.start??0,end:mapped.at(-1)?.end??analysis.duration}]};
+}
 // Correct only known homophones/symbol names present in the intended chapter.
 // Keep the original ASR separately; the replacement inherits the heard span,
 // never invents missing speech or estimates a new sentence duration.
-export function correctLessonTranscript(chapter:LessonChapter,analysis:AudioAnalysis):AudioAnalysis{
+export function correctLessonTranscript(chapter:LessonChapter,analysis:AudioAnalysis,references:ResearchReference[]=[]):AudioAnalysis{
   const aliases:Array<[string,string]>=[['智源','智元'],['报到','报道'],['算术题','算数题'],['算数题','算术题'],['cloud','Claude'],['Cloud','Claude'],['x二','X2'],['X二','X2'],['军方误差','均方误差'],['流族','留足'],['交叉商','交叉熵'],['交叉伤','交叉熵'],['交叉墒','交叉熵'],['绞链','铰链'],['饺链','铰链'],['易列','易例'],['编辑','边际'],['加码','伽马'],['加马','伽马'],['对其偏好','对齐偏好'],['复log','负log'],['sem','sim'],['派西塔','πθ'],['派ref','πref'],['德尔塔','δ'],['伽马','γ'],['陶','τ'],['贝塔','β'],['西格玛','σ']];
   for(const term of chapter.narration.match(/\b[A-Za-z][A-Za-z-]{1,24}(?=\b|\d)/g)||[])if(term!==term.toLowerCase())aliases.push([term.toLowerCase(),term]);
   // Single-letter labels (N卡/A卡) carry the same spoken letter in either
@@ -306,9 +364,9 @@ export function correctLessonTranscript(chapter:LessonChapter,analysis:AudioAnal
     }
     return {...sentence,words,text:words.map(w=>w.text).join('')};
   });
-  if(!corrections.size)return analysis;
+  if(!corrections.size)return correctNarrationHomophones(chapter,analysis,references);
   const captionBreaks=analysis.captionBreaks&&[...new Set(analysis.captionBreaks.map(old=>{for(let i=sourceOwners.length-1;i>=0;i--)if(sourceOwners[i]<=old)return i;return -1;}))].filter(index=>index>=0);
-  return {...analysis,sentences,captionBreaks,transcript:sentences.map(s=>s.text).join(''),warnings:[...analysis.warnings,'ASR术语规范化（原始转写另存，保留实际时间码并映射分行索引）：'+[...corrections].join('、')]};
+  return correctNarrationHomophones(chapter,{...analysis,sentences,captionBreaks,transcript:sentences.map(s=>s.text).join(''),warnings:[...analysis.warnings,'ASR术语规范化（原始转写另存，保留实际时间码并映射分行索引）：'+[...corrections].join('、')]},references);
 }
 function heardNumberBoundaries(analysis:AudioAnalysis):Set<number>{
   const words=analysis.sentences.flatMap(s=>s.words);
@@ -377,6 +435,15 @@ export function lessonCaptionAnalysis(chapter:LessonChapter,analysis:AudioAnalys
 }
 export function alignLessonSpeech(chapter:LessonChapter,analysis:AudioAnalysis):{similarity:number;cues:NonNullable<LessonChapter['cues']>}{
   if(analysis.status!=='ready'||!analysis.sentences.length)throw new Error('实际教学旁白没有可辨识的音频转写。');
+  const originalCues=chapter.visual.items.map(item=>item.cue),sourceWordText=analysis.sentences.flatMap(s=>s.words).map(w=>w.text).join('');
+  const expectedClocks=speechClocks(chapter.narration),wordClocks=speechClocks(sourceWordText),transcriptClocks=speechClocks(analysis.transcript);
+  const literalClockCues=originalCues.map(cue=>{const at=chapter.narration.indexOf(cue),index=expectedClocks.findIndex(c=>at>=c.start&&at+cue.length<=c.end),heardClock=wordClocks[index];if(!heardClock)return;const start=sourceWordText.indexOf(cue,heardClock.start);if(start<0||start+cue.length>heardClock.end)return;return clockCueSpan(analysis,sourceWordText,start,start+cue.length);});
+  if(expectedClocks.length||wordClocks.length||transcriptClocks.length){
+    if([heardNumberText(analysis),analysis.transcript].some(text=>JSON.stringify(spokenDates(text))!==JSON.stringify(spokenDates(chapter.narration))))throw new Error(`章节${chapter.id}日期数字或年月日单位与脚本不同，需要独立复听或重录。`);
+    if([...expectedClocks,...wordClocks,...transcriptClocks].some(c=>!c.valid)||[wordClocks,transcriptClocks].some(clocks=>JSON.stringify(clockValues(clocks))!==JSON.stringify(clockValues(expectedClocks))))throw new Error(`章节${chapter.id}实际时钟的小时、分钟、秒或完整单位与脚本不同，需要独立复听或重录；不能把小数当作时刻。`);
+    analysis=clockAlignmentAnalysis(analysis,wordClocks,transcriptClocks);
+    chapter={...chapter,narration:clockText(chapter.narration,expectedClocks),visual:{...chapter.visual,items:chapter.visual.items.map(item=>({...item,cue:clockCue(chapter,item.cue,expectedClocks)}))}};
+  }
   const wordText=analysis.sentences.flatMap(s=>s.words).map(w=>w.text).join('');
   for(const name of lessonSpeechEntities(chapter)){
     const term=compactSpeech(name),count=(value:string)=>compactSpeech(value).split(term).length-1,expectedCount=count(chapter.narration);
@@ -425,10 +492,10 @@ export function alignLessonSpeech(chapter:LessonChapter,analysis:AudioAnalysis):
   if(JSON.stringify(spokenNumberValues(chapter.narration))!==JSON.stringify(spokenNumberValues(heardNumberText(numericAnalysis))))throw new Error(`章节${chapter.id}实际旁白中的数字与脚本不一致，需要独立复听或重录，不能以整章匹配率放行。`);
   assertNarrationHanCoverage(chapter.id,expected,mapped,{numbersVerified:true});
   const joined=expected.join('');
-  const cues=chapter.visual.items.map(item=>{
+  const cues=chapter.visual.items.map((item,index)=>{
     const cue=compactSpeech(item.cue),start=joined.indexOf(cue);const indices=Array.from({length:cue.length},(_,k)=>mapped.get(start+k)).filter((k):k is number=>k!==undefined);
     if(start<0||indices.length<Math.ceil(cue.length*.75))throw new Error(`动画原词「${item.cue}」未能与实际旁白对齐。`);
-    return {text:item.cue,start:+heard[indices[0]].start.toFixed(3),end:+heard[indices.at(-1)!].end.toFixed(3)};
+    return {text:originalCues[index],start:+(literalClockCues[index]?.start??heard[indices[0]].start).toFixed(3),end:+(literalClockCues[index]?.end??heard[indices.at(-1)!].end).toFixed(3)};
   });
   return {similarity:+similarity.toFixed(4),cues};
 }

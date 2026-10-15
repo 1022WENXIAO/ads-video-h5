@@ -1,0 +1,347 @@
+{
+  "scope": "Sanitized projection of saved production ASR output, not waveform listening or new video acceptance. Original narration, claim text, ASR text, word ownership/times, completeness, pauses and audio source hash are retained. The original chapter and claims cited ref-5 and ref-7; this minimal source projection retains only ref-5, whose title and literal excerpt are actual verified research records. Sentence IDs and model metadata are neutralized; account/job/provider details and private paths are omitted.",
+  "chapter": {
+    "id": "chapter-1",
+    "title": "两个日期要看清",
+    "role": "hook",
+    "goal": "让观众立即知道新闻为何受关注，并分清事件日与报道日",
+    "prerequisites": [],
+    "narration": "成都U型锁伤人引关注。事件发生在十月十二日十三点四十四分；青白江警方通报、媒体报道，是十月十四日晚。",
+    "reason": "开场用双日期避免把旧事件误听成当天发生，并用已核验媒体报道说明关注来源。",
+    "claims": [
+      {
+        "text": "事件发生于2026年10月12日13时44分许，地点为成都市青白江区凤祥大道128号附近。",
+        "referenceIds": [
+          "ref-5"
+        ],
+        "basis": "source"
+      },
+      {
+        "text": "成都市公安局青白江区分局于2026年10月14日发布警情通报，多家媒体在同日晚间报道。",
+        "referenceIds": [
+          "ref-5"
+        ],
+        "basis": "source"
+      }
+    ],
+    "visual": {
+      "kind": "timeline",
+      "takeaway": "事件日和报道日不是同一天",
+      "items": [
+        {
+          "label": "事件 10月12日13:44",
+          "detail": "成都青白江凤祥大道附近发生伤害案",
+          "cue": "十月十二日十三点四十四分",
+          "illustration": "signal"
+        },
+        {
+          "label": "通报报道 10月14日晚",
+          "detail": "青白江警方发布通报，媒体跟进报道",
+          "cue": "十月十四日晚",
+          "illustration": "announcement"
+        },
+        {
+          "label": "社会关注升高",
+          "detail": "暴力视频传播后，警方通报澄清事实",
+          "cue": "引关注",
+          "illustration": "bar-chart"
+        }
+      ]
+    },
+    "referenceIds": [
+      "ref-5"
+    ]
+  },
+  "references": [
+    {
+      "id": "ref-5",
+      "title": "行车纠纷持 U 型锁伤人，网传“被打死”谣言男子被处罚|成都市公安局青白江区分局|曹某某|向某|曾某|U 型锁|故意伤害案_新浪新闻",
+      "url": "https://www.sina.cn/news/detail/5354027143660869.html",
+      "retrievedAt": "2026-10-14T23:07:44.835Z",
+      "verification": "news-page",
+      "excerpt": "#女子因行车纠纷持U型锁伤人#"
+    }
+  ],
+  "raw": {
+    "status": "ready",
+    "sourceHash": "87a5358eb707d13ebdea2e3f7632602811a49d1806e33bcf743d039539c46bae",
+    "duration": 9.22,
+    "timing": "model-estimated",
+    "transcript": "成都u型锁商人引关注事件发生在十月十二日十三点四\n十四分青白江警方通报媒体报道是十月十四日晚",
+    "pauses": [
+      {
+        "start": 1.622,
+        "end": 2.207
+      },
+      {
+        "start": 5.043,
+        "end": 5.63
+      },
+      {
+        "start": 7.563,
+        "end": 7.935
+      }
+    ],
+    "captionBreaks": [
+      2,
+      6,
+      9,
+      14,
+      19,
+      22,
+      26,
+      31,
+      34,
+      37,
+      44
+    ],
+    "modelId": "recorded-asr-projection",
+    "createdAt": "",
+    "warnings": [],
+    "sentences": [
+      {
+        "text": "成都u型锁商人引关注事件发生在十月十二日十三点四",
+        "start": 0.04,
+        "end": 4.61,
+        "complete": false,
+        "words": [
+          {
+            "start": 0.04,
+            "end": 0.33,
+            "text": "成"
+          },
+          {
+            "start": 0.33,
+            "end": 0.45,
+            "text": "都"
+          },
+          {
+            "start": 0.45,
+            "end": 0.64,
+            "text": "u"
+          },
+          {
+            "start": 0.64,
+            "end": 0.78,
+            "text": "型"
+          },
+          {
+            "start": 0.78,
+            "end": 0.93,
+            "text": "锁"
+          },
+          {
+            "start": 0.93,
+            "end": 1.11,
+            "text": "商"
+          },
+          {
+            "start": 1.11,
+            "end": 1.22,
+            "text": "人"
+          },
+          {
+            "start": 1.22,
+            "end": 1.32,
+            "text": "引"
+          },
+          {
+            "start": 1.32,
+            "end": 1.53,
+            "text": "关"
+          },
+          {
+            "start": 1.53,
+            "end": 1.71,
+            "text": "注"
+          },
+          {
+            "start": 2.16,
+            "end": 2.43,
+            "text": "事"
+          },
+          {
+            "start": 2.43,
+            "end": 2.61,
+            "text": "件"
+          },
+          {
+            "start": 2.61,
+            "end": 2.82,
+            "text": "发"
+          },
+          {
+            "start": 2.82,
+            "end": 2.91,
+            "text": "生"
+          },
+          {
+            "start": 2.91,
+            "end": 3.09,
+            "text": "在"
+          },
+          {
+            "start": 3.09,
+            "end": 3.26,
+            "text": "十"
+          },
+          {
+            "start": 3.26,
+            "end": 3.36,
+            "text": "月"
+          },
+          {
+            "start": 3.36,
+            "end": 3.57,
+            "text": "十"
+          },
+          {
+            "start": 3.57,
+            "end": 3.75,
+            "text": "二"
+          },
+          {
+            "start": 3.75,
+            "end": 3.93,
+            "text": "日"
+          },
+          {
+            "start": 3.93,
+            "end": 4.17,
+            "text": "十"
+          },
+          {
+            "start": 4.17,
+            "end": 4.3,
+            "text": "三"
+          },
+          {
+            "start": 4.3,
+            "end": 4.5,
+            "text": "点"
+          },
+          {
+            "start": 4.5,
+            "end": 4.61,
+            "text": "四"
+          }
+        ],
+        "id": "asr-1"
+      },
+      {
+        "text": "十四分青白江警方通报媒体报道是十月十四日晚",
+        "start": 4.64,
+        "end": 9.22,
+        "complete": true,
+        "words": [
+          {
+            "start": 4.64,
+            "end": 4.76,
+            "text": "十"
+          },
+          {
+            "start": 4.76,
+            "end": 4.91,
+            "text": "四"
+          },
+          {
+            "start": 4.91,
+            "end": 5.15,
+            "text": "分"
+          },
+          {
+            "start": 5.57,
+            "end": 5.87,
+            "text": "青"
+          },
+          {
+            "start": 5.87,
+            "end": 6.05,
+            "text": "白"
+          },
+          {
+            "start": 6.05,
+            "end": 6.2,
+            "text": "江"
+          },
+          {
+            "start": 6.2,
+            "end": 6.44,
+            "text": "警"
+          },
+          {
+            "start": 6.44,
+            "end": 6.57,
+            "text": "方"
+          },
+          {
+            "start": 6.57,
+            "end": 6.77,
+            "text": "通"
+          },
+          {
+            "start": 6.77,
+            "end": 6.95,
+            "text": "报"
+          },
+          {
+            "start": 6.95,
+            "end": 7.16,
+            "text": "媒"
+          },
+          {
+            "start": 7.16,
+            "end": 7.32,
+            "text": "体"
+          },
+          {
+            "start": 7.32,
+            "end": 7.49,
+            "text": "报"
+          },
+          {
+            "start": 7.49,
+            "end": 7.68,
+            "text": "道"
+          },
+          {
+            "start": 7.85,
+            "end": 8.1,
+            "text": "是"
+          },
+          {
+            "start": 8.1,
+            "end": 8.33,
+            "text": "十"
+          },
+          {
+            "start": 8.33,
+            "end": 8.54,
+            "text": "月"
+          },
+          {
+            "start": 8.54,
+            "end": 8.79,
+            "text": "十"
+          },
+          {
+            "start": 8.79,
+            "end": 8.9,
+            "text": "四"
+          },
+          {
+            "start": 8.9,
+            "end": 9,
+            "text": "日"
+          },
+          {
+            "start": 9,
+            "end": 9.22,
+            "text": "晚"
+          }
+        ],
+        "id": "asr-2"
+      }
+    ]
+  }
+}

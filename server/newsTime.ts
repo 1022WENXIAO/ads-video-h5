@@ -23,7 +23,7 @@ const number = (value: string) => {
 };
 const numeral = '[\\d零〇一二两三四五六七八九十]';
 const datePattern = new RegExp(`(${numeral}{1,3})月(${numeral}{1,3})[日号]`, 'g');
-const compact = (text: string) => text.replace(/([零〇一二两三四五六七八九]{4})年/g, (_, year) => `${number(year)}年`).replace(datePattern, (_, month, day) => `${number(month)}月${number(day)}日`).replace(/[\s，。！？；：“”‘’、,.!?;:"']/g, '');
+const compact = (text: string, keepScope = false) => text.replace(/([零〇一二两三四五六七八九]{4})年/g, (_, year) => `${number(year)}年`).replace(datePattern, (_, month, day) => `${number(month)}月${number(day)}日`).replace(keepScope ? /[\s。！？；“”‘’、.!?;"']/g : /[\s，。！？；：“”‘’、,.!?;:"']/g, '');
 const isHeat = (text: string) => /热搜|热榜|榜单|上榜|登榜|HN\b|Hacker\s*News/i.test(text);
 const entryPattern = /上榜|登榜|(?:登上|冲上|冲进|进入|跻身)[^，,。！？；;\n]{0,12}?(?:热搜|热榜|榜单|排行榜)|上(?:了)?(?:百度|微博)?热搜/g;
 const observationPattern = /截至|快照|采样|抓取|观察|核验|榜单显示/g;
@@ -66,6 +66,14 @@ function hasRelativeSubject(text: string): boolean {
   return !!head.replace(/首次|首度|第一次|刚刚|已经|并非|并不是|不是|不能|不可|无法|未能|不足以|没有|否认|确实|真的|当天|当日|那天|彼时|正在|就|才|还|已|刚|没|未|不|无|\s/g, '');
 }
 type Entry = { start: number; end: number; negative: boolean; negativeStart?: number; precise: boolean; already: boolean };
+function nonEntryScope(text: string): boolean {
+  // A date/clock can sit between 非 and the entry it denies. Remove only
+  // parsed time spans within this predicate's prefix; commas, contrasts,
+  // subject attributes and other predicates must still stop this scope.
+  let remainder = text;
+  for (const mention of timeMentions(text).reverse()) remainder = remainder.slice(0, mention.start) + remainder.slice(mention.end);
+  return /^(?:并非|并不是|不是|不能|不可|无法|未能|不足以|没有|没|未|不|无|否认|非|首次|首度|第一次|刚刚|刚|已经|已|当天|当日|那天|彼时|今天|今日|本次|这次|此次|确实|真的|北京时间|在|于|\s)*$/.test(remainder);
+}
 function entries(text: string): Entry[] {
   const result: Entry[] = [];
   let previousEnd = 0;
@@ -83,7 +91,10 @@ function entries(text: string): Entry[] {
       ...(proof && !(relativeObject && /^过?的/.test(object)) ? [{ text: prefix.slice(0, objectStart), start: previousEnd }] : []),
       { text: relativeObject ? object.slice(relativeEnd + 1) : object, start: previousEnd + objectStart + (relativeObject ? relativeEnd + 1 : 0) },
     ];
-    const operators = scope.flatMap(piece => [...piece.text.replace(/不但|不仅|不只|不论|不管|不妨|不久|无论/g, word => ' '.repeat(word.length)).matchAll(/并非|并不是|不是|不能|不可|无法|未能|不足以|没有|没|未|不|无|否认/g)].map(match => ({ start: piece.start + match.index! })));
+    // Standalone 非 can negate this entry predicate ("非首次上榜时间").
+    // Require only time spans/focus/negation between it and the predicate;
+    // 非机动车/非原创报道/非常热门 describe a subject, not denied entry.
+    const operators = scope.flatMap(piece => [...piece.text.replace(/不但|不仅|不只|不论|不管|不妨|不久|无论/g, word => ' '.repeat(word.length)).matchAll(/并非|并不是|不是|不能|不可|无法|未能|不足以|没有|没|未|不|无|否认|非/g)].filter(match => match[0] !== '非' || nonEntryScope(piece.text.slice(match.index! + 1))).map(match => ({ start: piece.start + match.index! })));
     const doubleNegative = operators.length > 0 && operators.length % 2 === 0;
     const unknown = /^(?:的)?(?:时间|时刻|日期)?(?:仍然|仍|尚)?(?:未知|不明|不清楚|不得而知|未获证实|(?:无法|不能)(?:确定|判断|确认)|(?:尚未|未|没有)(?:披露|公布|证实|确认))/.test(suffix) || /是否|能否/.test(prefix) || /(?:是否|能否).*(?:不清楚|不得而知)/.test(suffix);
     const negative = !doubleNegative && (operators.length % 2 === 1 || unknown);
@@ -140,14 +151,17 @@ export function newsObservationFindings(report: LessonReport, requestedAt = Date
   const times: ObservationTime[] = (report.hotResearch.signals || []).flatMap(signal => { try { const value = beijingTimestamp(signal.observedAt); return [{ year: Number(value.slice(0, 4)), month: Number(value.slice(5, 7)), day: Number(value.slice(8, 10)), hour: Number(value.slice(11, 13)), minute: Number(value.slice(14, 16)), second: Number(value.slice(17, 19)), value }]; } catch { return []; } });
   const findings: string[] = [];
   for (const [index, chapter] of (report.chapters || []).entries()) {
-    const texts = [index === 0 ? report.title : undefined, chapter.title, chapter.narration, ...(chapter.claims || []).map(claim => claim.text), chapter.visual?.takeaway, ...(chapter.visual?.items || []).flatMap(item => [item.label, item.detail])].filter((text): text is string => typeof text === 'string');
-    for (const text of texts) {
+    const texts = [index === 0 ? report.title : undefined, chapter.title, chapter.narration, ...(chapter.claims || []).map(claim => claim.text), chapter.visual?.takeaway].filter((text): text is string => typeof text === 'string').map(text=>({text,observationFrame:false}));
+    for(const item of chapter.visual?.items||[])for(const [text,observationFrame] of [[item.label,false],[item.detail,/截至|快照|采样|抓取|观察|核验|榜单显示/.test(item.label||'')]] as const)if(typeof text==='string')texts.push({text,observationFrame});
+    for (const {text,observationFrame} of texts) {
       const sentences = text.split(/[。！？；;\n]/);
       for (const [sentenceIndex, part] of sentences.entries()) {
         const previous = sentences[sentenceIndex - 1] || '', next = sentences[sentenceIndex + 1] || '';
         const sentence = isHeat(part) && previous && dateOnly(previous) ? `${previous}，${part}` : part;
         if (!isHeat(sentence) && !(/截至|快照|采样|抓取|观察|核验|榜单显示/.test(sentence) && (isHeat(previous) || isHeat(next)))) continue;
-        const clauses = propositions(sentence), frame = /截至|快照|采样|抓取|观察|核验|榜单显示/.test(sentence) || /截至|快照|采样|抓取|观察|核验|榜单显示/.test(previous) && isHeat(previous);
+        // A visual detail belongs to its own explicit observation label. Only
+        // attribution is shared; a denial in the label cannot hide an entry.
+        const clauses = propositions(sentence), frame = observationFrame || /截至|快照|采样|抓取|观察|核验|榜单显示/.test(sentence) || /截至|快照|采样|抓取|观察|核验|榜单显示/.test(previous) && isHeat(previous);
         let invalid = false;
         const observation: TimeMention[] = [];
         for (const clause of clauses) {
@@ -162,7 +176,10 @@ export function newsObservationFindings(report: LessonReport, requestedAt = Date
               const claim = compact(sourceClaim);
               if (claim.length < 12) return false;
               for(const sourceSentence of ref.excerpt.split(/[。！？；;\n]/)){
-                const body=compact(sourceSentence),sourceEntries=entries(body);
+                const body=compact(sourceSentence),scopedBody=compact(sourceSentence,true);
+                // Exact quote matching ignores punctuation. Scope parsing
+                // keeps comma boundaries and the separators of real clocks.
+                const sourceEntries=entries(scopedBody).map(entry=>({...entry,start:compact(scopedBody.slice(0,entry.start)).length,end:compact(scopedBody.slice(0,entry.end)).length}));
                 for (let at = body.indexOf(claim); at >= 0; at = body.indexOf(claim, at + 1)) {
                   // Matching words inside a source denial are not evidence
                   // for the opposite affirmative claim. Bind the actual
