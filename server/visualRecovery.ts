@@ -94,6 +94,36 @@ function scopedFindings(report:LessonReport,findings:string[]):string[]{
   return findings.flatMap(text=>{const starts=[...scopeText(text).matchAll(header)].map(match=>match.index!+(match[0].match(/^[，,。；;\n]/)?1:0)),boundaries=starts[0]>0?[0,...starts]:starts;return boundaries.length>1?boundaries.map((start,i)=>text.slice(start,boundaries[i+1]??text.length).trim()).filter(Boolean):[text];});
 }
 
+// Comparing an animation with a quoted, already verified narration is not a
+// request to change that narration. This separate route deliberately does not
+// relax the generic subtitle/spoken/source guards below.
+function narrationReferencedVisualFindings(report:LessonReport,review:RenderReview,findings:string[]):Set<string>{
+  const allowed=new Set<string>(),fact=report.factReview;
+  if(!fact||fact.needsRepair||!Number.isFinite(fact.score)||fact.score<80||fact.findings.length)return allowed;
+  const required=['画幅与音轨','教学事实与来源','旁白语速执行','旁白停顿节奏','教学旁白与动画时间码','字幕原话','字幕时间映射','完整句子','人声响度','分段人声响度一致性','段落衔接音量跳变','段内音量稳定性','声音峰值与削波','段落音色一致性'];
+  if(required.some(name=>review.checks.filter(check=>check.name===name&&check.passed).length!==1||review.checks.filter(check=>check.name===name).length!==1))return allowed;
+  const audio=review.audio,ids=report.chapters.map(chapter=>chapter.id),voice=audio?.voice;
+  if(!audio||audio.userReportedMismatch||audio.segments.length!==ids.length||new Set(audio.segments.map(segment=>segment.id)).size!==ids.length||audio.segments.some(segment=>!ids.includes(segment.id)||![segment.integratedLufs,segment.truePeakDb,segment.voicedSpreadLu].every(Number.isFinite))||voice?.consistency.status!=='passed'||voice.segments.length!==ids.length||new Set(voice.segments.map(segment=>segment.id)).size!==ids.length||voice.segments.some(segment=>!ids.includes(segment.id)||segment.status!=='passed'))return allowed;
+  const compact=(value:string)=>value.replace(/[\p{P}\p{Z}\s]/gu,'').toLowerCase();
+  const quotes=(text:string)=>[...text.matchAll(/(?:旁白|口播|台词|解说|原声)[^“”「」"\n，,。；;]{0,14}\s*((?:[“「"][^”」"\n]{2,160}[”」"]\s*)+)/g)].flatMap(match=>[...match[1].matchAll(/[“「"]([^”」"]+)[”」"]/g)].map(quote=>compact(quote[1])));
+  const spokenFault=(text:string)=>sourceConflict(text)||sourceUnverified(text)||sourceClaimFault(text)||/事实错误|数据错误|公式错误|错读|误读|说错|读错|念错|漏读|漏字|缺字|少字|多字|增字|发音|音色|音量|爆音|削波|失真|口误|缺少音轨|音轨中断/.test(text)||/(?:旁白|口播|台词|解说|原声|语音|字幕)[^，,。；;\n]{0,100}(?:错误|不准确|不正确|不符|不一致|矛盾|未读|没读|遗漏|缺失|多出|多了|少了|漏掉|缺少|不完整|不是原话|并非原话|改为|变成|读成|截断|裁切|遮挡|被遮)/.test(text);
+  const visualIssue=(text:string)=>renderedSurface(text)&&(
+    /(?:步骤|节点|高亮|点亮|动画|动效|时序)/.test(text)&&/未按照|未按|没有按|未逐步|未高亮|未点亮|没有高亮|没有点亮|脱节|错位|未对应|不对应|不匹配/.test(text)
+    ||/(?:标签|节点|流程|图形|动效|画面)/.test(text)&&/冗余|无关|无用途|内容偏多|多余/.test(text)
+  );
+  const candidates=[...new Set(findings)].flatMap(text=>{
+    const targets=findingChapterTargets(report,text);if(targets.length!==1)return [];
+    const chapter=report.chapters.find(chapter=>chapter.id===targets[0])!,index=report.chapters.indexOf(chapter),scope=scopeText(text);
+    if(!mentions(scope,chapter.id)&&!new RegExp(`第(?:${index+1}|${chapterOrdinals[index]})章`).test(scope))return [];
+    if(spokenFault(text)||!visualIssue(text))return [];
+    const cited=quotes(text);if(cited.some(quote=>!compact(chapter.narration).includes(quote)))return [];
+    return [{text,chapterId:chapter.id,cited}];
+  });
+  const anchored=new Set(candidates.filter(candidate=>candidate.cited.length>0).map(candidate=>candidate.chapterId));
+  for(const candidate of candidates)if(anchored.has(candidate.chapterId))allowed.add(candidate.text);
+  return allowed;
+}
+
 // Separate chapter-local visual defects from narrated/source defects. This is
 // a repair route, never a new fact judgment or an instruction to change audio.
 // Unknown semantic feedback is not permission to preserve a questionable line.
@@ -105,6 +135,7 @@ export function lessonRepairPlan(report:LessonReport,review:RenderReview):Lesson
   if(review.status!=='needs-review'||!failed.length||failed.some(check=>!['成片语义审查','新闻报道日期可见'].includes(check.name)))return result;
   const findings=scopedFindings(report,review.semantic?.findings||[]);
   if(!report.factReview||report.factReview.needsRepair){result.kind='script';result.scriptChapterIds=ids;result.scriptFindings=report.factReview?.findings.length?report.factReview.findings:['原稿事实尚未核验，不能只改画面并保留旁白。'];return result;}
+  const narrationVisual=narrationReferencedVisualFindings(report,review,findings);
   for(const text of findings){
     const targets=findingChapterTargets(report,text),chapters=report.chapters.filter(chapter=>targets.includes(chapter.id));
     const single={...review,semantic:{...review.semantic!,findings:[text]}};
@@ -117,7 +148,7 @@ export function lessonRepairPlan(report:LessonReport,review:RenderReview):Lesson
     // or an unknown source is not permission to freeze questionable speech.
     const displayOnlyValue=correct&&quotedNarration(text,chapters)&&text.replace(displayedValueFault,'')!==text&&!unsafeVisual(text.replace(displayedValueFault,''));
     const pureVisual=!scripted&&!sourceUnverified(text)&&!sourceClaimFault(text)&&(!unsafeVisual(text)||displayOnlyValue)&&visualDefect(text)&&(!hasSpoken||correct);
-    if(pureVisual){for(const id of targets){visual.add(id);(result.visualFindings[id]??=[]).push(text);}continue;}
+    if(pureVisual||narrationVisual.has(text)){for(const id of targets){visual.add(id);(result.visualFindings[id]??=[]).push(text);}continue;}
     if(!hasSpoken||!sourceConflict(text)){if(speechOnlyRepair(single)){sound.push({text,targets});continue;}}
     for(const id of targets)script.add(id);result.scriptFindings.push(text);
     if(!scripted&&!unsafeVisual(text))result.unknownFindings.push(text);
@@ -160,6 +191,7 @@ export function lessonVisualBrief(report:LessonReport,chapter:LessonChapter,requ
       '每个图形解释本章已核验的实体、数量或关系；未知外貌与身份使用明确标注的中性示意，不凭图标添加性别、职业、人数或现场事实。',
       '只有确实表达已有关系时才用箭头，只有存在已核验量值与刻度时才用仪表盘；不能以通用图标或重复装饰代替有信息的示意。',
       '保持完整已核验旁白；修复错误的视觉分组、对象与文字归属，不添加无来源的事实或品牌性能。',
+      '返修只重画当前讲解焦点与已核验cue对应的对象、动作和时序；不得凭空增加动作、分类步骤或旁白没有讲解的新分支。审查意见是待核对的缺陷线索，不能作为新事实或直接变成观众标签。',
     ]},
   };
 }

@@ -1,0 +1,468 @@
+{
+  "provenance": {
+    "source": "Actual P27 first review and accepted script, public content only. Original allegations are model review records, not independent pixel or sound truth.",
+    "originalReviewSha256": "4efb10b3d719958ed00070e69589ab125243f9fdf1ddc556ac2a05f434b55b0d",
+    "originalCheckpointSha256": "3d995875494aabb41ab11dfe01a39596a7102898aa45a429f1b4fd4f214cfe3d",
+    "originalScore": 82,
+    "originalSourceExcerptSha256": {
+      "ref-1": "a8786761041f7ecd9032145fcb8b6c6b4f79481a0bb4f0b81d7f61331d0d7dfe",
+      "ref-2": "8b22a9feaa46ecd5ff62f1648f192b4e165ec9ec3c092b30d70500d5b6b2fefa"
+    },
+    "sourceExcerpts": "Nonverbatim brief regression summaries; original private evidence remains immutable.",
+    "mediaAcceptance": false
+  },
+  "report": {
+    "requestedSeconds": 30,
+    "explicitDuration": true,
+    "format": "9:16",
+    "title": "厨余垃圾先沥水",
+    "audience": "在家处理外卖剩菜和果皮、准备投放厨余垃圾的普通居民",
+    "objectives": [
+      "明白厨余垃圾投放前应先沥干水分",
+      "知道汤水会加重家中异味和桶底积水",
+      "了解少带水可减少收运滴漏和后续处理负担"
+    ],
+    "arc": "从外卖剩菜、果皮的家常场景切入，先给出投放前沥水的做法，再对比家中异味，最后说明收运处理影响并收束成一个小动作。",
+    "chapters": [
+      {
+        "id": "chapter-1",
+        "title": "连汤别一起扔",
+        "role": "hook",
+        "goal": "用常见外卖剩菜和果皮引出沥水动作，并说明汤水去向",
+        "prerequisites": [],
+        "narration": "外卖剩菜、苹果皮香蕉皮，倒进厨余桶前，先把汤水沥进下水口，再把固体残渣投放。",
+        "reason": "在原有家庭场景中补充汤汁去向，并把旁白增加到约四十字，提高信息密度，避免语速偏慢。",
+        "referenceIds": [
+          "ref-2"
+        ],
+        "claims": [
+          {
+            "text": "厨余桶可放在水槽边，收集果皮、剩饭等易腐物；牛奶、饮料等流质可以直接倒入下水道；厨余垃圾投放前需沥干水分。",
+            "referenceIds": [
+              "ref-2"
+            ],
+            "basis": "source"
+          }
+        ],
+        "visual": {
+          "kind": "concept",
+          "takeaway": "汤水先入下水口，残渣再进厨余桶",
+          "items": [
+            {
+              "label": "外卖剩菜",
+              "detail": "餐盒倾斜，先让汤汁流出",
+              "cue": "外卖剩菜",
+              "illustration": "modules"
+            },
+            {
+              "label": "果皮",
+              "detail": "苹果皮香蕉皮稍控干",
+              "cue": "苹果皮香蕉皮",
+              "illustration": "modules"
+            },
+            {
+              "label": "沥进下水口",
+              "detail": "流质汤水倒入下水口，固体留下",
+              "cue": "沥进下水口",
+              "illustration": "modules"
+            },
+            {
+              "label": "厨余桶",
+              "detail": "沥干后的固体残渣再投放",
+              "cue": "固体残渣投放",
+              "illustration": "modules"
+            }
+          ]
+        }
+      },
+      {
+        "id": "chapter-2",
+        "title": "少积汤少异味",
+        "role": "foundation",
+        "goal": "解释沥干能减少家中桶底积水和异味",
+        "prerequisites": [
+          "chapter-1"
+        ],
+        "narration": "厨余含水多、有机物多，是微生物喜欢的环境。汤积在袋底桶底，更容易湿黏发酸，沥干后桶边清爽。",
+        "reason": "补足约四十字，保留水分、有机物、微生物与异味的因果链，不增加无关分类内容。",
+        "referenceIds": [
+          "ref-1",
+          "ref-2"
+        ],
+        "claims": [
+          {
+            "text": "厨余垃圾含水量高、有机物丰富，是微生物最理想的培养基。",
+            "referenceIds": [
+              "ref-1"
+            ],
+            "basis": "source"
+          },
+          {
+            "text": "厨余垃圾投放前需沥干水分；厨房产生的垃圾容易腐烂发臭。",
+            "referenceIds": [
+              "ref-2"
+            ],
+            "basis": "source"
+          },
+          {
+            "text": "沥出明水可避免汤水积在袋底和桶底，减少湿黏和发酵发酸的条件。",
+            "referenceIds": [
+              "ref-1",
+              "ref-2"
+            ],
+            "basis": "synthesis",
+            "explanation": "来源说明厨余含水高、有机物丰富，容易腐烂发臭，且投放前需沥干；减少桶内明水即可削弱微生物繁殖和异味产生的潮湿条件。"
+          }
+        ],
+        "visual": {
+          "kind": "comparison",
+          "takeaway": "少积汤，家里桶边少异味",
+          "items": [
+            {
+              "label": "未沥干",
+              "detail": "袋底积汤，湿黏并冒出酸异味",
+              "cue": "更容易湿黏发酸",
+              "illustration": "modules"
+            },
+            {
+              "label": "沥干后",
+              "detail": "桶底无明水，气味更清爽",
+              "cue": "沥干后桶边清爽",
+              "illustration": "modules"
+            }
+          ]
+        }
+      },
+      {
+        "id": "chapter-3",
+        "title": "收运处理也轻松",
+        "role": "recap",
+        "goal": "说明沥水对收运处理的好处，并用简单行动收尾",
+        "prerequisites": [
+          "chapter-1",
+          "chapter-2"
+        ],
+        "narration": "出门少带水，能减少袋底滴漏和渗滤液，降低收运处理负担。记住这个小动作：先沥一沥，再投放。",
+        "reason": "将旁白补足到约四十字，继续使用源头减水的稳妥因果，并用明确口诀帮助记忆和行动。",
+        "referenceIds": [
+          "ref-2"
+        ],
+        "claims": [
+          {
+            "text": "厨余垃圾投放前需沥干水分，并去除塑料袋、牙签、纸巾等杂物。",
+            "referenceIds": [
+              "ref-2"
+            ],
+            "basis": "source"
+          },
+          {
+            "text": "从家庭投放源头沥干水分，可减少随厨余带出的明水，从而降低袋底滴漏、渗滤液产生和收运处理含液废弃物的压力。",
+            "referenceIds": [
+              "ref-2"
+            ],
+            "basis": "synthesis",
+            "explanation": "官方答复明确要求厨余垃圾投放前沥干水分；源头少带水，意味着收运容器和后续处理环节需要承接的游离水分更少，因此可合理归纳为减少滴漏、渗滤液和处理负担。"
+          }
+        ],
+        "visual": {
+          "kind": "concept",
+          "takeaway": "先沥一沥，再投放",
+          "items": [
+            {
+              "label": "少滴漏",
+              "detail": "袋底和收运途中减少汤水外滴",
+              "cue": "袋底滴漏",
+              "illustration": "modules"
+            },
+            {
+              "label": "少渗滤液",
+              "detail": "后续处理少承接多余水分",
+              "cue": "渗滤液",
+              "illustration": "modules"
+            },
+            {
+              "label": "再投放",
+              "detail": "沥干后的剩菜果皮投入厨余桶",
+              "cue": "先沥一沥，再投放",
+              "illustration": "modules"
+            }
+          ]
+        }
+      }
+    ],
+    "references": [
+      {
+        "id": "ref-1",
+        "title": "“代丢垃圾”火了！家里的厨余垃圾，别超过这个时间扔",
+        "url": "https://wsjkw.hangzhou.gov.cn/col/col1229113704/art/2026/art_8f009be8ca8f4bd38ab5bae84ab5e28e.html",
+        "verification": "primary-page",
+        "excerpt": "Nonverbatim source summary for regression: wet kitchen waste provides moisture and organic material for microbes; removing free liquid reduces accumulation."
+      },
+      {
+        "id": "ref-2",
+        "title": "【城市治理】厨房产生的垃圾很容易腐烂发臭，怎么做好家庭厨余垃圾分类？_六安市人民政府",
+        "url": "https://www.luan.gov.cn/hdjl/dwzsk/10686863.html",
+        "verification": "primary-page",
+        "excerpt": "Nonverbatim source summary for regression: separate liquid waste and drain kitchen solids before disposal; remove packaging and other unsuitable material."
+      }
+    ],
+    "factReview": {
+      "score": 90,
+      "needsRepair": false,
+      "findings": [],
+      "suggestions": [
+        "chapter-3：旁白“能减少袋底滴漏和渗滤液，降低收运处理负担”属于源头沥水的合理归纳，但当前直接来源仅支持“厨余垃圾投放前需沥干水分”；后续若补入环卫或厨余处理设施关于游离水、渗滤液减量的权威来源会更稳妥。",
+        "chapter-2：“沥干后桶边清爽”“少异味”是减少水分和湿黏条件下的合理表达，建议配音或字幕保持为“少异味/不容易发酸”，避免被理解成沥干后完全不会臭。",
+        "chapter-1：来源明确举例“牛奶、饮料等流质可以直接倒入下水道”，脚本将外卖汤水概括为“沥进下水口”，建议画面可提示“按当地排水要求，倒少量清汤水，固体油脂另处理”，以免用户把大量凝固油脂或重油污也倒入下水道。",
+        "chapter-3：旁白“能减少袋底滴漏和渗滤液，降低收运处理负担”属于源头沥水的合理归纳，但现有 ref-2 直接支持的是“投放前需沥干水分”，未逐字说明“渗滤液”和“收运处理负担”；后续若补入环卫或处理设施关于厨余污水、渗滤液减量的权威来源会更稳妥。",
+        "chapter-2：“沥干后桶边清爽”“少异味”是减少水分和湿黏条件下的合理表达，建议配音或字幕保持为‘少异味/不容易发酸’，避免被理解成沥干后完全不会臭。"
+      ],
+      "adjudication": {
+        "modelId": "doubao-seed-2-1-lite-260915",
+        "primaryScore": 84,
+        "primaryNeedsRepair": false,
+        "primaryFindings": []
+      }
+    },
+    "workflowId": "controlled-p27-visual-repair",
+    "limitations": [
+      "Controlled source projection for repair routing, not media acceptance."
+    ]
+  },
+  "review": {
+    "status": "needs-review",
+    "score": 82,
+    "checks": [
+      {
+        "name": "实际时长",
+        "passed": true,
+        "detail": "文件30.130秒，方案30.12秒"
+      },
+      {
+        "name": "画幅与音轨",
+        "passed": true,
+        "detail": "预期720×1280，有音轨"
+      },
+      {
+        "name": "方案版本",
+        "passed": true,
+        "detail": "渲染清单哈希与当前方案比对"
+      },
+      {
+        "name": "字幕执行",
+        "passed": true,
+        "detail": "实际渲染指令包含15条字幕，0条叠字"
+      },
+      {
+        "name": "覆盖层执行",
+        "passed": true,
+        "detail": "渲染0条叠字"
+      },
+      {
+        "name": "推镜执行",
+        "passed": true,
+        "detail": "检查渲染方案的逐片段缩放"
+      },
+      {
+        "name": "转场执行",
+        "passed": true,
+        "detail": "检查实际渲染方案的入场叠化"
+      },
+      {
+        "name": "响度归一化执行",
+        "passed": true,
+        "detail": "渲染记录包含逐段和混音两遍测量/处理参数，仍须实测输出一致性"
+      },
+      {
+        "name": "教学目标时长",
+        "passed": true,
+        "detail": "目标30秒，实际30.130秒"
+      },
+      {
+        "name": "旁白语速执行",
+        "passed": true,
+        "detail": "实际每秒3.815字，规划每秒4字，允许3.52–4.64字；实际110字/28.83秒，字数不含标点，音频时长包含自然停顿。 根据实际编码时长和分镜转写核对。"
+      },
+      {
+        "name": "旁白停顿节奏",
+        "passed": true,
+        "detail": "停顿上限0.95秒；实际超限区间[]"
+      },
+      {
+        "name": "教学事实与来源",
+        "passed": true,
+        "detail": "独立脚本事实审查90/100；文献事实核对来源，数学定义与课堂演算独立核算"
+      },
+      {
+        "name": "教学HTML分镜执行",
+        "passed": true,
+        "detail": "实际3段HTML/GSAP分镜；核对画面、声音哈希及统一参考"
+      },
+      {
+        "name": "教学旁白与动画时间码",
+        "passed": true,
+        "detail": "字幕和重点动画来自生成音频的真实转写匹配，未用计划文案替代转写"
+      },
+      {
+        "name": "教学概念递进",
+        "passed": true,
+        "detail": "后章前置知识指向先前章节；实际讲解效果另经音频与图解审查"
+      },
+      {
+        "name": "字幕原话",
+        "passed": true,
+        "detail": "字幕与选中原声逐字稿比对"
+      },
+      {
+        "name": "字幕时间映射",
+        "passed": true,
+        "detail": "字幕时间与源字词到成片的映射比对，源时间仍为模型估计"
+      },
+      {
+        "name": "完整句子",
+        "passed": true,
+        "detail": "精剪片段必须覆盖所选完整原句"
+      },
+      {
+        "name": "人声响度",
+        "passed": true,
+        "detail": "综合响度-16.00 LUFS，峰值-3.08 dBTP"
+      },
+      {
+        "name": "分段人声响度一致性",
+        "passed": true,
+        "detail": "各段实际LUFS：chapter-1=-16.12；chapter-2=-16.11；chapter-3=-16.12。极差0.01 LU，限值2.5 LU；静音段无有效响度单独列出。"
+      },
+      {
+        "name": "段落衔接音量跳变",
+        "passed": true,
+        "detail": "相邻段综合响度最大差0.01 LU，限值2 LU；chapter-1→chapter-2@9.09s: 0.01 LU，头尾瞬时差4.7 LU；chapter-2→chapter-3@20.5s: 0.01 LU，头尾瞬时差2.6 LU。头尾瞬时差需听辨，不能将自然重音直接当作失败。"
+      },
+      {
+        "name": "段内音量稳定性",
+        "passed": true,
+        "detail": "有声窗P90−P10：chapter-1=6.7 LU；chapter-2=6.6 LU；chapter-3=7.2 LU，限值8 LU；忽略低能量停顿，保留自然语气。"
+      },
+      {
+        "name": "声音峰值与削波",
+        "passed": true,
+        "detail": "实际各段真峰值：chapter-1=-3.08 dBTP；chapter-2=-3.66 dBTP；chapter-3=-3.48 dBTP；编码后上限−1 dBTP，处理目标−1.5 dBTP。"
+      },
+      {
+        "name": "段落音色一致性",
+        "passed": true,
+        "detail": "passed：以chapter-1作为声线基准，全片各段均为中年男性标准普通话AI播音风格，音高、鼻腔共鸣、音色厚重感、吐字咬字、录音空间保持一致，未出现可感知的声线漂移或音色突变。；定性听辨，不是声纹认证"
+      },
+      {
+        "name": "成片语义审查",
+        "passed": false,
+        "detail": "chapter-1：0.6秒、1.87秒、6.02秒、9.14秒四个抽帧中，画面同时完整显示了“外卖剩菜苹果皮香蕉皮”字幕，同时左上角的5个步骤标签全部为灰色线稿，未按照旁白“外卖剩菜、苹果皮香蕉皮”“汤水沥进下水口”“固体残渣投放”的顺序逐步高亮当前讲解的动作节点，动效时序和旁白脱节，无法帮助观众对应讲解内容。；chapter-1：全阶段抽帧的画面里都同时显示了“牛奶饮料等流质”“果皮剩饭归厨余”两个标签，以及底部完整的5个流程节点，内容偏多，且没有任何内容和本旁白的讲解对应，属于冗余的无用途动效，不符合用户“别扩成垃圾分类大全”的要求。"
+      }
+    ],
+    "semantic": {
+      "score": 82,
+      "findings": [
+        "chapter-1：0.6秒、1.87秒、6.02秒、9.14秒四个抽帧中，画面同时完整显示了“外卖剩菜苹果皮香蕉皮”字幕，同时左上角的5个步骤标签全部为灰色线稿，未按照旁白“外卖剩菜、苹果皮香蕉皮”“汤水沥进下水口”“固体残渣投放”的顺序逐步高亮当前讲解的动作节点，动效时序和旁白脱节，无法帮助观众对应讲解内容。",
+        "chapter-1：全阶段抽帧的画面里都同时显示了“牛奶饮料等流质”“果皮剩饭归厨余”两个标签，以及底部完整的5个流程节点，内容偏多，且没有任何内容和本旁白的讲解对应，属于冗余的无用途动效，不符合用户“别扩成垃圾分类大全”的要求。"
+      ],
+      "suggestions": [
+        "chapter-1当前的5节点静态堆叠画面信息密度偏高，建议精简掉无对应讲解的两个旁支标签，随旁白进度依次高亮“剩菜果皮收拢→汤水沥进下水口→固体残渣投放厨余桶”三个核心动作节点，让动效和讲解节奏匹配。",
+        "chapter-3：旁白“能减少袋底滴漏和渗滤液，降低收运处理负担”属于源头沥水的合理归纳，后续可补充环卫或厨余处理设施关于游离水、渗滤液减量的权威来源，进一步增强内容说服力。",
+        "chapter-1：可在画面小字提示“少量清汤水可倒入下水口，凝固油脂和重油污按当地要求单独处理”，避免误导用户将大量油脂直接倒入下水道。"
+      ]
+    },
+    "audio": {
+      "limits": {
+        "targetLufs": -16,
+        "truePeakDb": -1.5,
+        "segmentSpreadLu": 2.5,
+        "adjacentJumpLu": 2,
+        "withinSpreadLu": 8
+      },
+      "segments": [
+        {
+          "id": "chapter-1",
+          "mode": "generated",
+          "start": 0,
+          "end": 9.34,
+          "integratedLufs": -16.12,
+          "truePeakDb": -3.08,
+          "voicedSpreadLu": 6.7,
+          "headLufs": -11.6,
+          "tailLufs": -18.7
+        },
+        {
+          "id": "chapter-2",
+          "mode": "generated",
+          "start": 9.09,
+          "end": 20.75,
+          "integratedLufs": -16.11,
+          "truePeakDb": -3.66,
+          "voicedSpreadLu": 6.6,
+          "headLufs": -14,
+          "tailLufs": -16.3
+        },
+        {
+          "id": "chapter-3",
+          "mode": "generated",
+          "start": 20.5,
+          "end": 30.12,
+          "integratedLufs": -16.12,
+          "truePeakDb": -3.48,
+          "voicedSpreadLu": 7.2,
+          "headLufs": -13.7,
+          "tailLufs": -18.9
+        }
+      ],
+      "segmentSpreadLu": 0.01,
+      "jumps": [
+        {
+          "from": "chapter-1",
+          "to": "chapter-2",
+          "time": 9.09,
+          "integratedDeltaLu": 0.01,
+          "boundaryDeltaLu": 4.7
+        },
+        {
+          "from": "chapter-2",
+          "to": "chapter-3",
+          "time": 20.5,
+          "integratedDeltaLu": 0.01,
+          "boundaryDeltaLu": 2.6
+        }
+      ],
+      "userReportedMismatch": false,
+      "voice": {
+        "method": "model-listening; not biometric verification",
+        "consistency": {
+          "status": "passed",
+          "detail": "以chapter-1作为声线基准，全片各段均为中年男性标准普通话AI播音风格，音高、鼻腔共鸣、音色厚重感、吐字咬字、录音空间保持一致，未出现可感知的声线漂移或音色突变。"
+        },
+        "segments": [
+          {
+            "id": "chapter-1",
+            "status": "passed",
+            "detail": "作为本次审听的声线基准，是带有鼻腔共鸣、音色稍厚重的标准播音男声，无机械感或金属感。"
+          },
+          {
+            "id": "chapter-2",
+            "status": "passed",
+            "detail": "与chapter-1基准相比，音高、共鸣、音色、吐字及录音空间均无明显差异，仅存在自然语气停顿，未发生声线漂移。"
+          },
+          {
+            "id": "chapter-3",
+            "status": "passed",
+            "detail": "与chapter-1基准相比，语音物理特征保持一致，仅结尾截断，无明显声线变化。"
+          }
+        ]
+      }
+    },
+    "limitations": [
+      "源字词时间码为模型估计，未做独立强制对齐。",
+      "历史与事实依据实际联网引用和独立脚本审查，未逐条读取原论文全文。",
+      "旁白是统一的合成教学声线，不代表用户本人；字词时间码由Seed 2.1 Lite估计。",
+      "教学旁白为合成声音；音色一致性由模型对实际分段做定性听辨，非声纹认证。",
+      "语义审查覆盖完整音频和11张关键抽帧，未逐帧审阅整片。"
+    ]
+  }
+}
