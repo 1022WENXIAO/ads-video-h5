@@ -4,7 +4,7 @@ export interface NumericVisualCheck {
   chapterId:string;frameTime:number;claim:string;expectedCount:number;observedCount:number;observedEvidence:string;
 }
 export interface VisualReviewContext {frameTimes:number[];chapters:Array<{id:string;start:number;end:number}>}
-export const NUMERIC_VISUAL_REVIEW_INSTRUCTION='逐个核对实际画面中带明确数量的图解：标注top-k/选择k个时，数清稳定抽帧的激活节点和连接路径是否一致；柱高与数值、单位和刻度须一致。标注“示意”不能豁免明确数字矛盾。不要因早期动画尚未全部进入就推断缺少节点；只对可清楚观察的稳定画面报问题，不确定则说明未验证。可另返回numericVisualChecks:[{chapterId,frameTime,claim,expectedCount,observedCount,observedEvidence}]，claim逐字抄录实际数量标签，frameTime只能取本次提供的成片抽帧时点，observedEvidence说明实际看见哪些激活节点/路径；这些是模型观测，不自报机器已数像素。明确数量不一致必须列findings，不能因总分高或示意标记降为建议。每条finding只写一个具体缺陷；拼写错误必须逐字给实际原串和正确目标串，两串完全相同不构成拼写错误；同条排版问题须单独列出。';
+export const NUMERIC_VISUAL_REVIEW_INSTRUCTION='逐个核对实际画面中带明确数量的图解：标注top-k/选择k个时，数清稳定抽帧的激活节点和连接路径是否一致；柱高与数值、单位和刻度须一致。柱状图须在同一张稳定成片帧中，沿同一轴和同一零基线，先辨认至少两个刻度，再核对柱体矩形的实际顶端；数值标签文字的上沿不是柱体顶端，不能把接近最高刻度误说成对齐最高刻度。不得用不同轴、不同帧或尚未稳定的入场状态比较柱高。刻度、单位或柱边界无法清楚辨认时，只如实说明该项抽样未核验，不编造精确读数或断言数值冲突；已清楚证实的数值错误仍须列为缺陷。标注“示意”不能豁免明确数字矛盾。不要因早期动画尚未全部进入就推断缺少节点；只对可清楚观察的稳定画面报问题，不确定则说明未验证。可另返回numericVisualChecks:[{chapterId,frameTime,claim,expectedCount,observedCount,observedEvidence}]，claim逐字抄录实际数量标签，frameTime只能取本次提供的成片抽帧时点，observedEvidence说明实际看见哪些激活节点/路径；这些是模型观测，不自报机器已数像素。明确数量不一致必须列findings，不能因总分高或示意标记降为建议。每条finding只写一个具体缺陷；拼写错误必须逐字给实际原串和正确目标串，两串完全相同不构成拼写错误；同条排版问题须单独列出。';
 export function parseNumericVisualChecks(value:unknown):NumericVisualCheck[]|undefined {
   if(value===undefined)return;
   if(!Array.isArray(value)||value.length>24)throw new Error('数字图解观察须为不超过24项的数组。');
