@@ -18,6 +18,7 @@ import { assertVisibleContent } from './visibleContent';
 import { numericDrawingText, assertNumericDrawingNode, NUMERIC_DRAWING_CSS, NUMERIC_DRAWING_CHECK_SCRIPT } from './drawingNumberLayout';
 import {AuthoredDrawingGeometryError,type DrawingGeometryIssue} from './drawingGeometry';
 import {addSvgTextPaintReport} from './svgPaintOcclusion';
+import {addDrawingTextLayoutReport} from './drawingTextLayout';
 
 export const hashBytes = (v: string | Buffer) => createHash('sha256').update(v).digest('hex');
 const escape = (s:string) => s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]!));
@@ -134,9 +135,10 @@ export async function checkHtmlProject(project:string,options?:{fullCheck?:boole
       const issues=result.issues||result.findings||['lint','runtime','layout','motion','contrast'].flatMap(key=>result[key]?.findings||[]).filter(f=>f.severity==='error');
       if(!result.ok)throw new Error(`HTML ${task} 未通过：${JSON.stringify(issues).slice(0,850)}`);
       if(code!==0)throw new Error(`HTML ${task} 检查器异常退出（${code??'中断'}），未确认检查完成。`);
-      const checked=await addSvgTextPaintReport(project,task,result,stdout);
+      const svgChecked=await addSvgTextPaintReport(project,task,result,stdout);
+      const checked=await addDrawingTextLayoutReport(project,task,svgChecked,stdout,result);
       if(checked!==result)await writeFile(path.join(project,`${task}-report.json`),JSON.stringify(checked,null,2));
-      if(!checked.ok)throw new Error(`HTML ${task} 未通过：${JSON.stringify(checked.svgPaint.findings).slice(0,850)}`);
+      if(!checked.ok)throw new Error(`HTML ${task} 未通过：${JSON.stringify(checked.layout?.findings||[]).slice(0,850)}`);
       resolve();
     }catch(e){
       await writeFile(path.join(project,`${task}-failure.json`),JSON.stringify({at:new Date().toISOString(),exitCode:code,outputLength:stdout.length,stderr:stderr.slice(-500),reason:e instanceof Error?e.message:String(e)},null,2),{mode:0o600}).catch(()=>{});

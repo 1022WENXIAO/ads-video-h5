@@ -253,6 +253,46 @@ function spokenModelSuffixVersions(text:string):string[]{
   const spans=lessonModelVersionSpans(text);
   return spokenModelVersions(text).filter((_,index)=>spans[index].suffix!==undefined);
 }
+function assertIntegerIdentifierSpeech(chapter:LessonChapter,analysis:AudioAnalysis,strict=true):Array<[string,string]>|undefined{
+  // Separate from model NER: this protects literal Latin+integer labels in
+  // the intended script, including vehicle/hardware IDs. Do not infer a
+  // missing letter/value from the script or mutate any transcript/word.
+  const integer=(value:string)=>{
+    const digits:Record<string,string>={零:'0',〇:'0',一:'1',二:'2',两:'2',三:'3',四:'4',五:'5',六:'6',七:'7',八:'8',九:'9'};
+    if(/^[\d零〇一二两三四五六七八九]+$/.test(value))return [...value].map(c=>digits[c]??c).join('');
+    const number=speechNumberValue(value),names='零一二三四五六七八九';
+    // The general quantity parser is deliberately not a proof that malformed
+    // spoken IDs (一亿万/九百零零) are valid same-value spellings. Require a
+    // complete standard cardinal spelling before projecting a unit-form ID.
+    const cardinal=(n:number):string=>{
+      if(n>=10000){const unit=n>=100000000?100000000:10000,rest=n%unit;return cardinal(Math.floor(n/unit))+(unit===100000000?'亿':'万')+(rest?(rest<unit/10?'零':'')+cardinal(rest):'');}
+      let result='',gap=false;
+      for(const [place,unit]of [[1000,'千'],[100,'百'],[10,'十'],[1,'']] as const){const digit=Math.floor(n/place)%10;if(digit){result+=(gap?'零':'')+names[digit]+unit;gap=false;}else if(result)gap=true;}
+      return result||'零';
+    };
+    const standard=(text:string)=>text.replace(/〇/g,'零').replace(/两/g,'二').replace(/^一十/,'十');
+    if(!Number.isSafeInteger(number)||number<0||standard(value)!==standard(cardinal(number)))return 'invalid:'+value;
+    return String(number);
+  };
+  const literals=[...chapter.narration.matchAll(/(?<![A-Za-z])([A-Za-z]{1,24})[\s-]*(\d+)(?![\d.点A-Za-z零〇一二两三四五六七八九十百千万亿])/g)];
+  const expected=literals.map(m=>({prefix:m[1].toLowerCase(),value:integer(m[2])}));
+  if(!expected.length)return [];
+  const prefixes=new Set(expected.map(id=>id.prefix));
+  const aliases:Array<[string,string]>=[];
+  for(const heard of [analysis.transcript,analysis.sentences.flatMap(s=>s.words).map(w=>w.text).join('')]){
+    const matches=[...heard.matchAll(/(?<![A-Za-z])([A-Za-z]{1,24})[\s-]*([\d零〇一二两三四五六七八九十百千万亿]+)(?![\d.点A-Za-z零〇一二两三四五六七八九十百千万亿])/g)].filter(m=>prefixes.has(m[1].toLowerCase()));
+    const actual=matches.map(m=>({prefix:m[1].toLowerCase(),value:integer(m[2])}));
+    if(JSON.stringify(expected)!==JSON.stringify(actual)){
+      if(!strict)return;
+      throw new Error(`章节${chapter.id}实际型号或版本数字与脚本不同，完整整数编号匹配不完整：${speechValueDifference(expected,actual)}；需独立复听或重录，不能补齐字母、数值或出现次数。`);
+    }
+    matches.forEach((match,index)=>{if(match[0]!==literals[index][0])aliases.push([match[0],literals[index][0]]);});
+  }
+  // Only whole heard IDs already agreeing in both independent ASR layers can
+  // use the existing spelling projection. Ordinary prose/number grammar and
+  // model NER stay unchanged; raw ASR and actual span owners remain separate.
+  return aliases;
+}
 function speechDecimalText(text:string):string{
   const digits:Record<string,string>={'零':'0','〇':'0','一':'1','二':'2','三':'3','四':'4','五':'5','六':'6','七':'7','八':'8','九':'9'};
   const [integer,fraction]=text.split(/[.点]/);
@@ -352,8 +392,13 @@ function clockAlignmentAnalysis(analysis:AudioAnalysis,clocks:SpeechClock[],tran
 // Keep the original ASR separately; the replacement inherits the heard span,
 // never invents missing speech or estimates a new sentence duration.
 export function correctLessonTranscript(chapter:LessonChapter,analysis:AudioAnalysis,references:ResearchReference[]=[]):AudioAnalysis{
+  if(analysis.status!=='ready'||!Array.isArray(analysis.sentences)||typeof analysis.transcript!=='string')return analysis;
+  const integerAliases=assertIntegerIdentifierSpeech(chapter,analysis,false);
+  // Leave disagreement intact for the strict verifier. Other spelling aliases
+  // must not rebuild the transcript from words and hide this original error.
+  if(!integerAliases)return analysis;
   analysis=correctCommonNarrationSpelling(chapter,analysis);
-  const aliases:Array<[string,string]>=[['智源','智元'],['报到','报道'],['算术题','算数题'],['算数题','算术题'],['cloud','Claude'],['Cloud','Claude'],['x二','X2'],['X二','X2'],['军方误差','均方误差'],['流族','留足'],['交叉商','交叉熵'],['交叉伤','交叉熵'],['交叉墒','交叉熵'],['绞链','铰链'],['饺链','铰链'],['易列','易例'],['编辑','边际'],['加码','伽马'],['加马','伽马'],['对其偏好','对齐偏好'],['复log','负log'],['sem','sim'],['派西塔','πθ'],['派ref','πref'],['德尔塔','δ'],['伽马','γ'],['陶','τ'],['贝塔','β'],['西格玛','σ']];
+  const aliases:Array<[string,string]>=[...integerAliases,['智源','智元'],['报到','报道'],['算术题','算数题'],['算数题','算术题'],['cloud','Claude'],['Cloud','Claude'],['x二','X2'],['X二','X2'],['军方误差','均方误差'],['流族','留足'],['交叉商','交叉熵'],['交叉伤','交叉熵'],['交叉墒','交叉熵'],['绞链','铰链'],['饺链','铰链'],['易列','易例'],['编辑','边际'],['加码','伽马'],['加马','伽马'],['对其偏好','对齐偏好'],['复log','负log'],['sem','sim'],['派西塔','πθ'],['派ref','πref'],['德尔塔','δ'],['伽马','γ'],['陶','τ'],['贝塔','β'],['西格玛','σ']];
   for(const term of chapter.narration.match(/\b[A-Za-z][A-Za-z-]{1,24}(?=\b|\d)/g)||[])if(term!==term.toLowerCase())aliases.push([term.toLowerCase(),term]);
   // Single-letter labels (N卡/A卡) carry the same spoken letter in either
   // case. Require the identical adjacent Han context; never change a letter
@@ -505,6 +550,7 @@ export function lessonCaptionAnalysis(chapter:LessonChapter,analysis:AudioAnalys
 }
 export function alignLessonSpeech(chapter:LessonChapter,analysis:AudioAnalysis):{similarity:number;cues:NonNullable<LessonChapter['cues']>}{
   if(analysis.status!=='ready'||!analysis.sentences.length)throw new Error('实际教学旁白没有可辨识的音频转写。');
+  assertIntegerIdentifierSpeech(chapter,analysis);
   analysis=modelNumberAlignment(analysis);
   const originalCues=chapter.visual.items.map(item=>item.cue),sourceWordText=analysis.sentences.flatMap(s=>s.words).map(w=>w.text).join('');
   const expectedClocks=speechClocks(chapter.narration),wordClocks=speechClocks(sourceWordText),transcriptClocks=speechClocks(analysis.transcript);

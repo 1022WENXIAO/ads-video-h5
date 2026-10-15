@@ -80,7 +80,24 @@ function newsIllustration(item:LessonVisual['items'][number],index:number):strin
   const subject=item.label+' '+item.detail;
   const inferred=/风格|画风/.test(subject)?'gallery':/视线|鼠标|交互/.test(subject)?'interaction':/英雄|超人|角色/.test(subject)?'character':/代码|编程|JavaScript/i.test(subject)?'code':/公告|官网/.test(subject)?'announcement':/界面|标签|页面/.test(subject)?'interface':/步骤|第.{1,2}步|关闭联网/.test(subject)?'steps':'signal';
   const object=/保温|真空|杯壁|反射层/.test(subject)?'thermos':/柱状|纵轴|横轴|零基线/.test(subject)?'bar-chart':/读书|阅读|书页/.test(subject)?'book':/T恤|折衣|衣服|衣袖/.test(subject)?'clothing':/书桌|桌面|收纳/.test(subject)?'desk':/咖啡|滤杯|手冲/.test(subject)?'coffee':/月亮|地球|日食|月食/.test(subject)?'orbit':/电池|储能/.test(subject)?'battery':/杭州|城市|地图/.test(subject)?'map':/手柄|摇杆|GameCube/i.test(subject)?'controller':/专家|路由|稀疏模块/.test(subject)?'modules':/显卡|显存|内存|固态|硬盘|\b(?:GPU|CPU|SSD|VRAM|RAM)\b|RTX\s*\d|RX\s*\d/i.test(subject)?'hardware':/画风|绘画风格/.test(subject)?'gallery':/英雄|超人/.test(subject)?'character':undefined;
-  const kind=object||(item.illustration&&NEWS_ILLUSTRATIONS.includes(item.illustration)?item.illustration:inferred);
+  // A suggested illustration is a production hint, not evidence that the
+  // pictured object exists in this item. Unknown objects keep their actual
+  // label/detail instead of being replaced with a CPU, thermos or cursor.
+  const grounded:Record<string,RegExp>={
+    hardware:/显卡|显存|内存|固态|硬盘|处理器|\b(?:GPU|CPU|SSD|VRAM|RAM|DDR\d?)\b|RTX\s*\d|RX\s*\d/i,
+    modules:/专家|路由|稀疏模块/,controller:/手柄|摇杆|GameCube/i,
+    character:/英雄|超人|角色|人物/,gallery:/风格|画风/,
+    interaction:/视线|鼠标|交互|点击|触控/,code:/代码|编程|JavaScript/i,
+    interface:/界面|标签|页面/,announcement:/公告|官网|通报/,
+    steps:/步骤|第.{1,2}步|关闭联网/,
+    signal:/信号|线索|消息|来源|证据|状态|确认|核查/,
+    thermos:/保温|真空|杯壁|反射层/,'bar-chart':/柱状|纵轴|横轴|零基线|\d+(?:\.\d+)?(?:亿美元|亿元|万美元|万元|美元|元|%|％|GB|MB|台|个|人|次)/,
+    book:/读书|阅读|书页/,clothing:/T恤|折衣|衣服|衣袖/,desk:/书桌|桌面|收纳/,
+    coffee:/咖啡|滤杯|手冲/,orbit:/月亮|地球|日食|月食/,battery:/电池|储能/,map:/杭州|城市|地图/,
+  };
+  const requested=item.illustration&&NEWS_ILLUSTRATIONS.includes(item.illustration)&&grounded[item.illustration]?.test(subject)?item.illustration:undefined;
+  const kind=object||requested||(grounded[inferred]?.test(subject)?inferred:undefined);
+  if(!kind)return '';
   const hero='<path d="M65 53L38 120Q90 139 145 117L110 53" fill="var(--news-accent)" opacity=".7"/><circle cx="88" cy="33" r="17" fill="currentColor"/><path d="M62 57Q87 47 115 57L124 104H107L100 86V133H78V86L70 104H53Z" fill="#54779b"/><path d="M79 66L97 66L103 78L88 91L74 78Z" fill="var(--news-accent)"/>';
   const frame='<rect x="12" y="16" width="156" height="114" rx="10" fill="none" stroke="currentColor" stroke-width="3"/><path d="M12 41H168" stroke="#95a2b5" stroke-width="2"/><circle cx="27" cy="29" r="3" fill="var(--news-accent)"/><circle cx="39" cy="29" r="3" fill="#95a2b5"/>';
   const person='<circle cx="90" cy="34" r="19" fill="currentColor"/><path d="M42 129V93Q44 66 90 62Q136 66 138 93V129Z" fill="#54779b"/><path d="M87 70H94L101 114L90 127L80 114Z" fill="var(--news-accent)"/>';
@@ -155,7 +172,7 @@ ${motionLibrary}window.__timelines={};const tl=gsap.timeline({paused:true});tl.f
 export function lessonRendererHash(){
   // Include helpers behind the renderer/caption functions as well as their
   // entry points: a changed closure policy must invalidate prior evidence.
-  const policies=['./lessonHtmlRecovery.ts','./lessonHtmlFallbackPolicy.ts','./drawingGeometry.ts','./svgPaintOcclusion.ts','./drawingCardLayout.ts','./narrativeScenes.ts','./visualRecovery.ts','./visualReviewEvidence.ts','./visualRetentionReview.ts','./visualRetentionSources.ts','./reviewResults.ts','./semanticReview.ts','./renderReview.ts','./lessonLayoutRepair.ts','./lessonModelVersions.ts','./lessonModelSpelling.ts','./lessonRepairScope.ts','./lessonScriptReviewContext.ts','./lessonAudio.ts','./lessonSpeechProof.ts','./narrationBatchRecovery.ts','./taskPool.ts','./narrationHomophones.ts','./generatedNarrationOrthography.ts','./lessonSpec.ts','./lessonCommonSpelling.ts','./lessonSpeechCoverage.ts','./newsTime.ts','../package.json'].map(file=>readFileSync(new URL(file,import.meta.url),'utf8'));
+  const policies=['./lessonHtmlRecovery.ts','./lessonHtmlFallbackPolicy.ts','./drawingGeometry.ts','./svgPaintOcclusion.ts','./drawingTextLayout.ts','./drawingCardLayout.ts','./narrativeScenes.ts','./visualRecovery.ts','./visualReviewEvidence.ts','./visualRetentionReview.ts','./visualRetentionSources.ts','./reviewResults.ts','./semanticReview.ts','./renderReview.ts','./lessonLayoutRepair.ts','./lessonModelVersions.ts','./lessonModelSpelling.ts','./lessonRepairScope.ts','./lessonScriptReviewContext.ts','./lessonAudio.ts','./lessonSpeechProof.ts','./narrationBatchRecovery.ts','./taskPool.ts','./narrationHomophones.ts','./generatedNarrationOrthography.ts','./lessonSpec.ts','./lessonCommonSpelling.ts','./lessonSpeechCoverage.ts','./newsTime.ts','../package.json'].map(file=>readFileSync(new URL(file,import.meta.url),'utf8'));
   return hashBytes([...policies,CARD_LAYOUT_RENDERER_SIGNATURE,lessonSceneHtml,newsIllustration,curveSvg,formulaSvg,drawingHtml,authorDrawing,validateDrawing,drawingDimensions,produceLessonScene,barChartSvg,validateBarChart,chapterBarChart,inferBarData,barChartDetail,quantitativeBarIntent,requireBarChartData,visualRepairTargets,speechOnlyRepair,lessonVisualBrief,createNewsPublicationAnnotation,newsPublicationTimestamp,newsPublicationNoteHtml,newsPublicationNoteCss,inspectNewsPublicationHtml,numericDrawingText,assertNumericDrawingNode,NUMERIC_DRAWING_CSS,NUMERIC_DRAWING_CHECK_SCRIPT,assertVisibleContent,correctLessonTranscript,lessonCaptionAnalysis,captionsFromTranscript,voiceComparisonTask].map(fn=>fn.toString()).join('\n'));
 }
 

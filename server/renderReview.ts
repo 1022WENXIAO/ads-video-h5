@@ -12,7 +12,7 @@ import { excludesBgm } from './intents';
 import { inspectAudioLevels, inspectVoice, soundChecks, hasRejectedVoice } from './audioQuality';
 import { newsFreshAtOriginalRequest } from './reviewResults';
 import { newsRenderAcceptance } from './lessonAcceptance';
-import { sampleVisualRetentionSources } from './visualRetentionSources';
+import { sampleVisualRetentionSources, pairedVisualRetentionMessages, type VisualRetentionSourceFrame } from './visualRetentionSources';
 import { extractVisualRetentionRequirements, visualRetentionReviewInstruction, VisualRetentionReviewError } from './visualRetentionReview';
 import { requestSemanticReview, SEMANTIC_EVIDENCE_REVIEW_INSTRUCTION } from './semanticReview';
 import { reviewAudio } from './reviewAudio';
@@ -177,7 +177,7 @@ export async function reviewRender(file: string, plan: EditPlan, media: MediaIte
         limitations.push(plan.lesson?'教学旁白为合成声音；音色一致性由模型对实际分段做定性听辨，非声纹认证。':'音色由模型对真实参考音与成片分段做定性听辨，非声纹身份认证；听辨串匹配音量，实际响度以未改动的成片测量为准。');
       }
       const audition = await reviewAudio(file, path.join(temp, 'audio.mp3'), publish);
-      const frames: Array<{ type: string; image_url?: { url: string }; text?: string }> = [];
+      const outputFrames: Array<{time:number;image:{ type: string; image_url?: { url: string }; text?: string }}> = [];
       const offsets=timelineOffsets(plan);
       const candidates=[...new Set([...[0.02,0.2,0.5,0.8,0.98].map((r)=>plan.targetSeconds*r), ...(plan.editorial||plan.reconstruction?plan.clips.map((c,i)=>offsets[i]+(c.end-c.start)/2):[]), ...(plan.motions||[]).flatMap((m)=>[m.start+.22,Math.min(m.end-.1,m.start+1.1)])].map((t)=>+Math.min(plan.targetSeconds-.05,t).toFixed(3)))].sort((a,b)=>a-b);
       if(plan.lesson)for(const [i,c] of plan.clips.entries()){const duration=c.end-c.start,lastCue=Math.max(0,...(plan.lesson.chapters[i]?.cues||[]).map(cue=>cue.end));candidates.push(offsets[i]+Math.min(2.5,duration*.2),offsets[i]+Math.min(duration-.2,Math.max(duration*.7,lastCue+1)));}
@@ -187,19 +187,18 @@ export async function reviewRender(file: string, plan: EditPlan, media: MediaIte
       for (const time of times) {
         const image = path.join(temp, `${time}.jpg`);
         await runFFmpeg(['-v', 'error', '-y', '-ss', String(time), '-i', file, '-frames:v', '1', '-vf', plan.lesson?'scale=960:-2':'scale=540:-2', image]);
-        frames.push({type:'text',text:`成片时间 ${time} 秒`});
-        frames.push({ type: 'image_url', image_url: { url: publish ? await publish(image, 'image/jpeg') : `data:image/jpeg;base64,${(await readFile(image)).toString('base64')}` } });
+        outputFrames.push({time,image:{ type: 'image_url', image_url: { url: publish ? await publish(image, 'image/jpeg') : `data:image/jpeg;base64,${(await readFile(image)).toString('base64')}` } }});
       }
-      const retentionSources=visualRetentionRequirements.length&&plan.editorial?await sampleVisualRetentionSources(file,plan,media,temp):undefined;
-      const sourceFrames:Array<{type:string;text?:string;image_url?:{url:string}}>=[];
+      const retentionSources=visualRetentionRequirements.length&&plan.editorial?await sampleVisualRetentionSources(file,plan,media,temp,times):undefined;
+      const sourceFrames:Array<{frame:VisualRetentionSourceFrame;image:{type:string;image_url:{url:string}}}>=[];
       for(const source of retentionSources?.frames||[]){
-        sourceFrames.push({type:'text',text:`原素材对照 sourceId=${source.sourceId}；源时间 ${source.sourceTime} 秒；这不是成片帧，不得用此时间填成片frameTimes。`});
-        sourceFrames.push({type:'image_url',image_url:{url:publish?await publish(source.image,'image/jpeg'):`data:image/jpeg;base64,${(await readFile(source.image)).toString('base64')}`}});
+        sourceFrames.push({frame:source,image:{type:'image_url',image_url:{url:publish?await publish(source.image,'image/jpeg'):`data:image/jpeg;base64,${(await readFile(source.image)).toString('base64')}`}}});
       }
-      if(retentionSources)limitations.push('视觉保留审查同次请求使用最多2段原素材各4张真实对照帧，实际源SHA和时间：'+JSON.stringify(retentionSources.frames.map(({image,...evidence})=>evidence))+(retentionSources.truncated?'；更多原素材未抽样，不能声称已完整覆盖。':'；有界抽样不证明全源视频已完整观看。'));
-      const sourceInstruction=retentionSources?'实际原素材仅供对照已有画面内容，不是成片证据。实际选入源范围：'+JSON.stringify(retentionSources.selectedRanges)+'；必须核对所要求的已有画面是否真正进入成片，不得把原源帧当作成片已保留。'+(retentionSources.truncated?'仅对照最多两源，未观察到的内容保持未验证。':''):'';
+      const frames=retentionSources?pairedVisualRetentionMessages(outputFrames,sourceFrames):outputFrames.flatMap(({time,image})=>[{type:'text',text:`成片时间 ${time} 秒`},image]);
+      if(retentionSources)limitations.push('视觉保留审查同次请求使用最多2段原素材各4张真实对照帧，实际源SHA、同刻映射和末尾见证：'+JSON.stringify(retentionSources.frames.map(({image,...evidence})=>evidence))+(retentionSources.truncated?'；未覆盖源/片段：'+JSON.stringify(retentionSources.uncoveredClips)+'，不能声称已完整覆盖。':'；有界抽样不证明全源视频已完整观看。'));
+      const sourceInstruction=retentionSources?'实际原素材仅供对照已有画面内容，不是成片证据。实际选入源范围：'+JSON.stringify(retentionSources.selectedRanges)+'；mappedOutputTime与sourceTime明确绑定的原帧紧随其真实同刻成片帧，方向或形态变化只在同一对图中比较；末尾见证没有同刻成片对应，只能支持选片覆盖观察，不能拿异时帧推断箭头变向。必须核对所要求的已有画面是否真正进入成片，不得把原源帧当作成片已保留。'+(retentionSources.truncated?'未观察到的源/片段保持未验证：'+JSON.stringify(retentionSources.uncoveredClips):''):'';
       const result = await requestSemanticReview(config, [{ role: 'system', content: (await loadEditingSkill('qingjian-render-review'))+(plan.lesson&&!plan.lesson.hotResearch?'\n'+await loadEditingSkill('qingjian-teaching-video'):'')+(plan.lesson?.hotResearch?'\n'+newsRenderAcceptance(prompt,requestedAt):'')+SEMANTIC_EVIDENCE_REVIEW_INSTRUCTION }, { role: 'user', content: [
-        { type: 'input_audio', input_audio: audition }, ...frames, ...sourceFrames,
+        { type: 'input_audio', input_audio: audition }, ...frames,
         { type: 'text', text: `这是成片的完整音频以及${times.length}张标有时间的抽帧，含各分镜和绘制动画早期/稳定阶段。用户要求：${prompt}。${plan.lesson?.hotResearch?"本片是简短新闻图解，按新闻快讯核验版本、日期、不确定性和播报节奏；不要求课堂式定义、推导或完整编年史。收尾可以用核心结论与行动提醒，不必逐条重复前文全部案例；可选背景与更丰富镜头放入suggestions，真实错读、错数、不可读图解、用户明确要求的音乐缺失仍为缺陷。":""}实际混音输入：${JSON.stringify({original:true,bgm:manifest.bgm,narration:manifest.narration})}；只有实际输入为true才表示有该音轨，未启用的音量参数不意味着加了音乐或配音。实际方案：${JSON.stringify(plan)}。${plan.avatars?.length?"作者形象为独立透明序列帧，严查是否显示整张网格、透明背景是否破坏、人物是否遮挡主图解或字幕、身份是否前后稳定；状态动画不需要同步口型。":""}真实剪切边界(成片秒)：${JSON.stringify(timelineOffsets(plan).slice(1))}。音频剪切只发生在这些边界附近；位于一个连续源片段内部的字幕短语切换不是硬切。原素材的口误或停顿可单独评价，不能捏造成新增剪切。${plan.lesson?.hotResearch?'本片是从新闻主题制作的图解短片，全部旁白为同一合成声音。逐章核对实际发音、数字与版本、新闻日期、字幕拼写和图解的对象及因果；用来源与实际音视频定位缺陷。图解可以是面向普通观众的明确示意，不要求课堂定义或数学推导。':plan.lesson?'这是从主题制作的教学视频，全部旁白为同一合成声音。每条实际缺陷必须注明对应章节ID（如ch7）及具体修复要求；全局问题标明global，避免返修漏掉其他章节。仅实际听到的残句、错读、不可读图解或核心概念错误要求返修；额外推导或可选背景建议不能当作错误。检查定义、公式与参数、数值例子、曲线坐标、年代、任务差异、前置概念和应用是否讲清楚；图解应解释概念，不能只重复字幕。所有章节已完整渲染，早期抽帧未出现后续节点不等于最终遗漏。检查教学节奏和朗读英文字母的准确性。':'原声与新增分镜已按mode标记；新增台词是获授权的参考声音合成，不是源录音。审查图形能否解释因果、SOP与知识库而非只重复字幕；示意成果标注示意，不能当作实测。注意合成音色与原音差异。'}${NUMERIC_VISUAL_REVIEW_INSTRUCTION}${visualRetentionReviewInstruction(visualRetentionRequirements)}${sourceInstruction}所选源原话：${JSON.stringify(expected)}。用户原始指令才是必须满足的风格约束。不能把程序绘制推断成必须黑白、无彩色或不允许装饰；未遮挡内容、未与明确风格冲突的配色和装饰偏好属于suggestions。字幕遗漏须核对实际画面和完整音频，不能仅凭ASR或方案中的参考文案断言真实漏字；若只是不同抽帧的短语切换，或无法听清是否漏字，说明不确定性，不能编造精确听辨结论。只据真实音频和这些抽帧评审，无法观察的部分不要编造。评分必须严格：80分表示可发布但有改进空间，90分以上须接近专业成片。不要只罗列优点。保留原声不代表必须保留重录残句，选句中缺少谓语的半句或重复同一观点需要返修。检查标签是否拥挤、孤字换行、仅重复字幕，以及明显的近远景突跳。严审观点、论据、结论，跳句是否导致逻辑断裂，动效标签是否有信息用途、是否遮脸/字幕。输出JSON：{"score":0到100,"findings":["仅实际且需返修的缺陷，注明章节ID"],"suggestions":["非阻塞改进建议"],"needsRepair":true或false}。findings和suggestions须区分：更多历史节点、额外推导、镜头创意等可选扩展放入suggestions，实际错读、漏字、不可读画面或核心概念错误放入findings。needsRepair只用于实际缺陷或低于80分；任何实际缺陷仍必须返修，不得把错误降为建议。细微标点、语气词差异不判错；抽帧不能证明完整观看。字幕按短语分行，单帧不显示下一行不等于遗漏或硬切原音。只有听到原话被截断或实际漏字才能报告。抽帧无法验证完整推镜或每处转场，应记为未验证，不能凭此判失败。不要给未经音频核实的精确词时间码。${newsCandidate?` 另须返回newsPublication:{visible:boolean,chapterId:string,quote:string,frameTime:number}：只据本次首章真实抽帧读取报道日期。chapterId应为${newsCandidate.chapterId}，frameTime必须是上述实际抽帧秒数；quote逐字抄录可读的“报道日期”行，仅含该日期及北京时间标记，不含其他示意说明。期望来源标记为“${newsCandidate.label}”，但不能从方案或期望文字推定画面可见。没有清楚看到、不可读、被遮挡或日期不符时visible=false并如实填写实际所见；不自报哈希、HTML检查或证明通过。`:""}` },
       ] }],metric=>requests.push(metric),Boolean(newsCandidate),{frameTimes:times,visualRetentionRequirements,visualRetentionSources:retentionSources,chapters:plan.clips.map((clip,index)=>({id:clip.sceneId||plan.lesson?.chapters[index]?.id||clip.sourceId,start:offsets[index],end:offsets[index]+clip.end-clip.start}))});
       if(result.retentionAttempts?.length)limitations.push('原始视觉保留逐项评分及模型抽帧观察保留为审计，未提分：'+JSON.stringify(result.retentionAttempts));

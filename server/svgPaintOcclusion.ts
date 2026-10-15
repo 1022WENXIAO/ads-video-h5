@@ -10,6 +10,7 @@ export interface SvgTextPaintFinding {
   code:'text_occluded';severity:'error';time:number;selector:string;containerSelector:string;
   text:string;message:string;coveredFraction:number;
   rect:{left:number;top:number;right:number;bottom:number;width:number;height:number};
+  affectedGlyphs?:Array<{char:string;utf16Start:number;utf16End:number;coveredInkSamples:number;totalInkSamples:number;coveredFraction:number;paths:string[];rect:{left:number;top:number;right:number;bottom:number;width:number;height:number}}>;
 }
 export interface SvgTextPaintReport {version:1;htmlHash:string;samples:number[];findings:SvgTextPaintFinding[];}
 
@@ -93,6 +94,7 @@ export function auditSvgTextPaint(input:{time:number}):SvgTextPaintFinding[]{
       if(paintAlpha(style.color)*opacity(element)<.6)continue;
       const font=`${style.fontStyle} ${style.fontWeight} ${style.fontSize} ${style.fontFamily}`;
       let utf16=0,totalInk=0,coveredInk=0,cover:Element|undefined;
+      const affectedGlyphs:NonNullable<SvgTextPaintFinding['affectedGlyphs']>=[];
       const range=document.createRange();range.selectNodeContents(textNode);const textRect=range.getBoundingClientRect();
       for(const char of text){
         const start=utf16;utf16+=char.length;
@@ -114,6 +116,7 @@ export function auditSvgTextPaint(input:{time:number}):SvgTextPaintFinding[]{
         }
         totalInk+=ink.length;
         if(!nearby.length)continue;
+        let glyphCovered=0;const glyphPaths=new Set<string>();
         for(const pixel of ink){
           const x=rect.left+pixel.x*rect.width,y=rect.top+pixel.y*rect.height,stack=document.elementsFromPoint(x,y);
           const textIndex=stack.findIndex(hit=>hit===element||element.contains(hit)||hit.contains(element));
@@ -123,11 +126,15 @@ export function auditSvgTextPaint(input:{time:number}):SvgTextPaintFinding[]{
             const point=new DOMPoint(x,y).matrixTransform(item.inverse);
             return item.fillAlpha>=.6&&item.shape.isPointInFill(point)||item.strokeAlpha>=.6&&item.shape.isPointInStroke(point)&&item.strokePainted(point);
           });
-          if(hit){coveredInk++;cover??=hit.shape;}
+          if(hit){coveredInk++;glyphCovered++;glyphPaths.add(selector(hit.shape));cover??=hit.shape;}
         }
+        // A long label must not dilute one severely damaged glyph into its
+        // whole-span average. Keep the 15% ink threshold and require multiple
+        // actual raster samples, rather than rejecting a one-pixel contact.
+        if(glyphCovered>=4&&glyphCovered/ink.length>=.15)affectedGlyphs.push({char,utf16Start:start,utf16End:utf16,coveredInkSamples:glyphCovered,totalInkSamples:ink.length,coveredFraction:+(glyphCovered/ink.length).toFixed(6),paths:[...glyphPaths],rect:{left:rect.left,top:rect.top,right:rect.right,bottom:rect.bottom,width:rect.width,height:rect.height}});
       }
       const atomic=[...text.trim()].length<=16&&!/\s/.test(text.trim()),fraction=totalInk?coveredInk/totalInk:0;
-      if(cover&&coveredInk>0&&(atomic||fraction>=.15))issues.push({code:'text_occluded',severity:'error',time:input.time,selector:selector(element),containerSelector:selector(cover),text:text.trim(),coveredFraction:+fraction.toFixed(6),rect:{left:textRect.left,top:textRect.top,right:textRect.right,bottom:textRect.bottom,width:textRect.width,height:textRect.height},message:'Actual SVG fill/stroke is painted above loaded-font text ink. Move the graphic and label into separate readable zones.'});
+      if(cover&&coveredInk>0&&(atomic||fraction>=.15||affectedGlyphs.length))issues.push({code:'text_occluded',severity:'error',time:input.time,selector:selector(element),containerSelector:selector(cover),text:text.trim(),coveredFraction:+fraction.toFixed(6),message:'Actual SVG fill/stroke is painted above loaded-font text ink. Move the graphic and label into separate readable zones.',affectedGlyphs,rect:{left:textRect.left,top:textRect.top,right:textRect.right,bottom:textRect.bottom,width:textRect.width,height:textRect.height}});
       if(issues.length>64)throw new Error('SVG paint inspection exceeds the bounded finding count.');
     }
     return issues;

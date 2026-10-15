@@ -17,9 +17,12 @@ export function timelineDuration(plan: EditPlan): number {
 }
 export function captionsFromTranscript(plan: EditPlan, media: MediaItem[], style: TimelineText['style'] = 'subtitle'): TimelineText[] {
   const offsets = timelineOffsets(plan); const captions: TimelineText[] = [];
+  const sourceCaptionOwners=new Map<TimelineText,{clip:number;sentence:NonNullable<MediaItem['analysis']>['sentences'][number]|undefined;last:NonNullable<MediaItem['analysis']>['sentences'][number]['words'][number]}>();
   plan.clips.forEach((clip, index) => {
     const analysis = media.find((m) => m.id === clip.sourceId)?.analysis;
     const allWords = analysis?.sentences.flatMap((s) => s.words) || [];
+    const wordOwners=new Map(analysis?.sentences.flatMap(sentence=>sentence.words.map(word=>[word,sentence] as const)));
+    const wordIndices=new Map(allWords.map((word,i)=>[word,i]));
     const breakWords = new Set(analysis?.captionBreaks?.map((i) => allWords[i]));
     const words = allWords.filter((w) => w.start >= clip.start - 0.03 && w.end <= clip.end + 0.03);
     const safeEnds=new Set([...new Intl.Segmenter('zh',{granularity:'word'}).segment(words.map((w)=>w.text).join(''))].map((s)=>s.index+s.segment.length));
@@ -39,19 +42,31 @@ export function captionsFromTranscript(plan: EditPlan, media: MediaItem[], style
       for(const span of quantities){for(let k=span.start+1;k<span.end;k++)safeEnds.delete(k);safeEnds.add(span.end);}
     }
     let position=0;let pendingBreak=false;
-    let text = ''; let start = 0; let end = 0;let lastWord:typeof words[number]|undefined;let previousEndedClause=true;
+    let text = ''; let start = 0; let end = 0;let firstWord:typeof words[number]|undefined;let lastWord:typeof words[number]|undefined;let previousEndedClause=true;
     const flush = () => {
       if (text){
         const caption={ start: +(offsets[index] + start - clip.start).toFixed(3), end: +(offsets[index] + end - clip.start).toFixed(3), text, style, animation:'none' as const },prior=captions.at(-1);
-        if(plan.lesson&&text.length<=2&&!previousEndedClause&&prior&&prior.start>=offsets[index]&&prior.text.length+text.length<=26&&caption.end-prior.start<=6&&caption.start-prior.end<=.6){prior.text+=text;prior.end=caption.end;}
-        else captions.push(caption);
+        const owner=prior&&sourceCaptionOwners.get(prior),sentence=firstWord&&wordOwners.get(firstWord);
+        // A provider's display break may leave a grammatical particle alone.
+        // Join display blocks only inside one actual source sentence/clip and
+        // across adjacent word owners sharing a time boundary. This preserves
+        // every heard word/time and does not repair source completeness flags.
+        const mergeSourceSuffix=!plan.lesson&&/^[的地得了着过吗呢吧]$/.test(text)&&prior&&owner&&firstWord&&lastWord&&sentence
+          &&owner.clip===index&&owner.sentence===sentence&&wordOwners.get(lastWord)===sentence
+          &&wordIndices.get(firstWord)===wordIndices.get(owner.last)!+1
+          &&Math.abs(firstWord.start-owner.last.end)<=.03
+          &&[...prior.text+text].reduce((width,char)=>width+(/[\u0000-\u007f]/.test(char)?.5:1),0)<=18
+          &&caption.end-prior.start<=3;
+        if(mergeSourceSuffix&&lastWord){prior.text+=text;prior.end=caption.end;owner.last=lastWord;}
+        else if(plan.lesson&&text.length<=2&&!previousEndedClause&&prior&&prior.start>=offsets[index]&&prior.text.length+text.length<=26&&caption.end-prior.start<=6&&caption.start-prior.end<=.6){prior.text+=text;prior.end=caption.end;}
+        else {captions.push(caption);if(!plan.lesson&&lastWord)sourceCaptionOwners.set(caption,{clip:index,sentence,last:lastWord});}
         previousEndedClause=Boolean(lastWord&&breakWords.has(lastWord));
       }
-      text = '';lastWord=undefined;
+      text = '';firstWord=undefined;lastWord=undefined;
     };
     for (const w of words) {
       if (text && (text.length + w.text.length > 40 || (plan.lesson&&w.start-end>0.5&&safeEnds.has(position)) || (!analysis?.captionBreaks && (text.length + w.text.length > 18 || w.end - start > 3 || w.start - end > 0.5)))) {flush();pendingBreak=false;}
-      if (!text) start = w.start;
+      if (!text) {start = w.start;firstWord=w;}
       text += w.text; end = w.end;lastWord=w;
       position+=w.text.length;pendingBreak ||= breakWords.has(w)||Boolean(plan.lesson&&(text.length>=18||w.end-start>=3));
       if (pendingBreak&&safeEnds.has(position)) {flush();pendingBreak=false;}
