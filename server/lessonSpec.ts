@@ -4,6 +4,7 @@ import { intentText, wantsCurrentResearch } from './intents';
 import { assertVisibleContent } from './visibleContent';
 import { assertNarrationHanCoverage } from './lessonSpeechCoverage';
 import { correctNarrationHomophones } from './narrationHomophones';
+import { correctCommonNarrationSpelling } from './lessonCommonSpelling';
 
 function durationNumber(value:string):number {
   if(value==='半')return .5;
@@ -321,6 +322,7 @@ function clockAlignmentAnalysis(analysis:AudioAnalysis,clocks:SpeechClock[],tran
 // Keep the original ASR separately; the replacement inherits the heard span,
 // never invents missing speech or estimates a new sentence duration.
 export function correctLessonTranscript(chapter:LessonChapter,analysis:AudioAnalysis,references:ResearchReference[]=[]):AudioAnalysis{
+  analysis=correctCommonNarrationSpelling(chapter,analysis);
   const aliases:Array<[string,string]>=[['智源','智元'],['报到','报道'],['算术题','算数题'],['算数题','算术题'],['cloud','Claude'],['Cloud','Claude'],['x二','X2'],['X二','X2'],['军方误差','均方误差'],['流族','留足'],['交叉商','交叉熵'],['交叉伤','交叉熵'],['交叉墒','交叉熵'],['绞链','铰链'],['饺链','铰链'],['易列','易例'],['编辑','边际'],['加码','伽马'],['加马','伽马'],['对其偏好','对齐偏好'],['复log','负log'],['sem','sim'],['派西塔','πθ'],['派ref','πref'],['德尔塔','δ'],['伽马','γ'],['陶','τ'],['贝塔','β'],['西格玛','σ']];
   for(const term of chapter.narration.match(/\b[A-Za-z][A-Za-z-]{1,24}(?=\b|\d)/g)||[])if(term!==term.toLowerCase())aliases.push([term.toLowerCase(),term]);
   // Single-letter labels (N卡/A卡) carry the same spoken letter in either

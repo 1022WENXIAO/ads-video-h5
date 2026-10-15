@@ -40,7 +40,7 @@ import { recoverToolDecision } from './workflowDriver';
 import { creationBrief } from './creationBrief';
 import { verifyCreativeResearch, researchCreativeTopic } from './creativeResearch';
 import { canRetryWorkflowError, retryBudgetExhausted } from './executionErrors';
-import { NarrationAnalysisError, recognizeExistingNarration } from './narrationAnalysisRecovery';
+import { NarrationAnalysisError, NarrationVerificationError, recognizeExistingNarration, verifyNarrationSpeech } from './narrationAnalysisRecovery';
 import type { AudioUnderstandingOptions } from './audioUnderstanding';
 
 interface Options {
@@ -416,7 +416,7 @@ export async function runLessonWorkflow(o:Options){
         const key=hashBytes(chapter.id+chapter.narration+voiceRevision);
         phase=gapRetakes.has(key)?'script':'narration';gapRetakes.add(key);
         chapterVoiceRevisions[chapter.id]=(chapterVoiceRevisions[chapter.id]||0)+1;
-        throw new Error(`章节${chapter.id}存在超出${pacing.maxPauseSeconds}秒的实测低能量停顿${JSON.stringify(gaps)}。${phase==='narration'?'保留已核验脚本与其他旁白，仅重录本章。':'本章重录后仍有长停顿，改写拗口表达再重录。'}不能靠静止画面掩盖。`);
+        throw new NarrationVerificationError('pause',chapter.id,`章节${chapter.id}存在超出${pacing.maxPauseSeconds}秒的实测低能量停顿${JSON.stringify(gaps)}。${phase==='narration'?'保留已核验脚本与其他旁白，仅重录本章。':'本章重录后仍有长停顿，改写拗口表达再重录。'}不能靠静止画面掩盖。`);
       }
       await persistRawSpeech(chapter,file);
       return {chapter,file,preparedFile,duration:await probeAudio(preparedFile),cached};
@@ -447,11 +447,11 @@ export async function runLessonWorkflow(o:Options){
         const item:MediaItem={id,ownerId:o.ownerId,name:`教学旁白-${chapter.title}${lexicon?'；术语：'+lexicon:''}`,origin:'generated',kind:'audio',mimeType:'audio/mpeg',duration,url:'',createdAt:new Date().toISOString()};
         try{
           const gaps=await trace.run('inspect_speech_gaps',`核对最终旁白停顿 · ${chapter.title}`,{chapterId:chapter.id,audioHash:hash,maxPauseSeconds:pacing.maxPauseSeconds},()=>inspectLessonSpeechGaps(adjusted,pacing.maxPauseSeconds));
-          if(gaps.length)throw new Error(`章节${chapter.id}实际旁白存在超出${pacing.maxPauseSeconds}秒的长停顿${JSON.stringify(gaps)}，需要重录。`);
+          if(gaps.length)throw new NarrationVerificationError('pause',chapter.id,`章节${chapter.id}实际旁白存在超出${pacing.maxPauseSeconds}秒的长停顿${JSON.stringify(gaps)}，需要重录。`);
           const rawAnalysis=await recognizeExistingNarration(analysisAttempt=>trace.run('transcribe_chapter',`${analysisAttempt?'重试识别相同旁白':'听辨台词'} · ${chapter.title}`,{chapterId:chapter.id,audioHash:hash,duration,analysisAttempt},()=>o.analyze(item,adjusted,{purpose:'generated-narration'})));await writeFile(path.join(dir,'speech-analysis-raw.json'),JSON.stringify(rawAnalysis,null,2),{mode:0o600});
-          const verify=(value:AudioAnalysis,analysisId:string)=>trace.run('verify_chapter_speech',`核对台词 · ${chapter.title}`,{chapterId:chapter.id,audioHash:hash,analysisId},async()=>{const corrected=correctLessonTranscript(chapter,value,report!.references);return {corrected,aligned:alignLessonSpeech(chapter,corrected)};});let checked:Awaited<ReturnType<typeof verify>>;
+          const verify=(value:AudioAnalysis,analysisId:string)=>trace.run('verify_chapter_speech',`核对台词 · ${chapter.title}`,{chapterId:chapter.id,audioHash:hash,analysisId},async()=>verifyNarrationSpeech(chapter.id,()=>{const corrected=correctLessonTranscript(chapter,value,report!.references);return {corrected,aligned:alignLessonSpeech(chapter,corrected)};}));let checked:Awaited<ReturnType<typeof verify>>;
           try{checked=await verify(rawAnalysis,item.id);}catch(error){
-            if(!/匹配|年份|原词|数学符号|数字|重复字/.test(String(error)))throw error;
+            if(!(error instanceof NarrationVerificationError)||error.kind!=='speech'||error.chapterId!==chapter.id)throw error;
             const recheckItem={...item,id:randomUUID()};
             try {
               const recheck=await recognizeExistingNarration(analysisAttempt=>trace.run('transcribe_chapter',`${analysisAttempt?'重试复听相同旁白':'独立复听术语'} · ${chapter.title}`,{chapterId:chapter.id,audioHash:hash,duration,priorAnalysisId:item.id,analysisId:recheckItem.id,reason:String(error),analysisAttempt},()=>o.analyze(recheckItem,adjusted,{purpose:'generated-narration'})));
@@ -460,13 +460,14 @@ export async function runLessonWorkflow(o:Options){
               const detail=`章节${chapter.id}初次台词核验：${String(error)}；独立复听核验：${String(recheckError)}`;
               await writeFile(path.join(dir,'speech-verification-failure.json'),JSON.stringify({audioHash:hash,firstError:String(error),recheckError:String(recheckError)},null,2),{mode:0o600});
               if(recheckError instanceof NarrationAnalysisError)throw new NarrationAnalysisError(detail,recheckError);
+              if(recheckError instanceof NarrationVerificationError&&recheckError.kind==='speech'&&recheckError.chapterId===chapter.id)throw new NarrationVerificationError('speech',chapter.id,detail,{cause:recheckError,firstError:error});
               throw new Error(detail,{cause:recheckError});
             }
             checked.corrected.warnings=[...checked.corrected.warnings,'初次识别存在关键术语或字词疑点，同一音频经独立复听核验；未用脚本补齐缺失字词。'];
             await writeFile(metaFile,JSON.stringify({hash,id:recheckItem.id}),{mode:0o600});
           }
           const {corrected,aligned}=checked,analysis=lessonCaptionAnalysis(chapter,corrected);chapter.speechMatch=aligned.similarity;chapter.cues=aligned.cues;speech.set(chapter.id,{file:adjusted,analysis});await writeFile(path.join(dir,'speech-analysis.json'),JSON.stringify(analysis,null,2),{mode:0o600});verified=true;break;
-        }catch(error){lastError=error;if(error instanceof NarrationAnalysisError)throw error;if(attempt===1||!/匹配|年份|原词|数学符号|数字|长停顿|重复字/.test(String(error))){if(/匹配|年份|原词|数学符号|数字|长停顿|重复字/.test(String(error))){phase='script';throw new Error(`${String(error)}；章节${chapter.id}已完成同一台词的有限复听和重录，下一步须定向改写拗口表达。保留已核验事实、数值含义、限定条件与用户明确要求；非必须逐字读出的难读专名可改为来源支持的通俗描述，并在图解或引用中保留正式名。明确要求念出专名或逐字保留的内容继续保留，优先使用已核验发音提示。不能将错误识别结果写成台词，也不能只缩短句子却原样重复导致失败的表达。`,{cause:error});}throw error;}
+        }catch(error){lastError=error;if(error instanceof NarrationAnalysisError)throw error;const quality=error instanceof NarrationVerificationError&&error.chapterId===chapter.id;if(attempt===1||!quality){if(quality){phase='script';throw new NarrationVerificationError(error.kind,chapter.id,`${String(error)}；章节${chapter.id}已完成同一台词的有限复听和重录，下一步须定向改写拗口表达。保留已核验事实、数值含义、限定条件与用户明确要求；非必须逐字读出的难读专名可改为来源支持的通俗描述，并在图解或引用中保留正式名。明确要求念出专名或逐字保留的内容继续保留，优先使用已核验发音提示。不能将错误识别结果写成台词，也不能只缩短句子却原样重复导致失败的表达。`,{cause:error});}throw error;}
           const spoken=spokenLessonText(chapter.narration),pronunciation=pronunciationFor(chapter);const result=await trace.run('synthesize_chapter',`重录错字 · ${chapter.title}`,{chapterId:chapter.id,narration:spoken,correction:String(error),...(pronunciation.hints.length?{pronunciationHints:pronunciation.hints}:{})},()=>generateAudio(`使用@Audio1同一声音。${voiceStyle}${pronunciation.prompt?' '+pronunciation.prompt:''} 上次核验发现：${String(error).slice(0,300)}。必须完整准确地朗读下面的文字，日期按汉字读法，小数每一位数字清楚读出，不能增删。只朗读台词，不朗读核验意见。台词：${spoken}`,audioConfig,reference));await writeRawSpeech(chapter,file,result.bytes);await prepareChapterSpeech(chapter,file,preparedFile);await adjustChapterSpeech(chapter,preparedFile,adjusted,tempo);
         }
       }
@@ -611,7 +612,7 @@ export async function runLessonWorkflow(o:Options){
         // charge twice; their verified-output/revision recovery remains above.
         const mediaSubmission=['synthesize_narration','draw_lesson_scenes'].includes(next);
         const transient=!(error instanceof NarrationAnalysisError)&&!/^热点研究缺少可核验/.test(detail)&&!retryBudgetExhausted(error)
-          &&(!mediaSubmission&&canRetryWorkflowError(error)||/音频理解第.*(?:时间码|字词|格式无效|截断)/i.test(detail));
+          &&!mediaSubmission&&canRetryWorkflowError(error);
         if(transient&&retries++<2)continue;
         throw new Error(`${current?'新闻制作':'教学'}工作流未完成；阶段${phase}：${detail.slice(0,800)}`,{cause:error});
       }

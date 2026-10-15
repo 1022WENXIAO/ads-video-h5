@@ -1,0 +1,1567 @@
+{
+  "scope": "Public narration and actual archived ASR word/time projection from the failed acc0a495 local supplier workflow; no audio listening or new video acceptance. IDs projected; raw sourceHash/text/times/caption breaks unchanged. Original narration/id/visual joined only after exact equality against immutable first-script snapshot.",
+  "chapter": {
+    "id": "ch1",
+    "title": "早高峰报错",
+    "role": "hook",
+    "goal": "快速说明何时、哪里出现了什么异常。",
+    "prerequisites": [],
+    "narration": "今天早上八点后，不少用户打开DeepSeek，网页和手机APP都提示服务器暂时不可用。百度热搜快照也显示相关话题，但热搜采样时间不能当作故障开始时间。",
+    "reason": "用用户可见报错开场，同时澄清榜单观察时间与故障时间不同，避免倒推首发时间。",
+    "referenceIds": [
+      "ref-2"
+    ],
+    "claims": [
+      {
+        "text": "10月15日北京时间早上8点后，DeepSeek网页和APP显示“服务器暂时不可用”。",
+        "referenceIds": [
+          "[depth limited]"
+        ],
+        "basis": "source"
+      },
+      {
+        "text": "百度热搜在2026年10月15日10:23:24的快照中显示相关话题；该时间只是榜单观察时间，不能当作故障开始时间。",
+        "referenceIds": [
+          "[depth limited]"
+        ],
+        "basis": "synthesis",
+        "explanation": "研究记录将百度榜单observedAt定义为榜单快照观察时刻；第一财经正文只证明早上8点后出现报错，因此二者不能互相替代。"
+      }
+    ],
+    "visual": {
+      "kind": "concept",
+      "takeaway": "八点后网页和APP报错",
+      "items": [
+        {
+          "label": "08:00后报错",
+          "detail": "DeepSeek网页与APP提示“服务器暂时不可用”（示意）",
+          "cue": "今天早上八点后",
+          "illustration": "interface"
+        },
+        {
+          "label": "网页入口",
+          "detail": "浏览器页面无法正常进入对话（示意）",
+          "cue": "网页",
+          "illustration": "interface"
+        },
+        {
+          "label": "手机APP",
+          "detail": "移动端也出现相同不可用提示（示意）",
+          "cue": "手机APP",
+          "illustration": "interface"
+        }
+      ]
+    }
+  },
+  "records": [
+    {
+      "stage": "听辨台词 · 早高峰报错",
+      "analysis": {
+        "status": "ready",
+        "sourceHash": "b9b2c0179d5c9ea585b0e67a5802a1866b5c4ccbaafb872fdfcfc3dcb191b0e2",
+        "duration": 14.93,
+        "transcript": "今天早上八点后\n不少用户打开deepseek\n网页和手机app都提示服务器暂时不可用\n百度热搜快照也显示相关话题\n但热搜采样时间不能当做故障开始时间",
+        "sentences": [
+          {
+            "id": "archived-sentence-0",
+            "start": 0.33,
+            "end": 1.82,
+            "words": [
+              {
+                "start": 0.33,
+                "end": 0.54,
+                "text": "今"
+              },
+              {
+                "start": 0.54,
+                "end": 0.75,
+                "text": "天"
+              },
+              {
+                "start": 0.75,
+                "end": 0.96,
+                "text": "早"
+              },
+              {
+                "start": 0.96,
+                "end": 1.11,
+                "text": "上"
+              },
+              {
+                "start": 1.11,
+                "end": 1.35,
+                "text": "八"
+              },
+              {
+                "start": 1.35,
+                "end": 1.53,
+                "text": "点"
+              },
+              {
+                "start": 1.53,
+                "end": 1.82,
+                "text": "后"
+              }
+            ],
+            "text": "今天早上八点后",
+            "complete": true
+          },
+          {
+            "id": "archived-sentence-1",
+            "start": 2.1,
+            "end": 3.84,
+            "words": [
+              {
+                "start": 2.1,
+                "end": 2.27,
+                "text": "不"
+              },
+              {
+                "start": 2.27,
+                "end": 2.46,
+                "text": "少"
+              },
+              {
+                "start": 2.46,
+                "end": 2.61,
+                "text": "用"
+              },
+              {
+                "start": 2.61,
+                "end": 2.82,
+                "text": "户"
+              },
+              {
+                "start": 2.82,
+                "end": 3.06,
+                "text": "打"
+              },
+              {
+                "start": 3.06,
+                "end": 3.24,
+                "text": "开"
+              },
+              {
+                "start": 3.24,
+                "end": 3.84,
+                "text": "deepseek"
+              }
+            ],
+            "text": "不少用户打开deepseek",
+            "complete": true
+          },
+          {
+            "id": "archived-sentence-2",
+            "start": 4.2,
+            "end": 8.02,
+            "words": [
+              {
+                "start": 4.2,
+                "end": 4.44,
+                "text": "网"
+              },
+              {
+                "start": 4.44,
+                "end": 4.62,
+                "text": "页"
+              },
+              {
+                "start": 4.62,
+                "end": 4.8,
+                "text": "和"
+              },
+              {
+                "start": 4.8,
+                "end": 4.96,
+                "text": "手"
+              },
+              {
+                "start": 4.96,
+                "end": 5.19,
+                "text": "机"
+              },
+              {
+                "start": 5.19,
+                "end": 5.79,
+                "text": "app"
+              },
+              {
+                "start": 5.79,
+                "end": 5.97,
+                "text": "都"
+              },
+              {
+                "start": 5.97,
+                "end": 6.18,
+                "text": "提"
+              },
+              {
+                "start": 6.18,
+                "end": 6.39,
+                "text": "示"
+              },
+              {
+                "start": 6.39,
+                "end": 6.6,
+                "text": "服"
+              },
+              {
+                "start": 6.6,
+                "end": 6.72,
+                "text": "务"
+              },
+              {
+                "start": 6.72,
+                "end": 6.99,
+                "text": "器"
+              },
+              {
+                "start": 6.99,
+                "end": 7.2,
+                "text": "暂"
+              },
+              {
+                "start": 7.2,
+                "end": 7.44,
+                "text": "时"
+              },
+              {
+                "start": 7.44,
+                "end": 7.59,
+                "text": "不"
+              },
+              {
+                "start": 7.59,
+                "end": 7.93,
+                "text": "可"
+              },
+              {
+                "start": 7.96,
+                "end": 8.02,
+                "text": "用"
+              }
+            ],
+            "text": "网页和手机app都提示服务器暂时不可用",
+            "complete": true
+          },
+          {
+            "id": "archived-sentence-3",
+            "start": 8.46,
+            "end": 11.26,
+            "words": [
+              {
+                "start": 8.46,
+                "end": 8.67,
+                "text": "百"
+              },
+              {
+                "start": 8.67,
+                "end": 8.88,
+                "text": "度"
+              },
+              {
+                "start": 8.88,
+                "end": 9.09,
+                "text": "热"
+              },
+              {
+                "start": 9.09,
+                "end": 9.24,
+                "text": "搜"
+              },
+              {
+                "start": 9.24,
+                "end": 9.51,
+                "text": "快"
+              },
+              {
+                "start": 9.51,
+                "end": 9.75,
+                "text": "照"
+              },
+              {
+                "start": 9.75,
+                "end": 9.93,
+                "text": "也"
+              },
+              {
+                "start": 9.93,
+                "end": 10.17,
+                "text": "显"
+              },
+              {
+                "start": 10.17,
+                "end": 10.38,
+                "text": "示"
+              },
+              {
+                "start": 10.38,
+                "end": 10.62,
+                "text": "相"
+              },
+              {
+                "start": 10.62,
+                "end": 10.83,
+                "text": "关"
+              },
+              {
+                "start": 10.83,
+                "end": 11.01,
+                "text": "话"
+              },
+              {
+                "start": 11.01,
+                "end": 11.26,
+                "text": "题"
+              }
+            ],
+            "text": "百度热搜快照也显示相关话题",
+            "complete": true
+          },
+          {
+            "id": "archived-sentence-4",
+            "start": 11.52,
+            "end": 14.91,
+            "words": [
+              {
+                "start": 11.52,
+                "end": 11.7,
+                "text": "但"
+              },
+              {
+                "start": 11.7,
+                "end": 11.91,
+                "text": "热"
+              },
+              {
+                "start": 11.91,
+                "end": 12.12,
+                "text": "搜"
+              },
+              {
+                "start": 12.12,
+                "end": 12.33,
+                "text": "采"
+              },
+              {
+                "start": 12.33,
+                "end": 12.51,
+                "text": "样"
+              },
+              {
+                "start": 12.51,
+                "end": 12.69,
+                "text": "时"
+              },
+              {
+                "start": 12.69,
+                "end": 12.87,
+                "text": "间"
+              },
+              {
+                "start": 12.87,
+                "end": 13.01,
+                "text": "不"
+              },
+              {
+                "start": 13.01,
+                "end": 13.17,
+                "text": "能"
+              },
+              {
+                "start": 13.17,
+                "end": 13.36,
+                "text": "当"
+              },
+              {
+                "start": 13.36,
+                "end": 13.65,
+                "text": "做"
+              },
+              {
+                "start": 13.65,
+                "end": 13.86,
+                "text": "故"
+              },
+              {
+                "start": 13.86,
+                "end": 13.98,
+                "text": "障"
+              },
+              {
+                "start": 13.98,
+                "end": 14.28,
+                "text": "开"
+              },
+              {
+                "start": 14.28,
+                "end": 14.4,
+                "text": "始"
+              },
+              {
+                "start": 14.4,
+                "end": 14.61,
+                "text": "时"
+              },
+              {
+                "start": 14.61,
+                "end": 14.91,
+                "text": "间"
+              }
+            ],
+            "text": "但热搜采样时间不能当做故障开始时间",
+            "complete": true
+          }
+        ],
+        "pauses": [
+          {
+            "start": 0,
+            "end": 0.374
+          },
+          {
+            "start": 1.724,
+            "end": 2.141
+          },
+          {
+            "start": 3.721,
+            "end": 4.237
+          },
+          {
+            "start": 7.804,
+            "end": 8.354
+          },
+          {
+            "start": 10.997,
+            "end": 11.402
+          }
+        ],
+        "warnings": [
+          "字词时间码由模型估计，已校验格式、顺序和范围，尚未经独立强制对齐。",
+          "停顿是低音量检测结果，不等于已确认无人说话。"
+        ],
+        "captionBreaks": [
+          2,
+          6,
+          10,
+          13,
+          16,
+          19,
+          22,
+          25,
+          28,
+          30,
+          33,
+          36,
+          39,
+          43,
+          46,
+          50,
+          54,
+          57,
+          60
+        ],
+        "modelId": "archived-asr-word-grid-projection",
+        "createdAt": "",
+        "timing": "model-estimated"
+      }
+    },
+    {
+      "stage": "独立复听术语 · 早高峰报错",
+      "analysis": {
+        "status": "ready",
+        "sourceHash": "b9b2c0179d5c9ea585b0e67a5802a1866b5c4ccbaafb872fdfcfc3dcb191b0e2",
+        "duration": 14.93,
+        "transcript": "今天早上八点后不少用户打开deepseek网页和手机app都提示服务器暂时不可用\n百度热搜快照也显示相关话题\n但热搜采样时间不能当做故障开始时间",
+        "sentences": [
+          {
+            "id": "archived-sentence-0",
+            "start": 0.33,
+            "end": 7.1,
+            "words": [
+              {
+                "start": 0.33,
+                "end": 0.54,
+                "text": "今天"
+              },
+              {
+                "start": 0.54,
+                "end": 0.72,
+                "text": "早上"
+              },
+              {
+                "start": 0.72,
+                "end": 0.93,
+                "text": "八点"
+              },
+              {
+                "start": 0.93,
+                "end": 1.14,
+                "text": "后"
+              },
+              {
+                "start": 1.14,
+                "end": 1.59,
+                "text": "不少"
+              },
+              {
+                "start": 1.77,
+                "end": 2.07,
+                "text": "用户"
+              },
+              {
+                "start": 2.07,
+                "end": 2.4,
+                "text": "打开"
+              },
+              {
+                "start": 2.4,
+                "end": 3.06,
+                "text": "deepseek"
+              },
+              {
+                "start": 3.39,
+                "end": 3.63,
+                "text": "网页"
+              },
+              {
+                "start": 3.63,
+                "end": 3.84,
+                "text": "和"
+              },
+              {
+                "start": 3.84,
+                "end": 3.99,
+                "text": "手"
+              },
+              {
+                "start": 3.99,
+                "end": 4.26,
+                "text": "机"
+              },
+              {
+                "start": 4.26,
+                "end": 4.83,
+                "text": "app"
+              },
+              {
+                "start": 4.83,
+                "end": 5.04,
+                "text": "都"
+              },
+              {
+                "start": 5.04,
+                "end": 5.22,
+                "text": "提"
+              },
+              {
+                "start": 5.22,
+                "end": 5.43,
+                "text": "示"
+              },
+              {
+                "start": 5.43,
+                "end": 5.61,
+                "text": "服"
+              },
+              {
+                "start": 5.61,
+                "end": 5.79,
+                "text": "务"
+              },
+              {
+                "start": 5.79,
+                "end": 6,
+                "text": "器"
+              },
+              {
+                "start": 6,
+                "end": 6.24,
+                "text": "暂"
+              },
+              {
+                "start": 6.24,
+                "end": 6.48,
+                "text": "时"
+              },
+              {
+                "start": 6.48,
+                "end": 6.66,
+                "text": "不"
+              },
+              {
+                "start": 6.66,
+                "end": 6.89,
+                "text": "可"
+              },
+              {
+                "start": 6.92,
+                "end": 7.1,
+                "text": "用"
+              }
+            ],
+            "text": "今天早上八点后不少用户打开deepseek网页和手机app都提示服务器暂时不可用",
+            "complete": true
+          },
+          {
+            "id": "archived-sentence-1",
+            "start": 7.5,
+            "end": 10.22,
+            "words": [
+              {
+                "start": 7.5,
+                "end": 7.71,
+                "text": "百"
+              },
+              {
+                "start": 7.71,
+                "end": 7.92,
+                "text": "度"
+              },
+              {
+                "start": 7.92,
+                "end": 8.13,
+                "text": "热"
+              },
+              {
+                "start": 8.13,
+                "end": 8.28,
+                "text": "搜"
+              },
+              {
+                "start": 8.28,
+                "end": 8.52,
+                "text": "快"
+              },
+              {
+                "start": 8.52,
+                "end": 8.76,
+                "text": "照"
+              },
+              {
+                "start": 8.76,
+                "end": 8.91,
+                "text": "也"
+              },
+              {
+                "start": 8.91,
+                "end": 9.09,
+                "text": "显"
+              },
+              {
+                "start": 9.09,
+                "end": 9.36,
+                "text": "示"
+              },
+              {
+                "start": 9.36,
+                "end": 9.6,
+                "text": "相"
+              },
+              {
+                "start": 9.6,
+                "end": 9.78,
+                "text": "关"
+              },
+              {
+                "start": 9.78,
+                "end": 9.93,
+                "text": "话"
+              },
+              {
+                "start": 9.93,
+                "end": 10.22,
+                "text": "题"
+              }
+            ],
+            "text": "百度热搜快照也显示相关话题",
+            "complete": true
+          },
+          {
+            "id": "archived-sentence-2",
+            "start": 10.41,
+            "end": 13.65,
+            "words": [
+              {
+                "start": 10.41,
+                "end": 10.56,
+                "text": "但"
+              },
+              {
+                "start": 10.56,
+                "end": 10.83,
+                "text": "热"
+              },
+              {
+                "start": 10.83,
+                "end": 11.01,
+                "text": "搜"
+              },
+              {
+                "start": 11.01,
+                "end": 11.19,
+                "text": "采"
+              },
+              {
+                "start": 11.19,
+                "end": 11.4,
+                "text": "样"
+              },
+              {
+                "start": 11.4,
+                "end": 11.58,
+                "text": "时"
+              },
+              {
+                "start": 11.58,
+                "end": 11.76,
+                "text": "间"
+              },
+              {
+                "start": 11.76,
+                "end": 11.91,
+                "text": "不"
+              },
+              {
+                "start": 11.91,
+                "end": 12.09,
+                "text": "能"
+              },
+              {
+                "start": 12.09,
+                "end": 12.24,
+                "text": "当"
+              },
+              {
+                "start": 12.24,
+                "end": 12.48,
+                "text": "做"
+              },
+              {
+                "start": 12.48,
+                "end": 12.69,
+                "text": "故"
+              },
+              {
+                "start": 12.69,
+                "end": 12.87,
+                "text": "障"
+              },
+              {
+                "start": 12.87,
+                "end": 13.06,
+                "text": "开"
+              },
+              {
+                "start": 13.06,
+                "end": 13.26,
+                "text": "始"
+              },
+              {
+                "start": 13.26,
+                "end": 13.44,
+                "text": "时"
+              },
+              {
+                "start": 13.44,
+                "end": 13.65,
+                "text": "间"
+              }
+            ],
+            "text": "但热搜采样时间不能当做故障开始时间",
+            "complete": true
+          }
+        ],
+        "pauses": [
+          {
+            "start": 0,
+            "end": 0.374
+          },
+          {
+            "start": 1.724,
+            "end": 2.141
+          },
+          {
+            "start": 3.721,
+            "end": 4.237
+          },
+          {
+            "start": 7.804,
+            "end": 8.354
+          },
+          {
+            "start": 10.997,
+            "end": 11.402
+          }
+        ],
+        "warnings": [
+          "字词时间码由模型估计，已校验格式、顺序和范围，尚未经独立强制对齐。",
+          "停顿是低音量检测结果，不等于已确认无人说话。"
+        ],
+        "captionBreaks": [
+          3,
+          8,
+          13,
+          23,
+          27,
+          31,
+          36,
+          43,
+          49,
+          53
+        ],
+        "modelId": "archived-asr-word-grid-projection",
+        "createdAt": "",
+        "timing": "model-estimated"
+      }
+    },
+    {
+      "stage": "听辨台词 · 早高峰报错",
+      "analysis": {
+        "status": "ready",
+        "sourceHash": "74d78b9853e77f5f86ea4ab04fa753b70f80c410ff499a01969bc1e1014f8806",
+        "duration": 16.15,
+        "transcript": "今天早上八点后不少用户打开deepseek网页和手机app都提示服务器暂时不可用\n百度热搜快照也显示相关话题\n但热搜采样时间不能当做故障开始时间",
+        "sentences": [
+          {
+            "id": "archived-sentence-0",
+            "start": 0.09,
+            "end": 8.36,
+            "words": [
+              {
+                "start": 0.09,
+                "end": 0.33,
+                "text": "今天"
+              },
+              {
+                "start": 0.33,
+                "end": 0.48,
+                "text": "早"
+              },
+              {
+                "start": 0.48,
+                "end": 0.78,
+                "text": "上"
+              },
+              {
+                "start": 0.78,
+                "end": 0.99,
+                "text": "八"
+              },
+              {
+                "start": 0.99,
+                "end": 1.18,
+                "text": "点"
+              },
+              {
+                "start": 1.18,
+                "end": 1.45,
+                "text": "后"
+              },
+              {
+                "start": 1.68,
+                "end": 1.86,
+                "text": "不"
+              },
+              {
+                "start": 1.86,
+                "end": 2.1,
+                "text": "少"
+              },
+              {
+                "start": 2.1,
+                "end": 2.29,
+                "text": "用"
+              },
+              {
+                "start": 2.29,
+                "end": 2.49,
+                "text": "户"
+              },
+              {
+                "start": 2.49,
+                "end": 2.73,
+                "text": "打"
+              },
+              {
+                "start": 2.73,
+                "end": 2.94,
+                "text": "开"
+              },
+              {
+                "start": 2.94,
+                "end": 3.71,
+                "text": "deepseek"
+              },
+              {
+                "start": 4.11,
+                "end": 4.35,
+                "text": "网"
+              },
+              {
+                "start": 4.35,
+                "end": 4.61,
+                "text": "页"
+              },
+              {
+                "start": 4.61,
+                "end": 4.74,
+                "text": "和"
+              },
+              {
+                "start": 4.74,
+                "end": 5.01,
+                "text": "手"
+              },
+              {
+                "start": 5.01,
+                "end": 5.31,
+                "text": "机"
+              },
+              {
+                "start": 5.31,
+                "end": 5.73,
+                "text": "app"
+              },
+              {
+                "start": 5.73,
+                "end": 5.97,
+                "text": "都"
+              },
+              {
+                "start": 5.97,
+                "end": 6.18,
+                "text": "提"
+              },
+              {
+                "start": 6.18,
+                "end": 6.39,
+                "text": "示"
+              },
+              {
+                "start": 6.39,
+                "end": 6.64,
+                "text": "服"
+              },
+              {
+                "start": 6.64,
+                "end": 6.87,
+                "text": "务"
+              },
+              {
+                "start": 6.87,
+                "end": 7.02,
+                "text": "器"
+              },
+              {
+                "start": 7.02,
+                "end": 7.35,
+                "text": "暂"
+              },
+              {
+                "start": 7.35,
+                "end": 7.64,
+                "text": "时"
+              },
+              {
+                "start": 7.64,
+                "end": 7.77,
+                "text": "不"
+              },
+              {
+                "start": 7.77,
+                "end": 8.04,
+                "text": "可"
+              },
+              {
+                "start": 8.04,
+                "end": 8.36,
+                "text": "用"
+              }
+            ],
+            "text": "今天早上八点后不少用户打开deepseek网页和手机app都提示服务器暂时不可用",
+            "complete": true
+          },
+          {
+            "id": "archived-sentence-1",
+            "start": 8.88,
+            "end": 11.75,
+            "words": [
+              {
+                "start": 8.88,
+                "end": 9.09,
+                "text": "百"
+              },
+              {
+                "start": 9.09,
+                "end": 9.3,
+                "text": "度"
+              },
+              {
+                "start": 9.3,
+                "end": 9.45,
+                "text": "热"
+              },
+              {
+                "start": 9.45,
+                "end": 9.69,
+                "text": "搜"
+              },
+              {
+                "start": 9.69,
+                "end": 9.96,
+                "text": "快"
+              },
+              {
+                "start": 9.96,
+                "end": 10.2,
+                "text": "照"
+              },
+              {
+                "start": 10.2,
+                "end": 10.38,
+                "text": "也"
+              },
+              {
+                "start": 10.38,
+                "end": 10.59,
+                "text": "显"
+              },
+              {
+                "start": 10.59,
+                "end": 10.86,
+                "text": "示"
+              },
+              {
+                "start": 10.86,
+                "end": 11.1,
+                "text": "相"
+              },
+              {
+                "start": 11.1,
+                "end": 11.28,
+                "text": "关"
+              },
+              {
+                "start": 11.28,
+                "end": 11.55,
+                "text": "话"
+              },
+              {
+                "start": 11.55,
+                "end": 11.75,
+                "text": "题"
+              }
+            ],
+            "text": "百度热搜快照也显示相关话题",
+            "complete": true
+          },
+          {
+            "id": "archived-sentence-2",
+            "start": 12.09,
+            "end": 15.6,
+            "words": [
+              {
+                "start": 12.09,
+                "end": 12.33,
+                "text": "但"
+              },
+              {
+                "start": 12.33,
+                "end": 12.51,
+                "text": "热"
+              },
+              {
+                "start": 12.51,
+                "end": 12.75,
+                "text": "搜"
+              },
+              {
+                "start": 12.75,
+                "end": 12.93,
+                "text": "采"
+              },
+              {
+                "start": 12.93,
+                "end": 13.06,
+                "text": "样"
+              },
+              {
+                "start": 13.06,
+                "end": 13.26,
+                "text": "时"
+              },
+              {
+                "start": 13.26,
+                "end": 13.47,
+                "text": "间"
+              },
+              {
+                "start": 13.47,
+                "end": 13.74,
+                "text": "不"
+              },
+              {
+                "start": 13.74,
+                "end": 13.89,
+                "text": "能"
+              },
+              {
+                "start": 13.89,
+                "end": 14.1,
+                "text": "当"
+              },
+              {
+                "start": 14.1,
+                "end": 14.34,
+                "text": "做"
+              },
+              {
+                "start": 14.34,
+                "end": 14.55,
+                "text": "故"
+              },
+              {
+                "start": 14.55,
+                "end": 14.76,
+                "text": "障"
+              },
+              {
+                "start": 14.76,
+                "end": 15.03,
+                "text": "开"
+              },
+              {
+                "start": 15.03,
+                "end": 15.15,
+                "text": "始"
+              },
+              {
+                "start": 15.15,
+                "end": 15.39,
+                "text": "时"
+              },
+              {
+                "start": 15.39,
+                "end": 15.6,
+                "text": "间"
+              }
+            ],
+            "text": "但热搜采样时间不能当做故障开始时间",
+            "complete": true
+          }
+        ],
+        "pauses": [
+          {
+            "start": 1.545,
+            "end": 1.868
+          },
+          {
+            "start": 3.763,
+            "end": 4.335
+          },
+          {
+            "start": 8.466,
+            "end": 9.217
+          },
+          {
+            "start": 12.046,
+            "end": 12.482
+          }
+        ],
+        "warnings": [
+          "字词时间码由模型估计，已校验格式、顺序和范围，尚未经独立强制对齐。",
+          "停顿是低音量检测结果，不等于已确认无人说话。"
+        ],
+        "captionBreaks": [
+          2,
+          5,
+          9,
+          12,
+          18,
+          23,
+          29,
+          33,
+          38,
+          42,
+          45,
+          52,
+          59
+        ],
+        "modelId": "archived-asr-word-grid-projection",
+        "createdAt": "",
+        "timing": "model-estimated"
+      }
+    },
+    {
+      "stage": "独立复听术语 · 早高峰报错",
+      "analysis": {
+        "status": "ready",
+        "sourceHash": "74d78b9853e77f5f86ea4ab04fa753b70f80c410ff499a01969bc1e1014f8806",
+        "duration": 16.15,
+        "transcript": "今天早上八点后不少用户打开DeepSeek网页和手机APP都提示服务器暂时不可用\n百度热搜快照也显示相关话题\n但热搜采样时间不能当做故障开始时间",
+        "sentences": [
+          {
+            "id": "archived-sentence-0",
+            "start": 0.08,
+            "end": 8.05,
+            "words": [
+              {
+                "start": 0.08,
+                "end": 0.29,
+                "text": "今天"
+              },
+              {
+                "start": 0.29,
+                "end": 0.51,
+                "text": "早上"
+              },
+              {
+                "start": 0.51,
+                "end": 0.78,
+                "text": "八点"
+              },
+              {
+                "start": 0.78,
+                "end": 1.05,
+                "text": "后"
+              },
+              {
+                "start": 1.05,
+                "end": 1.3,
+                "text": "不"
+              },
+              {
+                "start": 1.5,
+                "end": 1.83,
+                "text": "少"
+              },
+              {
+                "start": 1.83,
+                "end": 1.98,
+                "text": "用"
+              },
+              {
+                "start": 1.98,
+                "end": 2.16,
+                "text": "户"
+              },
+              {
+                "start": 2.16,
+                "end": 2.43,
+                "text": "打"
+              },
+              {
+                "start": 2.43,
+                "end": 2.64,
+                "text": "开"
+              },
+              {
+                "start": 2.64,
+                "end": 3.23,
+                "text": "DeepSeek"
+              },
+              {
+                "start": 3.81,
+                "end": 4.05,
+                "text": "网"
+              },
+              {
+                "start": 4.05,
+                "end": 4.29,
+                "text": "页"
+              },
+              {
+                "start": 4.29,
+                "end": 4.44,
+                "text": "和"
+              },
+              {
+                "start": 4.44,
+                "end": 4.65,
+                "text": "手"
+              },
+              {
+                "start": 4.65,
+                "end": 4.89,
+                "text": "机"
+              },
+              {
+                "start": 4.89,
+                "end": 5.43,
+                "text": "APP"
+              },
+              {
+                "start": 5.43,
+                "end": 5.66,
+                "text": "都"
+              },
+              {
+                "start": 5.66,
+                "end": 5.85,
+                "text": "提"
+              },
+              {
+                "start": 5.85,
+                "end": 6.06,
+                "text": "示"
+              },
+              {
+                "start": 6.06,
+                "end": 6.33,
+                "text": "服"
+              },
+              {
+                "start": 6.33,
+                "end": 6.42,
+                "text": "务"
+              },
+              {
+                "start": 6.42,
+                "end": 6.72,
+                "text": "器"
+              },
+              {
+                "start": 6.72,
+                "end": 7.05,
+                "text": "暂"
+              },
+              {
+                "start": 7.05,
+                "end": 7.29,
+                "text": "时"
+              },
+              {
+                "start": 7.29,
+                "end": 7.44,
+                "text": "不"
+              },
+              {
+                "start": 7.44,
+                "end": 7.68,
+                "text": "可"
+              },
+              {
+                "start": 7.68,
+                "end": 8.05,
+                "text": "用"
+              }
+            ],
+            "text": "今天早上八点后不少用户打开DeepSeek网页和手机APP都提示服务器暂时不可用",
+            "complete": true
+          },
+          {
+            "id": "archived-sentence-1",
+            "start": 8.55,
+            "end": 11.42,
+            "words": [
+              {
+                "start": 8.55,
+                "end": 8.79,
+                "text": "百"
+              },
+              {
+                "start": 8.79,
+                "end": 8.95,
+                "text": "度"
+              },
+              {
+                "start": 8.95,
+                "end": 9.12,
+                "text": "热"
+              },
+              {
+                "start": 9.12,
+                "end": 9.39,
+                "text": "搜"
+              },
+              {
+                "start": 9.39,
+                "end": 9.6,
+                "text": "快"
+              },
+              {
+                "start": 9.6,
+                "end": 9.84,
+                "text": "照"
+              },
+              {
+                "start": 9.84,
+                "end": 10.02,
+                "text": "也"
+              },
+              {
+                "start": 10.02,
+                "end": 10.23,
+                "text": "显"
+              },
+              {
+                "start": 10.23,
+                "end": 10.53,
+                "text": "示"
+              },
+              {
+                "start": 10.53,
+                "end": 10.77,
+                "text": "相"
+              },
+              {
+                "start": 10.77,
+                "end": 10.92,
+                "text": "关"
+              },
+              {
+                "start": 10.92,
+                "end": 11.16,
+                "text": "话"
+              },
+              {
+                "start": 11.16,
+                "end": 11.42,
+                "text": "题"
+              }
+            ],
+            "text": "百度热搜快照也显示相关话题",
+            "complete": true
+          },
+          {
+            "id": "archived-sentence-2",
+            "start": 11.79,
+            "end": 15.45,
+            "words": [
+              {
+                "start": 11.79,
+                "end": 12.03,
+                "text": "但"
+              },
+              {
+                "start": 12.03,
+                "end": 12.21,
+                "text": "热"
+              },
+              {
+                "start": 12.21,
+                "end": 12.39,
+                "text": "搜"
+              },
+              {
+                "start": 12.39,
+                "end": 12.66,
+                "text": "采"
+              },
+              {
+                "start": 12.66,
+                "end": 12.81,
+                "text": "样"
+              },
+              {
+                "start": 12.81,
+                "end": 13.05,
+                "text": "时"
+              },
+              {
+                "start": 13.05,
+                "end": 13.32,
+                "text": "间"
+              },
+              {
+                "start": 13.32,
+                "end": 13.56,
+                "text": "不"
+              },
+              {
+                "start": 13.56,
+                "end": 13.68,
+                "text": "能"
+              },
+              {
+                "start": 13.68,
+                "end": 13.92,
+                "text": "当"
+              },
+              {
+                "start": 13.92,
+                "end": 14.19,
+                "text": "做"
+              },
+              {
+                "start": 14.19,
+                "end": 14.43,
+                "text": "故"
+              },
+              {
+                "start": 14.43,
+                "end": 14.61,
+                "text": "障"
+              },
+              {
+                "start": 14.61,
+                "end": 14.85,
+                "text": "开"
+              },
+              {
+                "start": 14.85,
+                "end": 15.12,
+                "text": "始"
+              },
+              {
+                "start": 15.12,
+                "end": 15.24,
+                "text": "时"
+              },
+              {
+                "start": 15.24,
+                "end": 15.45,
+                "text": "间"
+              }
+            ],
+            "text": "但热搜采样时间不能当做故障开始时间",
+            "complete": true
+          }
+        ],
+        "pauses": [
+          {
+            "start": 1.545,
+            "end": 1.868
+          },
+          {
+            "start": 3.763,
+            "end": 4.335
+          },
+          {
+            "start": 8.466,
+            "end": 9.217
+          },
+          {
+            "start": 12.046,
+            "end": 12.482
+          }
+        ],
+        "warnings": [
+          "字词时间码由模型估计，已校验格式、顺序和范围，尚未经独立强制对齐。",
+          "停顿是低音量检测结果，不等于已确认无人说话。"
+        ],
+        "captionBreaks": [
+          3,
+          10,
+          12,
+          16,
+          17,
+          23,
+          27,
+          31,
+          34,
+          36,
+          40,
+          43,
+          47,
+          51,
+          54,
+          57
+        ],
+        "modelId": "archived-asr-word-grid-projection",
+        "createdAt": "",
+        "timing": "model-estimated"
+      }
+    }
+  ]
+}
