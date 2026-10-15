@@ -119,6 +119,12 @@ chmod -R a+rX "$build_dir/node_modules" "$build_dir/dist"
 
 backup_dir=$(mktemp -d "$cache/backup.XXXXXXXX")
 if [[ -d "$repo/dist" ]]; then cp -a "$repo/dist" "$backup_dir/dist"; fi
+# Run the exact target's archived helper after build/backup consumption and
+# before touching the live checkout or starting automatic paid acceptance.
+node "$build_dir/ops/render-space-preflight.mjs" \
+  "$build_dir" "$repo" /data/qingjian /data/qingjian/lesson-workflows \
+  /data/qingjian/narrative-scenes /data/qingjian/media /data/qingjian/exports \
+  /data/qingjian/uploads /tmp
 switched=1
 git -C "$repo" checkout --detach --quiet "$target_sha"
 if [[ -d "$repo/node_modules" ]]; then mv "$repo/node_modules" "$backup_dir/node_modules"; fi

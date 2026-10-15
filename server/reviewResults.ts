@@ -1,4 +1,5 @@
-import type { LessonReport, RenderReview, NewsPublicationFrameObservation } from '../src/types';
+import type { LessonReport, RenderReview, NewsPublicationFrameObservation, VisualRetentionCheck } from '../src/types';
+import { parseVisualRetentionChecks } from './visualRetentionReview';
 import { todayEventFindings,selectionReasonFindings } from './lessonAcceptance';
 import { newsObservationFindings, newsPublicationSourceFindings, newsPublicationTimestamp } from './newsTime';
 import { filterIdenticalSpellingFindings,parseNumericVisualChecks,type NumericVisualCheck } from './visualReviewEvidence';
@@ -25,13 +26,14 @@ export function reviewFindings(value:unknown):string[]{
   });
 }
 
-export function validateSemanticReview(value:any):{score:number;needsRepair:boolean;findings:string[];suggestions:string[];newsPublication?:NewsPublicationFrameObservation;numericVisualChecks?:NumericVisualCheck[];discardedFindings?:Array<{original:string;reason:string}>}{
+export function validateSemanticReview(value:any):{score:number;needsRepair:boolean;findings:string[];suggestions:string[];newsPublication?:NewsPublicationFrameObservation;numericVisualChecks?:NumericVisualCheck[];visualRetentionChecks?:VisualRetentionCheck[];discardedFindings?:Array<{original:string;reason:string}>}{
   if(!Number.isFinite(value?.score)||value.score<0||value.score>100||typeof value.needsRepair!=='boolean')throw new Error('审查输出格式无效');
   const rawFindings=reviewFindings(value.findings),filtered=filterIdenticalSpellingFindings(rawFindings),findings=filtered.findings,suggestions=reviewFindings(value.suggestions??[]);
   const numericVisualChecks=parseNumericVisualChecks(value.numericVisualChecks);
+  const visualRetentionChecks=parseVisualRetentionChecks(value.visualRetentionChecks);
   const date=value.newsPublication;
   if(date!==undefined&&(!date||typeof date.visible!=='boolean'||typeof date.chapterId!=='string'||date.chapterId.length>100||typeof date.quote!=='string'||date.quote.length>200||!Number.isFinite(date.frameTime)))throw new Error('报道日期抽帧观察格式无效');
-  return {score:value.score,needsRepair:value.needsRepair||findings.length>0||value.score<80,findings,suggestions,...(filtered.discarded.length?{discardedFindings:filtered.discarded}:{}),...(numericVisualChecks===undefined?{}:{numericVisualChecks}),...(date===undefined?{}:{newsPublication:{visible:date.visible,chapterId:date.chapterId,quote:date.quote,frameTime:date.frameTime}})};
+  return {score:value.score,needsRepair:value.needsRepair||findings.length>0||value.score<80,findings,suggestions,...(filtered.discarded.length?{discardedFindings:filtered.discarded}:{}),...(numericVisualChecks===undefined?{}:{numericVisualChecks}),...(visualRetentionChecks===undefined?{}:{visualRetentionChecks}),...(date===undefined?{}:{newsPublication:{visible:date.visible,chapterId:date.chapterId,quote:date.quote,frameTime:date.frameTime}})};
 }
 
 export function reviewNeedsContentRepair(review:{status:string;checks:Array<{name:string;passed:boolean}>;semantic?:{score:number;findings:string[]}}):boolean {

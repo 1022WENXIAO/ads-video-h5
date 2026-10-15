@@ -26,6 +26,12 @@ test -d "$release/node_modules"
 
 exec 9>/run/lock/qingjian-cn-deploy.lock
 flock -n 9 || { echo 'Another activation is running.' >&2; exit 1; }
+# The helper belongs to the exact prepared candidate; no separate global
+# installation is needed. Reject before switching/restarting paid acceptance.
+/opt/qingjian-cn/node/bin/node "$release/ops/render-space-preflight.mjs" \
+  "$release" /data/qingjian /data/qingjian/lesson-workflows \
+  /data/qingjian/narrative-scenes /data/qingjian/media /data/qingjian/exports \
+  /data/qingjian/uploads /tmp
 previous=$(readlink -f /opt/qingjian-cn/current || true)
 switched=0
 finish() {

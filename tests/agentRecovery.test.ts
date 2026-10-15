@@ -10,7 +10,7 @@ import { recoverToolDecision } from '../server/workflowDriver';
 import { createToolTrace,executionDiagnostics } from '../server/toolTrace';
 import { JobCancelledError,runWithJobSignal } from '../server/jobExecution';
 import { ARK_BASE_URL,TEXT_MODEL_PRESETS } from '../shared/textModels';
-import type { AudioAnalysis,MediaItem,RenderReview,WorkflowEvent } from '../src/types';
+import type { AudioAnalysis,EditPlan,MediaItem,RenderReview,WorkflowEvent } from '../src/types';
 
 const config=(i=0)=>({...TEXT_MODEL_PRESETS[i],kind:'text' as const,provider:'ark',baseUrl:ARK_BASE_URL,enabled:true,apiKey:'test-private-credential'});
 const stream=(name?:string,args?:unknown)=>new Response(`data: ${JSON.stringify({id:'recovery',object:'chat.completion.chunk',created:1,model:config().modelId,choices:[{index:0,delta:{role:'assistant',...(name?{tool_calls:[{index:0,id:'recovery-call',type:'function',function:{name,arguments:JSON.stringify(args)}}]}:{content:'请提供素材 PRIVATE-PUBLIC-MARKER',reasoning_content:'PRIVATE-REASONING'})},finish_reason:name?'tool_calls':'stop'}]})}\n\ndata: [DONE]\n\n`,{headers:{'Content-Type':'text/event-stream'}});
@@ -25,7 +25,7 @@ const review=(score:number,passed:boolean):RenderReview=>({status:passed?'passed
 // grades prove repair transitions, never represent real movie quality scores.
 for(let index=0;index<3;index++)for(const fault of ['none','refusal-and-empty','invalid-selection','empty-query','provider-503','render-503','review-503','review-rejection','rejected-high-score','repeated-reading'] as const){
   test(`${TEXT_MODEL_PRESETS[index].modelId}: editorial completes after ${fault}`,async()=>{
-    const original=globalThis.fetch,events:WorkflowEvent[]=[];let requests=0,selections=0,writes=0,renders=0,reviews=0,transcriptions=0,structured=0,reads=0,failures=0;
+    const original=globalThis.fetch,events:WorkflowEvent[]=[],renderedPlans:EditPlan[]=[];let requests=0,selections=0,writes=0,renders=0,reviews=0,transcriptions=0,structured=0,reads=0,failures=0;
     globalThis.fetch=async(_url,init)=>{
       requests++;const body=JSON.parse(String(init?.body));
       if(body.response_format){structured++;assert.match(JSON.stringify(body.messages),/真实工具数据|当前允许/);return json({name:'select_scenes',arguments:selection});}
@@ -43,13 +43,23 @@ for(let index=0;index<3;index++)for(const fault of ['none','refusal-and-empty','
       }
       writes++;if(fault==='invalid-selection')assert.match(messages,/先明确目标/);
       if(writes>1)assert.match(messages,/图形遮挡/);
-      return stream('write_narrative',script(fault==='review-rejection'&&writes===1?'circle':'none'));
+      return stream('write_narrative',script((fault==='review-rejection'||fault==='rejected-high-score')&&writes===1?'circle':'none'));
     };
     try{
       const result=await runEditorialWorkflow({prompt:'把已上传视频精剪成6秒竖屏成片，保留完整原话，加字幕，原声不要改。',config:config(index),sources:[source()],previous:null,export:true,
         transcribe:async()=>{transcriptions++;return structuredClone(analysis);},inspect:async()=>({safeZone:'top',summary:'空白区可用'} as any),persist:async()=>{},
-        render:async()=>{renders++;if(fault==='render-503'&&renders===1){failures++;throw new Error('render HTTP 503 temporarily unavailable');}return {id:'movie-'+renders,file:'controlled-fixture.mp4'};},
-        review:async()=>{reviews++;if(fault==='review-503'&&reviews===1){failures++;throw new Error('review HTTP 503 temporarily unavailable');}return fault==='review-rejection'&&reviews===1?review(78,false):fault==='rejected-high-score'?(reviews===1?review(96,false):review(82,true)):review(88,true);},
+        render:async plan=>{renders++;if(fault==='render-503'&&renders===1){failures++;throw new Error('render HTTP 503 temporarily unavailable');}renderedPlans.push(structuredClone(plan));return {id:'movie-'+renders,file:'controlled-fixture.mp4'};},
+        review:async(_file,plan)=>{
+          reviews++;if(fault==='review-503'&&reviews===1){failures++;throw new Error('review HTTP 503 temporarily unavailable');}
+          if(fault==='review-rejection'||fault==='rejected-high-score'){
+            assert.equal(renderedPlans[0].motions?.[0]?.kind,'circle','the controlled first rejection must have an actual drawing to repair');
+            if(reviews===2){
+              assert.equal(plan.motions?.length,0,'a passed repair must remove the rejected drawing, not merely repeat the same movie with a new grade');
+              assert.notDeepEqual(renderedPlans[0].motions,plan.motions);assert.deepEqual(renderedPlans[0].clips,plan.clips);assert.deepEqual(renderedPlans[0].audio,plan.audio);assert.deepEqual(renderedPlans[0].captions,plan.captions);
+            }
+          }
+          return fault==='review-rejection'&&reviews===1?review(78,false):fault==='rejected-high-score'?(reviews===1?review(96,false):review(82,true)):review(88,true);
+        },
         progress:async updates=>{events.splice(0,events.length,...structuredClone(updates));},
       });
       assert.equal(result.review!.status,'passed');assert.equal(transcriptions,1);assert.ok(requests<=10);assert.equal(result.plan.editorial!.scenes[0].end,6);assert.ok(Math.abs(result.plan.targetSeconds-6)<.3);

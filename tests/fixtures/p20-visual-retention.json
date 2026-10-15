@@ -1,0 +1,31 @@
+{
+  "scope": "Actual P20 original selected ranges and supplied source storyboard; test model verdicts are controlled, no new provider/production acceptance",
+  "revision": "a253338ca43f385679f522c2f5d1126b5584a18e",
+  "request": "我传了两段横屏的程序示意动态图解，你帮我剪成20秒左右，普通话原声保留，画面完整不要裁切。想做一个方法对照：前面用小球运动那部分讲清先记录看到的现象、再提出可能解释；后面用双轨道小车那部分讲清条件一致才方便比较。保留画面里“程序示意、不是真实现场”的标注，也留着重复观察和证据边界相关的已有画面表达；声音从没被剪掉的完整原话里顺下来就行，别补旁白，也不用加真人、实景、品牌或新闻画面。\n把这两段视频剪成20秒横屏，两段都用到，所选句子保留完整原话和原声，加字幕，不要新增配音或图片，给我成片。",
+  "artifactId": "e9427cdd-d929-4d95-b01d-e98bb7501d89",
+  "movieSha256": "1f0d4bdf1e297740d17998b2c59d414d02eac0ed22e0095b7f6bf3357c622976",
+  "sourceSha256": "52cee27c96ec89277816c60223fd1e56cbcd586dae235436926ba7e9bc38acc7",
+  "repeatVisualStart": 14.246,
+  "repeatVisualLabel": "重复观察，核验解释",
+  "source1SelectedRanges": [
+    [
+      0,
+      5.17
+    ],
+    [
+      5.81,
+      12.17
+    ]
+  ],
+  "frameTimes": [
+    0.5,
+    8.1,
+    14.5,
+    20.05
+  ],
+  "originalEvaluationScore": 100,
+  "originalReviewScore": 80,
+  "originalFirstReviewScore": 72,
+  "sourceId": "3e1be549-ae7d-47b9-b439-e6bc588287c9",
+  "actualSourceWitnessTime": 14.6
+}

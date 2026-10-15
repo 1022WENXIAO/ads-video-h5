@@ -10,6 +10,8 @@ name: Domestic Linux release
       - 'ops/cn/package-release'
       - 'ops/cn/activate-release'
       - 'ops/cn/init-data'
+      - 'ops/render-space-preflight.mjs'
+      - 'ops/cd/qingjian-cd'
       - 'server/**'
       - 'shared/**'
       - 'src/**'
@@ -71,6 +73,7 @@ jobs:
         shell: bash
         run: |
           bash -n ops/cn/build-release ops/cn/package-release ops/cn/activate-release ops/cn/init-data
+          node --check ops/render-space-preflight.mjs
           node --check tooling/smoke-miniprogram.mjs
           node --import tsx --test --test-concurrency=2 tests/*.test.ts
       - name: Build clients (live video acceptance runs on the configured server)

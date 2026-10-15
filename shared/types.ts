@@ -216,11 +216,17 @@ export interface NewsPublicationProof extends NewsPublicationAnnotation {
   layout: NewsPublicationLayout;
   frameEvidence: { chapterId: string; quote: string; frameTime: number; sampledTimes: number[] };
 }
+export interface VisualRetentionCheck {
+  id:string; quote:string; status:'met'|'unmet'|'unverified'; frameTimes:number[]; detail:string;
+  sourceEvidence?:{sourceId:string;time:number;sourceHash?:string};
+  /** Calculated from actual sampled source bytes and selected ranges, never trusted from a model. */
+  sourceOmitted?:true;
+}
 export interface RenderReview {
   status: 'passed' | 'needs-review';
   score: number;
   checks: Array<{ name: string; passed: boolean; detail: string }>;
-  semantic?: { score: number; findings: string[]; suggestions?: string[]; repaired?: boolean };
+  semantic?: { score: number; findings: string[]; suggestions?: string[]; repaired?: boolean; visualRetentionChecks?: VisualRetentionCheck[] };
   newsPublication?: NewsPublicationProof;
   transport?: { mode: 'inline' | 'hosted'; requests: Array<{stage: 'voice' | 'semantic'; attempt: number; bytes: number; durationMs: number; status?: number; error?: string}> };
   audio?: {
