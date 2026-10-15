@@ -1,0 +1,73 @@
+{
+  "scope": "Exact public narration and original independent score/findings from P21. Visual assertion below is from preceding checkpoint, not a byte-exact observation of all nested revised visual fields. Controlled HTTP tests never call a real model or turn the archived 75 into a passing score.",
+  "provenance": {
+    "checkpointSHA256": "2f99d65e7cc16843e7ccc3ea39d8c450e6c88732afe79c7d941416a669c98901",
+    "traceSnapshotSHA256": "f481b3aa6dfd8c75e7ef4bc6872dc2a676b43ddade31c6d06b5aed2831e7cc18",
+    "acceptedRevisionAt": "2026-10-15T10:48:15.329Z",
+    "reviewAt": "2026-10-15T10:48:28.805Z",
+    "visualProvenance": "Complete visual fields copied from2f99checkpoint. Later accepted chapter2 trace preserves kind/takeaway/shape but nestedvisual children are depth-limited; exact newnestedbytes not observed."
+  },
+  "userPrompt": "最近24小时里媒体正在报道的一条真实热点，帮我做成普通人一眼能看懂的竖屏小视频。只讲这条报道最新披露的关键点，以及它为什么此刻受到关注；画面上请直接标出实际报道日期，如果事情是更早发生的，也把事件日期和报道日期分开。没被证实的说法不要讲成定论。\n做成30秒竖屏视频，配音和字幕，画面用动态示意，给我可以播放的成片。内容讲最近24小时报道的一条真实热点，并在画面上标明实际报道日期。",
+  "narrations": [
+    {
+      "chapterId": "chapter-1",
+      "text": "十月十五号，四个部门通报纸尿裤甲酰胺调查结果。这不是当天才出的事，调查组在六月下旬已经成立。"
+    },
+    {
+      "chapterId": "chapter-2",
+      "text": "官方查遍全部相关企业，覆盖180个品牌、368批成品，重点部位另查32批；通报说，没有检出甲酰胺。"
+    },
+    {
+      "chapterId": "chapter-3",
+      "text": "此前网上检测说法让家长担心。通报称留存样品复检未检出，原检测方法有问题；结论限于本次范围，后续仍会监管。"
+    }
+  ],
+  "priorVisualItem": {
+    "chapterId": "chapter-2",
+    "label": "168家企业",
+    "detail": "覆盖国内全部婴幼儿纸尿裤生产及代工企业。",
+    "cue": "168家"
+  },
+  "serverCounts": [
+    {
+      "chapterId": "chapter-1",
+      "characters": 43
+    },
+    {
+      "chapterId": "chapter-2",
+      "characters": 43
+    },
+    {
+      "chapterId": "chapter-3",
+      "characters": 47
+    }
+  ],
+  "serverBudget": {
+    "chapters": 3,
+    "totalCharacters": 135,
+    "perChapterTarget": 45,
+    "perChapterMaximum": 51
+  },
+  "rawIndependentReview": {
+    "score": 75,
+    "needsRepair": true,
+    "findings": [
+      "chapter-2：旁白写“官方查遍全部相关企业”，但未口播画面所标168家、368批次成品与32批次重点部位；依据：ref-8、ref-3明确抽检覆盖国内全部168家婴幼儿纸尿裤生产及代工企业、180个品牌368批次成品、32批次分部位检测，368批次成品样品和32批次分部位样品均未检出甲酰胺；修正：将旁白补全为“官方查遍全部168家相关企业，覆盖180个品牌、368批成品，重点部位另查32批；通报说，没有检出甲酰胺”，确保配音、字幕与画面数据一致。",
+      "chapter-3：旁白写“此前网上检测说法让家长担心。通报称留存样品复检未检出，原检测方法有问题；结论限于本次范围，后续仍会监管。”，但未口播15个品牌58批次、210份血液样本复检未检出等关键事实；依据：ref-8、ref-3明确“复检的15个品牌58批次样品均未检出甲酰胺”“210份血液样本均未检出甲酰胺”；修正：补充口播内容为“此前网上检测说法让家长担心。通报称靠谱老王留存的15个品牌58批次样品复检未检出，210份血液样本复检也未检出，原检测方法有问题；结论限于本次范围，后续仍会监管”。",
+      "全片三个章节旁白总字数约150字，按照4.6字/秒的目标语速计算，预估时长约32.6秒，超出用户要求的30秒时长；修正：在不遗漏关键数据的前提下精简口播字数，将总字数控制在138字以内（约30秒），保持信息完整同时符合时长要求。"
+    ],
+    "suggestions": [
+      "chapter-1：旁白“这不是当天才出的事”可调整为“争议不是当天才发生，10月15日是调查结论发布日”，避免观众误解为通报本身不是新闻。",
+      "chapter-2：柱状图中四个数据量纲不同（家、个、批次、批次），直接按数值高度对比可能误导观众，建议改为四列并列数据卡片，分别标注数字和对应类别，不做高度对比。",
+      "chapter-3：当前仅提及靠谱老王的样品复检情况，如时长允许可简要补充“第三方机构与血液样本的检测方法也被认定不可靠”，进一步完善回应边界。",
+      "chapter-1：旁白“这不是当天才出的事，调查组在六月下旬已经成立”与来源相符，但“这不是当天才出的事”可进一步明确为“争议和调查不是10月15日才发生，10月15日是调查结论发布日”，以避免观众误解为通报内容本身不是新闻。",
+      "chapter-2：旁白“官方查遍全部相关企业”较口语化，画面和事实声明已准确列出“国内全部168家婴幼儿纸尿裤生产企业（含代工企业）”；如字数允许，可在字幕中保留“168家”，让抽检范围更完整。",
+      "chapter-3：当前重点说明“靠谱老王”样品复检和方法问题，来源还通报了第三方机构报告、血液样本复检等内容；30秒内不必全讲，但若后续扩展，可简要补充“210份血液样本复检也未检出”，但不要删减现有双日期和抽检范围。"
+    ]
+  },
+  "rawPrimaryReview": {
+    "score": 96,
+    "needsRepair": false,
+    "findings": []
+  }
+}

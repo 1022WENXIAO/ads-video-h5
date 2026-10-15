@@ -1,0 +1,575 @@
+{
+  "scope": "Public projection of the actual P21 chapter and two same-waveform ASR results. Provider/account/job metadata omitted; original source hash, words and times unchanged. This is not human listening or a new media acceptance.",
+  "chapter": {
+    "id": "chapter-3",
+    "title": "为何此刻受关注",
+    "role": "recap",
+    "goal": "说明通报为何回应家长焦虑，并谨慎区分已证实结论与未被支持的网传说法。",
+    "prerequisites": [
+      "chapter-1",
+      "chapter-2"
+    ],
+    "narration": "此前网传检测让家长担心。15品牌58批样品复检未检出，210份血样也未检出；方法有问题，后续仍监管。",
+    "reason": "补全15个品牌58批次和210份血液样本两个关键点，并压缩方法与后续监管表述，使全片回到30秒预算。",
+    "referenceIds": [
+      "ref-8",
+      "ref-3"
+    ],
+    "claims": [
+      {
+        "text": "对“靠谱老王”留存且包装完整的15个品牌58批次样品复检，均未检出甲酰胺。",
+        "referenceIds": [
+          "ref-8",
+          "ref-3"
+        ],
+        "basis": "source"
+      },
+      {
+        "text": "调查组封存山东质谱中心210份血液样本并平行复检，210份血液样本均未检出甲酰胺。",
+        "referenceIds": [
+          "ref-8",
+          "ref-3"
+        ],
+        "basis": "source"
+      },
+      {
+        "text": "专家复现相关检测过程后认为方法存在问题，无法得出检出甲酰胺的结论；有关部门将继续加强监管。",
+        "referenceIds": [
+          "ref-8"
+        ],
+        "basis": "source"
+      }
+    ],
+    "visual": {
+      "kind": "comparison",
+      "takeaway": "网传检测未被复检和方法复现支持。",
+      "items": [
+        {
+          "label": "网传检测引发担心",
+          "detail": "此前网上检测说法引发家长关注。",
+          "cue": "网传检测",
+          "illustration": "steps"
+        },
+        {
+          "label": "15品牌58批样品",
+          "detail": "留存且包装完整样品复检，均未检出。",
+          "cue": "15品牌58批",
+          "illustration": "signal"
+        },
+        {
+          "label": "210份血样复检",
+          "detail": "封存血液样本平行复检，均未检出。",
+          "cue": "210份血样",
+          "illustration": "signal"
+        },
+        {
+          "label": "方法有问题",
+          "detail": "专家称原检测过程不能支持检出结论，后续继续监管。",
+          "cue": "方法有问题",
+          "illustration": "announcement"
+        }
+      ]
+    }
+  },
+  "records": [
+    {
+      "label": "first",
+      "archiveJSONSha256": "b814c964fc60d72aac13265bfdbbe487a735f2cf9e7a96e9c0237b84451f273c",
+      "analysis": {
+        "sourceHash": "5d0b5778136a9922d312b0f1c8a8f7b94e6d3e908b1117dee87ca835947707f0",
+        "duration": 11.5,
+        "transcript": "此前网传检测让家长担心\n十五品牌五十八批样品复检未检出二百一十份血样也未检出\n方法有问题\n后续仍监管",
+        "sentences": [
+          {
+            "id": "ecb35285-054d-43d8-be04-82dd6716b695:sentence:0",
+            "start": 0.09,
+            "end": 2.56,
+            "words": [
+              {
+                "start": 0.09,
+                "end": 0.31,
+                "text": "此前"
+              },
+              {
+                "start": 0.31,
+                "end": 0.5,
+                "text": "网"
+              },
+              {
+                "start": 0.5,
+                "end": 0.93,
+                "text": "传"
+              },
+              {
+                "start": 0.96,
+                "end": 1.2,
+                "text": "检"
+              },
+              {
+                "start": 1.2,
+                "end": 1.44,
+                "text": "测"
+              },
+              {
+                "start": 1.44,
+                "end": 1.59,
+                "text": "让"
+              },
+              {
+                "start": 1.59,
+                "end": 1.8,
+                "text": "家"
+              },
+              {
+                "start": 1.8,
+                "end": 1.98,
+                "text": "长"
+              },
+              {
+                "start": 1.98,
+                "end": 2.25,
+                "text": "担"
+              },
+              {
+                "start": 2.25,
+                "end": 2.56,
+                "text": "心"
+              }
+            ],
+            "text": "此前网传检测让家长担心",
+            "complete": true
+          },
+          {
+            "id": "ecb35285-054d-43d8-be04-82dd6716b695:sentence:1",
+            "start": 3.15,
+            "end": 8.88,
+            "words": [
+              {
+                "start": 3.15,
+                "end": 3.39,
+                "text": "十"
+              },
+              {
+                "start": 3.39,
+                "end": 3.6,
+                "text": "五"
+              },
+              {
+                "start": 3.6,
+                "end": 3.81,
+                "text": "品"
+              },
+              {
+                "start": 3.81,
+                "end": 4.02,
+                "text": "牌"
+              },
+              {
+                "start": 4.02,
+                "end": 4.17,
+                "text": "五"
+              },
+              {
+                "start": 4.17,
+                "end": 4.47,
+                "text": "十"
+              },
+              {
+                "start": 4.47,
+                "end": 4.65,
+                "text": "八"
+              },
+              {
+                "start": 4.65,
+                "end": 4.8,
+                "text": "批"
+              },
+              {
+                "start": 4.8,
+                "end": 4.95,
+                "text": "样"
+              },
+              {
+                "start": 4.95,
+                "end": 5.19,
+                "text": "品"
+              },
+              {
+                "start": 5.19,
+                "end": 5.37,
+                "text": "复"
+              },
+              {
+                "start": 5.37,
+                "end": 5.58,
+                "text": "检"
+              },
+              {
+                "start": 5.58,
+                "end": 5.73,
+                "text": "未"
+              },
+              {
+                "start": 5.73,
+                "end": 5.97,
+                "text": "检"
+              },
+              {
+                "start": 5.97,
+                "end": 6.31,
+                "text": "出"
+              },
+              {
+                "start": 6.84,
+                "end": 7.02,
+                "text": "二"
+              },
+              {
+                "start": 7.02,
+                "end": 7.29,
+                "text": "百"
+              },
+              {
+                "start": 7.29,
+                "end": 7.48,
+                "text": "一"
+              },
+              {
+                "start": 7.48,
+                "end": 7.54,
+                "text": "十"
+              },
+              {
+                "start": 7.54,
+                "end": 7.68,
+                "text": "份"
+              },
+              {
+                "start": 7.68,
+                "end": 7.86,
+                "text": "血"
+              },
+              {
+                "start": 7.86,
+                "end": 8.01,
+                "text": "样"
+              },
+              {
+                "start": 8.01,
+                "end": 8.19,
+                "text": "也"
+              },
+              {
+                "start": 8.19,
+                "end": 8.37,
+                "text": "未"
+              },
+              {
+                "start": 8.37,
+                "end": 8.55,
+                "text": "检"
+              },
+              {
+                "start": 8.55,
+                "end": 8.88,
+                "text": "出"
+              }
+            ],
+            "text": "十五品牌五十八批样品复检未检出二百一十份血样也未检出",
+            "complete": true
+          },
+          {
+            "id": "ecb35285-054d-43d8-be04-82dd6716b695:sentence:2",
+            "start": 9.36,
+            "end": 10.56,
+            "words": [
+              {
+                "start": 9.36,
+                "end": 9.63,
+                "text": "方"
+              },
+              {
+                "start": 9.63,
+                "end": 9.78,
+                "text": "法"
+              },
+              {
+                "start": 9.78,
+                "end": 9.93,
+                "text": "有"
+              },
+              {
+                "start": 9.93,
+                "end": 10.14,
+                "text": "问"
+              },
+              {
+                "start": 10.14,
+                "end": 10.56,
+                "text": "题"
+              }
+            ],
+            "text": "方法有问题",
+            "complete": true
+          },
+          {
+            "id": "ecb35285-054d-43d8-be04-82dd6716b695:sentence:3",
+            "start": 10.59,
+            "end": 11.31,
+            "words": [
+              {
+                "start": 10.59,
+                "end": 10.86,
+                "text": "后"
+              },
+              {
+                "start": 10.86,
+                "end": 11.04,
+                "text": "续"
+              },
+              {
+                "start": 11.04,
+                "end": 11.19,
+                "text": "仍"
+              },
+              {
+                "start": 11.19,
+                "end": 11.25,
+                "text": "监"
+              },
+              {
+                "start": 11.25,
+                "end": 11.31,
+                "text": "管"
+              }
+            ],
+            "text": "后续仍监管",
+            "complete": false
+          }
+        ]
+      }
+    },
+    {
+      "label": "same-wave-recheck",
+      "archiveJSONSha256": "927252134e7ad215b0961a32ef4d024e3fd17f40b9e995d6062d6c676ad9c9a8",
+      "analysis": {
+        "sourceHash": "5d0b5778136a9922d312b0f1c8a8f7b94e6d3e908b1117dee87ca835947707f0",
+        "duration": 11.5,
+        "transcript": "此前网传检测让家长担心\n十五品牌五十八批样品复检未检出\n二百一十份血样也未检出\n方法有问题后续仍监管",
+        "sentences": [
+          {
+            "id": "6e36f4bc-2fd7-4641-942b-9c4fc498c18b:sentence:0",
+            "start": 0.09,
+            "end": 1.59,
+            "words": [
+              {
+                "start": 0.09,
+                "end": 0.31,
+                "text": "此前"
+              },
+              {
+                "start": 0.31,
+                "end": 0.54,
+                "text": "网传"
+              },
+              {
+                "start": 0.54,
+                "end": 0.94,
+                "text": "检测"
+              },
+              {
+                "start": 0.97,
+                "end": 1.29,
+                "text": "让家长"
+              },
+              {
+                "start": 1.29,
+                "end": 1.59,
+                "text": "担心"
+              }
+            ],
+            "text": "此前网传检测让家长担心",
+            "complete": true
+          },
+          {
+            "id": "6e36f4bc-2fd7-4641-942b-9c4fc498c18b:sentence:1",
+            "start": 2.34,
+            "end": 4.78,
+            "words": [
+              {
+                "start": 2.34,
+                "end": 2.58,
+                "text": "十五"
+              },
+              {
+                "start": 2.58,
+                "end": 2.85,
+                "text": "品牌"
+              },
+              {
+                "start": 2.85,
+                "end": 3.21,
+                "text": "五十"
+              },
+              {
+                "start": 3.21,
+                "end": 3.36,
+                "text": "八批"
+              },
+              {
+                "start": 3.36,
+                "end": 3.51,
+                "text": "样"
+              },
+              {
+                "start": 3.51,
+                "end": 3.72,
+                "text": "品"
+              },
+              {
+                "start": 3.72,
+                "end": 3.96,
+                "text": "复"
+              },
+              {
+                "start": 3.96,
+                "end": 4.13,
+                "text": "检"
+              },
+              {
+                "start": 4.13,
+                "end": 4.26,
+                "text": "未"
+              },
+              {
+                "start": 4.26,
+                "end": 4.47,
+                "text": "检"
+              },
+              {
+                "start": 4.47,
+                "end": 4.78,
+                "text": "出"
+              }
+            ],
+            "text": "十五品牌五十八批样品复检未检出",
+            "complete": true
+          },
+          {
+            "id": "6e36f4bc-2fd7-4641-942b-9c4fc498c18b:sentence:2",
+            "start": 5.22,
+            "end": 7.23,
+            "words": [
+              {
+                "start": 5.22,
+                "end": 5.58,
+                "text": "二百"
+              },
+              {
+                "start": 5.58,
+                "end": 5.73,
+                "text": "一"
+              },
+              {
+                "start": 5.73,
+                "end": 5.88,
+                "text": "十"
+              },
+              {
+                "start": 5.88,
+                "end": 6.06,
+                "text": "份"
+              },
+              {
+                "start": 6.06,
+                "end": 6.24,
+                "text": "血"
+              },
+              {
+                "start": 6.24,
+                "end": 6.45,
+                "text": "样"
+              },
+              {
+                "start": 6.45,
+                "end": 6.59,
+                "text": "也"
+              },
+              {
+                "start": 6.59,
+                "end": 6.72,
+                "text": "未"
+              },
+              {
+                "start": 6.72,
+                "end": 6.87,
+                "text": "检"
+              },
+              {
+                "start": 6.87,
+                "end": 7.23,
+                "text": "出"
+              }
+            ],
+            "text": "二百一十份血样也未检出",
+            "complete": true
+          },
+          {
+            "id": "6e36f4bc-2fd7-4641-942b-9c4fc498c18b:sentence:3",
+            "start": 7.74,
+            "end": 9.81,
+            "words": [
+              {
+                "start": 7.74,
+                "end": 8.01,
+                "text": "方法"
+              },
+              {
+                "start": 8.01,
+                "end": 8.16,
+                "text": "有"
+              },
+              {
+                "start": 8.16,
+                "end": 8.38,
+                "text": "问"
+              },
+              {
+                "start": 8.38,
+                "end": 8.82,
+                "text": "题"
+              },
+              {
+                "start": 8.85,
+                "end": 9.06,
+                "text": "后"
+              },
+              {
+                "start": 9.06,
+                "end": 9.22,
+                "text": "续"
+              },
+              {
+                "start": 9.22,
+                "end": 9.36,
+                "text": "仍"
+              },
+              {
+                "start": 9.36,
+                "end": 9.57,
+                "text": "监"
+              },
+              {
+                "start": 9.57,
+                "end": 9.81,
+                "text": "管"
+              }
+            ],
+            "text": "方法有问题后续仍监管",
+            "complete": false
+          }
+        ]
+      }
+    }
+  ]
+}

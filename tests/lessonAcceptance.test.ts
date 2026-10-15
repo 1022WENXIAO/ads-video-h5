@@ -57,7 +57,7 @@ test('daily-event acceptance requires actually read, verbatim evidence with a ma
 
 test('independent review includes the original demand and cannot approve old news by treating the date mismatch as a suggestion',async()=>{
   const original=globalThis.fetch,prompt='生成新闻口播视频，介绍今天发生的事情，和大模型相关';
-  const report={hotResearch:{},references:[{id:'r1',verification:'news-page',excerpt:'九月三十日，机构宣布了安装量的外部估算。'}]} as unknown as LessonReport;
+  const report:LessonReport={workflowId:'controlled-old-news',title:'安装量估算',audience:'普通观众',objectives:['核对事件日期'],arc:'报道与事件分开',requestedSeconds:30,explicitDuration:true,format:'9:16',limitations:[],hotResearch:{asOf:new Date().toISOString(),windowHours:24,topics:[],signals:[]},references:[{id:'r1',title:'Controlled old event',url:'https://example.org/old-event',verification:'news-page',excerpt:'九月三十日，机构宣布了安装量的外部估算。'}],chapters:[{id:'current-news',title:'旧事件',role:'hook',goal:'核对原要求',prerequisites:[],narration:'九月三十日，机构宣布了安装量的外部估算。',reason:'受控旧闻',referenceIds:['r1'],claims:[],visual:{kind:'concept',takeaway:'这是旧事件',items:[]}}]};
   globalThis.fetch=async(_url,init)=>{
     const body=JSON.parse(String(init?.body));assert.ok(body.messages[0].content.includes('主题、版本和事件日期的明确要求是本次验收门槛'));assert.ok(body.messages[0].content.includes('todayEvents'));
     assert.equal(JSON.parse(body.messages[1].content).userPrompt,prompt);

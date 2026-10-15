@@ -217,7 +217,7 @@ function speechPointOffset(text:string,utf16:number):number{return utf16<0?-1:[.
 function speechPointIndexOf(text:string,phrase:string,from=0):number{return speechPointOffset(text,text.indexOf(phrase,[...text].slice(0,from).join('').length));}
 // Recognize equivalent heard quantities/ranges without treating every Chinese
 // numeral in ordinary prose as a number, or changing the original transcript.
-function speechNumberForms(){return /(?<=双)(?:十[一二]|1[12])(?![\d.点零〇一二两三四五六七八九十百千万亿])|[\d零〇一二两三四五六七八九十百千万亿]+点[\d零〇一二三四五六七八九]+|[\d零〇一二两三四五六七八九十][\d零〇一二两三四五六七八九十百千]*(?=[a-z%年月日号天元台家人岁个次万亿]|小时|到|至)|[零〇一二三四五六七八九]{3,}/g;}
+function speechNumberForms(){return /(?<=双)(?:十[一二]|1[12])(?![\d.点零〇一二两三四五六七八九十百千万亿])|[\d零〇一二两三四五六七八九十百千万亿]+点[\d零〇一二三四五六七八九]+|[\d零〇一二两三四五六七八九十][\d零〇一二两三四五六七八九十百千]*(?=[a-z%年月日号天元台家人岁个次万亿]|小时|品牌|批次|批|份|到|至)|[零〇一二三四五六七八九]{3,}/g;}
 function canonicalSpeechNumber(text:string){return text.includes('点')?speechDecimalText(text):String(speechNumberValue(text));}
 function spokenYears(text:string):string[]{
   const digits:Record<string,string>={'零':'0','〇':'0','一':'1','二':'2','三':'3','四':'4','五':'5','六':'6','七':'7','八':'8','九':'9'};
@@ -259,7 +259,7 @@ function namedSpeechNumbers(text:string):number[]{
 }
 function speechQuantities(text:string):Array<{unit:string;value:number}>{
   const number='[\\d零〇一二两三四五六七八九十百千万亿]+(?:[.点][\\d零〇一二三四五六七八九]+)?';
-  const pattern=new RegExp(`百分之(${number})|(${number})(?:(?:到|至|[-~～—])(${number}))?(%|元|台|家|小时|天|次|个|人|条|倍|分|秒|参数|[GMT]B)`,'gi');
+  const pattern=new RegExp(`百分之(${number})|(${number})(?:(?:到|至|[-~～—])(${number}))?(%|元|台|家|小时|天|次|个|人|条|倍|分|秒|品牌|批次|批|份|参数|[GMT]B)`,'gi');
   return [...spokenLessonText(text).replace(/\s/g,'').matchAll(pattern)].flatMap(m=>{
     const unit=m[1]?'%':m[4].toLowerCase(),values=m[1]?[m[1]]:m[3]?[m[2],m[3]]:[m[2]];
     return values.map(value=>({unit,value:speechNumberValue(value)}));
@@ -398,7 +398,7 @@ function heardNumberBoundaries(analysis:AudioAnalysis):Set<number>{
     let next='';for(let j=i;j<words.length&&next.length<64;j++){
       if(j>i&&words[j].start-words[j-1].end>=.25)break;next+=words[j].text;
     }
-    const quantity=/^([\d零〇一二两三四五六七八九十百千万亿]+)(?:[.点][\d零〇一二三四五六七八九]+)?(?:年|月|日|号|天|元|台|家|人|岁|小时|%)/.exec(next.replace(/\s/g,''));
+    const quantity=/^([\d零〇一二两三四五六七八九十百千万亿]+)(?:[.点][\d零〇一二三四五六七八九]+)?(?:年|月|日|号|天|元|台|家|人|岁|小时|品牌|批次|批|份|%)/.exec(next.replace(/\s/g,''));
     if(quantity&&!/[\d一二两三四五六七八九]{2,}(?=[十百千万亿])/.test(quantity[1]))boundaries.add(i);
   }
   return boundaries;
@@ -531,7 +531,11 @@ export function alignLessonSpeech(chapter:LessonChapter,analysis:AudioAnalysis):
   if(JSON.stringify(decimals)!==JSON.stringify(heardDecimals))throw new Error(`章节${chapter.id}实际读出的小数数字${heardDecimals.join('、')}与脚本${decimals.join('、')}不同，需要重录。`);
   if(JSON.stringify(spokenDates(chapter.narration))!==JSON.stringify(spokenDates(heardNumberText(numericAnalysis))))throw new Error(`章节${chapter.id}日期数字或年月日单位与脚本不同，${speechValueDifference(spokenDates(chapter.narration),spokenDates(heardNumberText(numericAnalysis)))}；需要独立复听或重录。`);
   if(JSON.stringify(namedSpeechNumbers(chapter.narration))!==JSON.stringify(namedSpeechNumbers(analysis.transcript)))throw new Error(`章节${chapter.id}实际读出的残差、误差、伽马或阈值数字与脚本不同，需要核验或重录。`);
-  if(JSON.stringify(speechQuantities(chapter.narration))!==JSON.stringify(speechQuantities(analysis.transcript)))throw new Error(`章节${chapter.id}金额、百分比、数量数字或单位与脚本不一致，需要独立复听或重录，不能以整章匹配率放行。`);
+  // Carry actual pause fences into an identical literal
+  // transcript; otherwise "5.1, 22批" would become a false quantity 5.122批.
+  // Disagreeing transcript and word values retain the strict original check.
+  const quantityText=compactSpeech(analysis.transcript,false)===compactSpeech(wordText,false)?heardNumberText({...analysis,captionBreaks:undefined,captionBoundarySource:undefined}):analysis.transcript;
+  if(JSON.stringify(speechQuantities(chapter.narration))!==JSON.stringify(speechQuantities(quantityText)))throw new Error(`章节${chapter.id}金额、百分比、数量数字或单位与脚本不一致，需要独立复听或重录，不能以整章匹配率放行。`);
   for(const term of ['相似度','概率变化']){
     const expectedCount=compactSpeech(chapter.narration).split(term).length-1;
     if(expectedCount&&(compactSpeech(analysis.transcript).split(term).length-1)!==expectedCount)throw new Error(`章节${chapter.id}关键数学术语「${term}」不完整或匹配次数不同，需要独立复听或重录，不能补字幕。`);

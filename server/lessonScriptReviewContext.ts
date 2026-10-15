@@ -1,6 +1,7 @@
 import type { LessonReport } from '../shared/types';
 import { lessonResearchSummary } from './lessonResearch';
 import { newsObservationContext } from './newsTime';
+import { compactSpeech } from './lessonSpec';
 
 export function selectedLessonSignalEvidence(report:LessonReport){
   const topics=report.hotResearch?.topics||[],signals=report.hotResearch?.signals||[];
@@ -31,6 +32,18 @@ export function lessonScriptReviewContext(report: LessonReport) {
     researchSummary: lessonResearchSummary('', report.references),
     report: script,
     ...(report.hotResearch?{
+      newsScriptScope:{
+        contract:'按原始userPrompt的明确要求和本版选题核对核心事实。来源中的其他背景、子样本和统计不自动成为本片必讲内容；当前脚本也不能自行缩小用户要求。遗漏会改变核心结论、事实范围或不满足明确要求时仍是实际错误，精确数字、日期、限定语和不确定性照常核验。',
+        absenceFindings:'认定未讲某信息前，逐项检查以下所有当前章节的旁白和图解。已在画面完整说明的信息不必重复口播，除非用户明确要求口播。遗漏类findings须说明原用户的具体要求或其对当前核心结论的实质影响，不能仅因来源全文还有更多数据而阻止制作；纯扩展建议写入suggestions。',
+        currentChapterFields:report.chapters.map(chapter=>({chapterId:chapter.id,narration:chapter.narration,visual:chapter.visual})),
+        narrationCharacters:{
+          rule:'与服务端脚本预算相同的compactSpeech字符数；标点空格不计，英文字母和数字逐字符计数。这是字数证据，不能当作真实音频时长。',
+          perChapter:report.chapters.map(chapter=>({chapterId:chapter.id,characters:compactSpeech(chapter.narration).length})),
+          total:report.chapters.reduce((total,chapter)=>total+compactSpeech(chapter.narration).length,0),
+          requestedSeconds:report.requestedSeconds,
+          timing:'实际配音时长、停顿、语速和成片时长在后续实际媒体阶段验收；不要用粗估字数或猜测语速覆盖服务端已通过的脚本预算。',
+        },
+      },
       ...selectedLessonSignalEvidence(report),
       signalEvidenceContract:'正文事实以report.references中的实际新闻摘录及referenceIds为依据；榜单排名和观察时点以所选topic.signalIds关联的selectedSignalEvidence为独立观察依据，可用basis=synthesis说明。signalId不是新闻referenceId，不得伪造到referenceIds，也不要求新闻正文重复证明榜单快照。逐项核对话题、排名、原UTC及北京时间；无真实信号、错话题、错排名、错时间仍属缺陷。快照不能证明首次上榜、事件发生、报道或模型发布时点。selectedSignalEvidenceGaps表示缺失或无效证据，不得凭研究摘要、脚本自述或模型常识补齐。',
     }:{}),
