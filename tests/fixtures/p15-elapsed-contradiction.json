@@ -1,0 +1,26 @@
+{
+  "provenance": {
+    "revision": "bc45ca04",
+    "scope": "Minimal public projection of the P15 accepted script and actual ref-1 paragraphs. Pure arithmetic regression only; no new source fetch or media acceptance.",
+    "sourceUrl": "https://m.huanqiu.com/article/4TcSj6f5JG1"
+  },
+  "report": {
+    "workflowId": "p15-elapsed-public-projection",
+    "title": "DeepSeek今早服务中断",
+    "audience": "普通用户",
+    "objectives": ["准确说明故障状态"],
+    "arc": "现象、时间与边界",
+    "requestedSeconds": 45,
+    "explicitDuration": true,
+    "format": "9:16",
+    "limitations": ["Public evidence projection; not a completed video test."],
+    "factReview": {"score":94,"needsRepair":false,"findings":[]},
+    "chapters": [
+      {"id":"chapter-2","title":"API影响链路","role":"foundation","goal":"说明故障启动时间","prerequisites":[],"narration":"官方状态页被媒体转述：故障8点11分启动，对话服务和DeepSeek V4.1 Flash API部分中断。","reason":"保留实际报道时间点","referenceIds":["ref-1"],"claims":[{"text":"环球网援引DeepSeek官方服务状态页面称，故障于北京时间8:11启动，覆盖对话服务和DeepSeek V4.1 Flash API。","referenceIds":["ref-1"],"basis":"source"}],"visual":{"kind":"concept","takeaway":"对话和API部分中断","items":[{"label":"8:11","detail":"媒体转述官方状态页：故障启动","cue":"8点11分启动"},{"label":"对话与API","detail":"部分中断","cue":"部分中断"}]}},
+      {"id":"chapter-3","title":"修复进展与待确认信息","role":"recap","goal":"区分服务状态与未知信息","prerequisites":["chapter-2"],"narration":"截至10时，环球网实测服务仍未恢复；媒体按现场观察口径称已持续3个多小时。官方称原因已定位，正在修复；根因、影响范围和最终恢复时间，仍待官方披露。","reason":"实际P15通过稿的无来源口径","referenceIds":["ref-1"],"claims":[{"text":"环球网记者10时实测，相关服务仍未恢复正常；报道按现场观察口径称故障已持续3个多小时，脚本不另行从8:11推算精确时长。","referenceIds":["ref-1"],"basis":"source"}],"visual":{"kind":"timeline","takeaway":"10时仍未恢复；已定位修复，完整结论待披露","items":[{"label":"10:00服务状态","detail":"环球网实测仍未恢复；现场观察口径称已持续3个多小时｜自绘示意","cue":"截至10时"},{"label":"官方处置进展","detail":"据媒体转述：原因已定位，正在推进修复","cue":"原因已定位"}]}}
+    ],
+    "references": [
+      {"id":"ref-1","title":"DeepSeek出现服务中断，网页及API服务受影响","url":"https://m.huanqiu.com/article/4TcSj6f5JG1","verification":"news-page","excerpt":"<p>【环球网科技综合报道】10月15日上午，人工智能平台DeepSeek发生服务异常，网页端、手机App对话功能出现使用障碍，用户操作时收到“服务器暂时不可用”提示，截至当日上午10时，相关服务仍未能恢复正常。</p><p>据DeepSeek官方服务状态页面信息，本次故障于北京时间8时11分启动，故障覆盖对话服务以及DeepSeek V4.1 Flash API服务。平台方面第一时间开展问题排查工作，后续更新处置进展表示，故障原因已经定位，正在推进修复作业。截至记者10时实测，故障已持续3个多小时。</p>"}
+    ]
+  }
+}

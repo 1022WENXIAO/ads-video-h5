@@ -152,15 +152,21 @@ test('source upgrade propagates a real old-movie filesystem denial before HTTP, 
     assert.deepEqual(await readFile(path.join(s.work,'checkpoint.json')),original);assert.deepEqual(await readFile(path.join(s.work,'news-source-history',hashBytes(original)+'.json')),original);await s.intact();
   }finally{await chmod(s.checkpoint.rendered.file,0o600);await s.cleanup();}
 });
-for(const kind of ['current','knowledge'] as const)test(kind+' checkpoint does not incur news source revalidation',async()=>{
+for(const kind of ['current','knowledge'] as const)for(const history of ['legacy-missing','current'] as const)test(kind+' checkpoint with '+history+' fact history does not incur news source revalidation',async()=>{
   const directory=await mkdtemp(path.join(tmpdir(),'qingjian-source-skip-')),s=await seed(directory);
   try{
     s.checkpoint.newsSourceParserHash=newsSourceParserHash();
+    if(history==='current')s.checkpoint.factRepairHistory={version:1,entries:[]};
     if(kind==='knowledge'){
       s.options.prompt='制作45秒横屏知识图解视频，每秒4字';s.checkpoint.fingerprint=hashBytes(JSON.stringify({version:1,owner:'fixture-owner',prompt:s.options.prompt,export:true}));delete s.checkpoint.newsSourceParserHash;delete s.checkpoint.report.hotResearch;delete s.checkpoint.research.current;s.checkpoint.report=validateLesson({...s.checkpoint.report,...lessonSettings(s.options.prompt),presentation:lessonPresentation(s.options.prompt)},s.options.prompt);s.checkpoint.plan.lesson=structuredClone(s.checkpoint.report);s.checkpoint.review.newsPublication=undefined;delete s.checkpoint.best;
     }
-    await s.write();globalThis.fetch=async()=>{throw new Error('Unexpected provider');};
+    await s.write();const original=await readFile(path.join(s.work,'checkpoint.json'));globalThis.fetch=async()=>{throw new Error('Unexpected provider');};
     const result=await runLessonWorkflow({...s.options,readNewsSource:async()=>{throw new Error('Unexpected source read');}});assert.equal(result.review?.status,'passed');assert.equal(s.calls.facts,0);assert.equal(s.calls.reviews,0);assert.equal(s.calls.asr,0);assert.equal(s.calls.renders,0);assert.equal(s.calls.events.some(e=>e.tool==='revalidate_news_sources'),false);await s.intact();
-    await assert.rejects(readdir(path.join(s.work,'news-source-history')),/ENOENT/);
+    if(history==='legacy-missing'){
+      // The fact-history migration preserves exact old bytes independently of
+      // news parser revalidation; the existing zero-call assertions stay above.
+      assert.deepEqual(await readdir(path.join(s.work,'news-source-history')),[hashBytes(original)+'.json']);
+      assert.deepEqual(await readFile(path.join(s.work,'news-source-history',hashBytes(original)+'.json')),original);
+    }else await assert.rejects(readdir(path.join(s.work,'news-source-history')),/ENOENT/);
   }finally{await s.cleanup();}
 });

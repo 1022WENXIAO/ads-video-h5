@@ -5,6 +5,9 @@ import { assertVisibleContent } from './visibleContent';
 import { assertNarrationHanCoverage } from './lessonSpeechCoverage';
 import { correctNarrationHomophones } from './narrationHomophones';
 import { correctCommonNarrationSpelling } from './lessonCommonSpelling';
+import {lessonModelVersions} from './lessonModelVersions';
+import {correctSourceModelSpelling} from './lessonModelSpelling';
+import {scopedLessonRepairTargets} from './lessonRepairScope';
 
 function durationNumber(value:string):number {
   if(value==='半')return .5;
@@ -72,7 +75,7 @@ export function assertLessonNewsSources(report:Pick<LessonReport,'hotResearch'|'
 }
 export const lessonDimensions=(format:Format):[number,number]=>format==='16:9'?[1280,720]:format==='9:16'?[720,1280]:[960,960];
 export function lessonRepairTargets(report:LessonReport,feedback:string):string[]{
-  const ids=report.chapters.filter(c=>new RegExp(`(^|[^\\w-])${c.id}(?=$|[^\\w-])`).test(feedback)).map(c=>c.id);
+  const ids=scopedLessonRepairTargets(report.chapters,feedback);
   return !ids.length||/global|全片|全局|全部章节|总旁白|整体时长|目标时长/i.test(feedback)?report.chapters.map(c=>c.id):ids;
 }
 export function applyLessonChapterRepairs(report:LessonReport,updates:LessonChapter[],feedback:string):LessonReport{
@@ -227,7 +230,7 @@ export function assertClearModelDates(text:string):void {
   if(/\b[A-Za-z]{2,}(?:-[A-Za-z]+)*\s*\d+(?:\.\d+)?\s*[一二两三四五六七八九十]{1,3}[年月日号]/.test(text))throw new Error('型号与日期连写有歧义；用“Fable 5这个模型在六月发布”这样的完整表达，不能写“Fable 5六月发布”。');
 }
 function spokenModelVersions(text:string):string[] {
-  return [...text.matchAll(/(?<![A-Za-z])([A-Za-z]{2,}(?:-[A-Za-z]+)*)\s*([\d零〇一二两三四五六七八九十百千万亿]+(?:[.点][\d零〇一二三四五六七八九]+)?)/g)].map(m=>m[1].toLowerCase()+':'+(/[.点]/.test(m[2])?speechDecimalText(m[2]):String(speechNumberValue(m[2]))));
+  return lessonModelVersions(text,value=>/[.点]/.test(value)?speechDecimalText(value):String(speechNumberValue(value)));
 }
 function speechDecimalText(text:string):string{
   const digits:Record<string,string>={'零':'0','〇':'0','一':'1','二':'2','三':'3','四':'4','五':'5','六':'6','七':'7','八':'8','九':'9'};
@@ -261,21 +264,24 @@ function speechQuantities(text:string):Array<{unit:string;value:number}>{
 function spokenNumberValues(text:string):string[]{
   return [...spokenLessonText(text).replace(/\s/g,'').matchAll(/[\d零〇一二两三四五六七八九十百千万亿]+(?:[.点][\d零〇一二三四五六七八九]+)?/g)].map(m=>/[.点]/.test(m[0])?speechDecimalText(m[0]):String(speechNumberValue(m[0])));
 }
-interface SpeechClock {start:number;end:number;hour:number;minute:number;second?:number;valid:boolean;raw:string;hourText:string;minuteText:string;secondText?:string;unit:string;parts:Array<{start:number;end:number;text:string}>;}
+interface SpeechClock {start:number;end:number;hour:number;minute?:number;second?:number;valid:boolean;raw:string;hourText:string;minuteText?:string;secondText?:string;unit:string;parts:Array<{start:number;end:number;text:string}>;}
 function speechClocks(text:string):SpeechClock[]{
   const digit='[\\d零〇一二两三四五六七八九十]',number=`${digit}(?:\\s*${digit})*`,periods='上午|下午|凌晨|中午|早上|早晨|清晨|午后|傍晚|晚上|晚间|夜间';
   const boundary='[A-Za-z\\d.:点零〇一二两三四五六七八九十百千万亿]';
-  const pattern=new RegExp(`(?<!${boundary})(?:(${periods})\\s*)?(${number})\\s*(点|时)\\s*(${number})\\s*分(?:\\s*(${number})\\s*秒)?|(?<!${boundary})(?:(${periods})\\s*)?(\\d(?:\\s*\\d)?)\\s*:\\s*(\\d\\s*\\d)(?:\\s*:\\s*(\\d\\s*\\d))?(?![\\d.:])`,'gd');
+  const pattern=new RegExp(`(?<!${boundary})(?:(${periods})\\s*)?(${number})\\s*(点|时)\\s*(${number})\\s*分(?:\\s*(${number})\\s*秒)?|(?<!${boundary})(?:(${periods})\\s*)?(\\d(?:\\s*\\d)?)\\s*:\\s*(\\d\\s*\\d)(?:\\s*:\\s*(\\d\\s*\\d))?(?![\\d.:])|(?<!${boundary})(?:(${periods})\\s*)?(${number})\\s*时(?!\\s*(?:${digit}|分|秒))`,'gd');
   const result:SpeechClock[]=[];
   for(const m of text.matchAll(pattern)){
-    const colon=m[7]!==undefined,period=m[1]||m[6]||'',hourText=colon?m[7]:m[2],minuteText=colon?m[8]:m[4],secondText=colon?m[9]:m[5],unit=colon?':':m[3];
+    const colon=m[7]!==undefined,hourOnly=m[11]!==undefined,period=m[1]||m[6]||m[10]||'',hourText=hourOnly?m[11]:colon?m[7]:m[2],minuteText=hourOnly?undefined:colon?m[8]:m[4],secondText=hourOnly?undefined:colon?m[9]:m[5],unit=hourOnly?'时':colon?':':m[3];
     const prefix=text.slice(Math.max(0,m.index!-24),m.index!).split(/[，,。；;！？!?]/).at(-1)||'';
+    // “残差三时” means when a mathematical value is three, not 03:00.
+    // Preserve the existing named-value checks without weakening real clocks.
+    if(hourOnly&&!period&&!/时间|时刻|北京时间|截至|事发|发生/.test(prefix)&&/(?:残差|误差|伽马|阈值)(?:为|等于|设成|设为)?\s*$/.test(spokenLessonText(prefix)))continue;
     // A score, ratio or money amount is not a clock just because it ends in
     // 分. Dotted decimals never enter this parser, nor do embedded model IDs.
     if(!colon&&/^(?:之|米|贝|钟)/.test(text.slice(m.index!+m[0].length)))continue;
     if(/得分|评分|分数|分值|小数|数值|比值|比例|比率|比分|配比|价格|价钱|单价|金额|售价/.test(prefix)&&!period&&!/时间|时刻|北京时间|发生|事发|截至/.test(prefix))continue;
-    let hour=speechNumberValue(hourText.replace(/\s/g,''));const minute=speechNumberValue(minuteText.replace(/\s/g,'')),second=secondText===undefined?undefined:speechNumberValue(secondText.replace(/\s/g,''));
-    let valid=Number.isInteger(hour)&&hour>=0&&hour<=23&&Number.isInteger(minute)&&minute>=0&&minute<=59&&(second===undefined||Number.isInteger(second)&&second>=0&&second<=59);
+    let hour=speechNumberValue(hourText.replace(/\s/g,''));const minute=minuteText===undefined?undefined:speechNumberValue(minuteText.replace(/\s/g,'')),second=secondText===undefined?undefined:speechNumberValue(secondText.replace(/\s/g,''));
+    let valid=Number.isInteger(hour)&&hour>=0&&hour<=23&&(minute===undefined||Number.isInteger(minute)&&minute>=0&&minute<=59)&&(second===undefined||Number.isInteger(second)&&second>=0&&second<=59);
     if(period==='上午')valid&&=hour<12;
     else if(['早上','早晨','清晨'].includes(period))valid&&=hour>=5&&hour<12;
     else if(period==='凌晨'){if(hour===12)hour=0;valid&&=hour<=5;}
@@ -283,13 +289,13 @@ function speechClocks(text:string):SpeechClock[]{
     else if(['下午','午后'].includes(period)){if(hour>=1&&hour<12)hour+=12;valid&&=hour>=12&&hour<=23;}
     else if(period==='傍晚'){if(hour>=5&&hour<=7)hour+=12;valid&&=hour>=17&&hour<=19;}
     else if(['晚上','晚间','夜间'].includes(period)){if(hour===12)hour=0;else if(hour>=6&&hour<12)hour+=12;valid&&=hour<=5||hour>=18&&hour<=23;}
-    const start=m.index!,end=start+m[0].length,minuteStart=m.indices![colon?8:4]![0],secondStart=secondText===undefined?end:m.indices![colon?9:5]![0];
-    const parts=[{start,end:minuteStart,text:`${hour}时`},{start:minuteStart,end:secondStart,text:`${minute}分`},...(second===undefined?[]:[{start:secondStart,end,text:`${second}秒`}])];
+    const start=m.index!,end=start+m[0].length,minuteStart=hourOnly?end:m.indices![colon?8:4]![0],secondStart=secondText===undefined?end:m.indices![colon?9:5]![0];
+    const parts=[{start,end:minuteStart,text:`${hour}时`},...(minute===undefined?[]:[{start:minuteStart,end:secondStart,text:`${minute}分`}]),...(second===undefined?[]:[{start:secondStart,end,text:`${second}秒`}])];
     result.push({start,end,hour,minute,second,valid,raw:m[0],hourText,minuteText,secondText,unit,parts});
   }
   return result;
 }
-const clockValues=(clocks:SpeechClock[])=>clocks.map(c=>[c.hour,c.minute,c.second??null]);
+const clockValues=(clocks:SpeechClock[])=>clocks.map(c=>[c.hour,c.minute??null,c.second??null]);
 function clockText(text:string,clocks:SpeechClock[]):string{
   let result='',at=0;for(const clock of clocks){result+=text.slice(at,clock.start)+clock.parts.map(p=>p.text).join('');at=clock.end;}return result+text.slice(at);
 }
@@ -371,9 +377,9 @@ export function correctLessonTranscript(chapter:LessonChapter,analysis:AudioAnal
     }
     return {...sentence,words,text:words.map(w=>w.text).join('')};
   });
-  if(!corrections.size)return correctNarrationHomophones(chapter,analysis,references);
+  if(!corrections.size)return correctSourceModelSpelling(chapter,correctNarrationHomophones(chapter,analysis,references),references);
   const captionBreaks=analysis.captionBreaks&&[...new Set(analysis.captionBreaks.map(old=>{for(let i=sourceOwners.length-1;i>=0;i--)if(sourceOwners[i]<=old)return i;return -1;}))].filter(index=>index>=0);
-  return correctNarrationHomophones(chapter,{...analysis,sentences,captionBreaks,transcript:sentences.map(s=>s.text).join(''),warnings:[...analysis.warnings,'ASR术语规范化（原始转写另存，保留实际时间码并映射分行索引）：'+[...corrections].join('、')]},references);
+  return correctSourceModelSpelling(chapter,correctNarrationHomophones(chapter,{...analysis,sentences,captionBreaks,transcript:sentences.map(s=>s.text).join(''),warnings:[...analysis.warnings,'ASR术语规范化（原始转写另存，保留实际时间码并映射分行索引）：'+[...corrections].join('、')]},references),references);
 }
 function heardNumberBoundaries(analysis:AudioAnalysis):Set<number>{
   const words=analysis.sentences.flatMap(s=>s.words);

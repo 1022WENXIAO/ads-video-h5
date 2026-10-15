@@ -103,6 +103,16 @@ export function visualRepairTargets(report:LessonReport,review:RenderReview):str
   const plan=lessonRepairPlan(report,review);return plan.kind==='visual'?plan.visualChapterIds:[];
 }
 
+/** This permits attempting a source-bound spelling projection and a fresh
+ * movie review, never accepting wrong speech or factual subtitle values. */
+export function captionFormattingOnlyRepair(review:RenderReview):boolean{
+  const findings=review.semantic?.findings||[],failed=review.checks.filter(check=>!check.passed);
+  return review.status==='needs-review'&&failed.length>0&&failed.every(check=>check.name==='成片语义审查')&&findings.length>0&&findings.every(finding=>
+    /字幕/.test(finding)&&/错字|同音|正字|排版|书写|格式|规范|大小写|中文数字|阿拉伯数字/.test(finding)
+    &&!visualDefect(finding)
+    &&!sourceConflict(finding)&&!/事实错误|数据错误|公式错误|漏读|漏字|缺字|缺少.*字|错读|音轨|失真|音色|(?:实际|真实|原声|旁白).*(?:不同|不符|不一致|错误|遗漏|缺失)/.test(finding));
+}
+
 export function lessonVisualBrief(report:LessonReport,chapter:LessonChapter,request:string,reviewFeedback?:string,layoutFeedback='',publicationAnnotation?:NewsPublicationAnnotation){
   return {
     audienceContent:{...(publicationAnnotation?{publicationAnnotation}:{}),title:chapter.title,narration:chapter.narration,claims:chapter.claims,references:report.references.filter(r=>chapter.referenceIds.includes(r.id)).map(r=>({id:r.id,title:r.title,excerpt:r.excerpt,...(r.publishedAt?{publishedAt:r.publishedAt}:{})}))},

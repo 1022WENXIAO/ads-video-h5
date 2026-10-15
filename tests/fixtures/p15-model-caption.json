@@ -1,0 +1,1653 @@
+{
+  "scope": "Minimal public projection of the final P15 same-waveform ASR and actual caption wordgrid; preserves word text/times/source hash. Source excerpt tokens are literal from actually read pages. No audio truth, user session or new video acceptance.",
+  "revision": "bc45ca04cfe3dfd416c16b6b1771183aa208ad4d",
+  "chapter": {
+    "id": "chapter-2",
+    "title": "API与第三方也受波及",
+    "role": "foundation",
+    "goal": "说明故障不止普通对话，还覆盖V4.1 Flash接口，并通过第三方应用表现出来。",
+    "prerequisites": [
+      "chapter-1"
+    ],
+    "narration": "官方状态页被媒体转述：故障8点11分启动，对话服务和V4.1 Flash接口部分中断。这里的API，就是让第三方应用调用模型能力的通道；记者实测，相关选项已经置灰。",
+    "reason": "事实与配音不变，针对字幕规范化问题，在章节制作元数据中明确要求字幕将口播读法规范化显示为“V4.1 Flash接口”，不得逐字转写成“v四点一”；画面正式名继续保留DeepSeek V4.1 Flash API。",
+    "referenceIds": [
+      "ref-1",
+      "ref-4"
+    ],
+    "claims": [
+      {
+        "text": "环球网援引DeepSeek官方服务状态页面称，故障于北京时间8:11启动，覆盖对话服务和DeepSeek V4.1 Flash API。",
+        "referenceIds": [
+          "ref-1"
+        ],
+        "basis": "source"
+      },
+      {
+        "text": "南方+记者在第三方WorkBuddy模型列表中看到Deepseek-V4.1-Flash选项置灰，无法点击选择。",
+        "referenceIds": [
+          "ref-4"
+        ],
+        "basis": "source"
+      },
+      {
+        "text": "API是供第三方应用调用模型能力的接口；API异常可能传导到第三方应用，表现为请求报错、响应异常或模型选项不可选。",
+        "referenceIds": [
+          "ref-1",
+          "ref-4"
+        ],
+        "basis": "synthesis",
+        "explanation": "环球网说明V4.1 Flash API受波及且第三方应用可能请求报错；南方+实测第三方模型列表中对应选项置灰，因此用“调用模型能力的通道”解释其作用和影响链路。"
+      }
+    ],
+    "visual": {
+      "kind": "concept",
+      "takeaway": "普通对话和开发者接口同时受影响",
+      "items": [
+        {
+          "label": "8:11",
+          "detail": "媒体转述官方状态页：故障启动",
+          "cue": "8点11分启动",
+          "illustration": "signal"
+        },
+        {
+          "label": "对话服务",
+          "detail": "网页和App对话部分中断｜自绘示意",
+          "cue": "对话服务",
+          "illustration": "interaction"
+        },
+        {
+          "label": "V4.1 Flash API",
+          "detail": "正式名DeepSeek V4.1 Flash API；字幕规范显示V4.1 Flash接口",
+          "cue": "V4.1 Flash接口",
+          "illustration": "modules"
+        },
+        {
+          "label": "第三方应用",
+          "detail": "DeepSeek-V4.1-Flash选项置灰｜自绘示意",
+          "cue": "相关选项已经置灰",
+          "illustration": "interface"
+        }
+      ]
+    }
+  },
+  "raw": {
+    "modelId": "captured-asr",
+    "sourceHash": "0a09c62cea6d6affd8902ce7193f57344b7dc4a185c3b95fc333cf79b012d040",
+    "duration": 16.44,
+    "timing": "model-estimated",
+    "createdAt": "",
+    "status": "ready",
+    "transcript": "官方状态页被媒体转述故障八点十一分启动对话服务和v四点一flash接口部分中断\n这里的API就是让第三方应用调用模型能力的通道\n记者实测相关选项已经置灰",
+    "sentences": [
+      {
+        "id": "2ffae68c-70d0-435d-b7ec-e79618c53133:sentence:0",
+        "start": 0.06,
+        "end": 8.22,
+        "words": [
+          {
+            "start": 0.06,
+            "end": 0.33,
+            "text": "官"
+          },
+          {
+            "start": 0.33,
+            "end": 0.48,
+            "text": "方"
+          },
+          {
+            "start": 0.48,
+            "end": 0.69,
+            "text": "状"
+          },
+          {
+            "start": 0.69,
+            "end": 0.87,
+            "text": "态"
+          },
+          {
+            "start": 0.87,
+            "end": 1.14,
+            "text": "页"
+          },
+          {
+            "start": 1.14,
+            "end": 1.35,
+            "text": "被"
+          },
+          {
+            "start": 1.35,
+            "end": 1.49,
+            "text": "媒"
+          },
+          {
+            "start": 1.49,
+            "end": 1.65,
+            "text": "体"
+          },
+          {
+            "start": 1.65,
+            "end": 1.92,
+            "text": "转"
+          },
+          {
+            "start": 1.92,
+            "end": 2.22,
+            "text": "述"
+          },
+          {
+            "start": 2.55,
+            "end": 2.73,
+            "text": "故"
+          },
+          {
+            "start": 2.73,
+            "end": 2.97,
+            "text": "障"
+          },
+          {
+            "start": 2.97,
+            "end": 3.18,
+            "text": "八"
+          },
+          {
+            "start": 3.18,
+            "end": 3.28,
+            "text": "点"
+          },
+          {
+            "start": 3.28,
+            "end": 3.57,
+            "text": "十一"
+          },
+          {
+            "start": 3.57,
+            "end": 3.75,
+            "text": "分"
+          },
+          {
+            "start": 3.75,
+            "end": 4.08,
+            "text": "启"
+          },
+          {
+            "start": 4.08,
+            "end": 4.29,
+            "text": "动"
+          },
+          {
+            "start": 4.44,
+            "end": 4.65,
+            "text": "对"
+          },
+          {
+            "start": 4.65,
+            "end": 4.83,
+            "text": "话"
+          },
+          {
+            "start": 4.83,
+            "end": 5.1,
+            "text": "服"
+          },
+          {
+            "start": 5.1,
+            "end": 5.4,
+            "text": "务"
+          },
+          {
+            "start": 5.4,
+            "end": 5.55,
+            "text": "和"
+          },
+          {
+            "start": 5.55,
+            "end": 5.73,
+            "text": "v"
+          },
+          {
+            "start": 5.73,
+            "end": 6,
+            "text": "四"
+          },
+          {
+            "start": 6,
+            "end": 6.07,
+            "text": "点"
+          },
+          {
+            "start": 6.07,
+            "end": 6.36,
+            "text": "一"
+          },
+          {
+            "start": 6.36,
+            "end": 6.69,
+            "text": "flash"
+          },
+          {
+            "start": 6.69,
+            "end": 6.99,
+            "text": "接"
+          },
+          {
+            "start": 6.99,
+            "end": 7.2,
+            "text": "口"
+          },
+          {
+            "start": 7.29,
+            "end": 7.45,
+            "text": "部"
+          },
+          {
+            "start": 7.45,
+            "end": 7.62,
+            "text": "分"
+          },
+          {
+            "start": 7.62,
+            "end": 7.83,
+            "text": "中"
+          },
+          {
+            "start": 7.83,
+            "end": 8.22,
+            "text": "断"
+          }
+        ],
+        "text": "官方状态页被媒体转述故障八点十一分启动对话服务和v四点一flash接口部分中断",
+        "complete": true
+      },
+      {
+        "id": "2ffae68c-70d0-435d-b7ec-e79618c53133:sentence:1",
+        "start": 8.46,
+        "end": 12.57,
+        "words": [
+          {
+            "start": 8.46,
+            "end": 8.68,
+            "text": "这里"
+          },
+          {
+            "start": 8.68,
+            "end": 8.82,
+            "text": "的"
+          },
+          {
+            "start": 8.82,
+            "end": 9.47,
+            "text": "API"
+          },
+          {
+            "start": 9.69,
+            "end": 9.9,
+            "text": "就是"
+          },
+          {
+            "start": 9.9,
+            "end": 10.08,
+            "text": "让"
+          },
+          {
+            "start": 10.08,
+            "end": 10.29,
+            "text": "第"
+          },
+          {
+            "start": 10.29,
+            "end": 10.54,
+            "text": "三方"
+          },
+          {
+            "start": 10.54,
+            "end": 10.8,
+            "text": "应用"
+          },
+          {
+            "start": 10.8,
+            "end": 11.07,
+            "text": "调用"
+          },
+          {
+            "start": 11.07,
+            "end": 11.31,
+            "text": "模"
+          },
+          {
+            "start": 11.31,
+            "end": 11.55,
+            "text": "型"
+          },
+          {
+            "start": 11.55,
+            "end": 11.76,
+            "text": "能"
+          },
+          {
+            "start": 11.76,
+            "end": 11.88,
+            "text": "力"
+          },
+          {
+            "start": 11.88,
+            "end": 12,
+            "text": "的"
+          },
+          {
+            "start": 12,
+            "end": 12.24,
+            "text": "通"
+          },
+          {
+            "start": 12.24,
+            "end": 12.57,
+            "text": "道"
+          }
+        ],
+        "text": "这里的API就是让第三方应用调用模型能力的通道",
+        "complete": true
+      },
+      {
+        "id": "2ffae68c-70d0-435d-b7ec-e79618c53133:sentence:2",
+        "start": 12.69,
+        "end": 15.72,
+        "words": [
+          {
+            "start": 12.69,
+            "end": 12.9,
+            "text": "记"
+          },
+          {
+            "start": 12.9,
+            "end": 13.05,
+            "text": "者"
+          },
+          {
+            "start": 13.05,
+            "end": 13.29,
+            "text": "实"
+          },
+          {
+            "start": 13.29,
+            "end": 13.62,
+            "text": "测"
+          },
+          {
+            "start": 13.83,
+            "end": 14.19,
+            "text": "相"
+          },
+          {
+            "start": 14.19,
+            "end": 14.37,
+            "text": "关"
+          },
+          {
+            "start": 14.37,
+            "end": 14.61,
+            "text": "选"
+          },
+          {
+            "start": 14.61,
+            "end": 14.88,
+            "text": "项"
+          },
+          {
+            "start": 14.91,
+            "end": 15.06,
+            "text": "已"
+          },
+          {
+            "start": 15.06,
+            "end": 15.21,
+            "text": "经"
+          },
+          {
+            "start": 15.21,
+            "end": 15.39,
+            "text": "置"
+          },
+          {
+            "start": 15.39,
+            "end": 15.72,
+            "text": "灰"
+          }
+        ],
+        "text": "记者实测相关选项已经置灰",
+        "complete": true
+      }
+    ],
+    "pauses": [
+      {
+        "start": 2.08,
+        "end": 2.58
+      },
+      {
+        "start": 4.256,
+        "end": 4.667
+      },
+      {
+        "start": 8.132,
+        "end": 8.532
+      },
+      {
+        "start": 9.434,
+        "end": 9.939
+      },
+      {
+        "start": 12.925,
+        "end": 13.393
+      },
+      {
+        "start": 14.183,
+        "end": 14.541
+      }
+    ],
+    "warnings": [],
+    "captionBreaks": [
+      4,
+      9,
+      15,
+      17,
+      21,
+      26,
+      33,
+      36,
+      38,
+      41,
+      44,
+      49,
+      53,
+      57,
+      61
+    ]
+  },
+  "captioned": {
+    "modelId": "captured-asr",
+    "sourceHash": "0a09c62cea6d6affd8902ce7193f57344b7dc4a185c3b95fc333cf79b012d040",
+    "duration": 16.44,
+    "timing": "model-estimated",
+    "createdAt": "",
+    "status": "ready",
+    "transcript": "官方状态页被媒体转述故障八点十一分启动对话服务和v四点一Flash接口部分中断这里的API就是让第三方应用调用模型能力的通道记者实测相关选项已经置灰",
+    "sentences": [
+      {
+        "id": "2ffae68c-70d0-435d-b7ec-e79618c53133:sentence:0",
+        "start": 0.06,
+        "end": 8.22,
+        "words": [
+          {
+            "text": "官",
+            "start": 0.06,
+            "end": 0.33
+          },
+          {
+            "text": "方",
+            "start": 0.33,
+            "end": 0.48
+          },
+          {
+            "text": "状",
+            "start": 0.48,
+            "end": 0.69
+          },
+          {
+            "text": "态",
+            "start": 0.69,
+            "end": 0.87
+          },
+          {
+            "text": "页",
+            "start": 0.87,
+            "end": 1.14
+          },
+          {
+            "text": "被",
+            "start": 1.14,
+            "end": 1.35
+          },
+          {
+            "text": "媒",
+            "start": 1.35,
+            "end": 1.49
+          },
+          {
+            "text": "体",
+            "start": 1.49,
+            "end": 1.65
+          },
+          {
+            "text": "转",
+            "start": 1.65,
+            "end": 1.92
+          },
+          {
+            "text": "述",
+            "start": 1.92,
+            "end": 2.22
+          },
+          {
+            "text": "故",
+            "start": 2.55,
+            "end": 2.73
+          },
+          {
+            "text": "障",
+            "start": 2.73,
+            "end": 2.97
+          },
+          {
+            "text": "八",
+            "start": 2.97,
+            "end": 3.18
+          },
+          {
+            "text": "点",
+            "start": 3.18,
+            "end": 3.28
+          },
+          {
+            "text": "十一",
+            "start": 3.28,
+            "end": 3.57
+          },
+          {
+            "text": "分",
+            "start": 3.57,
+            "end": 3.75
+          },
+          {
+            "text": "启",
+            "start": 3.75,
+            "end": 4.08
+          },
+          {
+            "text": "动",
+            "start": 4.08,
+            "end": 4.29
+          },
+          {
+            "text": "对",
+            "start": 4.44,
+            "end": 4.65
+          },
+          {
+            "text": "话",
+            "start": 4.65,
+            "end": 4.83
+          },
+          {
+            "text": "服",
+            "start": 4.83,
+            "end": 5.1
+          },
+          {
+            "text": "务",
+            "start": 5.1,
+            "end": 5.4
+          },
+          {
+            "text": "和",
+            "start": 5.4,
+            "end": 5.55
+          },
+          {
+            "text": "v",
+            "start": 5.55,
+            "end": 5.73
+          },
+          {
+            "text": "四",
+            "start": 5.73,
+            "end": 6
+          },
+          {
+            "text": "点",
+            "start": 6,
+            "end": 6.07
+          },
+          {
+            "text": "一",
+            "start": 6.07,
+            "end": 6.36
+          },
+          {
+            "text": "Flash",
+            "start": 6.36,
+            "end": 6.69
+          },
+          {
+            "text": "接",
+            "start": 6.69,
+            "end": 6.99
+          },
+          {
+            "text": "口",
+            "start": 6.99,
+            "end": 7.2
+          },
+          {
+            "text": "部",
+            "start": 7.29,
+            "end": 7.45
+          },
+          {
+            "text": "分",
+            "start": 7.45,
+            "end": 7.62
+          },
+          {
+            "text": "中",
+            "start": 7.62,
+            "end": 7.83
+          },
+          {
+            "text": "断",
+            "start": 7.83,
+            "end": 8.22
+          }
+        ],
+        "text": "官方状态页被媒体转述故障八点十一分启动对话服务和v四点一Flash接口部分中断",
+        "complete": true
+      },
+      {
+        "id": "2ffae68c-70d0-435d-b7ec-e79618c53133:sentence:1",
+        "start": 8.46,
+        "end": 12.57,
+        "words": [
+          {
+            "start": 8.46,
+            "end": 8.68,
+            "text": "这里"
+          },
+          {
+            "start": 8.68,
+            "end": 8.82,
+            "text": "的"
+          },
+          {
+            "start": 8.82,
+            "end": 9.47,
+            "text": "API"
+          },
+          {
+            "start": 9.69,
+            "end": 9.9,
+            "text": "就是"
+          },
+          {
+            "start": 9.9,
+            "end": 10.08,
+            "text": "让"
+          },
+          {
+            "start": 10.08,
+            "end": 10.29,
+            "text": "第"
+          },
+          {
+            "start": 10.29,
+            "end": 10.54,
+            "text": "三方"
+          },
+          {
+            "start": 10.54,
+            "end": 10.8,
+            "text": "应用"
+          },
+          {
+            "start": 10.8,
+            "end": 11.07,
+            "text": "调用"
+          },
+          {
+            "start": 11.07,
+            "end": 11.31,
+            "text": "模"
+          },
+          {
+            "start": 11.31,
+            "end": 11.55,
+            "text": "型"
+          },
+          {
+            "start": 11.55,
+            "end": 11.76,
+            "text": "能"
+          },
+          {
+            "start": 11.76,
+            "end": 11.88,
+            "text": "力"
+          },
+          {
+            "start": 11.88,
+            "end": 12,
+            "text": "的"
+          },
+          {
+            "start": 12,
+            "end": 12.24,
+            "text": "通"
+          },
+          {
+            "start": 12.24,
+            "end": 12.57,
+            "text": "道"
+          }
+        ],
+        "text": "这里的API就是让第三方应用调用模型能力的通道",
+        "complete": true
+      },
+      {
+        "id": "2ffae68c-70d0-435d-b7ec-e79618c53133:sentence:2",
+        "start": 12.69,
+        "end": 15.72,
+        "words": [
+          {
+            "start": 12.69,
+            "end": 12.9,
+            "text": "记"
+          },
+          {
+            "start": 12.9,
+            "end": 13.05,
+            "text": "者"
+          },
+          {
+            "start": 13.05,
+            "end": 13.29,
+            "text": "实"
+          },
+          {
+            "start": 13.29,
+            "end": 13.62,
+            "text": "测"
+          },
+          {
+            "start": 13.83,
+            "end": 14.19,
+            "text": "相"
+          },
+          {
+            "start": 14.19,
+            "end": 14.37,
+            "text": "关"
+          },
+          {
+            "start": 14.37,
+            "end": 14.61,
+            "text": "选"
+          },
+          {
+            "start": 14.61,
+            "end": 14.88,
+            "text": "项"
+          },
+          {
+            "start": 14.91,
+            "end": 15.06,
+            "text": "已"
+          },
+          {
+            "start": 15.06,
+            "end": 15.21,
+            "text": "经"
+          },
+          {
+            "start": 15.21,
+            "end": 15.39,
+            "text": "置"
+          },
+          {
+            "start": 15.39,
+            "end": 15.72,
+            "text": "灰"
+          }
+        ],
+        "text": "记者实测相关选项已经置灰",
+        "complete": true
+      }
+    ],
+    "pauses": [
+      {
+        "start": 2.08,
+        "end": 2.58
+      },
+      {
+        "start": 4.256,
+        "end": 4.667
+      },
+      {
+        "start": 8.132,
+        "end": 8.532
+      },
+      {
+        "start": 9.434,
+        "end": 9.939
+      },
+      {
+        "start": 12.925,
+        "end": 13.393
+      },
+      {
+        "start": 14.183,
+        "end": 14.541
+      }
+    ],
+    "warnings": [],
+    "captionBreaks": [
+      9,
+      17,
+      33,
+      36,
+      49,
+      53,
+      61
+    ],
+    "captionBoundarySource": "matched-clauses"
+  },
+  "references": [
+    {
+      "id": "ref-1",
+      "title": "DeepSeek出现服务中断，网页及API服务受影响",
+      "verification": "news-page",
+      "excerpt": "本次故障于北京时间8时11分启动，故障覆盖对话服务以及DeepSeek V4.1 Flash API服务。"
+    },
+    {
+      "id": "ref-4",
+      "title": "“deepseek崩了”冲上热搜！网友：“牛马”急得团团转_南方+_南方plus",
+      "verification": "news-page",
+      "excerpt": "南方+记者在DeepSeek上查询各类信息均显示服务器暂不可用，同时查看WorkBuddy 模型列表中，Deepseek-V4.1-Flash 选项置灰，无法点击选择使用"
+    }
+  ],
+  "initial": {
+    "chapter": {
+      "id": "chapter-2",
+      "title": "API与第三方也受波及",
+      "role": "foundation",
+      "goal": "说明故障不止普通对话，还覆盖V4.1 Flash API，并通过第三方应用表现出来。",
+      "prerequisites": [
+        "chapter-1"
+      ],
+      "narration": "官方状态页被媒体转述：故障8点11分启动，对话服务和DeepSeek V4.1 Flash API部分中断。南方+实测，第三方应用里DeepSeek-V4.1-Flash选项置灰。",
+      "reason": "保留已核实的故障链路，并在画面中明确所有界面均为自绘示意、状态据媒体转述，避免被理解为真实截图或实测录屏。",
+      "referenceIds": [
+        "ref-1",
+        "ref-4"
+      ],
+      "claims": [
+        {
+          "text": "环球网援引DeepSeek官方服务状态页面称，故障于北京时间8:11启动，覆盖对话服务和DeepSeek V4.1 Flash API。",
+          "referenceIds": [
+            "ref-1"
+          ],
+          "basis": "source"
+        },
+        {
+          "text": "南方+记者在第三方WorkBuddy模型列表中看到Deepseek-V4.1-Flash选项置灰，无法点击选择。",
+          "referenceIds": [
+            "ref-4"
+          ],
+          "basis": "source"
+        },
+        {
+          "text": "面向开发者的API异常会传导到依赖该接口的第三方应用，表现为请求报错、响应异常或模型选项不可选。",
+          "referenceIds": [
+            "ref-1",
+            "ref-4"
+          ],
+          "basis": "synthesis",
+          "explanation": "环球网说明V4.1 Flash API受波及且第三方应用可能请求报错；南方+实测第三方模型列表中对应选项置灰，两者共同说明影响链路。"
+        }
+      ],
+      "visual": {
+        "kind": "concept",
+        "takeaway": "普通对话和开发者接口同时受影响",
+        "items": [
+          {
+            "label": "8:11",
+            "detail": "媒体转述官方状态页：故障启动",
+            "cue": "8点11分启动",
+            "illustration": "signal"
+          },
+          {
+            "label": "对话服务",
+            "detail": "网页和App对话部分中断｜界面示意",
+            "cue": "对话服务",
+            "illustration": "interaction"
+          },
+          {
+            "label": "V4.1 Flash API",
+            "detail": "DeepSeek V4.1 Flash API部分中断",
+            "cue": "V4.1 Flash API",
+            "illustration": "modules"
+          },
+          {
+            "label": "第三方应用",
+            "detail": "DeepSeek-V4.1-Flash选项置灰｜界面示意",
+            "cue": "选项置灰",
+            "illustration": "interface"
+          }
+        ]
+      }
+    },
+    "raw": {
+      "modelId": "captured-asr",
+      "sourceHash": "69210a91c7de42908828d771ba0360eee0f378c79d74623fdf779f0e89dc4ba5",
+      "duration": 14.11,
+      "timing": "model-estimated",
+      "createdAt": "",
+      "status": "ready",
+      "transcript": "官方状态页被媒体转述故障八点一十一分启动对话服务和deepseekv四点一flash\n阿什api部分中断\n南方佳实测\n第三方应用里deepseekv四点一flash选项置灰",
+      "sentences": [
+        {
+          "id": "e81145eb-7dd7-4c0f-8419-0d305a124a6b:sentence:0",
+          "start": 0.06,
+          "end": 6.63,
+          "words": [
+            {
+              "start": 0.06,
+              "end": 0.3,
+              "text": "官方"
+            },
+            {
+              "start": 0.3,
+              "end": 0.48,
+              "text": "状态"
+            },
+            {
+              "start": 0.48,
+              "end": 0.69,
+              "text": "页"
+            },
+            {
+              "start": 0.69,
+              "end": 0.96,
+              "text": "被"
+            },
+            {
+              "start": 0.96,
+              "end": 1.14,
+              "text": "媒"
+            },
+            {
+              "start": 1.14,
+              "end": 1.26,
+              "text": "体"
+            },
+            {
+              "start": 1.26,
+              "end": 1.47,
+              "text": "转"
+            },
+            {
+              "start": 1.47,
+              "end": 1.73,
+              "text": "述"
+            },
+            {
+              "start": 2.19,
+              "end": 2.46,
+              "text": "故障"
+            },
+            {
+              "start": 2.46,
+              "end": 2.61,
+              "text": "八"
+            },
+            {
+              "start": 2.61,
+              "end": 2.76,
+              "text": "点"
+            },
+            {
+              "start": 2.76,
+              "end": 2.88,
+              "text": "一"
+            },
+            {
+              "start": 2.88,
+              "end": 3.06,
+              "text": "十"
+            },
+            {
+              "start": 3.06,
+              "end": 3.24,
+              "text": "一"
+            },
+            {
+              "start": 3.24,
+              "end": 3.48,
+              "text": "分"
+            },
+            {
+              "start": 3.48,
+              "end": 3.64,
+              "text": "启"
+            },
+            {
+              "start": 3.64,
+              "end": 3.93,
+              "text": "动"
+            },
+            {
+              "start": 4.23,
+              "end": 4.41,
+              "text": "对"
+            },
+            {
+              "start": 4.41,
+              "end": 4.59,
+              "text": "话"
+            },
+            {
+              "start": 4.59,
+              "end": 4.8,
+              "text": "服"
+            },
+            {
+              "start": 4.8,
+              "end": 5.01,
+              "text": "务"
+            },
+            {
+              "start": 5.01,
+              "end": 5.22,
+              "text": "和"
+            },
+            {
+              "start": 5.22,
+              "end": 5.76,
+              "text": "deepseek"
+            },
+            {
+              "start": 5.76,
+              "end": 5.97,
+              "text": "v"
+            },
+            {
+              "start": 5.97,
+              "end": 6.21,
+              "text": "四"
+            },
+            {
+              "start": 6.21,
+              "end": 6.29,
+              "text": "点"
+            },
+            {
+              "start": 6.29,
+              "end": 6.36,
+              "text": "一"
+            },
+            {
+              "start": 6.36,
+              "end": 6.63,
+              "text": "flash"
+            }
+          ],
+          "text": "官方状态页被媒体转述故障八点一十一分启动对话服务和deepseekv四点一flash",
+          "complete": true
+        },
+        {
+          "id": "e81145eb-7dd7-4c0f-8419-0d305a124a6b:sentence:1",
+          "start": 7.095,
+          "end": 8.595,
+          "words": [
+            {
+              "start": 7.095,
+              "end": 7.205,
+              "text": "阿"
+            },
+            {
+              "start": 7.205,
+              "end": 7.295,
+              "text": "什"
+            },
+            {
+              "start": 7.295,
+              "end": 7.535,
+              "text": "a"
+            },
+            {
+              "start": 7.535,
+              "end": 7.745,
+              "text": "p"
+            },
+            {
+              "start": 7.745,
+              "end": 7.865,
+              "text": "i"
+            },
+            {
+              "start": 7.865,
+              "end": 8.025,
+              "text": "部"
+            },
+            {
+              "start": 8.025,
+              "end": 8.165,
+              "text": "分"
+            },
+            {
+              "start": 8.165,
+              "end": 8.375,
+              "text": "中"
+            },
+            {
+              "start": 8.375,
+              "end": 8.595,
+              "text": "断"
+            }
+          ],
+          "text": "阿什api部分中断",
+          "complete": true
+        },
+        {
+          "id": "e81145eb-7dd7-4c0f-8419-0d305a124a6b:sentence:2",
+          "start": 9.215,
+          "end": 10.345,
+          "words": [
+            {
+              "start": 9.215,
+              "end": 9.455,
+              "text": "南"
+            },
+            {
+              "start": 9.455,
+              "end": 9.605,
+              "text": "方"
+            },
+            {
+              "start": 9.605,
+              "end": 9.785,
+              "text": "佳"
+            },
+            {
+              "start": 9.785,
+              "end": 10.005,
+              "text": "实"
+            },
+            {
+              "start": 10.005,
+              "end": 10.345,
+              "text": "测"
+            }
+          ],
+          "text": "南方佳实测",
+          "complete": true
+        },
+        {
+          "id": "e81145eb-7dd7-4c0f-8419-0d305a124a6b:sentence:3",
+          "start": 10.595,
+          "end": 13.805,
+          "words": [
+            {
+              "start": 10.595,
+              "end": 10.805,
+              "text": "第"
+            },
+            {
+              "start": 10.805,
+              "end": 10.995,
+              "text": "三"
+            },
+            {
+              "start": 10.995,
+              "end": 11.085,
+              "text": "方"
+            },
+            {
+              "start": 11.085,
+              "end": 11.255,
+              "text": "应"
+            },
+            {
+              "start": 11.255,
+              "end": 11.405,
+              "text": "用"
+            },
+            {
+              "start": 11.405,
+              "end": 11.615,
+              "text": "里"
+            },
+            {
+              "start": 11.615,
+              "end": 11.885,
+              "text": "deepseek"
+            },
+            {
+              "start": 11.885,
+              "end": 12.185,
+              "text": "v"
+            },
+            {
+              "start": 12.185,
+              "end": 12.415,
+              "text": "四"
+            },
+            {
+              "start": 12.415,
+              "end": 12.475,
+              "text": "点"
+            },
+            {
+              "start": 12.475,
+              "end": 12.605,
+              "text": "一"
+            },
+            {
+              "start": 12.605,
+              "end": 13.055,
+              "text": "flash"
+            },
+            {
+              "start": 13.055,
+              "end": 13.235,
+              "text": "选"
+            },
+            {
+              "start": 13.235,
+              "end": 13.385,
+              "text": "项"
+            },
+            {
+              "start": 13.385,
+              "end": 13.565,
+              "text": "置"
+            },
+            {
+              "start": 13.565,
+              "end": 13.805,
+              "text": "灰"
+            }
+          ],
+          "text": "第三方应用里deepseekv四点一flash选项置灰",
+          "complete": true
+        }
+      ],
+      "pauses": [
+        {
+          "start": 1.938,
+          "end": 2.473
+        },
+        {
+          "start": 4.038,
+          "end": 4.602
+        },
+        {
+          "start": 8.365,
+          "end": 9.088
+        },
+        {
+          "start": 10.057,
+          "end": 10.497
+        }
+      ],
+      "warnings": [],
+      "captionBreaks": [
+        2,
+        7,
+        14,
+        16,
+        20,
+        24,
+        27,
+        33,
+        36,
+        41,
+        44,
+        47,
+        53,
+        57
+      ]
+    },
+    "recheck": {
+      "status": "ready",
+      "modelId": "captured-asr",
+      "sourceHash": "69210a91c7de42908828d771ba0360eee0f378c79d74623fdf779f0e89dc4ba5",
+      "duration": 14.11,
+      "transcript": "官方状态业被媒体转述\n故障8点11分启动\n对话服务和DeepSeekV4.1FlashAPI部分中断\n南方加实测\n第三方应用里DeepSeekV4.1Flash选项置灰",
+      "sentences": [
+        {
+          "id": "e2007199-8d4b-4fef-a1d1-913251166cc0:sentence:0",
+          "start": 0.05,
+          "end": 2.04,
+          "words": [
+            {
+              "start": 0.05,
+              "end": 0.3,
+              "text": "官"
+            },
+            {
+              "start": 0.3,
+              "end": 0.48,
+              "text": "方"
+            },
+            {
+              "start": 0.48,
+              "end": 0.66,
+              "text": "状"
+            },
+            {
+              "start": 0.66,
+              "end": 0.84,
+              "text": "态"
+            },
+            {
+              "start": 0.84,
+              "end": 0.99,
+              "text": "业"
+            },
+            {
+              "start": 0.99,
+              "end": 1.17,
+              "text": "被"
+            },
+            {
+              "start": 1.17,
+              "end": 1.32,
+              "text": "媒"
+            },
+            {
+              "start": 1.32,
+              "end": 1.53,
+              "text": "体"
+            },
+            {
+              "start": 1.53,
+              "end": 1.77,
+              "text": "转"
+            },
+            {
+              "start": 1.77,
+              "end": 2.04,
+              "text": "述"
+            }
+          ],
+          "text": "官方状态业被媒体转述",
+          "complete": true
+        },
+        {
+          "id": "e2007199-8d4b-4fef-a1d1-913251166cc0:sentence:1",
+          "start": 2.43,
+          "end": 4.12,
+          "words": [
+            {
+              "start": 2.43,
+              "end": 2.67,
+              "text": "故"
+            },
+            {
+              "start": 2.67,
+              "end": 2.82,
+              "text": "障"
+            },
+            {
+              "start": 2.82,
+              "end": 3.09,
+              "text": "8"
+            },
+            {
+              "start": 3.09,
+              "end": 3.18,
+              "text": "点"
+            },
+            {
+              "start": 3.18,
+              "end": 3.39,
+              "text": "11"
+            },
+            {
+              "start": 3.39,
+              "end": 3.54,
+              "text": "分"
+            },
+            {
+              "start": 3.54,
+              "end": 3.78,
+              "text": "启"
+            },
+            {
+              "start": 3.78,
+              "end": 4.12,
+              "text": "动"
+            }
+          ],
+          "text": "故障8点11分启动",
+          "complete": true
+        },
+        {
+          "id": "e2007199-8d4b-4fef-a1d1-913251166cc0:sentence:2",
+          "start": 4.41,
+          "end": 7.85,
+          "words": [
+            {
+              "start": 4.41,
+              "end": 4.59,
+              "text": "对"
+            },
+            {
+              "start": 4.59,
+              "end": 4.77,
+              "text": "话"
+            },
+            {
+              "start": 4.77,
+              "end": 4.95,
+              "text": "服"
+            },
+            {
+              "start": 4.95,
+              "end": 5.19,
+              "text": "务"
+            },
+            {
+              "start": 5.19,
+              "end": 5.34,
+              "text": "和"
+            },
+            {
+              "start": 5.34,
+              "end": 5.93,
+              "text": "DeepSeek"
+            },
+            {
+              "start": 5.93,
+              "end": 6.06,
+              "text": "V"
+            },
+            {
+              "start": 6.06,
+              "end": 6.36,
+              "text": "4.1"
+            },
+            {
+              "start": 6.39,
+              "end": 6.72,
+              "text": "Flash"
+            },
+            {
+              "start": 6.72,
+              "end": 7.11,
+              "text": "API"
+            },
+            {
+              "start": 7.11,
+              "end": 7.26,
+              "text": "部"
+            },
+            {
+              "start": 7.26,
+              "end": 7.38,
+              "text": "分"
+            },
+            {
+              "start": 7.38,
+              "end": 7.62,
+              "text": "中"
+            },
+            {
+              "start": 7.62,
+              "end": 7.85,
+              "text": "断"
+            }
+          ],
+          "text": "对话服务和DeepSeekV4.1FlashAPI部分中断",
+          "complete": true
+        },
+        {
+          "id": "e2007199-8d4b-4fef-a1d1-913251166cc0:sentence:3",
+          "start": 8.43,
+          "end": 9.53,
+          "words": [
+            {
+              "start": 8.43,
+              "end": 8.64,
+              "text": "南"
+            },
+            {
+              "start": 8.64,
+              "end": 8.82,
+              "text": "方"
+            },
+            {
+              "start": 8.82,
+              "end": 9,
+              "text": "加"
+            },
+            {
+              "start": 9,
+              "end": 9.21,
+              "text": "实"
+            },
+            {
+              "start": 9.21,
+              "end": 9.53,
+              "text": "测"
+            }
+          ],
+          "text": "南方加实测",
+          "complete": true
+        },
+        {
+          "id": "e2007199-8d4b-4fef-a1d1-913251166cc0:sentence:4",
+          "start": 9.81,
+          "end": 12.84,
+          "words": [
+            {
+              "start": 9.81,
+              "end": 9.99,
+              "text": "第"
+            },
+            {
+              "start": 9.99,
+              "end": 10.23,
+              "text": "三"
+            },
+            {
+              "start": 10.23,
+              "end": 10.36,
+              "text": "方"
+            },
+            {
+              "start": 10.36,
+              "end": 10.56,
+              "text": "应"
+            },
+            {
+              "start": 10.56,
+              "end": 10.68,
+              "text": "用"
+            },
+            {
+              "start": 10.68,
+              "end": 10.86,
+              "text": "里"
+            },
+            {
+              "start": 10.86,
+              "end": 11.35,
+              "text": "DeepSeek"
+            },
+            {
+              "start": 11.35,
+              "end": 11.49,
+              "text": "V"
+            },
+            {
+              "start": 11.49,
+              "end": 11.76,
+              "text": "4.1"
+            },
+            {
+              "start": 11.76,
+              "end": 12.12,
+              "text": "Flash"
+            },
+            {
+              "start": 12.12,
+              "end": 12.39,
+              "text": "选"
+            },
+            {
+              "start": 12.39,
+              "end": 12.48,
+              "text": "项"
+            },
+            {
+              "start": 12.48,
+              "end": 12.69,
+              "text": "置"
+            },
+            {
+              "start": 12.69,
+              "end": 12.84,
+              "text": "灰"
+            }
+          ],
+          "text": "第三方应用里DeepSeekV4.1Flash选项置灰",
+          "complete": true
+        }
+      ],
+      "pauses": [
+        {
+          "start": 1.938,
+          "end": 2.473
+        },
+        {
+          "start": 4.038,
+          "end": 4.602
+        },
+        {
+          "start": 8.365,
+          "end": 9.088
+        },
+        {
+          "start": 10.057,
+          "end": 10.497
+        }
+      ],
+      "warnings": [],
+      "timing": "model-estimated",
+      "createdAt": ""
+    },
+    "references": [
+      {
+        "id": "ref-1",
+        "title": "DeepSeek出现服务中断，网页及API服务受影响",
+        "verification": "news-page",
+        "excerpt": "本次故障于北京时间8时11分启动，故障覆盖对话服务以及DeepSeek V4.1 Flash API服务。"
+      },
+      {
+        "id": "ref-4",
+        "title": "“deepseek崩了”冲上热搜！网友：“牛马”急得团团转_南方+_南方plus",
+        "verification": "news-page",
+        "excerpt": "南方+记者在DeepSeek上查询各类信息均显示服务器暂不可用，同时查看WorkBuddy 模型列表中，Deepseek-V4.1-Flash 选项置灰，无法点击选择使用"
+      }
+    ]
+  }
+}

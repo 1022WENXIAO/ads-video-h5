@@ -1,0 +1,854 @@
+{
+  "scope": "Minimal public projection of two actual P15 same-audio ASR rechecks; word text/times/source hash preserved. No audio truth or new video acceptance. Model/date whitespace controls in tests are explicitly synthetic.",
+  "revision": "bc45ca04cfe3dfd416c16b6b1771183aa208ad4d",
+  "cases": [
+    {
+      "chapter": {
+        "id": "chapter-2",
+        "title": "API与第三方也受波及",
+        "role": "foundation",
+        "goal": "说明故障不止普通对话，还覆盖V4.1 Flash API，并通过第三方应用表现出来。",
+        "prerequisites": [
+          "chapter-1"
+        ],
+        "narration": "官方状态页被媒体转述：故障8点11分启动，对话服务和DeepSeek V4.1 Flash API部分中断。南方+实测，第三方应用里DeepSeek-V4.1-Flash选项置灰。",
+        "reason": "保留已核实的故障链路，并在画面中明确所有界面均为自绘示意、状态据媒体转述，避免被理解为真实截图或实测录屏。",
+        "referenceIds": [
+          "ref-1",
+          "ref-4"
+        ],
+        "claims": [
+          {
+            "text": "环球网援引DeepSeek官方服务状态页面称，故障于北京时间8:11启动，覆盖对话服务和DeepSeek V4.1 Flash API。",
+            "referenceIds": [
+              "ref-1"
+            ],
+            "basis": "source"
+          },
+          {
+            "text": "南方+记者在第三方WorkBuddy模型列表中看到Deepseek-V4.1-Flash选项置灰，无法点击选择。",
+            "referenceIds": [
+              "ref-4"
+            ],
+            "basis": "source"
+          },
+          {
+            "text": "面向开发者的API异常会传导到依赖该接口的第三方应用，表现为请求报错、响应异常或模型选项不可选。",
+            "referenceIds": [
+              "ref-1",
+              "ref-4"
+            ],
+            "basis": "synthesis",
+            "explanation": "环球网说明V4.1 Flash API受波及且第三方应用可能请求报错；南方+实测第三方模型列表中对应选项置灰，两者共同说明影响链路。"
+          }
+        ],
+        "visual": {
+          "kind": "concept",
+          "takeaway": "普通对话和开发者接口同时受影响",
+          "items": [
+            {
+              "label": "8:11",
+              "detail": "媒体转述官方状态页：故障启动",
+              "cue": "8点11分启动",
+              "illustration": "signal"
+            },
+            {
+              "label": "对话服务",
+              "detail": "网页和App对话部分中断｜界面示意",
+              "cue": "对话服务",
+              "illustration": "interaction"
+            },
+            {
+              "label": "V4.1 Flash API",
+              "detail": "DeepSeek V4.1 Flash API部分中断",
+              "cue": "V4.1 Flash API",
+              "illustration": "modules"
+            },
+            {
+              "label": "第三方应用",
+              "detail": "DeepSeek-V4.1-Flash选项置灰｜界面示意",
+              "cue": "选项置灰",
+              "illustration": "interface"
+            }
+          ]
+        }
+      },
+      "raw": {
+        "status": "ready",
+        "modelId": "captured-asr",
+        "sourceHash": "69210a91c7de42908828d771ba0360eee0f378c79d74623fdf779f0e89dc4ba5",
+        "duration": 14.11,
+        "transcript": "官方状态业被媒体转述\n故障8点11分启动\n对话服务和DeepSeekV4.1FlashAPI部分中断\n南方加实测\n第三方应用里DeepSeekV4.1Flash选项置灰",
+        "sentences": [
+          {
+            "id": "e2007199-8d4b-4fef-a1d1-913251166cc0:sentence:0",
+            "start": 0.05,
+            "end": 2.04,
+            "words": [
+              {
+                "start": 0.05,
+                "end": 0.3,
+                "text": "官"
+              },
+              {
+                "start": 0.3,
+                "end": 0.48,
+                "text": "方"
+              },
+              {
+                "start": 0.48,
+                "end": 0.66,
+                "text": "状"
+              },
+              {
+                "start": 0.66,
+                "end": 0.84,
+                "text": "态"
+              },
+              {
+                "start": 0.84,
+                "end": 0.99,
+                "text": "业"
+              },
+              {
+                "start": 0.99,
+                "end": 1.17,
+                "text": "被"
+              },
+              {
+                "start": 1.17,
+                "end": 1.32,
+                "text": "媒"
+              },
+              {
+                "start": 1.32,
+                "end": 1.53,
+                "text": "体"
+              },
+              {
+                "start": 1.53,
+                "end": 1.77,
+                "text": "转"
+              },
+              {
+                "start": 1.77,
+                "end": 2.04,
+                "text": "述"
+              }
+            ],
+            "text": "官方状态业被媒体转述",
+            "complete": true
+          },
+          {
+            "id": "e2007199-8d4b-4fef-a1d1-913251166cc0:sentence:1",
+            "start": 2.43,
+            "end": 4.12,
+            "words": [
+              {
+                "start": 2.43,
+                "end": 2.67,
+                "text": "故"
+              },
+              {
+                "start": 2.67,
+                "end": 2.82,
+                "text": "障"
+              },
+              {
+                "start": 2.82,
+                "end": 3.09,
+                "text": "8"
+              },
+              {
+                "start": 3.09,
+                "end": 3.18,
+                "text": "点"
+              },
+              {
+                "start": 3.18,
+                "end": 3.39,
+                "text": "11"
+              },
+              {
+                "start": 3.39,
+                "end": 3.54,
+                "text": "分"
+              },
+              {
+                "start": 3.54,
+                "end": 3.78,
+                "text": "启"
+              },
+              {
+                "start": 3.78,
+                "end": 4.12,
+                "text": "动"
+              }
+            ],
+            "text": "故障8点11分启动",
+            "complete": true
+          },
+          {
+            "id": "e2007199-8d4b-4fef-a1d1-913251166cc0:sentence:2",
+            "start": 4.41,
+            "end": 7.85,
+            "words": [
+              {
+                "start": 4.41,
+                "end": 4.59,
+                "text": "对"
+              },
+              {
+                "start": 4.59,
+                "end": 4.77,
+                "text": "话"
+              },
+              {
+                "start": 4.77,
+                "end": 4.95,
+                "text": "服"
+              },
+              {
+                "start": 4.95,
+                "end": 5.19,
+                "text": "务"
+              },
+              {
+                "start": 5.19,
+                "end": 5.34,
+                "text": "和"
+              },
+              {
+                "start": 5.34,
+                "end": 5.93,
+                "text": "DeepSeek"
+              },
+              {
+                "start": 5.93,
+                "end": 6.06,
+                "text": "V"
+              },
+              {
+                "start": 6.06,
+                "end": 6.36,
+                "text": "4.1"
+              },
+              {
+                "start": 6.39,
+                "end": 6.72,
+                "text": "Flash"
+              },
+              {
+                "start": 6.72,
+                "end": 7.11,
+                "text": "API"
+              },
+              {
+                "start": 7.11,
+                "end": 7.26,
+                "text": "部"
+              },
+              {
+                "start": 7.26,
+                "end": 7.38,
+                "text": "分"
+              },
+              {
+                "start": 7.38,
+                "end": 7.62,
+                "text": "中"
+              },
+              {
+                "start": 7.62,
+                "end": 7.85,
+                "text": "断"
+              }
+            ],
+            "text": "对话服务和DeepSeekV4.1FlashAPI部分中断",
+            "complete": true
+          },
+          {
+            "id": "e2007199-8d4b-4fef-a1d1-913251166cc0:sentence:3",
+            "start": 8.43,
+            "end": 9.53,
+            "words": [
+              {
+                "start": 8.43,
+                "end": 8.64,
+                "text": "南"
+              },
+              {
+                "start": 8.64,
+                "end": 8.82,
+                "text": "方"
+              },
+              {
+                "start": 8.82,
+                "end": 9,
+                "text": "加"
+              },
+              {
+                "start": 9,
+                "end": 9.21,
+                "text": "实"
+              },
+              {
+                "start": 9.21,
+                "end": 9.53,
+                "text": "测"
+              }
+            ],
+            "text": "南方加实测",
+            "complete": true
+          },
+          {
+            "id": "e2007199-8d4b-4fef-a1d1-913251166cc0:sentence:4",
+            "start": 9.81,
+            "end": 12.84,
+            "words": [
+              {
+                "start": 9.81,
+                "end": 9.99,
+                "text": "第"
+              },
+              {
+                "start": 9.99,
+                "end": 10.23,
+                "text": "三"
+              },
+              {
+                "start": 10.23,
+                "end": 10.36,
+                "text": "方"
+              },
+              {
+                "start": 10.36,
+                "end": 10.56,
+                "text": "应"
+              },
+              {
+                "start": 10.56,
+                "end": 10.68,
+                "text": "用"
+              },
+              {
+                "start": 10.68,
+                "end": 10.86,
+                "text": "里"
+              },
+              {
+                "start": 10.86,
+                "end": 11.35,
+                "text": "DeepSeek"
+              },
+              {
+                "start": 11.35,
+                "end": 11.49,
+                "text": "V"
+              },
+              {
+                "start": 11.49,
+                "end": 11.76,
+                "text": "4.1"
+              },
+              {
+                "start": 11.76,
+                "end": 12.12,
+                "text": "Flash"
+              },
+              {
+                "start": 12.12,
+                "end": 12.39,
+                "text": "选"
+              },
+              {
+                "start": 12.39,
+                "end": 12.48,
+                "text": "项"
+              },
+              {
+                "start": 12.48,
+                "end": 12.69,
+                "text": "置"
+              },
+              {
+                "start": 12.69,
+                "end": 12.84,
+                "text": "灰"
+              }
+            ],
+            "text": "第三方应用里DeepSeekV4.1Flash选项置灰",
+            "complete": true
+          }
+        ],
+        "pauses": [
+          {
+            "start": 1.938,
+            "end": 2.473
+          },
+          {
+            "start": 4.038,
+            "end": 4.602
+          },
+          {
+            "start": 8.365,
+            "end": 9.088
+          },
+          {
+            "start": 10.057,
+            "end": 10.497
+          }
+        ],
+        "warnings": [],
+        "timing": "model-estimated",
+        "createdAt": ""
+      }
+    },
+    {
+      "chapter": {
+        "id": "chapter-3",
+        "title": "修复进展与待确认信息",
+        "role": "recap",
+        "goal": "说明截至10时的服务状态、官方处置进展，以及仍待官方披露的信息；热搜热度只在开场呈现，结尾不再混用榜单时间。",
+        "prerequisites": [
+          "chapter-1",
+          "chapter-2"
+        ],
+        "narration": "截至10时，环球网实测服务仍未恢复；媒体按现场观察口径称已持续3个多小时。官方称原因已定位，正在修复；根因、影响范围和最终恢复时间，仍待官方披露。",
+        "reason": "按审查要求，将结尾的故障状态与热搜快照彻底分开：本章只呈现10时服务状态和待披露事项，不再放入11:47榜单卡片，避免用榜单时间倒推事件或状态更新。",
+        "referenceIds": [
+          "ref-1",
+          "ref-5"
+        ],
+        "claims": [
+          {
+            "text": "环球网记者10时实测，相关服务仍未恢复正常；报道按现场观察口径称故障已持续3个多小时，脚本不另行从8:11推算精确时长。",
+            "referenceIds": [
+              "ref-1"
+            ],
+            "basis": "source"
+          },
+          {
+            "text": "DeepSeek后续更新处置进展称故障原因已经定位，正在推进修复；该状态由媒体转述官方服务状态信息。",
+            "referenceIds": [
+              "ref-1"
+            ],
+            "basis": "source"
+          },
+          {
+            "text": "中华网报道称，具体原因、影响范围及持续时间暂未披露；因此不得推测为攻击、模型更新或容量问题，最终恢复时间也须以官方后续披露为准。",
+            "referenceIds": [
+              "ref-5"
+            ],
+            "basis": "source"
+          }
+        ],
+        "visual": {
+          "kind": "timeline",
+          "takeaway": "10时仍未恢复；已定位修复，完整结论待披露",
+          "items": [
+            {
+              "label": "10:00服务状态",
+              "detail": "环球网实测仍未恢复；现场观察口径称已持续3个多小时｜自绘示意",
+              "cue": "截至10时",
+              "illustration": "signal"
+            },
+            {
+              "label": "官方处置进展",
+              "detail": "据媒体转述：原因已定位，正在推进修复",
+              "cue": "原因已定位",
+              "illustration": "steps"
+            },
+            {
+              "label": "待披露信息",
+              "detail": "根因、完整影响范围、最终恢复时间均未正式披露，不额外推测",
+              "cue": "仍待官方披露",
+              "illustration": "announcement"
+            },
+            {
+              "label": "时间边界",
+              "detail": "本章只对应10时前后报道；热搜11:47快照已在开场单列",
+              "cue": "最终恢复时间",
+              "illustration": "signal"
+            }
+          ]
+        }
+      },
+      "raw": {
+        "status": "ready",
+        "modelId": "captured-asr",
+        "sourceHash": "7d25d6e42a2e5e3e41ef6ea0a39c85bdcfdf462ed5a00b289a36b0d70cf3e0dc",
+        "duration": 16.97,
+        "transcript": "截至十时环球网实测服务仍未恢复媒体按现场观察口径称已持续三个多小时官方称原因已定位正在修复根因影响范围和最终恢复时间仍待官方披露",
+        "sentences": [
+          {
+            "id": "f4be3487-b56a-47f6-9cbd-ec50e731fdf8:sentence:0",
+            "start": 0.07,
+            "end": 16.59,
+            "words": [
+              {
+                "start": 0.07,
+                "end": 0.33,
+                "text": "截"
+              },
+              {
+                "start": 0.33,
+                "end": 0.54,
+                "text": "至"
+              },
+              {
+                "start": 0.54,
+                "end": 0.81,
+                "text": "十"
+              },
+              {
+                "start": 0.81,
+                "end": 1.19,
+                "text": "时"
+              },
+              {
+                "start": 1.59,
+                "end": 1.88,
+                "text": "环"
+              },
+              {
+                "start": 1.88,
+                "end": 2.07,
+                "text": "球"
+              },
+              {
+                "start": 2.07,
+                "end": 2.31,
+                "text": "网"
+              },
+              {
+                "start": 2.31,
+                "end": 2.59,
+                "text": "实"
+              },
+              {
+                "start": 2.59,
+                "end": 2.76,
+                "text": "测"
+              },
+              {
+                "start": 2.76,
+                "end": 2.94,
+                "text": "服"
+              },
+              {
+                "start": 2.94,
+                "end": 3.18,
+                "text": "务"
+              },
+              {
+                "start": 3.21,
+                "end": 3.4,
+                "text": "仍"
+              },
+              {
+                "start": 3.4,
+                "end": 3.57,
+                "text": "未"
+              },
+              {
+                "start": 3.57,
+                "end": 3.81,
+                "text": "恢"
+              },
+              {
+                "start": 3.81,
+                "end": 4.06,
+                "text": "复"
+              },
+              {
+                "start": 4.53,
+                "end": 4.74,
+                "text": "媒"
+              },
+              {
+                "start": 4.74,
+                "end": 4.95,
+                "text": "体"
+              },
+              {
+                "start": 4.95,
+                "end": 5.19,
+                "text": "按"
+              },
+              {
+                "start": 5.19,
+                "end": 5.39,
+                "text": "现"
+              },
+              {
+                "start": 5.39,
+                "end": 5.58,
+                "text": "场"
+              },
+              {
+                "start": 5.58,
+                "end": 5.82,
+                "text": "观"
+              },
+              {
+                "start": 5.82,
+                "end": 6.28,
+                "text": "察"
+              },
+              {
+                "start": 6.45,
+                "end": 6.72,
+                "text": "口"
+              },
+              {
+                "start": 6.72,
+                "end": 6.87,
+                "text": "径"
+              },
+              {
+                "start": 6.87,
+                "end": 7.14,
+                "text": "称"
+              },
+              {
+                "start": 7.14,
+                "end": 7.32,
+                "text": "已"
+              },
+              {
+                "start": 7.32,
+                "end": 7.56,
+                "text": "持"
+              },
+              {
+                "start": 7.56,
+                "end": 7.74,
+                "text": "续"
+              },
+              {
+                "start": 7.74,
+                "end": 7.92,
+                "text": "三"
+              },
+              {
+                "start": 7.92,
+                "end": 8.01,
+                "text": "个"
+              },
+              {
+                "start": 8.01,
+                "end": 8.16,
+                "text": "多"
+              },
+              {
+                "start": 8.16,
+                "end": 8.63,
+                "text": "小"
+              },
+              {
+                "start": 9.03,
+                "end": 9.09,
+                "text": "时"
+              },
+              {
+                "start": 9.18,
+                "end": 9.39,
+                "text": "官"
+              },
+              {
+                "start": 9.39,
+                "end": 9.58,
+                "text": "方"
+              },
+              {
+                "start": 9.58,
+                "end": 9.81,
+                "text": "称"
+              },
+              {
+                "start": 9.81,
+                "end": 10.08,
+                "text": "原"
+              },
+              {
+                "start": 10.08,
+                "end": 10.26,
+                "text": "因"
+              },
+              {
+                "start": 10.26,
+                "end": 10.38,
+                "text": "已"
+              },
+              {
+                "start": 10.38,
+                "end": 10.59,
+                "text": "定"
+              },
+              {
+                "start": 10.59,
+                "end": 10.89,
+                "text": "位"
+              },
+              {
+                "start": 11.01,
+                "end": 11.25,
+                "text": "正"
+              },
+              {
+                "start": 11.25,
+                "end": 11.4,
+                "text": "在"
+              },
+              {
+                "start": 11.4,
+                "end": 11.58,
+                "text": "修"
+              },
+              {
+                "start": 11.58,
+                "end": 11.85,
+                "text": "复"
+              },
+              {
+                "start": 12.27,
+                "end": 12.54,
+                "text": "根"
+              },
+              {
+                "start": 12.54,
+                "end": 12.86,
+                "text": "因"
+              },
+              {
+                "start": 13.2,
+                "end": 13.4,
+                "text": "影"
+              },
+              {
+                "start": 13.4,
+                "end": 13.5,
+                "text": "响"
+              },
+              {
+                "start": 13.5,
+                "end": 13.68,
+                "text": "范"
+              },
+              {
+                "start": 13.68,
+                "end": 13.99,
+                "text": "围"
+              },
+              {
+                "start": 14.02,
+                "end": 14.22,
+                "text": "和"
+              },
+              {
+                "start": 14.22,
+                "end": 14.4,
+                "text": "最"
+              },
+              {
+                "start": 14.4,
+                "end": 14.61,
+                "text": "终"
+              },
+              {
+                "start": 14.61,
+                "end": 14.79,
+                "text": "恢"
+              },
+              {
+                "start": 14.79,
+                "end": 14.91,
+                "text": "复"
+              },
+              {
+                "start": 14.91,
+                "end": 15.09,
+                "text": "时"
+              },
+              {
+                "start": 15.09,
+                "end": 15.34,
+                "text": "间"
+              },
+              {
+                "start": 15.48,
+                "end": 15.69,
+                "text": "仍"
+              },
+              {
+                "start": 15.69,
+                "end": 15.84,
+                "text": "待"
+              },
+              {
+                "start": 15.84,
+                "end": 16.05,
+                "text": "官"
+              },
+              {
+                "start": 16.05,
+                "end": 16.17,
+                "text": "方"
+              },
+              {
+                "start": 16.17,
+                "end": 16.36,
+                "text": "披"
+              },
+              {
+                "start": 16.36,
+                "end": 16.59,
+                "text": "露"
+              }
+            ],
+            "text": "截至十时环球网实测服务仍未恢复媒体按现场观察口径称已持续三个多小时官方称原因已定位正在修复根因影响范围和最终恢复时间仍待官方披露",
+            "complete": true
+          }
+        ],
+        "pauses": [
+          {
+            "start": 1.106,
+            "end": 1.735
+          },
+          {
+            "start": 3.941,
+            "end": 4.578
+          },
+          {
+            "start": 6.054,
+            "end": 6.503
+          },
+          {
+            "start": 8.599,
+            "end": 9.214
+          },
+          {
+            "start": 10.727,
+            "end": 11.071
+          },
+          {
+            "start": 11.762,
+            "end": 12.375
+          },
+          {
+            "start": 12.793,
+            "end": 13.263
+          },
+          {
+            "start": 15.513,
+            "end": 15.865
+          }
+        ],
+        "warnings": [],
+        "timing": "model-estimated",
+        "createdAt": ""
+      }
+    }
+  ]
+}
