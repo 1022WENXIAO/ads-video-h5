@@ -160,3 +160,16 @@ test('scenes checkpoint with changed source context and legacy raw provenance fa
  await assert.rejects(runLessonWorkflow(f.options),e=>causedBy(e,STOP));assert.deepEqual(await f.hashes(),original);assert.deepEqual(f.asr.sort(),['ch1','ch2','ch3']);
  const events=f.events.slice(count);assert.equal(events.filter(e=>e.tool==='prepare_speech_edges').length,3);assert.equal(events.some(e=>e.tool==='revalidate_narration_metadata'||e.tool==='synthesize_chapter'),false);
 }));
+
+test('tampered proof context cannot bypass original-ASR revalidation from a scenes checkpoint',async()=>controlled(async f=>{
+ const saved=await f.bootstrap(),original=await f.hashes();saved.phase='scenes';saved.report.references[0].title='New accepted source context';
+ for(const c of saved.report.chapters){
+  const dir=path.join(f.work,c.id),file=path.join(dir,'speech-proof.json'),proof=JSON.parse(await readFile(file,'utf8'));
+  const current=lessonSpeechBinding(c,f.rawKey(c),hashBytes(await readFile(path.join(dir,'raw-speech.mp3'))),f.pacing,saved.report.references,saved.report);
+  proof.binding.chapterHash=current.chapterHash; // Corruption must not turn a context mismatch into authorization.
+  await writeFile(file,JSON.stringify(proof));
+ }
+ await writeFile(path.join(f.work,'checkpoint.json'),JSON.stringify(saved));const count=f.events.length;
+ await assert.rejects(runLessonWorkflow(f.options),e=>causedBy(e,STOP));assert.deepEqual(await f.hashes(),original);assert.deepEqual(f.asr.sort(),['ch1','ch2','ch3']);
+ const events=f.events.slice(count);assert.equal(events.filter(e=>e.tool==='prepare_speech_edges').length,3);assert.equal(events.some(e=>['revalidate_narration_metadata','synthesize_chapter','synthesize_voice_anchor'].includes(e.tool)),false);
+}));

@@ -249,6 +249,8 @@ export async function runLessonWorkflow(o:Options){
         if((error as NodeJS.ErrnoException)?.code!=='ENOENT')throw error;
       }
       if(priorProof?.binding?.waveformHash){
+        const {id,...payload}=priorProof;
+        if(priorProof.version!==1||typeof id!=='string'||!/^[a-f0-9]{64}$/.test(id)||hashBytes(JSON.stringify(payload))!==id){defer(chapter.id,`章节${chapter.id}旁白证明内容与哈希不一致，回到原旁白链路复核。`);continue;}
         // Prior keys here are only inputs to the local context hash, never
         // trusted request identity. The narration stage recomputes real keys.
         const context=lessonSpeechBinding(chapter,priorProof.binding.rawKey,priorProof.binding.rawHash,pacing,report!.references,settings,priorProof.binding.processingHash);
