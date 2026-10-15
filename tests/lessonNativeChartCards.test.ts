@@ -8,6 +8,7 @@ import {pathToFileURL} from 'node:url';
 import type {LessonChapter,LessonPresentation} from '../src/types';
 import {lessonSceneHtml} from '../server/lessonScenes';
 import {checkHtmlProject,hashBytes} from '../server/narrativeScenes';
+import {auditDrawingTextLayout} from '../server/drawingTextLayout';
 
 const actual=JSON.parse(await readFile(new URL('./fixtures/p24-native-chart-card-overlap.json',import.meta.url),'utf8')) as {
   provenance:{htmlSha256:string;checkReportSha256:string};chapter:LessonChapter;presentation:LessonPresentation;
@@ -46,6 +47,13 @@ test('three or four chart explanations stay readable above the conclusion in rea
       await checkHtmlProject(project,{fullCheck:true});
       await page.goto(pathToFileURL(path.join(project,'index.html')).href);await page.evaluate(()=>document.fonts.ready);
       await page.evaluate('globalThis.__name = (fn) => fn');
+      await page.evaluate(()=>{
+        for(const [index,element] of Array.from(document.querySelectorAll<HTMLElement>('h1,.teaching-item h2,.teaching-item p,#takeaway')).entries()){
+          const view=()=>({text:element.textContent,font:getComputedStyle(element).font,display:getComputedStyle(element).display,rect:element.getBoundingClientRect().toJSON()});
+          const before=view();element.id||='native-text-'+index;element.dataset.drawingId=element.id;element.classList.add('node');
+          if(JSON.stringify(view())!==JSON.stringify(before))throw new Error('Ink-audit metadata changed the actual native layout');
+        }
+      });
       for(const time of [1,actual.originalFinding.time,9.9]){
         const frame=await page.evaluate((at:number)=>{
           (window as any).__timelines.main.pause().seek(at,false);
@@ -55,6 +63,7 @@ test('three or four chart explanations stay readable above the conclusion in rea
           const texts=Array.from(document.querySelectorAll<HTMLElement>('.teaching-item h2,.teaching-item p,#takeaway')).filter(element=>Number(getComputedStyle(element).opacity)>.5).flatMap(element=>{const range=document.createRange();range.selectNodeContents(element);return Array.from(range.getClientRects(),r=>({left:r.left,top:r.top,right:r.right,bottom:r.bottom,text:element.textContent}));});
           return{content,takeaway:rect(takeaway),items,texts,bars:Array.from(document.querySelectorAll('[data-value]'),element=>({value:Number(element.getAttribute('data-value')),baseline:Number(element.getAttribute('data-axis-min'))}))};
         },time);
+        const ink=await page.evaluate(auditDrawingTextLayout,{time});
         assert.equal(frame.items.length,count);
         for(const [i,item] of frame.items.entries()){
           assert.equal(item.label,chapter.visual.items[i].label);assert.equal(item.detail,chapter.visual.items[i].detail);assert.equal(item.font,24,'preserve the original readable detail size');
@@ -63,13 +72,21 @@ test('three or four chart explanations stay readable above the conclusion in rea
         assert.ok(frame.items[1].rect.left>frame.items[0].rect.right,'the first two cards have independent columns');
         assert.ok(frame.items[2].rect.top>frame.items[0].rect.bottom,'the next card has its own row');
         for(const text of frame.texts){assert.ok(text.left>=0&&text.right<=720&&text.top>=0&&text.bottom<=1280,JSON.stringify(text));}
-        for(let i=0;i<frame.texts.length;i++)for(let j=i+1;j<frame.texts.length;j++){
-          const a=frame.texts[i],b=frame.texts[j],width=Math.min(a.right,b.right)-Math.max(a.left,b.left),height=Math.min(a.bottom,b.bottom)-Math.max(a.top,b.top);
-          assert.ok(width<=1||height<=1,'independent text lines must not overlap: '+JSON.stringify({time,a,b}));
-        }
+        // Noto's font boxes can overlap across ordinary lines in the same
+        // paragraph. Measure actual glyph ink instead of calling those boxes
+        // independent text collisions or changing the production line height.
+        assert.deepEqual(ink.findings.filter(f=>f.severity==='error'),[],'actual loaded-font text ink must remain readable');
         assert.deepEqual(frame.bars.map(bar=>bar.value),chapter.visual.barChart!.bars.map(bar=>bar.value));assert.ok(frame.bars.every(bar=>bar.baseline===0),'preserve the verified zero baseline');
       }
     }
+    await page.evaluate(()=>{
+      for(const id of ['native-control-a','native-control-b']){
+        const element=document.createElement('div');element.id=id;element.dataset.drawingId=id;element.classList.add('node');element.textContent='核查';
+        element.style.cssText='position:absolute;left:100px;top:1160px;width:180px;font-size:24px;line-height:1.5;color:#282c38';document.querySelector('#main')!.append(element);
+      }
+    });
+    const collision=await page.evaluate(auditDrawingTextLayout,{time:9.9});
+    assert.ok(collision.findings.some(f=>f.code==='content_overlap'&&f.selector==='#native-control-a'&&f.containerSelector==='#native-control-b'),'the same actual ink check rejects a controlled independent-label collision');
     assert.deepEqual(actual,before,'layout cannot rewrite the script, chart values or historical failure');
   }finally{await browser.close();await rm(project,{recursive:true,force:true});}
 });
