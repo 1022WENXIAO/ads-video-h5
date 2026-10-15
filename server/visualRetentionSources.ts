@@ -7,6 +7,7 @@ import { MAX_MEDIA_UPLOAD_BYTES } from '../shared/uploadLimits';
 import { runFFmpeg } from './core';
 import { throwIfJobCancelled } from './jobExecution';
 import { timelineOffsets } from './timeline';
+export const VISUAL_RETENTION_FRAME_SCALE='scale=960:960:force_original_aspect_ratio=decrease';
 export interface VisualRetentionSourceFrame { sourceId:string; sourceName:string; sourceHash:string; sourceTime:number; image:string; purpose?:'mapped'|'tail'|'overview';mappedOutputTime?:number;clipIndex?:number }
 export interface VisualRetentionSourceSamples { frames:VisualRetentionSourceFrame[]; selectedRanges:Array<{sourceId:string;start:number;end:number}>; truncated:boolean;uncoveredClips?:Array<{sourceId:string;clipIndex:number;reason:'source-budget'|'mapped-frame-budget'|'no-unmixed-review-frame'}> }
 type SourceSample=Pick<VisualRetentionSourceFrame,'sourceTime'|'purpose'|'mappedOutputTime'|'clipIndex'>;
@@ -71,7 +72,7 @@ export async function sampleVisualRetentionSources(movie:string,plan:EditPlan,me
     for(const [i,sample] of samples.entries()){
       throwIfJobCancelled();
       const {sourceTime}=sample,image=path.join(temp,`retention-source-${index}-${i}.jpg`);
-      await runFFmpeg(['-v','error','-y','-ss',String(sourceTime),'-i',file,'-frames:v','1','-vf','scale=540:-2',image],30_000);
+      await runFFmpeg(['-v','error','-y','-ss',String(sourceTime),'-i',file,'-frames:v','1','-vf',VISUAL_RETENTION_FRAME_SCALE,image],30_000);
       throwIfJobCancelled();
       const imageMeta=await stat(image);if(!imageMeta.size||imageMeta.size>2*1024*1024)throw new Error('视觉保留审查原素材抽帧未形成有界有效图像。');
       frames.push({sourceId:source.id,sourceName:source.name,sourceHash:before,...sample,image});

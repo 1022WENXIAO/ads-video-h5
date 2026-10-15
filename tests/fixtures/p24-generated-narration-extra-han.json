@@ -1,0 +1,365 @@
+{
+  "provenance": {
+    "revision": "5ea9572a998612fe90d10c8080a478f02bf3b2e0",
+    "rawAnalysisSha256": "a3751cc7699adc86b25665ebe38b385bc3516adbaf4636fa5041f249fcc923bd",
+    "processedAudioSha256": "8d8031bf76a78b97c410295ef62f0c3e3ae102ba763e3d61b90f588770169678",
+    "scope": "Minimal actual generated narration/ASR projection. Original word stream, times and completeness preserved; no claim that the audio actually contains the ASR extra glyph. Source/claim identity fields are excluded because this fixture exercises word alignment, not source authorization."
+  },
+  "chapter": {
+    "id": "ch2",
+    "title": "核心变化",
+    "role": "foundation",
+    "goal": "讲清这篇报道发布后最核心的事实变化：两人被捕、部分金链追回。",
+    "prerequisites": [
+      "ch1"
+    ],
+    "narration": "核心变化是警方以盗窃等罪拘捕三十七和二十九岁的一男一女。金链约六十克、值七点九万港元，监控锁定行踪后，只找回一部分。",
+    "reason": "用最关键调查进展回答用户指定的“一个核心变化”，同时覆盖年龄、金额和追回范围。",
+    "referenceIds": [],
+    "claims": [],
+    "visual": {
+      "kind": "comparison",
+      "takeaway": "从夺链逃走，推进到两人被捕、部分追回",
+      "items": [
+        {
+          "label": "拘捕1男1女",
+          "detail": "37岁男子涉嫌盗走金链，29岁女子涉嫌协助处理赃物。",
+          "cue": "拘捕三十七和二十九岁的一男一女"
+        },
+        {
+          "label": "金链信息",
+          "detail": "约60克（一两半），价值约7.9万港元。",
+          "cue": "金链约六十克、值七点九万港元"
+        },
+        {
+          "label": "监控锁定行踪",
+          "detail": "警方翻查“锐眼”闭路电视，先后在大埔拘捕两人。",
+          "cue": "监控锁定行踪后"
+        },
+        {
+          "label": "只追回一部分",
+          "detail": "报道确认部分金链已找回，未确认全部追回。",
+          "cue": "只找回一部分"
+        }
+      ]
+    }
+  },
+  "analysis": {
+    "modelId": "doubao-seed-2-1-lite-260915",
+    "sourceHash": "8d8031bf76a78b97c410295ef62f0c3e3ae102ba763e3d61b90f588770169678",
+    "duration": 9.7,
+    "timing": "model-estimated",
+    "createdAt": "2026-10-15T17:52:09.714Z",
+    "status": "ready",
+    "transcript": "核心变化是他警方以盗窃等罪拘捕三十七\n和二十九岁的一男一女金链约六十克值七点九万港元\n监控锁定行踪后只找回一部分",
+    "sentences": [
+      {
+        "id": "104fefa2-4f71-4d08-90ff-71c0b3459a66:sentence:0",
+        "start": 0.06,
+        "end": 3.27,
+        "words": [
+          {
+            "start": 0.06,
+            "end": 0.28,
+            "text": "核心"
+          },
+          {
+            "start": 0.28,
+            "end": 0.45,
+            "text": "变化"
+          },
+          {
+            "start": 0.45,
+            "end": 0.63,
+            "text": "是"
+          },
+          {
+            "start": 0.66,
+            "end": 0.8,
+            "text": "他"
+          },
+          {
+            "start": 0.84,
+            "end": 1.08,
+            "text": "警"
+          },
+          {
+            "start": 1.08,
+            "end": 1.26,
+            "text": "方"
+          },
+          {
+            "start": 1.26,
+            "end": 1.41,
+            "text": "以"
+          },
+          {
+            "start": 1.41,
+            "end": 1.59,
+            "text": "盗"
+          },
+          {
+            "start": 1.59,
+            "end": 1.74,
+            "text": "窃"
+          },
+          {
+            "start": 1.74,
+            "end": 1.92,
+            "text": "等"
+          },
+          {
+            "start": 1.92,
+            "end": 2.12,
+            "text": "罪"
+          },
+          {
+            "start": 2.19,
+            "end": 2.43,
+            "text": "拘"
+          },
+          {
+            "start": 2.43,
+            "end": 2.67,
+            "text": "捕"
+          },
+          {
+            "start": 2.67,
+            "end": 2.94,
+            "text": "三"
+          },
+          {
+            "start": 2.94,
+            "end": 3.27,
+            "text": "十七"
+          }
+        ],
+        "text": "核心变化是他警方以盗窃等罪拘捕三十七",
+        "complete": true
+      },
+      {
+        "id": "104fefa2-4f71-4d08-90ff-71c0b3459a66:sentence:1",
+        "start": 3.3,
+        "end": 7.02,
+        "words": [
+          {
+            "start": 3.3,
+            "end": 3.48,
+            "text": "和"
+          },
+          {
+            "start": 3.48,
+            "end": 3.66,
+            "text": "二"
+          },
+          {
+            "start": 3.66,
+            "end": 3.72,
+            "text": "十"
+          },
+          {
+            "start": 3.72,
+            "end": 3.9,
+            "text": "九"
+          },
+          {
+            "start": 3.9,
+            "end": 4.05,
+            "text": "岁"
+          },
+          {
+            "start": 4.05,
+            "end": 4.17,
+            "text": "的"
+          },
+          {
+            "start": 4.17,
+            "end": 4.29,
+            "text": "一"
+          },
+          {
+            "start": 4.29,
+            "end": 4.44,
+            "text": "男"
+          },
+          {
+            "start": 4.44,
+            "end": 4.5,
+            "text": "一"
+          },
+          {
+            "start": 4.5,
+            "end": 4.8,
+            "text": "女"
+          },
+          {
+            "start": 4.83,
+            "end": 5.07,
+            "text": "金"
+          },
+          {
+            "start": 5.07,
+            "end": 5.22,
+            "text": "链"
+          },
+          {
+            "start": 5.22,
+            "end": 5.37,
+            "text": "约"
+          },
+          {
+            "start": 5.37,
+            "end": 5.48,
+            "text": "六"
+          },
+          {
+            "start": 5.48,
+            "end": 5.54,
+            "text": "十"
+          },
+          {
+            "start": 5.54,
+            "end": 5.79,
+            "text": "克"
+          },
+          {
+            "start": 5.79,
+            "end": 6,
+            "text": "值"
+          },
+          {
+            "start": 6,
+            "end": 6.21,
+            "text": "七"
+          },
+          {
+            "start": 6.21,
+            "end": 6.36,
+            "text": "点"
+          },
+          {
+            "start": 6.36,
+            "end": 6.48,
+            "text": "九"
+          },
+          {
+            "start": 6.48,
+            "end": 6.66,
+            "text": "万"
+          },
+          {
+            "start": 6.66,
+            "end": 6.8,
+            "text": "港"
+          },
+          {
+            "start": 6.8,
+            "end": 7.02,
+            "text": "元"
+          }
+        ],
+        "text": "和二十九岁的一男一女金链约六十克值七点九万港元",
+        "complete": true
+      },
+      {
+        "id": "104fefa2-4f71-4d08-90ff-71c0b3459a66:sentence:2",
+        "start": 7.05,
+        "end": 9.53,
+        "words": [
+          {
+            "start": 7.05,
+            "end": 7.26,
+            "text": "监"
+          },
+          {
+            "start": 7.26,
+            "end": 7.38,
+            "text": "控"
+          },
+          {
+            "start": 7.38,
+            "end": 7.56,
+            "text": "锁"
+          },
+          {
+            "start": 7.56,
+            "end": 7.71,
+            "text": "定"
+          },
+          {
+            "start": 7.71,
+            "end": 7.89,
+            "text": "行"
+          },
+          {
+            "start": 7.89,
+            "end": 8.07,
+            "text": "踪"
+          },
+          {
+            "start": 8.07,
+            "end": 8.28,
+            "text": "后"
+          },
+          {
+            "start": 8.37,
+            "end": 8.58,
+            "text": "只"
+          },
+          {
+            "start": 8.58,
+            "end": 8.73,
+            "text": "找"
+          },
+          {
+            "start": 8.73,
+            "end": 8.87,
+            "text": "回"
+          },
+          {
+            "start": 8.87,
+            "end": 9.09,
+            "text": "一"
+          },
+          {
+            "start": 9.09,
+            "end": 9.28,
+            "text": "部"
+          },
+          {
+            "start": 9.28,
+            "end": 9.53,
+            "text": "分"
+          }
+        ],
+        "text": "监控锁定行踪后只找回一部分",
+        "complete": true
+      }
+    ],
+    "pauses": [
+      {
+        "start": 4.738,
+        "end": 5.063
+      }
+    ],
+    "warnings": [
+      "字词时间码由模型估计，已校验格式、顺序和范围，尚未经独立强制对齐。",
+      "停顿是低音量检测结果，不等于已确认无人说话。"
+    ],
+    "captionBreaks": [
+      2,
+      5,
+      12,
+      14,
+      19,
+      24,
+      26,
+      30,
+      35,
+      37,
+      44,
+      47,
+      50
+    ]
+  }
+}

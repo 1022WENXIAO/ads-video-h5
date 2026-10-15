@@ -618,6 +618,8 @@ export function alignLessonSpeech(chapter:LessonChapter,analysis:AudioAnalysis):
   const expectedNumbers=spokenNumberValues(chapter.narration),heardNumbers=spokenNumberValues(heardNumberText(numericAnalysis));
   if(JSON.stringify(expectedNumbers)!==JSON.stringify(heardNumbers))throw new Error(`章节${chapter.id}实际旁白中的数字与脚本不一致，${speechValueDifference(expectedNumbers,heardNumbers)}；需要独立复听或重录，不能以整章匹配率放行。`);
   assertNarrationHanCoverage(chapter.id,expected,mapped,{numbersVerified:true});
+  const extraHan=heard.find((value,k)=>!heardMapped.has(k)&&/\p{Script=Han}/u.test(value.char));
+  if(extraHan)throw new Error(`章节${chapter.id}出现连续未匹配的额外字词「${extraHan.char}」，需要独立复听或重录，不能删除真实识别结果或以平均匹配率放行。`);
   const joined=expected.join('');
   const cues=chapter.visual.items.map((item,index)=>{
     const original=compactSpeech(item.cue),cue=speechPointIndexOf(joined,original)>=0?original:contextualSpeechCue(chapter.narration,item.cue),length=[...cue].length,start=speechPointIndexOf(joined,cue);const indices=Array.from({length},(_,k)=>mapped.get(start+k)).filter((k):k is number=>k!==undefined);

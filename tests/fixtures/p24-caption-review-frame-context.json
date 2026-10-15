@@ -1,0 +1,179 @@
+{
+  "provenance": {
+    "scope": "Public minimal actual first P24 plan timing projection. Source IDs replaced with fixture IDs; full source body and wire request not included.",
+    "revision": "5ea9572a998612fe90d10c8080a478f02bf3b2e0",
+    "actualPlanHash": "3cffb3c3d7d884265d212e79d30a390dee21241ac1f97dfb0a783a726e3da86b",
+    "rawReviewScore": 65,
+    "rawReviewSha256": "e220097093ab96f0ccd568fb86b39acb31c677ea2de4b51d47fd7f571a79fbb5",
+    "actual15_06PngSha256": "a28fc06c181be3878cadbcd2648884d4b4ff6bdd2604dfb0ffc6b009ab48ba61",
+    "correction": "Original15.06 frame is blank, consistent with planned15.05–15.08 gap; rawreview is preserved and does not prove a whole-chapter freeze.12.14 extra 他 is visible, audio truth unknown."
+  },
+  "plan": {
+    "format": "9:16",
+    "targetSeconds": 30.12,
+    "summary": "Actual P24 subtitle/transition timing projection only",
+    "clips": [
+      {
+        "sceneId": "ch1",
+        "start": 0,
+        "end": 10.31,
+        "purpose": "hook",
+        "transition": {
+          "kind": "cut",
+          "duration": 0
+        },
+        "sourceId": "fixture-scene-1"
+      },
+      {
+        "sceneId": "ch2",
+        "start": 0,
+        "end": 10.05,
+        "purpose": "argument",
+        "transition": {
+          "kind": "fade",
+          "duration": 0.18
+        },
+        "sourceId": "fixture-scene-2"
+      },
+      {
+        "sceneId": "ch3",
+        "start": 0,
+        "end": 10.12,
+        "purpose": "conclusion",
+        "transition": {
+          "kind": "fade",
+          "duration": 0.18
+        },
+        "sourceId": "fixture-scene-3"
+      }
+    ],
+    "captions": [
+      {
+        "start": 0.18,
+        "end": 1.16,
+        "text": "十月十五日晚",
+        "style": "subtitle",
+        "animation": "none"
+      },
+      {
+        "start": 1.32,
+        "end": 4.47,
+        "text": "多家媒体报道香港大埔周生生金",
+        "style": "subtitle",
+        "animation": "none"
+      },
+      {
+        "start": 4.47,
+        "end": 5.43,
+        "text": "链案有进展",
+        "style": "subtitle",
+        "animation": "none"
+      },
+      {
+        "start": 5.94,
+        "end": 7.98,
+        "text": "案件发生在前一天下午约三点",
+        "style": "subtitle",
+        "animation": "none"
+      },
+      {
+        "start": 8.46,
+        "end": 9.93,
+        "text": "两个时间要分开看",
+        "style": "subtitle",
+        "animation": "none"
+      },
+      {
+        "start": 10.31,
+        "end": 13.52,
+        "text": "核心变化是他警方以盗窃等罪拘捕三十七",
+        "style": "subtitle",
+        "animation": "none"
+      },
+      {
+        "start": 13.55,
+        "end": 15.05,
+        "text": "和二十九岁的一男一女",
+        "style": "subtitle",
+        "animation": "none"
+      },
+      {
+        "start": 15.08,
+        "end": 17.27,
+        "text": "金链约六十克值七点九万港元",
+        "style": "subtitle",
+        "animation": "none"
+      },
+      {
+        "start": 17.3,
+        "end": 18.53,
+        "text": "监控锁定行踪后",
+        "style": "subtitle",
+        "animation": "none"
+      },
+      {
+        "start": 18.62,
+        "end": 19.78,
+        "text": "只找回一部分",
+        "style": "subtitle",
+        "animation": "none"
+      },
+      {
+        "start": 20.18,
+        "end": 20.84,
+        "text": "值得关注",
+        "style": "subtitle",
+        "animation": "none"
+      },
+      {
+        "start": 21.02,
+        "end": 22.68,
+        "text": "是因为金饰被转卖分流后",
+        "style": "subtitle",
+        "animation": "none"
+      },
+      {
+        "start": 22.79,
+        "end": 24.07,
+        "text": "追赃可能跨点位",
+        "style": "subtitle",
+        "animation": "none"
+      },
+      {
+        "start": 24.53,
+        "end": 26.5,
+        "text": "现在剩余金链仍在追查",
+        "style": "subtitle",
+        "animation": "none"
+      },
+      {
+        "start": 26.6,
+        "end": 29.87,
+        "text": "罪名和结果也要等警方及司法程序后续确认",
+        "style": "subtitle",
+        "animation": "none"
+      }
+    ],
+    "lesson": {
+      "chapters": [
+        {
+          "id": "ch1"
+        },
+        {
+          "id": "ch2"
+        },
+        {
+          "id": "ch3"
+        }
+      ]
+    }
+  },
+  "expected": {
+    "gapTime": 15.06,
+    "previousEnd": 15.05,
+    "nextStart": 15.08,
+    "previousText": "和二十九岁的一男一女",
+    "nextText": "金链约六十克值七点九万港元",
+    "chapterId": "ch2"
+  }
+}
