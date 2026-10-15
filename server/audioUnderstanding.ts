@@ -1,14 +1,15 @@
 import { jobFetch, throwIfJobCancelled } from './jobExecution';
 import { createHash, randomUUID } from 'node:crypto';
 import { createReadStream } from 'node:fs';
-import { mkdir, readFile, rename, rm, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, readdir, rename, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import type { AudioAnalysis, MediaItem, TimeRange, TranscriptSentence, TranscriptWord } from '../src/types';
 import { probeVideo, runFFmpeg } from './core';
 import { getModelConfig, type ModelConfig } from './modelRegistry';
 import { loadEditingSkill } from './skills';
 import { mapLimited } from './taskPool';
-import { blocksModelOutputRecovery } from './executionErrors';
+import { blocksModelOutputRecovery, safeErrorText } from './executionErrors';
+import { SourceAsrRecoveryError, sourceAsrRecoveryReasons, type SourceAsrRecoveryReason } from './sourceAsrRecovery';
 
 const analysisVersion = 2;
 const segmentationVersion = 4;
@@ -289,17 +290,43 @@ export async function transcribeWindow(file:string,start:number,duration:number,
 
 export function createAudioUnderstanding(dataDir: string) {
   const inFlight = new Map<string, Promise<AudioAnalysis>>();
-  async function analyze(media: MediaItem, file: string, progress?: (value: number) => Promise<void>, options: AudioUnderstandingOptions = {}): Promise<AudioAnalysis> {
-    const config = await getModelConfig('understanding');
+  const recheckPolicy='source-independent-recheck-1';
+  const digest=(bytes:string|Buffer)=>createHash('sha256').update(bytes).digest('hex');
+  const absent=(error:unknown)=>(error as NodeJS.ErrnoException)?.code==='ENOENT';
+  async function immutable(file:string,bytes:string|Buffer){
+    try{await writeFile(file,bytes,{mode:0o600,flag:'wx'});}
+    catch(error){if((error as NodeJS.ErrnoException).code!=='EEXIST')throw error;if(digest(await readFile(file))!==digest(bytes))throw new SourceAsrRecoveryError('原声复听证据哈希不一致，已停止；不能覆盖原记录或重复提交。');}
+  }
+  const identity=(sourceHash:string,config:ModelConfig,original:AudioAnalysis)=>digest(JSON.stringify([sourceHash,config.modelId,config.provider,config.baseUrl,analysisVersion,segmentationVersion,recheckPolicy,digest(JSON.stringify(original))]));
+  async function recordedRecheck(dir:string,key:string,sourceHash:string):Promise<AudioAnalysis|undefined>{
+    const directory=path.join(dir,'source-rechecks',key);let claim:Buffer;
+    try{claim=await readFile(path.join(directory,'started.json'));}catch(error){if(absent(error))return;throw error;}
+    const started=JSON.parse(claim.toString()) as {key:string;sourceHash:string;duration:number;originalFiles:Array<{name:string;sha256:string}>};
+    if(started.key!==key||started.sourceHash!==sourceHash||!Array.isArray(started.originalFiles)||started.originalFiles.length<2||new Set(started.originalFiles.map(item=>item.name)).size!==started.originalFiles.length)throw new SourceAsrRecoveryError('原声复听记录损坏，已停止，不重复提交。');
+    for(const item of started.originalFiles)if(!/^original-(?:cache|analysis|chunk-\d+)\.json$/.test(item.name)||digest(await readFile(path.join(directory,item.name)))!==item.sha256)throw new SourceAsrRecoveryError('原声复听的原始证据哈希不一致，不能复用或重复提交。');
+    let terminal:{analysisHash:string;sourceHash:string};
+    try{terminal=JSON.parse(await readFile(path.join(directory,'completed.json'),'utf8'));}
+    catch(error){if(!absent(error))throw error;let failed=false;try{await readFile(path.join(directory,'failed.json'));failed=true;}catch(failure){if(!absent(failure))throw failure;}throw new SourceAsrRecoveryError(failed?'该原声的有限独立复听已失败，保留原始证据，不重复提交。':'该原声的独立复听已经开始但结果尚未确认，保留记录，不重复提交。');}
+    const bytes=await readFile(path.join(directory,'accepted-analysis.json'));
+    if(terminal.sourceHash!==sourceHash||terminal.analysisHash!==digest(bytes))throw new SourceAsrRecoveryError('原声复听结果哈希不一致，不能复用或重新提交。');
+    const result=JSON.parse(bytes.toString()) as AudioAnalysis;
+    if(result.sourceHash!==sourceHash||result.status!=='ready'||result.duration!==started.duration)throw new SourceAsrRecoveryError('原声复听结果与实际音频不一致。');
+    validateTranscript({sentences:result.sentences},result.duration);
+    if(sourceAsrRecoveryReasons(result).some(reason=>reason.kind==='negation-boundary'))throw new SourceAsrRecoveryError('已保存复听结果未通过当前否定句界检查；保留记录，不自动再次提交。');
+    return result;
+  }
+  async function analyze(media: MediaItem, file: string, progress?: (value: number) => Promise<void>, options: AudioUnderstandingOptions = {},storageOverride?:string,configOverride?:ModelConfig): Promise<AudioAnalysis> {
+    const config = configOverride||await getModelConfig('understanding');
     if (!config) throw new Error('音频理解模型尚未配置，请在后台配置 Seed 2.1 Lite。');
     if (config.modelId !== 'doubao-seed-2-1-lite-260915') throw new Error('音频理解请使用 Seed 2.1 Lite。');
     const sourceHash = await hashFile(file);
-    const dir = path.join(dataDir, 'audio-understanding', media.id);
+    const dir = storageOverride||path.join(dataDir, 'audio-understanding', media.id);
     await mkdir(dir, { recursive: true });
     const finalFile = path.join(dir, 'analysis.json');
-    const contextHint=media.generation||media.origin==='generated'?media.name.slice(0,200):'';
+    const contextHint=!storageOverride&&(media.generation||media.origin==='generated')?media.name.slice(0,200):'';
     const chunkKey = `${analysisVersion}:${config.modelId}:${sourceHash}${contextHint?':hint-'+createHash('sha256').update(contextHint).digest('hex'):''}`;
     const cacheKey = `${chunkKey}:segmentation-${segmentationVersion}${options.purpose === 'generated-narration' ? ':generated-narration' : ''}`;
+    let readingRecheck=false;
     try {
       const cached = JSON.parse(await readFile(finalFile, 'utf8')) as { cacheKey: string; analysis: AudioAnalysis };
       if (cached.cacheKey === cacheKey) {
@@ -309,9 +336,13 @@ export function createAudioUnderstanding(dataDir: string) {
           cached.analysis.captionBreaks = await captionBreaks(sentences, config,message=>cached.analysis.warnings.push(message));
           await atomicJson(finalFile, cached);
         }
+        if(!storageOverride&&options.purpose!=='generated-narration'){
+          readingRecheck=true;
+          const recovered=await recordedRecheck(dir,identity(sourceHash,config,cached.analysis),sourceHash);if(recovered)return recovered;
+        }
         return cached.analysis;
       }
-    } catch { /* An absent or malformed cache is recomputed. */ }
+    } catch(error) { if(readingRecheck||error instanceof SourceAsrRecoveryError||!absent(error)&&Boolean((error as NodeJS.ErrnoException)?.code))throw error; /* An absent or malformed legacy cache is recomputed. */ }
     const hasAudio = media.kind === 'audio' || (media.kind === 'video' && (await probeVideo(file)).hasAudio);
     const duration = media.duration || 0;
     if (!duration || media.kind === 'image') throw new Error('只能理解具有时长的音频或视频素材。');
@@ -375,7 +406,40 @@ export function createAudioUnderstanding(dataDir: string) {
     analysis.captionBreaks=await captionBreaks(regrouped,config,message=>analysis.warnings.push(message));
     await atomicJson(finalFile, {cacheKey,analysis}); return analysis;
   }
+  async function recheck(media:MediaItem,file:string,reason:SourceAsrRecoveryReason,progress?:(value:number)=>Promise<void>):Promise<AudioAnalysis>{
+    throwIfJobCancelled();
+    const sourceHash=await hashFile(file);
+    if(media.analysis?.status!=='ready'||media.analysis.sourceHash!==sourceHash||reason.sourceHash!==sourceHash)throw new SourceAsrRecoveryError('原声复听前音频与原转写哈希不一致，不能提交。');
+    if(!sourceAsrRecoveryReasons(media.analysis).some(candidate=>candidate.kind===reason.kind&&JSON.stringify(candidate.sentenceIds)===JSON.stringify(reason.sentenceIds)))throw new SourceAsrRecoveryError('原声复听缺少可核验的句界或残句证据，不能提交。');
+    const config=await getModelConfig('understanding');if(!config)throw new Error('音频理解模型尚未配置。');
+    const dir=path.join(dataDir,'audio-understanding',media.id),originalBytes=await readFile(path.join(dir,'analysis.json'));
+    const original=(JSON.parse(originalBytes.toString()) as {analysis:AudioAnalysis}).analysis;
+    if(original?.sourceHash!==sourceHash)throw new SourceAsrRecoveryError('原声复听的原缓存不匹配实际音频。');
+    const key=identity(sourceHash,config,original),directory=path.join(dir,'source-rechecks',key),prior=await recordedRecheck(dir,key,sourceHash);if(prior)return prior;
+    await mkdir(directory,{recursive:true});
+    await immutable(path.join(directory,'original-cache.json'),originalBytes);
+    await immutable(path.join(directory,'original-analysis.json'),JSON.stringify(media.analysis));
+    for(const name of await readdir(dir))if(/^chunk-\d+\.json$/.test(name))await immutable(path.join(directory,'original-'+name),await readFile(path.join(dir,name)));
+    if(await hashFile(file)!==sourceHash)throw new SourceAsrRecoveryError('原声在复听准备期间变化，不能提交。');
+    const originalFiles=await Promise.all((await readdir(directory)).filter(name=>/^original-(?:cache|analysis|chunk-\d+)\.json$/.test(name)).sort().map(async name=>({name,sha256:digest(await readFile(path.join(directory,name)))})));
+    try{await writeFile(path.join(directory,'started.json'),JSON.stringify({key,sourceHash,duration:original.duration,originalAnalysisHash:digest(JSON.stringify(original)),originalCacheHash:digest(originalBytes),originalFiles,policy:recheckPolicy,reason,startedAt:new Date().toISOString()}),{mode:0o600,flag:'wx'});}
+    catch(error){if((error as NodeJS.ErrnoException).code==='EEXIST'){const result=await recordedRecheck(dir,key,sourceHash);if(result)return result;}throw error;}
+    try{
+      const result=await analyze(media,file,progress,{},directory,config);
+      throwIfJobCancelled();if(await hashFile(file)!==sourceHash||result.sourceHash!==sourceHash||result.duration!==original.duration)throw new SourceAsrRecoveryError('原声复听后音频哈希或时长身份变化，不能采用结果。');
+      if(reason.kind==='negation-boundary'&&cleanText(result.sentences.flatMap(sentence=>sentence.words).map(word=>word.text).join(''))===cleanText(media.analysis.sentences.flatMap(sentence=>sentence.words).map(word=>word.text).join('')))throw new SourceAsrRecoveryError('独立复听没有消除原否定句界的字词歧义；不能仅合并句子或修改complete把同一不合格记录标为修复。');
+      if(sourceAsrRecoveryReasons(result).some(candidate=>candidate.kind==='negation-boundary'))throw new SourceAsrRecoveryError('同一原声的有限独立复听仍存在否定句界冲突；保留两版真实转写，不能补字、放宽完整性或重复提交。');
+      result.warnings.push('已独立复听同一SHA音频；原转写、原词时间和复听新证据分别保留，未根据期望稿补字。');
+      const bytes=JSON.stringify(result);await immutable(path.join(directory,'accepted-analysis.json'),bytes);
+      await immutable(path.join(directory,'completed.json'),JSON.stringify({sourceHash,analysisHash:digest(bytes),completedAt:new Date().toISOString()}));return result;
+    }catch(error){
+      try{await immutable(path.join(directory,'failed.json'),JSON.stringify({sourceHash,failedAt:new Date().toISOString(),name:error instanceof Error?error.name:'Error',message:safeErrorText(error instanceof Error?error.message:error,[config.apiKey])}));}
+      catch(persistence){throw new AggregateError([error,persistence],'原声复听失败且终态记录写入失败；保留started声明，不重复提交。',{cause:error});}
+      throw error;
+    }
+  }
   return {
+    recheck,
     analyze(media: MediaItem, file: string, progress?: (value: number) => Promise<void>, options: AudioUnderstandingOptions = {}) {
       const key = `${media.id}:${options.purpose || 'uploaded'}`;
       const current = inFlight.get(key); if (current) return current;

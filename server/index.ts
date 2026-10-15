@@ -19,6 +19,7 @@ import { createOssStorage, type AssetCategory } from './ossStorage';
 import { createEffectStore, type EffectValues } from './htmlEffects';
 import { classify, shouldUpdatePlan, excludesBgm, narrativeRequest } from './intents';
 import { createAudioUnderstanding } from './audioUnderstanding';
+import { recheckAuthorizedSource } from './sourceAsrAuthorization';
 import { reviewRender as reviewBaseRender } from './renderReview';
 import { artifactReviewRequestedAt } from './reviewTime';
 import { renderReviewSummary, reviewNeedsContentRepair } from './reviewResults';
@@ -207,6 +208,19 @@ async function performJob(job: Job): Promise<void> {
     item.analysis = await audioUnderstanding.analyze(item, file, async (value) => { updateSourceProgress(item.id,value); await saveState(); });
     updateSourceProgress(item.id,100);
     item.hasAudio = item.analysis.status !== 'no-audio'; await saveState(); return item.analysis;
+  };
+  const recheckSource = async (sourceId:string,reason:Parameters<typeof recheckAuthorizedSource>[0]['reason']) => {
+    throwIfJobCancelled();
+    const source=media.find(item=>item.id===sourceId&&item.ownerId===job.ownerId&&item.kind!=='image');
+    if(!job.ownerId||!source||!state.media.includes(source))throw new Error('原声复听素材不存在或无权限。');
+    const file=path.join(mediaDir,source.id);
+    await oss?.ensure(job.ownerId,'media',source.id,file);
+    const checked=await recheckAuthorizedSource({ownerId:job.ownerId,sourceId,media:()=>state.media,file,reason,
+      recheck:(item,input,why)=>audioUnderstanding.recheck(item,input,why,async value=>{updateSourceProgress(item.id,value);await saveState();})});
+    throwIfJobCancelled();if(checked.item!==source||!state.media.includes(source))throw new Error('原声复听期间素材记录已变化，不能采用旧记录。');
+    checked.assertCurrent();
+    checked.item.analysis=checked.analysis;checked.item.hasAudio=true;
+    updateSourceProgress(checked.item.id,100);await saveState();return checked.analysis;
   };
   const selectedSources = () => sessionSources(prompt,media,attached,session.plan,history);
   const workflowProgress = async (events:NonNullable<Job['workflow']>) => {
@@ -473,7 +487,7 @@ async function performJob(job: Job): Promise<void> {
     if (!config) throw new Error('文本模型尚未配置。');
     const sources = selectedSources().filter((m) => m.kind === 'video');
     if (!sources.length) throw new Error('精剪需要视频素材。');
-    return { prompt, config, sources, media, decorate: withCover, previous: session.plan, preserveSelection: Boolean(session.plan?.editorial && /保留当前(?:的)?(?:四段)?(?:分镜|片段)|只(?:修改|修复|调整)字幕/.test(prompt) && !/重新选句|更换|替换|改选/.test(prompt)), transcribe: analyzeAudio, verifySelection: (scenes: Parameters<typeof verifySceneQuotes>[0]) => verifySceneQuotes(scenes,sources,path.join(dataDir,'sentence-audit')), inspect: async (scene: Parameters<typeof inspectScene>[0]) => { await oss?.ensure(job.ownerId!, 'media', scene.sourceId, path.join(mediaDir, scene.sourceId)); return inspectScene(scene, mediaDir, path.join(dataDir, 'scene-understanding')); }, persist: async (plan: NonNullable<Session['plan']>) => { session.plan = plan; await saveState(); }, progress: basicProgress };
+    return { prompt, config, sources, media, decorate: withCover, previous: session.plan, preserveSelection: Boolean(session.plan?.editorial && /保留当前(?:的)?(?:四段)?(?:分镜|片段)|只(?:修改|修复|调整)字幕/.test(prompt) && !/重新选句|更换|替换|改选/.test(prompt)), transcribe: analyzeAudio, recheckSource, verifySelection: (scenes: Parameters<typeof verifySceneQuotes>[0]) => verifySceneQuotes(scenes,sources,path.join(dataDir,'sentence-audit')), inspect: async (scene: Parameters<typeof inspectScene>[0]) => { await oss?.ensure(job.ownerId!, 'media', scene.sourceId, path.join(mediaDir, scene.sourceId)); return inspectScene(scene, mediaDir, path.join(dataDir, 'scene-understanding')); }, persist: async (plan: NonNullable<Session['plan']>) => { session.plan = plan; await saveState(); }, progress: basicProgress };
   };
   const narrativeOptions = async (exportVideo: boolean, bgmFile?: string): Promise<Parameters<typeof runNarrativeWorkflow>[0]> => {
     const config = await getModelConfig('text', session.modelId);

@@ -18,7 +18,7 @@ test('changed narration and visual review helpers invalidate their bound cache e
     const {lessonRendererHash}=await import(pathToFileURL(path.join(copy,'server/lessonScenes.ts')).href);
     const {lessonSpeechProcessingHash}=await import(pathToFileURL(path.join(copy,'server/lessonSpeechProof.ts')).href);
     const renderer=lessonRendererHash(),speech=lessonSpeechProcessingHash();
-    for(const name of ['narrationBatchRecovery.ts','taskPool.ts','visualReviewEvidence.ts','visualRetentionReview.ts','visualRetentionSources.ts','lessonScriptReviewContext.ts','reviewResults.ts','semanticReview.ts','renderReview.ts']){
+    for(const name of ['narrationBatchRecovery.ts','taskPool.ts','visualReviewEvidence.ts','visualRetentionReview.ts','visualRetentionSources.ts','svgPaintOcclusion.ts','lessonScriptReviewContext.ts','reviewResults.ts','semanticReview.ts','renderReview.ts']){
       const file=path.join(copy,'server',name),bytes=await readFile(file);
       await appendFile(file,'\n// independent cache invalidation probe\n');
       assert.notEqual(lessonRendererHash(),renderer,`${name}: old movie/review evidence must be invalidated`);

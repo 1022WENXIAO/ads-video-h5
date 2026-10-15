@@ -72,3 +72,11 @@ test('coexisting dates, clocks and full model identifiers retain their independe
   const heard=value.narration.replace('六月二十二日十三时四十四分','6月22日13时44分').replace('58批','五十八批');verify(value,audio(heard));
   for(const changed of [heard.replace('22日','22'),heard.replace('22日','23日'),heard.replace('44分','14分'),heard.replace('44分','44'),heard.replace('2.5','2.6'),heard.replace('24B','25B'),heard.replace('A2B','A3B'),heard.replace('五十八','五十九')])verify(value,audio(changed),false);
 });
+
+test('an already matching measured range retains its legacy meaning across a real pause inside that range',()=>{
+  const value=chapter('15到20元'),heard=value.narration.replace('15到20元','十五到二十元'),raw=audio(heard),at=[...heard.slice(0,heard.indexOf('二十元'))].length;
+  for(let i=at;i<raw.sentences[0].words.length;i++){raw.sentences[0].words[i].start+=.5;raw.sentences[0].words[i].end+=.5;}raw.duration+=.5;raw.sentences[0].end+=.5;
+  assert.equal(verify(value,raw)!.similarity,1);
+  for(const changed of ['十五到二十一元','十五到二十份','十五到二元'])verify(value,audio(value.narration.replace('15到20元',changed)),false);
+  const disagreement=structuredClone(raw);disagreement.transcript=disagreement.transcript.replace('二十元','二十一元');verify(value,disagreement,false);
+});

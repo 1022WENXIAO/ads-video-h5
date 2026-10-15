@@ -534,7 +534,8 @@ export function alignLessonSpeech(chapter:LessonChapter,analysis:AudioAnalysis):
   // Carry actual pause fences into an identical literal
   // transcript; otherwise "5.1, 22批" would become a false quantity 5.122批.
   // Disagreeing transcript and word values retain the strict original check.
-  const quantityText=compactSpeech(analysis.transcript,false)===compactSpeech(wordText,false)?heardNumberText({...analysis,captionBreaks:undefined,captionBoundarySource:undefined}):analysis.transcript;
+  const expectedQuantities=speechQuantities(chapter.narration),rawQuantities=speechQuantities(analysis.transcript);
+  const quantityText=JSON.stringify(expectedQuantities)!==JSON.stringify(rawQuantities)&&compactSpeech(analysis.transcript,false)===compactSpeech(wordText,false)?heardNumberText({...analysis,captionBreaks:undefined,captionBoundarySource:undefined}):analysis.transcript;
   if(JSON.stringify(speechQuantities(chapter.narration))!==JSON.stringify(speechQuantities(quantityText)))throw new Error(`章节${chapter.id}金额、百分比、数量数字或单位与脚本不一致，需要独立复听或重录，不能以整章匹配率放行。`);
   for(const term of ['相似度','概率变化']){
     const expectedCount=compactSpeech(chapter.narration).split(term).length-1;

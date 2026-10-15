@@ -15,7 +15,27 @@ for(const[index,attempt]of knowledge.attempts.entries())test(`P8 knowledge ${ind
   for(const node of before.nodes)if(node.id!=='stage2')assert.deepEqual(fixed.nodes.find(n=>n.id===node.id),node);
   assert.equal(fixed.nodes.find(n=>n.id==='stage2_label')!.fontSize,before.nodes.find((n:any)=>n.id==='stage2').fontSize);
   const project=await mkdtemp(path.join(tmpdir(),'qingjian-p8-circle-browser-'));
-  try{await copyFile(path.join(process.cwd(),'node_modules/gsap/dist/gsap.min.js'),path.join(project,'gsap.min.js'));await writeFile(path.join(project,'index.html'),drawingHtml(before,10,'16:9'));await assert.rejects(checkHtmlProject(project,{fullCheck:true}),/content_overlap/);await writeFile(path.join(project,'index.html'),drawingHtml(fixed,10,'16:9'));await checkHtmlProject(project,{fullCheck:true});}finally{await rm(project,{recursive:true,force:true});}
+  try{
+    await copyFile(path.join(process.cwd(),'node_modules/gsap/dist/gsap.min.js'),path.join(project,'gsap.min.js'));await writeFile(path.join(project,'index.html'),drawingHtml(before,10,'16:9'));await assert.rejects(checkHtmlProject(project,{fullCheck:true}),/content_overlap/);
+    await writeFile(path.join(project,'index.html'),drawingHtml(fixed,10,'16:9'));
+    // Lifting the circle/card label remains correct, but the old checker also
+    // missed unrelated SVG icons painted across stage1/3's central labels.
+    await assert.rejects(checkHtmlProject(project,{fullCheck:true}),/Actual SVG fill\/stroke/);
+    const rejected=JSON.parse(await readFile(path.join(project,'check-report.json'),'utf8'));
+    assert.ok(rejected.svgPaint.findings.some((f:any)=>f.selector==='#qj-author-stage1'&&f.containerSelector==='#qj-author-lampIcon'));
+    const separated=structuredClone(fixed);
+    for(const id of ['stage1','stage3']){
+      const card=separated.nodes.find(n=>n.id===id)!;
+      separated.nodes.push({...card,id:id+'_clear_label',kind:'text',y:index===0?408:430,h:index===0?142:60,highlight:false});card.text='';
+    }
+    Object.assign(separated.nodes.find(n=>n.id==='bottomNote')!,{x:890,y:160,w:350,h:64});
+    const loopLabel=separated.nodes.find(n=>n.id==='loopLabel');
+    if(loopLabel){separated.nodes.push({...loopLabel,id:'loop_clear_label',kind:'text',y:510,h:40,highlight:false});loopLabel.text='';}
+    assert.equal(drawingContentHash(separated),drawingContentHash(before));
+    assert.deepEqual(separated.nodes.filter(n=>n.kind==='path'||n.kind==='line'),before.nodes.filter(n=>n.kind==='path'||n.kind==='line'));
+    assert.deepEqual(separated.nodes.filter(n=>n.text).map(n=>[n.text,n.fontSize]).sort(),before.nodes.filter(n=>n.text).map(n=>[n.text,n.fontSize]).sort());
+    await writeFile(path.join(project,'index.html'),drawingHtml(separated,10,'16:9'));await checkHtmlProject(project,{fullCheck:true});
+  }finally{await rm(project,{recursive:true,force:true});}
 });
 
 for(const[index,attempt]of fixture.attempts.entries()){

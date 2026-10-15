@@ -1,0 +1,141 @@
+{
+  "scope": "Exact public P21 authored chapter-1 drawing projection. Old 82/86 media reviews remain unchanged; this is a browser geometry regression, not a new model/media acceptance.",
+  "provenance": {
+    "revision": "9e72701dea90fef31498fde18868f7a01129ec75",
+    "drawingCacheSHA256": "d9c4b3f148a78dd5ff5989624b1194475fbfb929fa34f24207bcd171146e376e",
+    "actualHTMLSHA256": "e0059c006650a73e810365030c81eb38c2d389489f2493fc6e54186f81c3591d"
+  },
+  "duration": 8.9,
+  "format": "9:16",
+  "drawing": {
+    "title": "土白只是提醒",
+    "motion": "corporate",
+    "nodes": [
+      {
+        "id": "card_signal",
+        "kind": "card",
+        "x": 60,
+        "y": 240,
+        "w": 600,
+        "h": 220,
+        "text": "土表发白：只是提醒",
+        "tone": "paper",
+        "fontSize": 40,
+        "highlight": true
+      },
+      {
+        "id": "pot_soil",
+        "kind": "path",
+        "x": 180,
+        "y": 310,
+        "w": 300,
+        "h": 120,
+        "text": "",
+        "tone": "coral",
+        "fontSize": 36,
+        "pathData": "M205 350 L455 350 L430 420 L230 420 Z M190 335 L470 335",
+        "highlight": false
+      },
+      {
+        "id": "dry_patches",
+        "kind": "path",
+        "x": 215,
+        "y": 320,
+        "w": 230,
+        "h": 38,
+        "text": "",
+        "tone": "paper",
+        "fontSize": 36,
+        "pathData": "M230 335 C250 326 270 342 290 334 M315 335 C337 326 356 343 378 334 M402 335 C420 329 438 340 452 333",
+        "highlight": false
+      },
+      {
+        "id": "card_check",
+        "kind": "card",
+        "x": 60,
+        "y": 500,
+        "w": 600,
+        "h": 235,
+        "text": "先摸土：探入2–3厘米",
+        "tone": "paper",
+        "fontSize": 38,
+        "highlight": true
+      },
+      {
+        "id": "finger_test",
+        "kind": "path",
+        "x": 150,
+        "y": 555,
+        "w": 360,
+        "h": 150,
+        "text": "",
+        "tone": "blue",
+        "fontSize": 36,
+        "pathData": "M205 575 L205 650 Q205 670 225 670 L300 670 M165 690 L455 690 L430 620 L190 620 Z M180 605 L470 605 M275 615 C280 640 292 655 310 665",
+        "highlight": false
+      },
+      {
+        "id": "depth_dots",
+        "kind": "path",
+        "x": 198,
+        "y": 615,
+        "w": 120,
+        "h": 62,
+        "text": "",
+        "tone": "ink",
+        "fontSize": 36,
+        "pathData": "M205 615 L205 675 M205 635 L218 635 M205 655 L218 655 M205 675 L218 675",
+        "highlight": false
+      },
+      {
+        "id": "branch_line",
+        "kind": "line",
+        "x": 360,
+        "y": 735,
+        "w": 0,
+        "h": 55,
+        "text": "",
+        "tone": "ink",
+        "fontSize": 36,
+        "pathData": "M360 735 L360 790",
+        "highlight": false
+      },
+      {
+        "id": "card_dry",
+        "kind": "card",
+        "x": 60,
+        "y": 795,
+        "w": 285,
+        "h": 170,
+        "text": "里面干燥：再浇透",
+        "tone": "paper",
+        "fontSize": 34,
+        "highlight": true
+      },
+      {
+        "id": "card_wet",
+        "kind": "card",
+        "x": 375,
+        "y": 795,
+        "w": 285,
+        "h": 170,
+        "text": "里面还潮：先别浇",
+        "tone": "paper",
+        "fontSize": 34,
+        "highlight": true
+      },
+      {
+        "id": "card_risk",
+        "kind": "card",
+        "x": 60,
+        "y": 954,
+        "w": 600,
+        "h": 56,
+        "text": "托盘积水会提高泡根风险",
+        "tone": "coral",
+        "fontSize": 24,
+        "highlight": true
+      }
+    ]
+  }
+}

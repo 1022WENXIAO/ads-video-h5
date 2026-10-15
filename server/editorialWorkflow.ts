@@ -12,6 +12,7 @@ import { createToolTrace } from './toolTrace';
 import { throwIfJobCancelled } from './jobExecution';
 import { editFrameZoom, editSentenceBudgetHint } from './editProposal';
 import { extractVisualRetentionRequirements, parseVisualRetentionChecks, visualRetentionSelectionNeeded } from './visualRetentionReview';
+import { durationSourceRecovery, SourceAsrRecoveryError, sourceAsrRecoveryReasons, type SourceAsrRecoveryReason } from './sourceAsrRecovery';
 
 type SceneSelection = {sourceId: string; sentenceIds: string[]; reason: string; purpose: SelectedScene['purpose']};
 // Retakes may sit between useful sentences. Each retained run is a separate
@@ -66,6 +67,7 @@ interface WorkflowOptions {
   media?: MediaItem[];
   decorate?: (plan:EditPlan)=>EditPlan;
   transcribe: (id: string) => Promise<AudioAnalysis>;
+  recheckSource?: (id:string,reason:SourceAsrRecoveryReason)=>Promise<AudioAnalysis>;
   inspect: (scene: SelectedScene) => Promise<NonNullable<SelectedScene['visual']>>;
   verifySelection?: (scenes:SelectedScene[])=>Promise<void>;
   persist: (plan: EditPlan) => Promise<void>;
@@ -88,6 +90,18 @@ export async function runEditorialWorkflow(o: WorkflowOptions) {
   const verifiedScenes=new Set<string>(),visuals=new Map<string,NonNullable<SelectedScene['visual']>>(),rejectedSelections=new Map<string,string>();
   for(const scene of scenes){verifiedScenes.add(sceneKey(scene));if(scene.visual)visuals.set(sceneKey(scene),structuredClone(scene.visual));}
   const trace=createToolTrace(o.progress,[o.config.apiKey],events);
+  const recheckedSources=new Set<string>();let terminalSourceError:unknown;
+  async function recheckSource(source:MediaItem,reason:SourceAsrRecoveryReason){
+    const key=source.id+':'+reason.sourceHash;
+    if(!o.recheckSource||recheckedSources.has(key))throw new SourceAsrRecoveryError('该原声的有限复听已使用，保留原词与时间；不能反复提交或补写残句。');
+    recheckedSources.add(key);
+    try{
+      const analysis=await trace.run('recheck_source_audio','独立复听源素材',{sourceId:source.id,sourceHash:reason.sourceHash,reason},()=>o.recheckSource!(source.id,reason));
+      if(analysis.sourceHash!==reason.sourceHash||analysis.status!=='ready')throw new SourceAsrRecoveryError('复听结果不匹配原始源音频，不能采用。');
+      source.analysis=analysis;
+      for(const key of verifiedScenes)if(JSON.parse(key)[0]===source.id)verifiedScenes.delete(key);
+    }catch(error){terminalSourceError=error;throw error;}
+  }
   const invalidate=()=>{ plan=undefined;rendered=undefined;review=undefined; };
   const stableRenderValue=(value:unknown):unknown=>Array.isArray(value)?value.map(stableRenderValue):value&&typeof value==='object'?Object.fromEntries(Object.entries(value).sort(([a],[b])=>a.localeCompare(b)).map(([key,item])=>[key,stableRenderValue(item)])):value;
   // Narrative explanations and bookkeeping cannot alter the actual movie.
@@ -102,6 +116,16 @@ export async function runEditorialWorkflow(o: WorkflowOptions) {
       catch(e){feedback=e instanceof Error?e.message:'工具失败';failures++;
         if(name==='arrange_timeline'&&/绘制动效/.test(feedback))decision='write_narrative';
         else if(name==='arrange_timeline'&&!preserve&&/剪辑方案时长[\d.]+秒不符合用户要求|口播精剪只能选择已分析的完整句子|口播精剪剪点应位于完整句子外缘|口播精剪片段包含未选中的半句|剪辑方案句子ID无效/.test(feedback)){
+          if(o.recheckSource&&/剪辑方案时长[\d.]+秒不符合用户要求/.test(feedback)){
+            const shortage=durationSourceRecovery(o.sources,o.prompt);
+            if(shortage?.candidates.length){
+              for(const candidate of shortage.candidates.filter(candidate=>!recheckedSources.has(candidate.sourceId+':'+candidate.reason.sourceHash))){const source=o.sources.find(source=>source.id===candidate.sourceId)!;await recheckSource(source,candidate.reason);}
+              const remaining=durationSourceRecovery(o.sources,o.prompt);
+              if(remaining){terminalSourceError=new SourceAsrRecoveryError(`同一原声有限复听后，所有可选完整句及允许的原声间隙上限仅${remaining.capacity}秒，低于目标允许下限${remaining.minimum}秒；保留原素材与两版识别，不能填词、重复片段或降低时长要求。`);throw terminalSourceError;}
+              scenes=[];script=undefined;decision='select_scenes';invalidate();
+              feedback+=' 已独立复听同一原声并保存新的真实句界；旧选句失效，请从新目录重选完整原话，不得用叙事理由声称增加不存在的片段。';throw e;
+            }
+          }
           const hint=arrangeCandidate?editSentenceBudgetHint(arrangeCandidate,o.prompt,o.sources,candidate=>applyTimelineRequest(validatePlan(candidate,o.sources),o.prompt+' 同步字幕',o.sources),scenes):'';
           feedback+=' 保留已完成的素材转写、完整性核验及同一原句的画面分析；重新选择完整原句组，不能截断原话或修改目标时长。'+(hint?'\n'+hint:'');
           rejectedSelections.set(selectionKey(scenes),feedback);decision='select_scenes';invalidate();
@@ -112,6 +136,7 @@ export async function runEditorialWorkflow(o: WorkflowOptions) {
   }
   add('transcribe_sources','转写素材','转写所有指定素材并保存完整原话与字词时间码；返回素材目录，使用read_transcript检索原句。',Type.Object({}),async()=>{
     for(const m of o.sources) m.analysis=await o.transcribe(m.id);
+    if(o.recheckSource&&!preserve)for(const source of o.sources){const reason=sourceAsrRecoveryReasons(source.analysis!).find(reason=>reason.kind==='negation-boundary');if(reason)await recheckSource(source,reason);}
     analyzed=true;return o.sources.map((m)=>({sourceId:m.id,name:m.name,duration:m.duration,timing:m.analysis!.timing,sentences:m.analysis!.sentences.length,opening:m.analysis!.transcript.slice(0,700),ending:m.analysis!.transcript.slice(-400)}));
   });
   let reads=0;
@@ -182,6 +207,7 @@ export async function runEditorialWorkflow(o: WorkflowOptions) {
   const automatic=new Set(['transcribe_sources','inspect_scenes','arrange_timeline','render_edit','review_edit']);
   const context=()=>({feedback,userRequest:o.prompt,sourceCatalog:o.sources.map(m=>({sourceId:m.id,name:m.name,duration:m.duration,sentences:m.analysis?.sentences.slice(0,30).map(s=>({id:s.id,start:s.start,end:s.end,text:s.text,complete:s.complete}))})),scenes,script,review,priorParameters:{format:o.previous?.format,zoom:o.previous?.clips[0]?.zoom,fade:o.previous?.clips.find(c=>c.transition?.kind==='fade')?.transition?.duration}});
   async function advance(){
+    if(terminalSourceError)throw terminalSourceError;
     const results:unknown[]=[];let retries=0;
     for(let step=0;!complete()&&automatic.has(nextTool())&&!(nextTool()==='arrange_timeline'&&manualArrange);step++){
       throwIfJobCancelled();if(step>=16)throw new Error('精剪自动步骤未推进。');
@@ -194,7 +220,7 @@ export async function runEditorialWorkflow(o: WorkflowOptions) {
   }
   let driverFailure='';
   try{await driveWorkflow(agent,{config:o.config,prompt:o.prompt,label:'精剪工作流',done:complete,advance,context,stage:()=>({key:nextTool(),tools:nextTool()==='select_scenes'&&reads<6?['read_transcript','select_scenes']:[nextTool()]}),recovery:run=>trace.run('recover_tool_call','调整决策提交方式',{stage:nextTool()},run)});}
-  catch(error){throwIfJobCancelled();driverFailure=error instanceof Error?error.message:String(error);if(!best)throw error;}
+  catch(error){throwIfJobCancelled();if(terminalSourceError)throw terminalSourceError;driverFailure=error instanceof Error?error.message:String(error);if(!best)throw error;}
   if(o.export&&best&&(!plan||!rendered||!review)) {
     const last=[...agent.state.messages].reverse().find((m)=>m.role==='assistant');
     const detail=last&&'stopReason' in last?`stop=${last.stopReason}; ${last.errorMessage||last.content.filter((c)=>c.type==='text').map((c)=>c.type==='text'?c.text:'').join('').slice(0,160)}`:`stage=${nextTool()}`;

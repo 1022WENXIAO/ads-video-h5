@@ -50,6 +50,18 @@ test('real HyperFrames gate rejects the captured overlap and accepts only the un
     const fixed = separateCardLabels(fixture.drawing, htmlLayoutIssues(actual), '9:16'); assert.ok(fixed);
     assert.equal(drawingContentHash(fixed), drawingContentHash(fixture.drawing));
     await writeFile(path.join(project, 'index.html'), drawingHtml(fixed, 15.88, '9:16'));
+    await assert.rejects(checkHtmlProject(project, { fullCheck: true }), /Actual SVG fill\/stroke/);
+    const svgRejected = JSON.parse(await readFile(path.join(project, 'check-report.json'), 'utf8'));
+    assert.ok(svgRejected.svgPaint.findings.some((f:any)=>f.selector==='#qj-author-wave_card'&&f.containerSelector==='#qj-author-wave_chart'));
+    // The original value/card repair is intact. Independently give the chart
+    // title a clear strip above its painted curve; translate only the divider.
+    const separated=structuredClone(fixed),wave=separated.nodes.find(n=>n.id==='wave_card')!;
+    separated.nodes.push({...wave,id:'wave_clear_label',kind:'text',x:75,y:686,w:570,h:45,highlight:false});wave.text='';
+    const divider=separated.nodes.find(n=>n.id==='divider')!;divider.y=740;divider.pathData='M60 740 L660 740';
+    assert.equal(drawingContentHash(separated),drawingContentHash(fixture.drawing));
+    assert.deepEqual(separated.nodes.filter(n=>n.kind==='path'),fixed.nodes.filter(n=>n.kind==='path'));
+    assert.deepEqual(separated.nodes.filter(n=>n.text).map(n=>[n.text,n.fontSize]).sort(),fixed.nodes.filter(n=>n.text).map(n=>[n.text,n.fontSize]).sort());
+    await writeFile(path.join(project, 'index.html'), drawingHtml(separated, 15.88, '9:16'));
     await checkHtmlProject(project, { fullCheck: true });
     const checked = JSON.parse(await readFile(path.join(project, 'check-report.json'), 'utf8')); assert.equal(checked.ok, true);
   } finally { await rm(project, { recursive: true, force: true }); }
