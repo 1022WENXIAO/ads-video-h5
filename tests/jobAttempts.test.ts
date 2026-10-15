@@ -119,6 +119,20 @@ test('wrapped authorization errors are distinguished from retryable network fail
   assert.doesNotMatch(message, /secret-value|自动恢复|限流/);
 });
 
+test('bounded audio connection failures retain the actual failed chapter and distinguish authorization', () => {
+  const native = Object.assign(new Error('Connect Timeout Error (attempted address: 116.253.28.221:443, timeout: 10000ms)'), { name: 'ConnectTimeoutError', code: 'UND_ERR_CONNECT_TIMEOUT' });
+  const cause = Object.assign(new Error('配音服务连接超时', { cause: new TypeError('fetch failed', { cause: native }) }), { code: 'AUDIO_CONNECT_TIMEOUT', retryable: false, retryExhausted: true });
+  recordExecutionOrigin(cause, { tool: 'synthesize_chapter', stage: '合成旁白 · 第一章', callId: 'connect-failed-chapter' });
+  const wrapper = new Error('新闻制作工作流未完成；阶段narration', { cause });
+  const failure = executionFailure(wrapper), message = jobFailureMessage(wrapper, '重录长停顿 · 第三章');
+  assert.equal(failure.origin?.callId, 'connect-failed-chapter');
+  assert.equal(failure.causes?.[0].causes?.[0].causes?.[0].code, 'UND_ERR_CONNECT_TIMEOUT');
+  assert.match(message, /配音服务连接超时.*有限自动恢复.*合成旁白 · 第一章/);
+  assert.doesNotMatch(message, /第三章|116\.253|素材格式|已生成/);
+  Object.assign(native, { status: 403 });
+  assert.match(jobFailureMessage(wrapper, '配音'), /授权验证失败/);
+});
+
 test('audio queue expiry says that this request was not submitted instead of inventing transport recovery', () => {
   const error = Object.assign(new Error('配音请求排队超过300秒，尚未提交。'), { code: 'AUDIO_QUEUE_TIMEOUT', retryable: false });
   const message = jobFailureMessage(new Error('工作流未完成', { cause: error }), '合成旁白 · 第一章');

@@ -1,0 +1,428 @@
+{
+  "scope": "Public minimal projection of actual P18 accepted script used for this take and later rejected chapter-01 ASR wordgrid. Source text is a literal selected page title. It is not an accepted sound, factual pass or new video run. ASR includes extra 至 and a missing clock unit and must remain rejected.",
+  "chapter": {
+    "id": "chapter-01",
+    "title": "热榜里的本地Agent",
+    "role": "hook",
+    "goal": "让观众知道今天AI圈关注点：一个主打端侧运行的Agent模型登上社区热榜。",
+    "prerequisites": [],
+    "narration": "今天AI圈关注本地Agent。Hacker News在十四点五十七分观察中，把LFM2.5-24B-A2B列热榜第四位，显示一百六十七分。这是社区关注信号，不等于模型刚发布。",
+    "reason": "修正榜单事实的证据表述：旁白和画面保留Hacker News信号快照中的观察时点、名次和积分；referenceIds不再用作榜单事实来源，避免把MindStudio误标为排名依据。",
+    "referenceIds": [
+      "ref-1"
+    ],
+    "claims": [
+      {
+        "text": "榜单事实属于已验证热点研究中的Hacker News信号hn-50097369：北京时间2026年10月15日14:57:48观察时，LFM2.5-24B-A2B相关帖子列第4位、167分；不能把该榜单信号标为ref-1支持，也不能倒推模型发布时间。",
+        "referenceIds": [
+          "ref-1"
+        ],
+        "basis": "source"
+      }
+    ],
+    "visual": {
+      "kind": "concept",
+      "takeaway": "热榜信号代表关注，不代表发布时间",
+      "items": [
+        {
+          "label": "HN热榜第4位",
+          "detail": "LFM2.5-24B-A2B帖子显示167分",
+          "cue": "热榜第四位",
+          "illustration": "announcement"
+        },
+        {
+          "label": "观察时间",
+          "detail": "北京时间10月15日14:57:48",
+          "cue": "十四点五十七分",
+          "illustration": "signal"
+        },
+        {
+          "label": "关注点",
+          "detail": "快速端侧智能体，本地运行",
+          "cue": "本地Agent",
+          "illustration": "controller"
+        }
+      ]
+    }
+  },
+  "raw": {
+    "status": "ready",
+    "sourceHash": "ddc864107b96e25bca284ad125901545a849e2e0d12047007a3e6823a0f408ed",
+    "duration": 15.24,
+    "transcript": "今天AI圈关注本地AgentHackerNews\n在十四点五十七观察中把LFM2.5至二十四ba二b列热榜第四位显示一百六十七分\n这是社区关注信号不等于模型刚发布",
+    "sentences": [
+      {
+        "id": "e7f401a2-e088-4d1b-b7c3-d8147f226eb9:sentence:0",
+        "start": 0.06,
+        "end": 3.63,
+        "words": [
+          {
+            "start": 0.06,
+            "end": 0.3,
+            "text": "今"
+          },
+          {
+            "start": 0.3,
+            "end": 0.51,
+            "text": "天"
+          },
+          {
+            "start": 0.54,
+            "end": 0.84,
+            "text": "AI"
+          },
+          {
+            "start": 0.84,
+            "end": 1.11,
+            "text": "圈"
+          },
+          {
+            "start": 1.11,
+            "end": 1.29,
+            "text": "关"
+          },
+          {
+            "start": 1.29,
+            "end": 1.47,
+            "text": "注"
+          },
+          {
+            "start": 1.47,
+            "end": 1.68,
+            "text": "本"
+          },
+          {
+            "start": 1.68,
+            "end": 1.85,
+            "text": "地"
+          },
+          {
+            "start": 1.85,
+            "end": 2.38,
+            "text": "Agent"
+          },
+          {
+            "start": 2.82,
+            "end": 3.21,
+            "text": "Hacker"
+          },
+          {
+            "start": 3.21,
+            "end": 3.63,
+            "text": "News"
+          }
+        ],
+        "text": "今天AI圈关注本地AgentHackerNews",
+        "complete": true
+      },
+      {
+        "id": "e7f401a2-e088-4d1b-b7c3-d8147f226eb9:sentence:1",
+        "start": 3.63,
+        "end": 11.45,
+        "words": [
+          {
+            "start": 3.63,
+            "end": 3.81,
+            "text": "在"
+          },
+          {
+            "start": 3.81,
+            "end": 4,
+            "text": "十"
+          },
+          {
+            "start": 4,
+            "end": 4.14,
+            "text": "四"
+          },
+          {
+            "start": 4.14,
+            "end": 4.38,
+            "text": "点"
+          },
+          {
+            "start": 4.38,
+            "end": 4.53,
+            "text": "五"
+          },
+          {
+            "start": 4.53,
+            "end": 4.64,
+            "text": "十"
+          },
+          {
+            "start": 4.64,
+            "end": 4.89,
+            "text": "七"
+          },
+          {
+            "start": 4.89,
+            "end": 5.13,
+            "text": "观"
+          },
+          {
+            "start": 5.13,
+            "end": 5.28,
+            "text": "察"
+          },
+          {
+            "start": 5.28,
+            "end": 5.56,
+            "text": "中"
+          },
+          {
+            "start": 5.85,
+            "end": 6.09,
+            "text": "把"
+          },
+          {
+            "start": 6.09,
+            "end": 6.63,
+            "text": "LFM"
+          },
+          {
+            "start": 6.63,
+            "end": 6.87,
+            "text": "2.5"
+          },
+          {
+            "start": 6.87,
+            "end": 7.1,
+            "text": "至"
+          },
+          {
+            "start": 7.1,
+            "end": 7.32,
+            "text": "二"
+          },
+          {
+            "start": 7.32,
+            "end": 7.53,
+            "text": "十"
+          },
+          {
+            "start": 7.53,
+            "end": 7.68,
+            "text": "四"
+          },
+          {
+            "start": 7.68,
+            "end": 7.83,
+            "text": "b"
+          },
+          {
+            "start": 7.83,
+            "end": 8.01,
+            "text": "a"
+          },
+          {
+            "start": 8.01,
+            "end": 8.28,
+            "text": "二"
+          },
+          {
+            "start": 8.28,
+            "end": 8.4,
+            "text": "b"
+          },
+          {
+            "start": 8.4,
+            "end": 8.62,
+            "text": "列"
+          },
+          {
+            "start": 8.62,
+            "end": 8.79,
+            "text": "热"
+          },
+          {
+            "start": 8.79,
+            "end": 9.03,
+            "text": "榜"
+          },
+          {
+            "start": 9.03,
+            "end": 9.27,
+            "text": "第"
+          },
+          {
+            "start": 9.27,
+            "end": 9.42,
+            "text": "四"
+          },
+          {
+            "start": 9.42,
+            "end": 9.65,
+            "text": "位"
+          },
+          {
+            "start": 9.81,
+            "end": 10.05,
+            "text": "显"
+          },
+          {
+            "start": 10.05,
+            "end": 10.32,
+            "text": "示"
+          },
+          {
+            "start": 10.32,
+            "end": 10.43,
+            "text": "一"
+          },
+          {
+            "start": 10.43,
+            "end": 10.68,
+            "text": "百"
+          },
+          {
+            "start": 10.68,
+            "end": 10.83,
+            "text": "六"
+          },
+          {
+            "start": 10.83,
+            "end": 11.02,
+            "text": "十"
+          },
+          {
+            "start": 11.02,
+            "end": 11.34,
+            "text": "七"
+          },
+          {
+            "start": 11.34,
+            "end": 11.45,
+            "text": "分"
+          }
+        ],
+        "text": "在十四点五十七观察中把LFM2.5至二十四ba二b列热榜第四位显示一百六十七分",
+        "complete": true
+      },
+      {
+        "id": "e7f401a2-e088-4d1b-b7c3-d8147f226eb9:sentence:2",
+        "start": 11.94,
+        "end": 15.24,
+        "words": [
+          {
+            "start": 11.94,
+            "end": 12.21,
+            "text": "这"
+          },
+          {
+            "start": 12.21,
+            "end": 12.33,
+            "text": "是"
+          },
+          {
+            "start": 12.33,
+            "end": 12.51,
+            "text": "社"
+          },
+          {
+            "start": 12.51,
+            "end": 12.72,
+            "text": "区"
+          },
+          {
+            "start": 12.72,
+            "end": 12.87,
+            "text": "关"
+          },
+          {
+            "start": 12.87,
+            "end": 13.08,
+            "text": "注"
+          },
+          {
+            "start": 13.08,
+            "end": 13.26,
+            "text": "信"
+          },
+          {
+            "start": 13.26,
+            "end": 13.55,
+            "text": "号"
+          },
+          {
+            "start": 13.71,
+            "end": 13.86,
+            "text": "不"
+          },
+          {
+            "start": 13.86,
+            "end": 14.02,
+            "text": "等"
+          },
+          {
+            "start": 14.02,
+            "end": 14.22,
+            "text": "于"
+          },
+          {
+            "start": 14.22,
+            "end": 14.43,
+            "text": "模"
+          },
+          {
+            "start": 14.43,
+            "end": 14.61,
+            "text": "型"
+          },
+          {
+            "start": 14.61,
+            "end": 14.85,
+            "text": "刚"
+          },
+          {
+            "start": 14.85,
+            "end": 15.03,
+            "text": "发"
+          },
+          {
+            "start": 15.03,
+            "end": 15.24,
+            "text": "布"
+          }
+        ],
+        "text": "这是社区关注信号不等于模型刚发布",
+        "complete": true
+      }
+    ],
+    "pauses": [
+      {
+        "start": 2.195,
+        "end": 2.923
+      },
+      {
+        "start": 5.465,
+        "end": 5.906
+      },
+      {
+        "start": 9.726,
+        "end": 10.035
+      },
+      {
+        "start": 11.427,
+        "end": 12.085
+      },
+      {
+        "start": 13.441,
+        "end": 13.762
+      }
+    ],
+    "warnings": [
+      "字词时间码由模型估计，已校验格式、顺序和范围，尚未经独立强制对齐。",
+      "停顿是低音量检测结果，不等于已确认无人说话。"
+    ],
+    "timing": "model-estimated",
+    "modelId": "captured-asr",
+    "createdAt": ""
+  },
+  "reference": {
+    "id": "ref-1",
+    "title": "How to Run LFM2.5-24B-A2B Locally for On-Device Agents | MindStudio",
+    "verification": "news-page",
+    "publishedAt": "2026-10-14T00:00:00.000Z"
+  }
+}

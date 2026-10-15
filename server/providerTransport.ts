@@ -27,7 +27,7 @@ export interface TransportDiagnostic {
   failure: ExecutionFailure;
   status?: number;
   requestId?: string;
-  recoveryKind?: 'audio-rate-limit';
+  recoveryKind?: 'audio-rate-limit' | 'audio-connect-timeout' | 'audio-mixed';
   retryDelaysMs?: number[];
   queueWaitMs?: number;
 }

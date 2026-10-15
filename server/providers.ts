@@ -1,7 +1,7 @@
 import { jobFetch, throwIfJobCancelled } from './jobExecution';
 import { randomUUID } from 'node:crypto';
 import type { ModelConfig } from './modelRegistry';
-import { markAudioRateLimitRefusal, recoverAudioRequest, type AudioRecovery } from './audioRateLimit';
+import { markAudioConnectTimeout, markAudioRateLimitRefusal, recoverAudioRequest, type AudioRecovery } from './audioRateLimit';
 
 const IMAGE_URL = 'https://ark.cn-beijing.volces.com/api/v3/images/generations';
 const AUDIO_URL = 'https://openspeech.bytedance.com/api/v3/tts/create';
@@ -18,8 +18,9 @@ export class ProviderError extends Error {
     public readonly code: string,
     public readonly status?: number,
     public readonly retryable = false,
+    options?: ErrorOptions,
   ) {
-    super(message);
+    super(message, options);
     this.name = 'ProviderError';
   }
 }
@@ -104,9 +105,14 @@ async function postJson(url: string, key: string, body: object, kind: 'image' | 
   } catch (error) {
     throwIfJobCancelled();
     if (error instanceof Error && (error.name === 'TimeoutError' || error.name === 'AbortError')) {
-      throw new ProviderError('模型请求超时，请稍后重试。', 'TIMEOUT', undefined, true);
+      throw new ProviderError('模型请求超时，请稍后重试。', 'TIMEOUT', undefined, true, {cause:error});
     }
-    throw new ProviderError('无法连接模型服务，请稍后重试。', 'NETWORK_ERROR', undefined, true);
+    const failure=new ProviderError('无法连接模型服务，请稍后重试。', 'NETWORK_ERROR', undefined, true, {cause:error});
+    // This catch covers only fetching response headers. A native TLS connect
+    // timeout proves no HTTP request was sent; body/read failures below must
+    // never acquire this authorization to replay a paid submission.
+    if(kind==='audio')markAudioConnectTimeout(failure,error);
+    throw failure;
   }
   const raw = await readLimited(response, JSON_LIMIT);
   let result: Record<string, unknown> | null = null;

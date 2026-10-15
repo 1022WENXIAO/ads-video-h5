@@ -71,6 +71,7 @@ export function jobFailureMessage(error: unknown, stage: string | undefined, sec
   if (boundary) return boundary.message;
   if (failures.some(value => value.code === 'AUDIO_QUEUE_TIMEOUT')) return `配音服务排队超时，该次配音请求尚未提交。任务停在「${where}」，稍后可以重试；已完成的步骤会保留。`;
   if (failures.some(value => value.status === 401 || value.status === 403 || /(?:\bHTTP\s*|\bstatus(?:\s+code)?\s*[:=]?\s*)(?:401|403)\b/i.test(value.message))) return `服务授权验证失败，任务停在「${where}」。请联系管理员检查服务配置。`;
+  if (failures.some(value => value.code === 'AUDIO_CONNECT_TIMEOUT')) return `配音服务连接超时，有限自动恢复后仍未成功。任务停在「${where}」，稍后可以重试；已完成的步骤会保留。`;
   if (failures.some(value => value.status === 429 || /\bHTTP\s*429\b/i.test(value.message))) return `服务请求受到限流（HTTP 429）${failure.retryExhausted ? '，自动恢复后仍未成功' : ''}。任务停在「${where}」，稍后可以重试；已完成的步骤会保留。`;
   if (isTransientExecutionError(error) || failure.retryExhausted) return `服务连接暂时中断${failure.retryExhausted ? '，自动恢复后仍未成功' : ''}。任务停在「${where}」，可以重试；已生成的作品会保留。`;
   const message = failure.message.replace(/TEXT_TRANSPORT_FINAL/g, '').trim();

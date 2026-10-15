@@ -5,7 +5,7 @@ import { assertVisibleContent } from './visibleContent';
 import { assertNarrationHanCoverage } from './lessonSpeechCoverage';
 import { correctNarrationHomophones } from './narrationHomophones';
 import { correctCommonNarrationSpelling } from './lessonCommonSpelling';
-import {lessonModelVersions} from './lessonModelVersions';
+import {lessonModelVersions,lessonModelVersionSpans} from './lessonModelVersions';
 import {correctSourceModelSpelling} from './lessonModelSpelling';
 import {scopedLessonRepairTargets} from './lessonRepairScope';
 
@@ -232,6 +232,10 @@ export function assertClearModelDates(text:string):void {
 function spokenModelVersions(text:string):string[] {
   return lessonModelVersions(text,value=>/[.点]/.test(value)?speechDecimalText(value):String(speechNumberValue(value)));
 }
+function spokenModelSuffixVersions(text:string):string[]{
+  const spans=lessonModelVersionSpans(text);
+  return spokenModelVersions(text).filter((_,index)=>spans[index].suffix!==undefined);
+}
 function speechDecimalText(text:string):string{
   const digits:Record<string,string>={'零':'0','〇':'0','一':'1','二':'2','三':'3','四':'4','五':'5','六':'6','七':'7','八':'8','九':'9'};
   const [integer,fraction]=text.split(/[.点]/);
@@ -400,6 +404,37 @@ function heardNumberText(analysis:AudioAnalysis):string{
   const boundaries=heardNumberBoundaries(analysis);
   return analysis.sentences.flatMap(s=>s.words).map((w,i)=>(boundaries.has(i)?'，':'')+w.text).join('');
 }
+/** Keep a literal model version apart from its numeric suffix in the private
+ * alignment copy. The actual transcript supplies the boundary; every heard
+ * character must also occur in the word stream, in the same order/count.
+ * No expected identifier, numeral or timestamp is inserted into the ASR. */
+function modelNumberAlignment(analysis:AudioAnalysis):AudioAnalysis{
+  const identifiers=lessonModelVersionSpans(analysis.transcript).filter(value=>value.suffixStart!==undefined);
+  if(!identifiers.length)return analysis;
+  const lower=(text:string)=>text.replace(/[A-Z]/g,char=>char.toLowerCase());
+  const strip=(text:string)=>lower(text.replace(/[\s-]/g,''));
+  const words=analysis.sentences.flatMap(sentence=>sentence.words);
+  const owners=words.flatMap((word,owner)=>[...word.text].map((char,index)=>({char,owner,index}))).filter(row=>!/[\s-]/.test(row.char));
+  const joined=owners.map(row=>lower(row.char)).join(''),insertions=new Map<number,Set<number>>();
+  const groups=new Map<string,typeof identifiers>();
+  for(const value of identifiers){const key=strip(analysis.transcript.slice(value.start,value.identifierEnd));groups.set(key,[...(groups.get(key)||[]),value]);}
+  for(const [key,values] of groups){
+    const matches:number[]=[];let from=0;
+    while(from<joined.length){const at=joined.indexOf(key,from);if(at<0)break;from=at+key.length;
+      if(!/[A-Za-z0-9]/.test(joined[at-1]||'')&&!/[A-Za-z0-9]/.test(joined[at+key.length]||''))matches.push(at);
+    }
+    if(matches.length!==values.length)return analysis;
+    for(let i=0;i<matches.length;i++){
+      const value=values[i],length=[...strip(analysis.transcript.slice(value.start,value.end))].length;
+      // joined.indexOf is UTF-16, while the owner grid uses code points.
+      const at=[...joined.slice(0,matches[i])].length+length,row=owners[at];
+      if(!row)return analysis;const indices=insertions.get(row.owner)||new Set<number>();indices.add(row.index);insertions.set(row.owner,indices);
+    }
+  }
+  const separate=(text:string)=>{for(const value of [...lessonModelVersionSpans(text)].reverse())if(value.suffixStart!==undefined)text=text.slice(0,value.end)+'-'+text.slice(value.end);return text;};
+  let owner=0;
+  return {...analysis,transcript:separate(analysis.transcript),sentences:analysis.sentences.map(sentence=>({...sentence,text:separate(sentence.text),words:sentence.words.map(word=>{const indices=insertions.get(owner++);return indices?{...word,text:[...word.text].map((char,index)=>(indices.has(index)?'-':'')+char).join('')}:word;})}))};
+}
 function lessonSpeechCharacters(analysis:AudioAnalysis){
   const words=analysis.sentences.flatMap(s=>s.words),boundaries=heardNumberBoundaries(analysis);
   const raw=words.flatMap((w,owner)=>{
@@ -450,6 +485,7 @@ export function lessonCaptionAnalysis(chapter:LessonChapter,analysis:AudioAnalys
 }
 export function alignLessonSpeech(chapter:LessonChapter,analysis:AudioAnalysis):{similarity:number;cues:NonNullable<LessonChapter['cues']>}{
   if(analysis.status!=='ready'||!analysis.sentences.length)throw new Error('实际教学旁白没有可辨识的音频转写。');
+  analysis=modelNumberAlignment(analysis);
   const originalCues=chapter.visual.items.map(item=>item.cue),sourceWordText=analysis.sentences.flatMap(s=>s.words).map(w=>w.text).join('');
   const expectedClocks=speechClocks(chapter.narration),wordClocks=speechClocks(sourceWordText),transcriptClocks=speechClocks(analysis.transcript);
   const literalClockCues=originalCues.map(cue=>{const at=chapter.narration.indexOf(cue),index=expectedClocks.findIndex(c=>at>=c.start&&at+cue.length<=c.end),heardClock=wordClocks[index];if(!heardClock)return;const start=sourceWordText.indexOf(cue,heardClock.start);if(start<0||start+cue.length>heardClock.end)return;return clockCueSpan(analysis,sourceWordText,start,start+cue.length);});
@@ -484,7 +520,10 @@ export function alignLessonSpeech(chapter:LessonChapter,analysis:AudioAnalysis):
   if(similarity<.86)throw new Error(`章节${chapter.id}实际旁白与脚本匹配${(similarity*100).toFixed(1)}%，低于86%；需要重新合成，不能用期望台词冒充实际音频。`);
   if(JSON.stringify(spokenYears(chapter.narration))!==JSON.stringify(spokenYears(analysis.transcript)))throw new Error(`章节${chapter.id}实际读出的年份与脚本不同，不能发布。`);
   const decimals=spokenDecimals(chapter.narration),heardDecimals=spokenDecimals(heardNumberText(numericAnalysis));
-  if(JSON.stringify(spokenModelVersions(chapter.narration))!==JSON.stringify(spokenModelVersions(heardNumberText(numericAnalysis))))throw new Error(`章节${chapter.id}实际型号或版本数字与脚本不同，需要独立复听或重录。`);
+  // Ordinary adjacent dates retain the existing real pause/complete-clause
+  // boundaries. Only the newly recognized full numeric suffix identifiers
+  // additionally require a matching literal transcript occurrence.
+  if(JSON.stringify(spokenModelVersions(chapter.narration))!==JSON.stringify(spokenModelVersions(heardNumberText(numericAnalysis)))||JSON.stringify(spokenModelSuffixVersions(chapter.narration))!==JSON.stringify(spokenModelSuffixVersions(analysis.transcript)))throw new Error(`章节${chapter.id}实际型号或版本数字与脚本不同，需要独立复听或重录。`);
   if(JSON.stringify(decimals)!==JSON.stringify(heardDecimals))throw new Error(`章节${chapter.id}实际读出的小数数字${heardDecimals.join('、')}与脚本${decimals.join('、')}不同，需要重录。`);
   if(JSON.stringify(spokenDates(chapter.narration))!==JSON.stringify(spokenDates(heardNumberText(numericAnalysis))))throw new Error(`章节${chapter.id}日期数字或年月日单位与脚本不同，需要独立复听或重录。`);
   if(JSON.stringify(namedSpeechNumbers(chapter.narration))!==JSON.stringify(namedSpeechNumbers(analysis.transcript)))throw new Error(`章节${chapter.id}实际读出的残差、误差、伽马或阈值数字与脚本不同，需要核验或重录。`);

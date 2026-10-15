@@ -335,7 +335,7 @@ export interface JobAttempt {
   restoredCallIds?: string[];
   restoredCallCount?: number;
   workflow?: WorkflowEvent[];
-  transport?: Array<{ at: string; origin: string; path: string; attempts: number; durationMs: number; outcome: 'recovered' | 'failed'; failure: JobFailure; status?: number; requestId?: string; recoveryKind?: 'audio-rate-limit'; retryDelaysMs?: number[]; queueWaitMs?: number }>;
+  transport?: Array<{ at: string; origin: string; path: string; attempts: number; durationMs: number; outcome: 'recovered' | 'failed'; failure: JobFailure; status?: number; requestId?: string; recoveryKind?: 'audio-rate-limit' | 'audio-connect-timeout' | 'audio-mixed'; retryDelaysMs?: number[]; queueWaitMs?: number }>;
 }
 
 export interface Job {
