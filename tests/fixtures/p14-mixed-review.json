@@ -1,0 +1,36 @@
+{
+  "provenance": {
+    "revision": "dc3eb243de09066ce3712342f030672852d8e1fd",
+    "requestedAt": "2026-10-15T02:52:15.115Z",
+    "artifactId": "a4f5fc52-ccaa-4e85-abbc-60d59a719bfa",
+    "artifactSha256": "769c1e3c847b9429c34463ff9d20e88e9fe604d34427b04dea7ad29c815c07ec",
+    "scope": "Minimal public projection of original failed P14 review; claims/references restricted to the original repair-progress claim. No media, private configuration or acceptance claim. Original score82 is preserved."
+  },
+  "report": {
+    "chapters": [
+      {"id":"chapter-1","narration":"今天早上八点后，不少用户打开DeepSeek，网页和App都提示“服务器暂时不可用”。截至本次核验，百度热搜快照显示，相关话题排在第二位。"},
+      {"id":"chapter-2","narration":"媒体转述官方状态：故障八点十一分开始，波及对话服务和V4.1 Flash接口，另有报道提到V4 Pro。官方已定位原因并修复，但根因和影响范围未披露。","referenceIds":["ref-7","ref-8"],"claims":[{"text":"官方处置从“正在排查问题、定位原因”更新为“已定位原因，正在实施修复”；具体原因、影响范围和持续时间尚未披露。","referenceIds":["ref-7","ref-8"],"basis":"source"}]},
+      {"id":"chapter-3","narration":"影响不只在对话框：调用接口的第三方应用，也可能请求失败。有用户改稿、写代码和论文被打断。十月已多次异常，先保存成果，等待官方恢复通报。"}
+    ],
+    "references": [
+      {"id":"ref-7","url":"https://news.qq.com/rain/a/20261015A051JZ00","excerpt":"官方最初表示正在排查问题，随后将处理进度更新为“已定位原因，正在实施修复”。"},
+      {"id":"ref-8","url":"https://news.china.com/socialgd/10000169/20261015/49795511.html","excerpt":"目前官方已定位原因并正在实施修复。"}
+    ],
+    "factReview": {"score":92,"needsRepair":false,"findings":[]}
+  },
+  "review": {
+    "status": "needs-review",
+    "score": 82,
+    "checks": [{"name":"成片语义审查","passed":false,"detail":"Original two actual semantic findings below."}],
+    "semantic": {
+      "score":82,
+      "findings":[
+        "chapter-1：手机设备图标两侧的“手”、“pp”文字仅露出部分字符，无法辨认完整内容，该元素显示存在截断遮挡。",
+        "chapter-2：旁白表述为“官方已定位原因并修复”，但对应来源及画面图解均标注为“正在实施修复”，表述不一致，未与权威来源进度保持对齐，存在信息误导风险。"
+      ],
+      "suggestions":[]
+    },
+    "limitations":["Original failed P14 review projection; no new provider call."],
+    "createdAt":"2026-10-15T03:02:21.368Z"
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "scope": "Captured public title-main node from the failed dc3eb243 local redraw; two valid controlled sibling nodes only complete the validator's minimum shape. This is not the full original proposal, audio or video acceptance.",
+  "format": "9:16",
+  "drawing": {
+    "title": "早高峰报错",
+    "motion": "corporate",
+    "nodes": [
+      {"id":"title-main","kind":"text","x":48,"y":72,"w":360,"h":78,"text":"早高峰报错","tone":"ink","fontSize":41,"highlight":true},
+      {"id":"controlled-source","kind":"text","x":80,"y":400,"w":560,"h":80,"text":"核对来源","tone":"ink","fontSize":36,"highlight":false},
+      {"id":"controlled-limit","kind":"text","x":80,"y":600,"w":560,"h":80,"text":"保留边界","tone":"ink","fontSize":36,"highlight":false}
+    ]
+  }
+}

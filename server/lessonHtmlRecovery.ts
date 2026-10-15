@@ -6,6 +6,7 @@ import type { Format } from '../src/types';
 import { hashBytes, validateDrawing, type HtmlDrawing } from './narrativeScenes';
 import { currentJobSignal, throwIfJobCancelled } from './jobExecution';
 import { liftCardLabels, reflowCardDetails } from './drawingCardLayout';
+import {AuthoredDrawingGeometryError} from './drawingGeometry';
 
 type LayoutIssue = { code: string; severity?: string; selector?: string; containerSelector?: string };
 type LayoutReport = { ok?: boolean; issues?: LayoutIssue[]; findings?: LayoutIssue[]; layout?: { findings?: LayoutIssue[] }; lint?: { findings?: LayoutIssue[] }; runtime?: { ok?: boolean; findings?: LayoutIssue[] }; motion?: { findings?: LayoutIssue[] }; contrast?: { findings?: LayoutIssue[] } };
@@ -46,8 +47,8 @@ export function separateCardLabels(drawing: HtmlDrawing, issues: LayoutIssue[], 
 }
 
 interface SceneResult { file: string; analysis: { sourceHash: string }; }
-interface AttemptEvidence { directory: string; manifestHash: string; geometry: boolean; }
-type NativeRecoveryReason = 'geometry' | 'static-sweep';
+interface AttemptEvidence { directory: string; manifestHash: string; geometry: boolean; kind?:'authored-proposal'; }
+type NativeRecoveryReason = 'geometry' | 'static-sweep' | 'authored-geometry';
 interface NativeState { status: 'running' | 'failed' | 'cancelled' | 'completed'; claimHash: string; terminalHash?: string; evidence?: AttemptEvidence; reason?: NativeRecoveryReason; }
 interface HtmlState<R> {
   version: 1; contextHash: string; attempts: number;
@@ -61,7 +62,8 @@ function parseHtmlState<R>(stored:string):HtmlState<R>{
   let saved:HtmlState<R>;
   try { saved=JSON.parse(stored); } catch (error) { throw new Error('HTML局部恢复状态JSON损坏，保留原文件并停止。', {cause:error}); }
   if (!saved || saved.version !== 1 || typeof saved.contextHash !== 'string' || !saved.contextHash || !Number.isInteger(saved.attempts) || saved.attempts < 0 || saved.attempts > 2 || !Array.isArray(saved.failed) || saved.failed.length > saved.attempts || saved.failed.some(failure => !failure || !/^[a-f0-9]{64}$/.test(failure.hash) || typeof failure.feedback !== 'string') || saved.blocked !== undefined && typeof saved.blocked !== 'boolean') throw new Error('HTML局部恢复状态版本或内容无效，保留原文件并停止。');
-  if(saved.native&&(!['running','failed','cancelled','completed'].includes(saved.native.status)||!/^[a-f0-9]{64}$/.test(saved.native.claimHash)||saved.native.terminalHash!==undefined&&!/^[a-f0-9]{64}$/.test(saved.native.terminalHash)||saved.native.reason!==undefined&&!['geometry','static-sweep'].includes(saved.native.reason)||saved.attempts!==2||saved.failed.length!==2))throw new Error('HTML原生恢复状态无效，保留原文件并停止。');
+  if(saved.failed.some(f=>f.evidence?.kind!==undefined&&f.evidence.kind!=='authored-proposal'))throw new Error('HTML恢复证据类型无效，保留原文件并停止。');
+  if(saved.native&&(!['running','failed','cancelled','completed'].includes(saved.native.status)||!/^[a-f0-9]{64}$/.test(saved.native.claimHash)||saved.native.terminalHash!==undefined&&!/^[a-f0-9]{64}$/.test(saved.native.terminalHash)||saved.native.reason!==undefined&&!['geometry','static-sweep','authored-geometry'].includes(saved.native.reason)||saved.attempts!==2||saved.failed.length!==2))throw new Error('HTML原生恢复状态无效，保留原文件并停止。');
   return saved;
 }
 export class LessonHtmlLayoutError extends Error { code = 'HTML_LAYOUT_EXHAUSTED'; }
@@ -70,6 +72,8 @@ const artifactNames=['index.html','check-report.json','lint-report.json','inspec
 const geometryCodes=new Set(['content_overlap','text_occluded','text_overflow','out_of_bounds','element_out_of_bounds','overflow']);
 const nativeGeometryCodes=new Set([...geometryCodes,'text_box_overflow']);
 const reportNames=['check-report.json','lint-report.json','inspect-report.json'] as const;
+const proposalNames=['draft.json','server-validation.json','raw-proposal.json'] as const;
+const recoveryReason=(reasons:NativeRecoveryReason[]):NativeRecoveryReason=>reasons.includes('static-sweep')?'static-sweep':reasons.includes('authored-geometry')?'authored-geometry':'geometry';
 const reportIssues=(report:LayoutReport):LayoutIssue[]=>[...(report.issues||report.findings||[]),...['layout','lint','runtime','motion','contrast'].flatMap(key=>(report as any)[key]?.findings||[])].filter(issue=>!issue.severity||issue.severity==='error');
 
 // This is eligibility to render a different native scene, never permission to
@@ -145,14 +149,38 @@ async function archiveAttempt(project:string,contextHash:string,name:string,erro
     return {directory,manifestHash:hashBytes(manifest),geometry:isGeometry};
   }
 }
-async function verifyAttemptEvidence(project:string,evidence:AttemptEvidence|undefined,contextHash:string):Promise<NativeRecoveryReason|undefined>{
+function verifyRejectedProposal(error:AuthoredDrawingGeometryError,format:Format){
+  if(error.format!==format)throw new Error('HTML被拒提案的画幅与当前上下文不一致。');
+  try{validateDrawing(error.draft,format);}
+  catch(actual){if(actual instanceof AuthoredDrawingGeometryError&&JSON.stringify(actual.issues)===JSON.stringify(error.issues))return;throw new Error('HTML被拒提案无法确认是已知纯几何错误，保留原文件并停止。',{cause:actual});}
+  throw new Error('HTML提案未被实际几何校验拒绝，不能伪造恢复证据。');
+}
+async function archiveProposal(project:string,contextHash:string,name:string,error:AuthoredDrawingGeometryError):Promise<AttemptEvidence>{
+  verifyRejectedProposal(error,error.format);
+  const draft=JSON.stringify(error.draft),draftHash=hashBytes(draft),artifacts=new Map<string,string>([['draft.json',draft],['server-validation.json',JSON.stringify({version:1,kind:'authored-geometry-rejected',format:error.format,draftHash,issues:error.issues,htmlChecked:false,accepted:false})]]);
+  if(error.rawProposal!==undefined){JSON.parse(error.rawProposal);artifacts.set('raw-proposal.json',error.rawProposal);}
+  const directory=path.join('html-recovery-evidence',hashBytes(contextHash),name),absolute=path.join(project,directory);await mkdir(absolute,{recursive:true,mode:0o700});
+  const files:Record<string,string>={};for(const[file,bytes]of artifacts){files[file]=hashBytes(bytes);await immutableWrite(path.join(absolute,file),bytes);}
+  const manifest=JSON.stringify({version:1,contextHash,name,kind:'authored-proposal',files,geometry:false,reason:String(error)});await immutableWrite(path.join(absolute,'manifest.json'),manifest);
+  return{directory,manifestHash:hashBytes(manifest),geometry:false,kind:'authored-proposal'};
+}
+async function verifyAttemptEvidence(project:string,evidence:AttemptEvidence|undefined,contextHash:string,format:Format,expectedDraftHash?:string):Promise<NativeRecoveryReason|undefined>{
   if(!evidence)return;
   const root=path.join('html-recovery-evidence',hashBytes(contextHash));
   if(path.dirname(evidence.directory)!==root||!/^authored-[12]$/.test(path.basename(evidence.directory)))throw new Error('HTML恢复证据路径无效，保留原文件并停止。');
   const bytes=await readFile(path.join(project,evidence.directory,'manifest.json'));
   if(hashBytes(bytes)!==evidence.manifestHash)throw new Error('HTML恢复证据manifest SHA不一致，保留原文件并停止。');
   const manifest=JSON.parse(bytes.toString());
-  if(manifest.version!==1||manifest.contextHash!==contextHash||manifest.geometry!==evidence.geometry||!manifest.files?.['index.html'])throw new Error('HTML恢复证据内容无效，保留原文件并停止。');
+  if(manifest.version!==1||manifest.contextHash!==contextHash||manifest.geometry!==evidence.geometry||manifest.kind!==evidence.kind)throw new Error('HTML恢复证据内容无效，保留原文件并停止。');
+  if(manifest.kind==='authored-proposal'){
+    if(evidence.geometry!==false||!manifest.files?.['draft.json']||!manifest.files?.['server-validation.json'])throw new Error('HTML被拒提案证据内容无效，不能作为已检查HTML。');
+    const artifacts=new Map<string,Buffer>();for(const[file,hash]of Object.entries(manifest.files)){if(!proposalNames.includes(file as any))throw new Error('HTML被拒提案含未知证据文件。');const bytes=await readFile(path.join(project,evidence.directory,file));if(hashBytes(bytes)!==hash)throw new Error('HTML被拒提案证据SHA不一致，保留原文件并停止。');artifacts.set(file,bytes);}
+    const draft=JSON.parse(artifacts.get('draft.json')!.toString()) as HtmlDrawing,report=JSON.parse(artifacts.get('server-validation.json')!.toString());
+    if(report.version!==1||report.kind!=='authored-geometry-rejected'||report.htmlChecked!==false||report.accepted!==false||report.draftHash!==expectedDraftHash||report.draftHash!==hashBytes(artifacts.get('draft.json')!)||report.format!==format)throw new Error('HTML被拒提案校验绑定无效。');
+    if(artifacts.has('raw-proposal.json'))JSON.parse(artifacts.get('raw-proposal.json')!.toString());
+    verifyRejectedProposal(new AuthoredDrawingGeometryError(draft,report.format,report.issues,'已保存的被拒提案'),report.format);return'authored-geometry';
+  }
+  if(!manifest.files?.['index.html'])throw new Error('HTML恢复缺少实际页面证据。');
   const artifacts=new Map<string,Buffer>();
   for(const[file,hash]of Object.entries(manifest.files)){if(!artifactNames.includes(file as any))throw new Error('HTML恢复实际文件SHA不一致，保留原文件并停止。');const bytes=await readFile(path.join(project,evidence.directory,file));if(hashBytes(bytes)!==hash)throw new Error('HTML恢复实际文件SHA不一致，保留原文件并停止。');artifacts.set(file,bytes);}
   // Keep the original geometry=false manifest immutable. Static sweep is a
@@ -223,8 +251,8 @@ export async function recoverLessonHtml<R extends SceneResult>(options: {
     const claim=JSON.parse(nativeClaim.toString());
     if(claim.version!==1||claim.contextHash!==options.contextHash||JSON.stringify(claim.evidence)!==JSON.stringify(state.failed.map(f=>f.evidence?.manifestHash)))throw new Error('HTML原生恢复启动证据内容不一致，保留原文件并停止。');
     const reasons:NativeRecoveryReason[]=[];
-    for(const failure of state.failed){const reason=await verifyAttemptEvidence(options.project,failure.evidence,options.contextHash);if(!reason)throw new Error('HTML原生恢复缺少已保存的真实布局失败，保留原文件并停止。');reasons.push(reason);}
-    const reason=reasons.includes('static-sweep')?'static-sweep':'geometry';
+    for(const failure of state.failed){const reason=await verifyAttemptEvidence(options.project,failure.evidence,options.contextHash,options.format,failure.hash);if(!reason)throw new Error('HTML原生恢复缺少已保存的真实布局失败，保留原文件并停止。');reasons.push(reason);}
+    const reason=recoveryReason(reasons);
     if(claim.reason!==state.native.reason||claim.reason!==undefined&&claim.reason!==reason||claim.reason===undefined&&reason!=='geometry')throw new Error('HTML原生恢复启动原因与实际证据不一致，保留原文件并停止。');
     if(state.native.status!=='running'){
       const terminal=await readFile(terminalFile);if(hashBytes(terminal)!==state.native.terminalHash)throw new Error('HTML原生恢复终态SHA不一致，保留原文件并停止。');
@@ -239,7 +267,16 @@ export async function recoverLessonHtml<R extends SceneResult>(options: {
   if(state.native)throw new LessonHtmlLayoutError(options.chapterId+'：原生恢复已'+state.native.status+'，不能自动再次执行。');
   while (state.attempts < 2 && !state.blocked) {
     throwIfJobCancelled();
-    const prior = state.failed.at(-1), drawing = validateDrawing(state.pendingDrawing || await options.author(prior?.feedback || ''), options.format);
+    const prior = state.failed.at(-1);let drawing:HtmlDrawing;
+    try{drawing=validateDrawing(state.pendingDrawing || await options.author(prior?.feedback || ''),options.format);}
+    catch(error){
+      throwIfJobCancelled();if(!(error instanceof AuthoredDrawingGeometryError))throw error;
+      verifyRejectedProposal(error,options.format);
+      state.pendingDrawing=undefined;state.attempts++;await persist();
+      const hash=hashBytes(JSON.stringify(error.draft)),feedback=String(error)+'；被拒的是绘图提案，尚未通过HTML检查；仅修复上述实际几何，保留已核验脚本、旁白和用户要求。';
+      const evidence=await archiveProposal(options.project,options.contextHash,'authored-'+state.attempts,error);
+      state.failed.push({hash,feedback,drawing:error.draft,evidence});await persist();continue;
+    }
     state.pendingDrawing = undefined;
     const hash = hashBytes(JSON.stringify(drawing));
     if (state.failed.some(failure => failure.hash === hash)) { state.blocked = true; await persist(); throw exhausted(); }
@@ -266,8 +303,8 @@ export async function recoverLessonHtml<R extends SceneResult>(options: {
   }
   if(options.nativeFallback&&state.attempts===2&&state.failed.length===2){
     const reasons:NativeRecoveryReason[]=[];
-    for(const failure of state.failed){const reason=await verifyAttemptEvidence(options.project,failure.evidence,options.contextHash);if(!reason)throw exhausted();reasons.push(reason);}
-    const reason:NativeRecoveryReason=reasons.includes('static-sweep')?'static-sweep':'geometry';
+    for(const failure of state.failed){const reason=await verifyAttemptEvidence(options.project,failure.evidence,options.contextHash,options.format,failure.hash);if(!reason)throw exhausted();reasons.push(reason);}
+    const reason=recoveryReason(reasons);
     throwIfJobCancelled();
     await mkdir(nativeDirectory,{recursive:true,mode:0o700});
     const claim=JSON.stringify({version:1,contextHash:options.contextHash,reason,evidence:state.failed.map(f=>f.evidence!.manifestHash)});

@@ -16,6 +16,7 @@ import { loadMotionDesignContext } from './skills';
 import { safeErrorText } from './executionErrors';
 import { assertVisibleContent } from './visibleContent';
 import { numericDrawingText, assertNumericDrawingNode, NUMERIC_DRAWING_CSS, NUMERIC_DRAWING_CHECK_SCRIPT } from './drawingNumberLayout';
+import {AuthoredDrawingGeometryError,type DrawingGeometryIssue} from './drawingGeometry';
 
 export const hashBytes = (v: string | Buffer) => createHash('sha256').update(v).digest('hex');
 const escape = (s:string) => s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]!));
@@ -28,20 +29,24 @@ export function validateDrawing(d:HtmlDrawing,format:Format='9:16'):HtmlDrawing 
   if (!d.title?.trim() || d.title.length>20 || !Array.isArray(d.nodes) || d.nodes.length<3 || d.nodes.length>30) throw new Error('HTML图需要短标题与3–30个绘制元素。');
   assertVisibleContent([d.title,...d.nodes.map(n=>n.text)]);
   if (new Set(d.nodes.map(n=>n.id)).size !== d.nodes.length) throw new Error('HTML节点ID重复。');
+  const issues:DrawingGeometryIssue[]=[];let geometryMessage='';
   for (const n of d.nodes) {
     const line=n.kind==='line'||n.kind==='path';
-    if (!/^[a-zA-Z][a-zA-Z0-9_-]{0,63}$/.test(n.id) || !['card','text','circle','line','path'].includes(n.kind) || !Object.keys(palette).includes(n.tone) || ![n.x,n.y,n.w,n.h,n.fontSize].every(Number.isFinite) || n.x<40 || n.y<top || n.x+n.w<40 || n.y+n.h<top || n.x+n.w>width-40 || n.y+n.h>bottom || (line?Math.abs(n.w)+Math.abs(n.h)<1:n.w<1||n.h<1||n.fontSize<24||n.fontSize>64) || typeof n.text!=='string' || n.text.length>32) throw new Error(`节点${n.id}无效：${JSON.stringify(n)}。ID允许字母、数字、下划线、连字符；端点安全区(40,${top})-(${width-40},${bottom})，文字24–64px、最多32字；连线允许w/h为0或负值，但不能同时为0。`);
+    const invalid=()=>`节点${n.id}无效：${JSON.stringify(n)}。ID允许字母、数字、下划线、连字符；端点安全区(40,${top})-(${width-40},${bottom})，文字24–64px、最多32字；连线允许w/h为0或负值，但不能同时为0。`;
+    if (!/^[a-zA-Z][a-zA-Z0-9_-]{0,63}$/.test(n.id) || !['card','text','circle','line','path'].includes(n.kind) || !Object.keys(palette).includes(n.tone) || ![n.x,n.y,n.w,n.h,n.fontSize].every(Number.isFinite) || (line?Math.abs(n.w)+Math.abs(n.h)<1:n.w<1||n.h<1||n.fontSize<24||n.fontSize>64) || typeof n.text!=='string' || n.text.length>32) throw new Error(invalid());
+    if(n.x<40||n.y<top||n.x+n.w<40||n.y+n.h<top||n.x+n.w>width-40||n.y+n.h>bottom){issues.push({code:'node_bounds',nodeId:n.id,box:{x:n.x,y:n.y,w:n.w,h:n.h},safeZone:{left:40,top,right:width-40,bottom}});geometryMessage||=invalid();}
     if(n.kind==='path'&&(!n.pathData||!/^[MmZzLlHhVvCcSsQqTtAa0-9eE.,\s+-]{1,3000}$/.test(n.pathData)))throw new Error(`节点${n.id}必须提供仅含SVG路径命令与数字的pathData。`);
     if(!line){
       assertNumericDrawingNode(n);
       const units=[...n.text].reduce((v,c)=>v+(/[\u0000-\u007f]/.test(c)?.55:1),0);
       const padding=n.kind==='text'?0:n.kind==='circle'?8:24;
       const required=Math.ceil(units*n.fontSize/Math.max(1,n.w-padding))*n.fontSize*1.3+padding;
-      if(n.h<required-3)throw new Error(`节点${n.id}文字预计需${Math.ceil(required)}px高，当前${n.h}px；缩短文字或增高卡片。`);
+      if(n.h<required-3){issues.push({code:'text_box_height',nodeId:n.id,box:{x:n.x,y:n.y,w:n.w,h:n.h},requiredHeight:Math.ceil(required)});geometryMessage||=`节点${n.id}文字预计需${Math.ceil(required)}px高，当前${n.h}px；缩短文字或增高卡片。`;}
       // Bounding boxes can overlap at their padded edges without hiding any
       // glyphs. The real browser inspection below checks actual occlusion.
     }
   }
+  if(issues.length)throw new AuthoredDrawingGeometryError(d,format,issues,geometryMessage);
   return structuredClone(d);
 }
 export function drawingHtml(d:HtmlDrawing,duration:number,format:Format='9:16',publicationAnnotation?:NewsPublicationAnnotation):string {
@@ -95,7 +100,7 @@ export async function authorDrawing(config:ModelConfig,beat:ReconstructionBeat,f
       return validateDrawing(drawing,format);
     }catch(e){
       const reason=e instanceof Error?e.message:'Invalid layout';
-      if(attempt===2)throw new Error('HTML layout rejected: '+reason.replaceAll(config.apiKey,'[redacted]').slice(0,650));
+      if(attempt===2){const message='HTML layout rejected: '+reason.replaceAll(config.apiKey,'[redacted]').slice(0,650);if(e instanceof AuthoredDrawingGeometryError)throw new AuthoredDrawingGeometryError(e.draft,e.format,e.issues,message,content);throw new Error(message);}
       messages.push({role:'assistant',content},{role:'user',content:'Fix the following exact error while keeping useful content: '+reason});
     }
   }

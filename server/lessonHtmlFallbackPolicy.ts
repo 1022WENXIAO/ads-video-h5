@@ -1,9 +1,9 @@
 import type { LessonChapter } from '../src/types';
 
-/** Native templates preserve this small structured semantic contract, not
- * arbitrary authored geometry. A rejected semantic view cannot be reused. */
-export function nativeLessonFallbackAllowed(prompt: string, chapter: LessonChapter, feedback?: string): boolean {
-  if (feedback?.trim() || !['concept', 'timeline', 'comparison'].includes(chapter.visual?.kind)) return false;
+/** Native templates preserve this small structured semantic contract.
+ * Repair needs separately bound layout evidence, never arbitrary feedback. */
+export function nativeLessonFallbackAllowed(prompt: string, chapter: LessonChapter, feedback?: string, options:{verifiedLayoutRepair?:boolean}={}): boolean {
+  if ((feedback?.trim()&&options.verifiedLayoutRepair!==true) || !['concept', 'timeline', 'comparison'].includes(chapter.visual?.kind)) return false;
   const visual = chapter.visual;
   if (visual.formula || visual.plot || visual.barChart || !Array.isArray(visual.items) || visual.items.length < 2 || visual.items.length > 4) return false;
   if (!chapter.title?.trim() || !chapter.narration?.trim() || !visual.takeaway?.trim()) return false;
