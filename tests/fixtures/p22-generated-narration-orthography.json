@@ -1,0 +1,829 @@
+{
+  "scope": "Public generated-narration transcript projections from actual052 retained ASR. Exact words/times/sourceHash retained. No audio listening, TTS truth, final movie or end-to-end success claimed. Source records were English and did not provide these literal Chinese spellings. Fact-authorized generated-only working copy is under controlled test.",
+  "sourceRevision": "05282b5b2bb725ade497dbf9709baf1d72be92da",
+  "scriptCheckpointSha256": "0431ddba2aca6f2811f0b4301663bb9dfb6d3d8d6b7b9ef3268996875e1f4f03",
+  "records": [
+    {
+      "chapterId": "chapter-1",
+      "narration": "在家冲咖啡，粉的粗细别凭感觉乱拧。太细，水堵在粉里走得慢，泡久了容易萃过头，喝着发苦发干。",
+      "from": "脆",
+      "to": "萃",
+      "raw": {
+        "modelId": "doubao-seed-2-1-lite-260915",
+        "sourceHash": "d0b5d12f78f545bd31cb87daa4fbf1c9f8189b0ca276865e1a163d56c0d91ee3",
+        "duration": 8.83,
+        "timing": "model-estimated",
+        "createdAt": "2026-10-15T13:11:34.061Z",
+        "status": "ready",
+        "transcript": "在家冲咖啡粉的粗细别凭感觉乱拧\n太细水堵在粉里走得慢泡久了容易脆过头喝着发苦发干",
+        "sentences": [
+          {
+            "id": "6ff23252-6193-4c01-b960-ab825e36cbb2:sentence:0",
+            "start": 0.06,
+            "end": 3.19,
+            "words": [
+              {
+                "start": 0.06,
+                "end": 0.27,
+                "text": "在"
+              },
+              {
+                "start": 0.27,
+                "end": 0.45,
+                "text": "家"
+              },
+              {
+                "start": 0.45,
+                "end": 0.66,
+                "text": "冲"
+              },
+              {
+                "start": 0.66,
+                "end": 0.87,
+                "text": "咖"
+              },
+              {
+                "start": 0.87,
+                "end": 1.11,
+                "text": "啡"
+              },
+              {
+                "start": 1.29,
+                "end": 1.5,
+                "text": "粉"
+              },
+              {
+                "start": 1.5,
+                "end": 1.62,
+                "text": "的"
+              },
+              {
+                "start": 1.62,
+                "end": 1.78,
+                "text": "粗"
+              },
+              {
+                "start": 1.78,
+                "end": 1.98,
+                "text": "细"
+              },
+              {
+                "start": 1.98,
+                "end": 2.16,
+                "text": "别"
+              },
+              {
+                "start": 2.16,
+                "end": 2.37,
+                "text": "凭"
+              },
+              {
+                "start": 2.37,
+                "end": 2.55,
+                "text": "感"
+              },
+              {
+                "start": 2.55,
+                "end": 2.7,
+                "text": "觉"
+              },
+              {
+                "start": 2.7,
+                "end": 2.91,
+                "text": "乱"
+              },
+              {
+                "start": 2.91,
+                "end": 3.19,
+                "text": "拧"
+              }
+            ],
+            "text": "在家冲咖啡粉的粗细别凭感觉乱拧",
+            "complete": true
+          },
+          {
+            "id": "6ff23252-6193-4c01-b960-ab825e36cbb2:sentence:1",
+            "start": 3.75,
+            "end": 8.82,
+            "words": [
+              {
+                "start": 3.75,
+                "end": 3.93,
+                "text": "太"
+              },
+              {
+                "start": 3.93,
+                "end": 4.26,
+                "text": "细"
+              },
+              {
+                "start": 4.35,
+                "end": 4.57,
+                "text": "水"
+              },
+              {
+                "start": 4.57,
+                "end": 4.74,
+                "text": "堵"
+              },
+              {
+                "start": 4.74,
+                "end": 4.89,
+                "text": "在"
+              },
+              {
+                "start": 4.89,
+                "end": 5.11,
+                "text": "粉"
+              },
+              {
+                "start": 5.11,
+                "end": 5.28,
+                "text": "里"
+              },
+              {
+                "start": 5.28,
+                "end": 5.44,
+                "text": "走"
+              },
+              {
+                "start": 5.44,
+                "end": 5.58,
+                "text": "得"
+              },
+              {
+                "start": 5.58,
+                "end": 5.8,
+                "text": "慢"
+              },
+              {
+                "start": 5.97,
+                "end": 6.22,
+                "text": "泡"
+              },
+              {
+                "start": 6.22,
+                "end": 6.42,
+                "text": "久"
+              },
+              {
+                "start": 6.42,
+                "end": 6.54,
+                "text": "了"
+              },
+              {
+                "start": 6.54,
+                "end": 6.72,
+                "text": "容"
+              },
+              {
+                "start": 6.72,
+                "end": 6.84,
+                "text": "易"
+              },
+              {
+                "start": 6.84,
+                "end": 7.02,
+                "text": "脆"
+              },
+              {
+                "start": 7.02,
+                "end": 7.2,
+                "text": "过"
+              },
+              {
+                "start": 7.2,
+                "end": 7.47,
+                "text": "头"
+              },
+              {
+                "start": 7.5,
+                "end": 7.77,
+                "text": "喝"
+              },
+              {
+                "start": 7.77,
+                "end": 7.95,
+                "text": "着"
+              },
+              {
+                "start": 7.95,
+                "end": 8.19,
+                "text": "发"
+              },
+              {
+                "start": 8.19,
+                "end": 8.43,
+                "text": "苦"
+              },
+              {
+                "start": 8.43,
+                "end": 8.61,
+                "text": "发"
+              },
+              {
+                "start": 8.61,
+                "end": 8.82,
+                "text": "干"
+              }
+            ],
+            "text": "太细水堵在粉里走得慢泡久了容易脆过头喝着发苦发干",
+            "complete": true
+          }
+        ],
+        "pauses": [
+          {
+            "start": 1.084,
+            "end": 1.389
+          },
+          {
+            "start": 3.047,
+            "end": 3.778
+          },
+          {
+            "start": 5.715,
+            "end": 6.044
+          }
+        ],
+        "warnings": [
+          "字词时间码由模型估计，已校验格式、顺序和范围，尚未经独立强制对齐。",
+          "停顿是低音量检测结果，不等于已确认无人说话。"
+        ],
+        "captionBreaks": [
+          4,
+          6,
+          9,
+          12,
+          14,
+          16,
+          19,
+          24,
+          27,
+          32,
+          35,
+          38
+        ]
+      },
+      "rawRecordSha256": "4c9c0c2ec696177cf0789f27914c9a72e51a68755e878f4bb5e23c635b10de2a"
+    },
+    {
+      "chapterId": "chapter-2",
+      "narration": "反过来，粉太粗，水一下就穿过去，味道还没出来，就会淡，味道薄。新手手冲先找中细颗粒，捏着像细沙或食盐。",
+      "from": "首",
+      "to": "手",
+      "raw": {
+        "modelId": "doubao-seed-2-1-lite-260915",
+        "sourceHash": "59b74185a750202c5f4439ae4415f5daf2fbc99bc145876b9e52aa341b51cbd1",
+        "duration": 9.86,
+        "timing": "model-estimated",
+        "createdAt": "2026-10-15T13:11:17.549Z",
+        "status": "ready",
+        "transcript": "反过来粉太粗水一下就穿过去\n味道还没出来就会淡\n味道薄\n新手首冲先找中细颗粒\n捏着像细沙或食盐",
+        "sentences": [
+          {
+            "id": "95bca924-4ef3-40e3-a786-49bbd8973dd1:sentence:0",
+            "start": 0.06,
+            "end": 3.03,
+            "words": [
+              {
+                "start": 0.06,
+                "end": 0.29,
+                "text": "反"
+              },
+              {
+                "start": 0.29,
+                "end": 0.45,
+                "text": "过"
+              },
+              {
+                "start": 0.45,
+                "end": 0.66,
+                "text": "来"
+              },
+              {
+                "start": 0.81,
+                "end": 1.05,
+                "text": "粉"
+              },
+              {
+                "start": 1.05,
+                "end": 1.23,
+                "text": "太"
+              },
+              {
+                "start": 1.23,
+                "end": 1.52,
+                "text": "粗"
+              },
+              {
+                "start": 1.71,
+                "end": 1.97,
+                "text": "水"
+              },
+              {
+                "start": 1.97,
+                "end": 2.07,
+                "text": "一"
+              },
+              {
+                "start": 2.07,
+                "end": 2.31,
+                "text": "下"
+              },
+              {
+                "start": 2.31,
+                "end": 2.46,
+                "text": "就"
+              },
+              {
+                "start": 2.46,
+                "end": 2.67,
+                "text": "穿"
+              },
+              {
+                "start": 2.67,
+                "end": 2.82,
+                "text": "过"
+              },
+              {
+                "start": 2.82,
+                "end": 3.03,
+                "text": "去"
+              }
+            ],
+            "text": "反过来粉太粗水一下就穿过去",
+            "complete": true
+          },
+          {
+            "id": "95bca924-4ef3-40e3-a786-49bbd8973dd1:sentence:1",
+            "start": 3.24,
+            "end": 5.1,
+            "words": [
+              {
+                "start": 3.24,
+                "end": 3.42,
+                "text": "味"
+              },
+              {
+                "start": 3.42,
+                "end": 3.57,
+                "text": "道"
+              },
+              {
+                "start": 3.57,
+                "end": 3.72,
+                "text": "还"
+              },
+              {
+                "start": 3.72,
+                "end": 3.9,
+                "text": "没"
+              },
+              {
+                "start": 3.9,
+                "end": 4.12,
+                "text": "出"
+              },
+              {
+                "start": 4.12,
+                "end": 4.3,
+                "text": "来"
+              },
+              {
+                "start": 4.47,
+                "end": 4.65,
+                "text": "就"
+              },
+              {
+                "start": 4.65,
+                "end": 4.83,
+                "text": "会"
+              },
+              {
+                "start": 4.83,
+                "end": 5.1,
+                "text": "淡"
+              }
+            ],
+            "text": "味道还没出来就会淡",
+            "complete": true
+          },
+          {
+            "id": "95bca924-4ef3-40e3-a786-49bbd8973dd1:sentence:2",
+            "start": 5.25,
+            "end": 5.89,
+            "words": [
+              {
+                "start": 5.25,
+                "end": 5.46,
+                "text": "味"
+              },
+              {
+                "start": 5.46,
+                "end": 5.61,
+                "text": "道"
+              },
+              {
+                "start": 5.61,
+                "end": 5.89,
+                "text": "薄"
+              }
+            ],
+            "text": "味道薄",
+            "complete": true
+          },
+          {
+            "id": "95bca924-4ef3-40e3-a786-49bbd8973dd1:sentence:3",
+            "start": 6.15,
+            "end": 8.22,
+            "words": [
+              {
+                "start": 6.15,
+                "end": 6.42,
+                "text": "新"
+              },
+              {
+                "start": 6.42,
+                "end": 6.57,
+                "text": "手"
+              },
+              {
+                "start": 6.57,
+                "end": 6.81,
+                "text": "首"
+              },
+              {
+                "start": 6.81,
+                "end": 6.99,
+                "text": "冲"
+              },
+              {
+                "start": 6.99,
+                "end": 7.2,
+                "text": "先"
+              },
+              {
+                "start": 7.2,
+                "end": 7.41,
+                "text": "找"
+              },
+              {
+                "start": 7.41,
+                "end": 7.59,
+                "text": "中"
+              },
+              {
+                "start": 7.59,
+                "end": 7.8,
+                "text": "细"
+              },
+              {
+                "start": 7.8,
+                "end": 7.98,
+                "text": "颗"
+              },
+              {
+                "start": 7.98,
+                "end": 8.22,
+                "text": "粒"
+              }
+            ],
+            "text": "新手首冲先找中细颗粒",
+            "complete": true
+          },
+          {
+            "id": "95bca924-4ef3-40e3-a786-49bbd8973dd1:sentence:4",
+            "start": 8.31,
+            "end": 9.81,
+            "words": [
+              {
+                "start": 8.31,
+                "end": 8.55,
+                "text": "捏"
+              },
+              {
+                "start": 8.55,
+                "end": 8.65,
+                "text": "着"
+              },
+              {
+                "start": 8.65,
+                "end": 8.88,
+                "text": "像"
+              },
+              {
+                "start": 8.88,
+                "end": 9.09,
+                "text": "细"
+              },
+              {
+                "start": 9.09,
+                "end": 9.28,
+                "text": "沙"
+              },
+              {
+                "start": 9.28,
+                "end": 9.45,
+                "text": "或"
+              },
+              {
+                "start": 9.45,
+                "end": 9.63,
+                "text": "食"
+              },
+              {
+                "start": 9.63,
+                "end": 9.81,
+                "text": "盐"
+              }
+            ],
+            "text": "捏着像细沙或食盐",
+            "complete": true
+          }
+        ],
+        "pauses": [
+          {
+            "start": 0.597,
+            "end": 0.91
+          },
+          {
+            "start": 1.463,
+            "end": 1.766
+          },
+          {
+            "start": 2.965,
+            "end": 3.297
+          },
+          {
+            "start": 4.99,
+            "end": 5.326
+          },
+          {
+            "start": 5.824,
+            "end": 6.192
+          },
+          {
+            "start": 8.073,
+            "end": 8.4
+          }
+        ],
+        "warnings": [
+          "字词时间码由模型估计，已校验格式、顺序和范围，尚未经独立强制对齐。",
+          "停顿是低音量检测结果，不等于已确认无人说话。"
+        ],
+        "captionBreaks": [
+          2,
+          5,
+          8,
+          12,
+          18,
+          24,
+          28,
+          31,
+          34,
+          42
+        ]
+      },
+      "rawRecordSha256": "6e726f6c09a16314d5651697d44ce519a9c128da6add2b420f28cfc8473e982e"
+    },
+    {
+      "chapterId": "chapter-2",
+      "narration": "反过来，粉太粗，水一下就穿过去，味道还没出来，就会淡，味道薄。新手手冲先找中细颗粒，捏着像细沙或食盐。",
+      "from": "首",
+      "to": "手",
+      "raw": {
+        "modelId": "doubao-seed-2-1-lite-260915",
+        "sourceHash": "59b74185a750202c5f4439ae4415f5daf2fbc99bc145876b9e52aa341b51cbd1",
+        "duration": 9.86,
+        "timing": "model-estimated",
+        "createdAt": "2026-10-15T13:11:36.542Z",
+        "status": "ready",
+        "transcript": "反过来粉太粗水一下就穿过去味道还没出来就会淡味道薄\n新手首冲先找中细颗粒捏着像细沙或食盐",
+        "sentences": [
+          {
+            "id": "9a24a56f-e1ad-4e3c-ade9-98cf9339b449:sentence:0",
+            "start": 0.06,
+            "end": 5.09,
+            "words": [
+              {
+                "start": 0.06,
+                "end": 0.29,
+                "text": "反过"
+              },
+              {
+                "start": 0.29,
+                "end": 0.65,
+                "text": "来"
+              },
+              {
+                "start": 0.81,
+                "end": 1.05,
+                "text": "粉太"
+              },
+              {
+                "start": 1.05,
+                "end": 1.36,
+                "text": "粗"
+              },
+              {
+                "start": 1.53,
+                "end": 1.82,
+                "text": "水一"
+              },
+              {
+                "start": 1.82,
+                "end": 1.98,
+                "text": "下"
+              },
+              {
+                "start": 1.98,
+                "end": 2.13,
+                "text": "就"
+              },
+              {
+                "start": 2.13,
+                "end": 2.35,
+                "text": "穿过"
+              },
+              {
+                "start": 2.35,
+                "end": 2.74,
+                "text": "去"
+              },
+              {
+                "start": 2.77,
+                "end": 3.09,
+                "text": "味道"
+              },
+              {
+                "start": 3.09,
+                "end": 3.27,
+                "text": "还没"
+              },
+              {
+                "start": 3.27,
+                "end": 3.48,
+                "text": "出"
+              },
+              {
+                "start": 3.48,
+                "end": 3.68,
+                "text": "来"
+              },
+              {
+                "start": 3.81,
+                "end": 4.02,
+                "text": "就会"
+              },
+              {
+                "start": 4.02,
+                "end": 4.29,
+                "text": "淡"
+              },
+              {
+                "start": 4.47,
+                "end": 4.68,
+                "text": "味"
+              },
+              {
+                "start": 4.68,
+                "end": 4.8,
+                "text": "道"
+              },
+              {
+                "start": 4.8,
+                "end": 5.09,
+                "text": "薄"
+              }
+            ],
+            "text": "反过来粉太粗水一下就穿过去味道还没出来就会淡味道薄",
+            "complete": true
+          },
+          {
+            "id": "9a24a56f-e1ad-4e3c-ade9-98cf9339b449:sentence:1",
+            "start": 5.36,
+            "end": 8.37,
+            "words": [
+              {
+                "start": 5.36,
+                "end": 5.61,
+                "text": "新手"
+              },
+              {
+                "start": 5.61,
+                "end": 5.79,
+                "text": "首"
+              },
+              {
+                "start": 5.79,
+                "end": 6.06,
+                "text": "冲"
+              },
+              {
+                "start": 6.06,
+                "end": 6.24,
+                "text": "先"
+              },
+              {
+                "start": 6.24,
+                "end": 6.45,
+                "text": "找"
+              },
+              {
+                "start": 6.45,
+                "end": 6.63,
+                "text": "中"
+              },
+              {
+                "start": 6.63,
+                "end": 6.81,
+                "text": "细"
+              },
+              {
+                "start": 6.81,
+                "end": 6.99,
+                "text": "颗"
+              },
+              {
+                "start": 6.99,
+                "end": 7.26,
+                "text": "粒"
+              },
+              {
+                "start": 7.35,
+                "end": 7.56,
+                "text": "捏着"
+              },
+              {
+                "start": 7.56,
+                "end": 7.69,
+                "text": "像"
+              },
+              {
+                "start": 7.69,
+                "end": 7.95,
+                "text": "细沙"
+              },
+              {
+                "start": 7.95,
+                "end": 8.19,
+                "text": "或"
+              },
+              {
+                "start": 8.19,
+                "end": 8.37,
+                "text": "食盐"
+              }
+            ],
+            "text": "新手首冲先找中细颗粒捏着像细沙或食盐",
+            "complete": true
+          }
+        ],
+        "pauses": [
+          {
+            "start": 0.597,
+            "end": 0.91
+          },
+          {
+            "start": 1.463,
+            "end": 1.766
+          },
+          {
+            "start": 2.965,
+            "end": 3.297
+          },
+          {
+            "start": 4.99,
+            "end": 5.326
+          },
+          {
+            "start": 5.824,
+            "end": 6.192
+          },
+          {
+            "start": 8.073,
+            "end": 8.4
+          }
+        ],
+        "warnings": [
+          "字词时间码由模型估计，已校验格式、顺序和范围，尚未经独立强制对齐。",
+          "停顿是低音量检测结果，不等于已确认无人说话。"
+        ],
+        "captionBreaks": [
+          1,
+          3,
+          8,
+          12,
+          14,
+          17,
+          19,
+          21,
+          26,
+          29,
+          31
+        ]
+      },
+      "rawRecordSha256": "1f4485157ee4e38015aa0360d77b743626011b9acd14566eba03c82d2e12dd4a"
+    }
+  ]
+}

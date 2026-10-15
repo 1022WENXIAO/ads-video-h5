@@ -82,6 +82,25 @@ test('one independent same-wave recognition commits separately and restart reuse
   });
 });
 
+test('negation and later visual-tail reasons share the same durable claim after restart',async t=>{
+  const h=await setup(t),analysis=h.media.analysis!,last=analysis.sentences.at(-1)!,tail=last.words.slice(-10),head=last.words.slice(0,-10);
+  // Retain all original words/times; this control supplies two simultaneous
+  // diagnostics to prove that changing the trigger never grants a second call.
+  analysis.sentences.splice(-1,1,{...last,text:head.map(word=>word.text).join(''),end:head.at(-1)!.end,words:head},{...last,id:last.id+'-tail',text:tail.map(word=>word.text).join(''),start:tail[0].start,complete:false,words:tail});
+  analysis.transcript=analysis.sentences.map(sentence=>sentence.text).join('\n');
+  const cache=JSON.parse(h.originalAnalysis.toString());cache.analysis=analysis;
+  await writeFile(path.join(h.dir,'analysis.json'),JSON.stringify(cache));const originalBytes=await readFile(path.join(h.dir,'analysis.json'));
+  const reasons=sourceAsrRecoveryReasons(analysis);assert.deepEqual(reasons.map(reason=>reason.kind),['negation-boundary','duration-incomplete-tail']);
+  const counter={recognition:0,grouping:0,captions:0},fetch=globalThis.fetch;globalThis.fetch=worker(fresh(),counter);t.after(()=>{globalThis.fetch=fetch;});
+  await snapshot(async()=>{
+    const result=await createAudioUnderstanding(h.directory).recheck(h.media,h.file,reasons[0]);
+    const visualTail={...reasons[1],detail:'Actual bound visual witness inside this false tail; no expected words are sent to ASR.'};
+    assert.deepEqual(await createAudioUnderstanding(h.directory).recheck(h.media,h.file,visualTail),result);
+    assert.equal(counter.recognition,1);assert.equal((await readdir(path.join(h.dir,'source-rechecks'))).length,1);
+    assert.deepEqual(await readFile(path.join(h.dir,'analysis.json')),originalBytes);assert.deepEqual(await readFile(path.join(h.dir,'chunk-0.json')),h.originalChunk);
+  });
+});
+
 test('unchanged bad negation cannot be repaired by merging or relabeling the same words, and failed/unknown claims cannot replay',async t=>{
   const h=await setup(t),counter={recognition:0,grouping:0,captions:0},original=globalThis.fetch;
   const same=fixture.sources[0].primary.map((s:any,i:number)=>({...s,id:'fresh-'+i}));globalThis.fetch=worker(same,counter);t.after(()=>{globalThis.fetch=original;});

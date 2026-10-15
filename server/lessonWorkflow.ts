@@ -15,7 +15,8 @@ import { recoverLessonHtml } from './lessonHtmlRecovery';
 import { nativeLessonFallbackAllowed } from './lessonHtmlFallbackPolicy';
 import { createLessonLayoutRepairProofs, canUseLessonLayoutRepairProof, type LessonLayoutRepairProof } from './lessonLayoutRepair';
 import { sourcePronunciationHints, sourcePronunciationPrompt } from './lessonPronunciation';
-import {lessonSpeechProcessingHash,lessonSpeechBinding,readLessonSpeechProof,writeLessonSpeechProof,pendingLessonSpeechTempo} from './lessonSpeechProof';
+import {lessonSpeechProcessingHash,lessonSpeechBinding,readLessonSpeechProof,readLessonSpeechMetadataCandidate,writeLessonSpeechProof,pendingLessonSpeechTempo} from './lessonSpeechProof';
+import {correctGeneratedNarrationOrthography} from './generatedNarrationOrthography';
 import { lessonFactualCorrectionFindings, needsPassedScriptAdjudication } from './lessonFactualCorrections';
 import { emptyLessonFactRepairHistory, restoreLessonFactRepairHistory, rememberLessonFactReview, lessonFactRepairHistoryContext } from './lessonFactRepairHistory';
 import { lessonElapsedEvidenceFindings, lessonSourceResearchFeedback } from './lessonElapsedEvidence';
@@ -231,12 +232,28 @@ export async function runLessonWorkflow(o:Options){
       }
     }catch{ /* Missing or changed files must be rebuilt and independently reviewed. */ }
   }
+  const normalizeGeneratedSpeech=(chapter:LessonChapter,analysis:AudioAnalysis)=>correctGeneratedNarrationOrthography(report!,chapter,correctLessonTranscript(chapter,analysis,report?.factReview&&!report.factReview.needsRepair?report.references:[]));
   async function verifiedSpeech(allowPending=false){
     const reused=new Map<string,{file:string;analysis:AudioAnalysis}>(),pending:Array<{chapterId:string;reason:string}>=[];
     const defer=(chapterId:string,reason:string)=>{if(!allowPending)throw new Error(reason);pending.push({chapterId,reason});};
     for(const chapter of report!.chapters){
       throwIfJobCancelled();
       const file=path.join(work,chapter.id,'speech.mp3');let bytes:Buffer,text:string;
+      // Legacy renderer-only recovery has its own byte/transcript checks.
+      // New context-bound proofs must never authorize a source change from
+      // an already normalized working copy, including a scenes checkpoint.
+      let priorProof:any;
+      try{priorProof=JSON.parse(await readFile(path.join(work,chapter.id,'speech-proof.json'),'utf8'));}
+      catch(error){
+        if(error instanceof SyntaxError){defer(chapter.id,`章节${chapter.id}旁白证明格式无效，回到原旁白链路复核。`);continue;}
+        if((error as NodeJS.ErrnoException)?.code!=='ENOENT')throw error;
+      }
+      if(priorProof?.binding?.waveformHash){
+        // Prior keys here are only inputs to the local context hash, never
+        // trusted request identity. The narration stage recomputes real keys.
+        const context=lessonSpeechBinding(chapter,priorProof.binding.rawKey,priorProof.binding.rawHash,pacing,report!.references,settings,priorProof.binding.processingHash);
+        if(context.chapterHash!==priorProof.binding.chapterHash){defer(chapter.id,`章节${chapter.id}台词或来源上下文已变化，必须从原始识别重新核验旁白。`);continue;}
+      }
       try{bytes=await readFile(file);text=await readFile(path.join(work,chapter.id,'speech-analysis.json'),'utf8');}
       catch(error){throwIfJobCancelled();if((error as NodeJS.ErrnoException)?.code!=='ENOENT')throw error;defer(chapter.id,`章节${chapter.id}旁白或已核验转写尚未完成，保留已有音频继续旁白核验。`);continue;}
       let prior:AudioAnalysis;
@@ -245,7 +262,7 @@ export async function runLessonWorkflow(o:Options){
       if(!prior||prior.status!=='ready'||!Number.isFinite(prior.duration)||prior.duration<=0||typeof prior.transcript!=='string'||!Array.isArray(prior.warnings)||!Array.isArray(prior.sentences)||prior.sentences.some(s=>!s||typeof s.text!=='string'||!Array.isArray(s.words)||s.words.some(w=>!w||typeof w.text!=='string'||!Number.isFinite(w.start)||!Number.isFinite(w.end)||w.start<0||w.end<w.start))){defer(chapter.id,`章节${chapter.id}已保存转写尚未就绪或格式无效，保留已有音频重新核验。`);continue;}
       if(prior.sourceHash!==hashBytes(bytes)){defer(chapter.id,`章节${chapter.id}复用旁白文件哈希与实际转写不一致，不能跳过配音核验。`);continue;}
       let corrected:AudioAnalysis,aligned:ReturnType<typeof alignLessonSpeech>,analysis:AudioAnalysis;
-      try{corrected=correctLessonTranscript(chapter,prior,report!.references);aligned=alignLessonSpeech(chapter,corrected);analysis=corrected===prior?prior:lessonCaptionAnalysis(chapter,corrected);}
+      try{corrected=normalizeGeneratedSpeech(chapter,prior);aligned=alignLessonSpeech(chapter,corrected);analysis=corrected===prior?prior:lessonCaptionAnalysis(chapter,corrected);}
       catch(error){
         throwIfJobCancelled();
         // These two functions only inspect local transcript data. Defer their
@@ -445,19 +462,40 @@ export async function runLessonWorkflow(o:Options){
     const raw=await mapLimited(report.chapters,2,async chapter=>{
       const dir=path.join(work,chapter.id);await mkdir(dir,{recursive:true});const spoken=spokenLessonText(chapter.narration),file=path.join(dir,'raw-speech.mp3'),metaFile=path.join(dir,'raw-speech.json'),pronunciation=pronunciationFor(chapter);const key=rawSpeechKey(chapter);let cached=false;
       try{const meta=JSON.parse(await readFile(metaFile,'utf8'));cached=meta.key===key&&meta.hash===hashBytes(await readFile(file));}catch(error){throwIfJobCancelled();if(!(error instanceof SyntaxError)&&(error as NodeJS.ErrnoException)?.code!=='ENOENT')throw error;}
-      const frozen=cached?await readLessonSpeechProof(dir,lessonSpeechBinding(chapter,key,hashBytes(await readFile(file)),pacing,report!.references,settings,processingHash)):undefined;
+      const binding=cached?lessonSpeechBinding(chapter,key,hashBytes(await readFile(file)),pacing,report!.references,settings,processingHash):undefined;
+      const frozen=binding?await readLessonSpeechProof(dir,binding):undefined;
       if(frozen){
         const reused=await trace.run('reuse_verified_narration',`复用已核验旁白 · ${chapter.title}`,{chapterId:chapter.id,audioHash:frozen.proof.processedHash,proofId:frozen.proof.id,tempo:frozen.proof.tempo},async()=>{
           const duration=await probeAudio(frozen.file);
           if(Math.abs(duration-frozen.proof.duration)>.08|| (await inspectLessonSpeechGaps(frozen.file,pacing.maxPauseSeconds)).length)return false;
           try{
-            const checked=verifyNarrationSpeech(chapter.id,()=>{const corrected=correctLessonTranscript(chapter,frozen.analysis,report!.references);return {corrected,aligned:alignLessonSpeech(chapter,corrected)};});
+            const checked=verifyNarrationSpeech(chapter.id,()=>{const corrected=normalizeGeneratedSpeech(chapter,frozen.analysis);return {corrected,aligned:alignLessonSpeech(chapter,corrected)};});
             if(JSON.stringify(checked.corrected)!==JSON.stringify(frozen.analysis))return false;
             chapter.speechMatch=checked.aligned.similarity;chapter.cues=checked.aligned.cues;
             speech.set(chapter.id,{file:frozen.file,analysis:frozen.analysis});return true;
           }catch(error){if(error instanceof NarrationVerificationError)return false;throw error;}
         });
         if(reused)return {chapter,file,preparedFile:'',duration:frozen.proof.duration,cached:true,frozen:frozen.proof};
+      }
+      const fact=report!.factReview;
+      const metadataCandidate=!frozen&&binding&&fact&&fact.score>=80&&!fact.needsRepair&&!fact.findings.length?await readLessonSpeechMetadataCandidate(dir,binding):undefined;
+      if(metadataCandidate&&binding){
+        const rebound=await trace.run('revalidate_narration_metadata',`按新依据复核原旁白 · ${chapter.title}`,{chapterId:chapter.id,audioHash:metadataCandidate.proof.processedHash,priorProofId:metadataCandidate.proof.id,rawAnalysisHash:metadataCandidate.proof.rawAnalysisHash,preservedWaveform:true},async()=>{
+          const duration=await probeAudio(metadataCandidate.file);
+          if(Math.abs(duration-metadataCandidate.proof.duration)>.08||(await inspectLessonSpeechGaps(metadataCandidate.file,pacing.maxPauseSeconds)).length)return;
+          let checked:ReturnType<typeof alignLessonSpeech>,analysis:AudioAnalysis;
+          try{
+            // Never re-authorize an old source-normalized working transcript.
+            // The proof-bound original successful ASR is immutable and rechecked.
+            const result=verifyNarrationSpeech(chapter.id,()=>{const corrected=normalizeGeneratedSpeech(chapter,metadataCandidate.rawAnalysis);return {corrected,aligned:alignLessonSpeech(chapter,corrected)};});
+            checked=result.aligned;analysis=lessonCaptionAnalysis(chapter,result.corrected);
+          }catch(error){if(error instanceof NarrationVerificationError)return;throw error;}
+          await writeFile(path.join(dir,'speech-analysis.json'),JSON.stringify(analysis,null,2),{mode:0o600});
+          const proof=await writeLessonSpeechProof(dir,binding,metadataCandidate.proof.tempo,metadataCandidate.rawAnalysis);
+          chapter.speechMatch=checked.similarity;chapter.cues=checked.cues;speech.set(chapter.id,{file:metadataCandidate.file,analysis});
+          return proof;
+        });
+        if(rebound)return {chapter,file,preparedFile:'',duration:rebound.duration,cached:true,frozen:rebound};
       }
       if(!cached){const bytes=(await trace.run('synthesize_chapter',`合成旁白 · ${chapter.title}`,{chapterId:chapter.id,narration:spoken,anchorHash,...(pronunciation.hints.length?{pronunciationHints:pronunciation.hints}:{})},()=>generateAudio(`使用@Audio1的同一说话者、音色、口音与录音环境。${voiceStyle}${pronunciation.prompt?' '+pronunciation.prompt:''} 台词：${spoken}`,audioConfig,reference))).bytes;await writeRawSpeech(chapter,file,bytes);}
       const preparedFile=path.join(dir,'prepared-speech.wav');
@@ -494,7 +532,7 @@ export async function runLessonWorkflow(o:Options){
     try{await mapLimited(pending,2,async({chapter,file,preparedFile,duration})=>{
       const dir=path.dirname(file),adjusted=path.join(dir,'speech.mp3');
       let chapterTempo=tempo;const allocatedSeconds=duration/tempo;
-      const saveProof=async()=>writeLessonSpeechProof(dir,lessonSpeechBinding(chapter,rawSpeechKey(chapter),hashBytes(await readFile(file)),pacing,report!.references,settings,processingHash),chapterTempo);
+      const saveProof=async(rawAnalysis?:AudioAnalysis)=>writeLessonSpeechProof(dir,lessonSpeechBinding(chapter,rawSpeechKey(chapter),hashBytes(await readFile(file)),pacing,report!.references,settings,processingHash),chapterTempo,rawAnalysis);
       await adjustChapterSpeech(chapter,preparedFile,adjusted,chapterTempo);
       const prior=speech.get(chapter.id);
       if(prior?.analysis.sourceHash===hashBytes(await readFile(adjusted))){await saveProof();return;}
@@ -510,13 +548,14 @@ export async function runLessonWorkflow(o:Options){
           const gaps=await trace.run('inspect_speech_gaps',`核对最终旁白停顿 · ${chapter.title}`,{chapterId:chapter.id,audioHash:hash,maxPauseSeconds:pacing.maxPauseSeconds},()=>inspectLessonSpeechGaps(adjusted,pacing.maxPauseSeconds));
           if(gaps.length)throw new NarrationVerificationError('pause',chapter.id,`章节${chapter.id}实际旁白存在超出${pacing.maxPauseSeconds}秒的长停顿${JSON.stringify(gaps)}，需要重录。`);
           const rawAnalysis=await recognizeExistingNarration(analysisAttempt=>trace.run('transcribe_chapter',`${analysisAttempt?'重试识别相同旁白':'听辨台词'} · ${chapter.title}`,{chapterId:chapter.id,audioHash:hash,duration,analysisAttempt},()=>o.analyze(item,adjusted,{purpose:'generated-narration'})));await writeFile(path.join(dir,'speech-analysis-raw.json'),JSON.stringify(rawAnalysis,null,2),{mode:0o600});
-          const verify=(value:AudioAnalysis,analysisId:string)=>trace.run('verify_chapter_speech',`核对台词 · ${chapter.title}`,{chapterId:chapter.id,audioHash:hash,analysisId},async()=>verifyNarrationSpeech(chapter.id,()=>{const corrected=correctLessonTranscript(chapter,value,report!.references);return {corrected,aligned:alignLessonSpeech(chapter,corrected)};}));let checked:Awaited<ReturnType<typeof verify>>;
+          let selectedRawAnalysis=structuredClone(rawAnalysis);
+          const verify=(value:AudioAnalysis,analysisId:string)=>trace.run('verify_chapter_speech',`核对台词 · ${chapter.title}`,{chapterId:chapter.id,audioHash:hash,analysisId},async()=>verifyNarrationSpeech(chapter.id,()=>{const corrected=normalizeGeneratedSpeech(chapter,value);return {corrected,aligned:alignLessonSpeech(chapter,corrected)};}));let checked:Awaited<ReturnType<typeof verify>>;
           try{checked=await verify(rawAnalysis,item.id);}catch(error){
             if(!(error instanceof NarrationVerificationError)||error.kind!=='speech'||error.chapterId!==chapter.id)throw error;
             const recheckItem={...item,id:randomUUID()};
             try {
               const recheck=await recognizeExistingNarration(analysisAttempt=>trace.run('transcribe_chapter',`${analysisAttempt?'重试复听相同旁白':'独立复听术语'} · ${chapter.title}`,{chapterId:chapter.id,audioHash:hash,duration,priorAnalysisId:item.id,analysisId:recheckItem.id,reason:String(error),analysisAttempt},()=>o.analyze(recheckItem,adjusted,{purpose:'generated-narration'})));
-              await writeFile(path.join(dir,'speech-analysis-recheck.json'),JSON.stringify(recheck,null,2),{mode:0o600});checked=await verify(recheck,recheckItem.id);
+              await writeFile(path.join(dir,'speech-analysis-recheck.json'),JSON.stringify(recheck,null,2),{mode:0o600});selectedRawAnalysis=structuredClone(recheck);checked=await verify(recheck,recheckItem.id);
             } catch (recheckError) {
               const detail=`章节${chapter.id}初次台词核验：${String(error)}；独立复听核验：${String(recheckError)}`;
               await writeFile(path.join(dir,'speech-verification-failure.json'),JSON.stringify({audioHash:hash,firstError:String(error),recheckError:String(recheckError)},null,2),{mode:0o600});
@@ -527,7 +566,7 @@ export async function runLessonWorkflow(o:Options){
             checked.corrected.warnings=[...checked.corrected.warnings,'初次识别存在关键术语或字词疑点，同一音频经独立复听核验；未用脚本补齐缺失字词。'];
             await writeFile(metaFile,JSON.stringify({hash,id:recheckItem.id}),{mode:0o600});
           }
-          const {corrected,aligned}=checked,analysis=lessonCaptionAnalysis(chapter,corrected);chapter.speechMatch=aligned.similarity;chapter.cues=aligned.cues;speech.set(chapter.id,{file:adjusted,analysis});await writeFile(path.join(dir,'speech-analysis.json'),JSON.stringify(analysis,null,2),{mode:0o600});await saveProof();verified=true;break;
+          const {corrected,aligned}=checked,analysis=lessonCaptionAnalysis(chapter,corrected);chapter.speechMatch=aligned.similarity;chapter.cues=aligned.cues;speech.set(chapter.id,{file:adjusted,analysis});await writeFile(path.join(dir,'speech-analysis.json'),JSON.stringify(analysis,null,2),{mode:0o600});await saveProof(selectedRawAnalysis);verified=true;break;
         }catch(error){lastError=error;if(error instanceof NarrationAnalysisError)throw error;const quality=error instanceof NarrationVerificationError&&error.chapterId===chapter.id;if(attempt===1||!quality)throw error;
           const spoken=spokenLessonText(chapter.narration),pronunciation=pronunciationFor(chapter);const result=await trace.run('synthesize_chapter',`重录错字 · ${chapter.title}`,{chapterId:chapter.id,narration:spoken,correction:String(error),...(pronunciation.hints.length?{pronunciationHints:pronunciation.hints}:{})},()=>generateAudio(`使用@Audio1同一声音。${voiceStyle}${pronunciation.prompt?' '+pronunciation.prompt:''} 上次核验发现：${String(error).slice(0,300)}。必须完整准确地朗读下面的文字，日期按汉字读法，小数每一位数字清楚读出，不能增删。只朗读台词，不朗读核验意见。台词：${spoken}`,audioConfig,reference));await writeRawSpeech(chapter,file,result.bytes);await prepareChapterSpeech(chapter,file,preparedFile);
           if(frozen.length){chapterTempo=+(await probeAudio(preparedFile)/allocatedSeconds).toFixed(5);if(chapterTempo<.8||chapterTempo>1.25)pendingTimingFailure([chapter.id],`本章重录后的变速${chapterTempo}不在0.8–1.25安全范围内。`,true);}
@@ -621,7 +660,7 @@ export async function runLessonWorkflow(o:Options){
       for(const chapter of report.chapters){
         const item=o.media.find(m=>m.id===chapter.mediaId&&m.generation?.workflowId===report!.workflowId);
         if(!item?.analysis||item.analysis.status!=='ready')continue;
-        const analysis=correctLessonTranscript(chapter,item.analysis,report.factReview&&!report.factReview.needsRepair?report.references:[]);if(analysis.transcript===item.analysis.transcript)continue;
+        const analysis=normalizeGeneratedSpeech(chapter,item.analysis);if(analysis.transcript===item.analysis.transcript)continue;
         try{const bytes=await readFile(path.join(o.mediaDir,item.id));if(hashBytes(bytes)!==item.analysis.sourceHash)continue;alignLessonSpeech(chapter,analysis);corrections.push({chapter,item,analysis,bytes});}catch{}
       }
       if(corrections.length){

@@ -1,5 +1,6 @@
-import type { AudioAnalysis, MediaItem } from '../shared/types';
+import type { AudioAnalysis, EditPlan, MediaItem, RenderReview } from '../shared/types';
 import { lessonSettings } from './lessonSpec';
+import { extractVisualRetentionRequirements, parseVisualRetentionChecks, visualRetentionSelectionNeeded } from './visualRetentionReview';
 
 export interface SourceAsrRecoveryReason {
   kind:'negation-boundary'|'duration-incomplete-tail';
@@ -31,16 +32,23 @@ export function sourceAsrRecoveryReasons(analysis:AudioAnalysis):SourceAsrRecove
 
 /** Upper bound, including all padding allowed by the existing fine-cut policy.
  * Semantic rejection can only reduce this capacity, never increase it. */
-export function completeSourceCapacity(sources:MediaItem[]):number {
-  let seconds=0;
-  for(const source of sources){
-    const analysis=source.analysis;if(analysis?.status!=='ready')continue;
+function completeSourceRanges(analysis:AudioAnalysis):Array<{start:number;end:number}> {
+    if(analysis.status!=='ready')return [];
     const unsafe=new Set(sourceAsrRecoveryReasons(analysis).flatMap(reason=>reason.sentenceIds));
-    const ranges=analysis.sentences.filter(sentence=>sentence.complete&&!unsafe.has(sentence.id)).map(sentence=>{
+    return analysis.sentences.filter(sentence=>sentence.complete&&!unsafe.has(sentence.id)).map(sentence=>{
       const prior=analysis.sentences.filter(other=>other.end<=sentence.start&&other!==sentence).at(-1)?.end||0;
       const following=analysis.sentences.find(other=>other.start>=sentence.end&&other!==sentence)?.start??analysis.duration;
       return{start:Math.max(prior,0,sentence.start-.1),end:Math.min(following,analysis.duration,sentence.end+.35)};
     }).sort((a,b)=>a.start-b.start);
+}
+export function sourceWitnessHasCompleteSpeech(analysis:AudioAnalysis,time:number):boolean {
+  return Number.isFinite(time)&&time>=0&&time<analysis.duration&&completeSourceRanges(analysis).some(range=>time>=range.start&&time<range.end);
+}
+export function completeSourceCapacity(sources:MediaItem[]):number {
+  let seconds=0;
+  for(const source of sources){
+    const analysis=source.analysis;if(analysis?.status!=='ready')continue;
+    const ranges=completeSourceRanges(analysis);
     let end=-Infinity;for(const range of ranges){seconds+=Math.max(0,range.end-Math.max(end,range.start));end=Math.max(end,range.end);}
   }
   return +seconds.toFixed(3);
@@ -52,4 +60,25 @@ export function durationSourceRecovery(sources:MediaItem[],prompt:string):{minim
   if(capacity>=minimum)return;
   const candidates=sources.flatMap(source=>source.analysis?sourceAsrRecoveryReasons(source.analysis).filter(reason=>reason.kind==='duration-incomplete-tail').map(reason=>({sourceId:source.id,reason})):[]);
   return{minimum,capacity,candidates};
+}
+
+/** A server-bound omitted source frame can require a false tail even when
+ * other complete sentences would fill the requested duration. Reuse the same
+ * tail reason and durable once claim; the witness never changes heard words. */
+export function visualRetentionSourceRecovery(review:RenderReview,prompt:string,plan:EditPlan,sources:MediaItem[]):Array<{sourceId:string;time:number;reason:SourceAsrRecoveryReason}> {
+  if(!visualRetentionSelectionNeeded(review,prompt,plan))return [];
+  const requirements=extractVisualRetentionRequirements(prompt),checks=parseVisualRetentionChecks(review.semantic?.visualRetentionChecks)!;
+  const candidates:Array<{sourceId:string;time:number;reason:SourceAsrRecoveryReason}>=[];
+  for(const [index,check] of checks.entries()){
+    const trusted=review.semantic!.visualRetentionChecks![index],witness=trusted.sourceEvidence;
+    if(check.status!=='unmet'||trusted.sourceOmitted!==true||!witness||!/^[a-f0-9]{64}$/.test(witness.sourceHash||'')||!requirements.some(required=>required.id===check.id&&required.quote===check.quote))continue;
+    const matches=sources.filter(source=>source.id===witness.sourceId),source=matches[0],analysis=source?.analysis;
+    if(matches.length!==1||source.kind!=='video'||source.hasAudio===false||analysis?.status!=='ready'||analysis.sourceHash!==witness.sourceHash||!Number.isFinite(witness.time)||witness.time<0||witness.time>=analysis.duration)continue;
+    const ranges=plan.clips.filter(clip=>clip.sourceId===source.id);
+    if(!plan.editorial?.scenes.some(scene=>scene.sourceId===source.id&&scene.sourceHash===analysis.sourceHash)||!ranges.length||ranges.some(clip=>!Number.isFinite(clip.start)||!Number.isFinite(clip.end)||clip.end<=clip.start||witness.time>=clip.start&&witness.time<clip.end))continue;
+    const tail=analysis.sentences.at(-1),reason=sourceAsrRecoveryReasons(analysis).find(reason=>reason.kind==='duration-incomplete-tail');
+    if(!tail||tail.complete!==false||!reason||witness.time<tail.start||witness.time>tail.end)continue;
+    candidates.push({sourceId:source.id,time:witness.time,reason:{...reason,detail:`用户明确保留要求「${check.quote}」的实际源画面见证位于${witness.time}秒、未完成末句${tail.id}内；${reason.detail}`}});
+  }
+  return candidates;
 }

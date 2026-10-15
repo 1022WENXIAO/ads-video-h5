@@ -219,6 +219,23 @@ function speechPointIndexOf(text:string,phrase:string,from=0):number{return spee
 // numeral in ordinary prose as a number, or changing the original transcript.
 function speechNumberForms(){return /(?<=双)(?:十[一二]|1[12])(?![\d.点零〇一二两三四五六七八九十百千万亿])|[\d零〇一二两三四五六七八九十百千万亿]+点[\d零〇一二三四五六七八九]+|[\d零〇一二两三四五六七八九十][\d零〇一二两三四五六七八九十百千]*(?=[a-z%年月日号天元台家人岁个次万亿]|小时|品牌|批次|批|份|到|至)|[零〇一二三四五六七八九]{3,}/g;}
 function canonicalSpeechNumber(text:string){return text.includes('点')?speechDecimalText(text):String(speechNumberValue(text));}
+// Cue matching must use an already validated numeric spelling in its unique
+// narration occurrence. No heard words, numeric grammar or time maps change.
+function contextualSpeechCue(narration:string,cue:string):string{
+  const original=compactSpeech(cue),text=spokenLessonText(narration).toLowerCase(),phrase=spokenLessonText(cue).toLowerCase(),start=text.indexOf(phrase);
+  if(!phrase||start<0||text.indexOf(phrase,start+1)>=0)return original;
+  const end=start+phrase.length;let normalized='',position=start;
+  for(const match of text.matchAll(speechNumberForms())){
+    const at=match.index!,until=at+match[0].length;
+    if(until<=start||at>=end)continue;
+    // A fragment of one numeric token has no independent canonical span.
+    if(at<start||until>end)return original;
+    normalized+=text.slice(position,at)+canonicalSpeechNumber(match[0]);position=until;
+  }
+  // Canonicalize numbers once, as the complete narration did. A second pass
+  // would reinterpret the newly written 八点11 as the decimal 8.11.
+  return compactSpeech(normalized+text.slice(position,end),false);
+}
 function spokenYears(text:string):string[]{
   const digits:Record<string,string>={'零':'0','〇':'0','一':'1','二':'2','三':'3','四':'4','五':'5','六':'6','七':'7','八':'8','九':'9'};
   return [...text.replace(/\s/g,'').matchAll(/(\d{4}|[零〇一二三四五六七八九]{4})年/g)].map(m=>/^\d/.test(m[1])?m[1]:[...m[1]].map(c=>digits[c]).join(''));
@@ -557,7 +574,7 @@ export function alignLessonSpeech(chapter:LessonChapter,analysis:AudioAnalysis):
   assertNarrationHanCoverage(chapter.id,expected,mapped,{numbersVerified:true});
   const joined=expected.join('');
   const cues=chapter.visual.items.map((item,index)=>{
-    const cue=compactSpeech(item.cue),length=[...cue].length,start=speechPointIndexOf(joined,cue);const indices=Array.from({length},(_,k)=>mapped.get(start+k)).filter((k):k is number=>k!==undefined);
+    const original=compactSpeech(item.cue),cue=speechPointIndexOf(joined,original)>=0?original:contextualSpeechCue(chapter.narration,item.cue),length=[...cue].length,start=speechPointIndexOf(joined,cue);const indices=Array.from({length},(_,k)=>mapped.get(start+k)).filter((k):k is number=>k!==undefined);
     if(start<0||indices.length<Math.ceil(length*.75))throw new Error(`动画原词「${item.cue}」未能与实际旁白对齐。`);
     return {text:originalCues[index],start:+(literalClockCues[index]?.start??heard[indices[0]].start).toFixed(3),end:+(literalClockCues[index]?.end??heard[indices.at(-1)!].end).toFixed(3)};
   });

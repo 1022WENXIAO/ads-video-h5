@@ -12,7 +12,7 @@ import { createToolTrace } from './toolTrace';
 import { throwIfJobCancelled } from './jobExecution';
 import { editFrameZoom, editSentenceBudgetHint } from './editProposal';
 import { extractVisualRetentionRequirements, parseVisualRetentionChecks, visualRetentionSelectionNeeded } from './visualRetentionReview';
-import { durationSourceRecovery, SourceAsrRecoveryError, sourceAsrRecoveryReasons, type SourceAsrRecoveryReason } from './sourceAsrRecovery';
+import { durationSourceRecovery, SourceAsrRecoveryError, sourceAsrRecoveryReasons, sourceWitnessHasCompleteSpeech, visualRetentionSourceRecovery, type SourceAsrRecoveryReason } from './sourceAsrRecovery';
 
 type SceneSelection = {sourceId: string; sentenceIds: string[]; reason: string; purpose: SelectedScene['purpose']};
 // Retakes may sit between useful sentences. Each retained run is a separate
@@ -93,7 +93,7 @@ export async function runEditorialWorkflow(o: WorkflowOptions) {
   const recheckedSources=new Set<string>();let terminalSourceError:unknown;
   async function recheckSource(source:MediaItem,reason:SourceAsrRecoveryReason){
     const key=source.id+':'+reason.sourceHash;
-    if(!o.recheckSource||recheckedSources.has(key))throw new SourceAsrRecoveryError('该原声的有限复听已使用，保留原词与时间；不能反复提交或补写残句。');
+    if(!o.recheckSource||recheckedSources.has(key)){terminalSourceError=new SourceAsrRecoveryError('该原声没有可用的有限复听额度，保留原词与时间；不能反复提交或补写残句。');throw terminalSourceError;}
     recheckedSources.add(key);
     try{
       const analysis=await trace.run('recheck_source_audio','独立复听源素材',{sourceId:source.id,sourceHash:reason.sourceHash,reason},()=>o.recheckSource!(source.id,reason));
@@ -195,7 +195,19 @@ export async function runEditorialWorkflow(o: WorkflowOptions) {
         retentionStopped=true;review.limitations.push('用户明确要求保留的画面尚未验证；保留当前成片和原始评分，不把未知当作缺失，也不重复渲染相同选段。');
       }else if(visualRetentionSelectionNeeded(review,o.prompt,plan)){
         if(preserve){retentionStopped=true;review.limitations.push('实际审查发现未保留用户点名的画面表达，但当前要求固定选段；保留原成片和问题，不能擅自重选。');}
-        else if(renderCount<2){rejectedRetentionSelections.add(selectionKey(scenes));decision='select_scenes';}
+        else if(renderCount<2){
+          const checked=review,candidates=visualRetentionSourceRecovery(checked,o.prompt,plan,o.sources),rejectedKey=selectionKey(scenes);
+          if(candidates.length){scenes=[];script=undefined;invalidate();}
+          for(const sourceId of new Set(candidates.map(candidate=>candidate.sourceId))){
+            const source=o.sources.find(source=>source.id===sourceId)!;
+            await recheckSource(source,candidates.find(candidate=>candidate.sourceId===sourceId)!.reason);
+            if(candidates.some(candidate=>candidate.sourceId===sourceId&&!sourceWitnessHasCompleteSpeech(source.analysis!,candidate.time))){
+              terminalSourceError=new SourceAsrRecoveryError('用户明确要求保留的实际源画面仍落在无法合法选用的未完成原声中；同一音频的有限独立复听已使用，保留原成片、原评分与两版识别，不能补写词尾、强制完整或重复提交。');throw terminalSourceError;
+            }
+          }
+          rejectedRetentionSelections.add(rejectedKey);decision='select_scenes';
+          if(candidates.length)return checked;
+        }
       }
     }
     return review;
@@ -214,7 +226,7 @@ export async function runEditorialWorkflow(o: WorkflowOptions) {
       const name=nextTool(),tool=tools.find(t=>t.name===name)!;
       const args=name==='arrange_timeline'?{format:/(?:横屏|竖屏|方形|9[:：]16|16[:：]9|1[:：]1)/.test(o.prompt)?(/横屏|16[:：]9/.test(o.prompt)?'16:9':/方形|1[:：]1/.test(o.prompt)?'1:1':'9:16'):o.previous?.format||'9:16',zoom:editFrameZoom(o.previous?.clips[0]?.zoom||1.045,o.prompt),fade:o.previous?.clips.find(c=>c.transition?.kind==='fade')?.transition?.duration||0}:{};
       try{results.push({tool:name,result:await tool.execute('server-'+randomUUID(),args)});retries=0;}
-      catch(error){throwIfJobCancelled();if(nextTool()!==name||manualArrange&&name==='arrange_timeline')break;if(transientWorkflowError(feedback)&&retries++<2)continue;throw error;}
+      catch(error){throwIfJobCancelled();if(terminalSourceError)throw terminalSourceError;if(nextTool()!==name||manualArrange&&name==='arrange_timeline')break;if(transientWorkflowError(feedback)&&retries++<2)continue;throw error;}
     }
     return results;
   }

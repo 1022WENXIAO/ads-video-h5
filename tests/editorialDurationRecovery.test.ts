@@ -13,7 +13,7 @@ import { ARK_BASE_URL, TEXT_MODEL_PRESETS } from '../shared/textModels';
 
 const fixture=JSON.parse(await readFile(new URL('./fixtures/fine-cut-duration-incident.json',import.meta.url),'utf8'));
 const config={...TEXT_MODEL_PRESETS[0],kind:'text' as const,provider:'ark',baseUrl:ARK_BASE_URL,enabled:true,apiKey:'fake-editorial-key'};
-type Mode='duration'|'same-selection'|'new-group'|'fragment-first'|'fade'|'auth'|'ordinary';
+type Mode='duration'|'same-selection'|'new-group'|'fragment-first'|'fade'|'auth'|'ordinary'|'original-frame'|'original-frame-manual';
 const subset=()=>[1,2,3].map(index=>structuredClone(fixture.overlongSelection.scenes[index]));
 const sceneKey=(scene:SelectedScene)=>JSON.stringify([scene.sourceId,scene.sourceHash,scene.start,scene.end,scene.sentenceIds,scene.quote]);
 
@@ -22,7 +22,7 @@ const sceneKey=(scene:SelectedScene)=>JSON.stringify([scene.sourceId,scene.sourc
 function harness(mode:Mode){
   const media=structuredClone(fixture.media) as MediaItem[],events:WorkflowEvent[]=[],inspected:string[]=[],audited:number[]=[];
   const counts={transcriptions:0,selections:0,writes:0,renders:0,reviews:0,manualArranges:0};
-  let activeSelection=mode==='fade'||mode==='auth'||mode==='ordinary'?subset():structuredClone(fixture.overlongSelection.scenes);
+  let activeSelection=mode==='fade'||mode==='auth'||mode==='ordinary'||mode.startsWith('original-frame')?subset():structuredClone(fixture.overlongSelection.scenes);
   const fetch:typeof globalThis.fetch=async(_input,init)=>{
     const payload=JSON.parse(String(init?.body)),allowed=payload.tools.map((tool:any)=>tool.function.name);
     let name:string,args:any;
@@ -44,11 +44,11 @@ function harness(mode:Mode){
       assert.match(JSON.stringify(payload.messages),/转场类型或时长无效/);
     }else{
       assert.deepEqual(allowed,['write_narrative']);name='write_narrative';counts.writes++;
-      args=counts.writes===1&&mode!=='fade'&&mode!=='auth'&&mode!=='ordinary'?fixture.originalNarrative:{premise:'观察、比较与证据边界',audience:'科普观众',arc:'用完整原话组织证据与限制',style:'保留原视频和原声',beats:activeSelection.map((entry:any,index:number)=>({sceneId:'scene-'+(index+1),intent:entry.reason,graphic:'none',label:''}))};
+      args=counts.writes===1&&mode!=='fade'&&mode!=='auth'&&mode!=='ordinary'&&!mode.startsWith('original-frame')?fixture.originalNarrative:{premise:'观察、比较与证据边界',audience:'科普观众',arc:'用完整原话组织证据与限制',style:'保留原视频和原声',beats:activeSelection.map((entry:any,index:number)=>({sceneId:'scene-'+(index+1),intent:entry.reason,graphic:'none',label:''}))};
     }
     return new Response(`data: ${JSON.stringify({id:'controlled',object:'chat.completion.chunk',created:1,model:config.modelId,choices:[{index:0,delta:{role:'assistant',tool_calls:[{index:0,id:'call-'+name+counts.selections+counts.writes+counts.manualArranges,type:'function',function:{name,arguments:JSON.stringify(args)}}]},finish_reason:'tool_calls'}]})}\n\ndata: [DONE]\n\n`,{headers:{'Content-Type':'text/event-stream'}});
   };
-  const run=()=>runEditorialWorkflow({prompt:mode==='ordinary'?'把两段视频精剪成20秒横屏成片，保留完整原话和原声，加同步字幕。':fixture.prompt,config,sources:media,previous:mode==='fade'?{format:'16:9',summary:'故障注入：旧参数fade过长',targetSeconds:0,clips:[{sourceId:'source-a',start:0,end:4.84,transition:{kind:'fade',duration:1}}]}:null,export:true,
+  const run=()=>runEditorialWorkflow({prompt:mode.startsWith('original-frame')?'把两段横屏精剪成20秒，普通话原声保留，画面原比例完整放，加同步字幕。':mode==='ordinary'?'把两段视频精剪成20秒横屏成片，保留完整原话和原声，加同步字幕。':fixture.prompt,config,sources:media,previous:mode==='fade'||mode==='original-frame-manual'?{format:'16:9',summary:'故障注入：旧参数fade过长',targetSeconds:0,clips:[{sourceId:'source-a',start:0,end:4.84,transition:{kind:'fade',duration:1}}]}:null,export:true,
     transcribe:async id=>{counts.transcriptions++;return structuredClone(media.find(source=>source.id===id)!.analysis!);},
     verifySelection:async selected=>{audited.push(selected.length);if(selected.some(scene=>scene.sourceId==='source-b'&&scene.sentenceIds.length<3&&scene.sentenceIds.some(id=>/:sentence:[234]$/.test(id))))throw new Error('选句未通过独立完整性审查：该残句句首依赖前序尾字，必须保留已验证的连续原话组。');},
     inspect:async scene=>{inspected.push(sceneKey(scene));return {observations:'Controlled visual cache result; no real image-model call',safeZone:'bottom',frameTimes:[scene.start,(scene.start+scene.end)/2,scene.end]};},
@@ -123,6 +123,16 @@ test('ordinary arrangements retain the added-zoom default while explicit Chinese
   const h=harness('ordinary'),original=globalThis.fetch;globalThis.fetch=h.fetch;
   try{const result=await h.run();assert.ok(result.plan.clips.every(clip=>clip.zoom===1.045));for(const prompt of ['画面完整别裁。','不裁切','不要裁剪画面，保留原声','keep the entire frame','do not crop'])assert.equal(editFrameZoom(1.1,prompt),1,prompt);assert.equal(editFrameZoom(1.045,'正常精剪并适当突出主体'),1.045);}
   finally{globalThis.fetch=original;}
+});
+
+test('actual original-ratio full-frame wording disables zoom for automatic and manual model arrangements',async()=>{
+  for(const mode of ['original-frame','original-frame-manual'] as const){
+    const h=harness(mode),fetch=globalThis.fetch;globalThis.fetch=h.fetch;
+    try{const result=await h.run();assert.equal(result.review!.status,'passed');assert.ok(result.plan.clips.every(clip=>clip.zoom===1));assert.equal(h.counts.manualArranges,mode==='original-frame-manual'?1:0);assert.equal(result.plan.format,'16:9');assert.equal(result.plan.audio!.originalVolume,1);assert.ok(result.plan.captions!.length>0);}
+    finally{globalThis.fetch=fetch;}
+  }
+  for(const prompt of ['画面原比例完整放。','按原比例完整展示','保持原比例完整地呈现'])assert.equal(editFrameZoom(1.1,prompt),1,prompt);
+  for(const prompt of ['画面保持原比例，适当放大主体','不用原比例完整放，可以放大','不要按原比例完整展示'])assert.equal(editFrameZoom(1.1,prompt),1.1,prompt);
 });
 
 test('an explicit preserve-selection request does not silently reselect complete speech to satisfy an incompatible duration',async()=>{

@@ -8,7 +8,7 @@ import {lessonPacing,lessonSettings,spokenLessonText,validateLesson} from '../se
 import {lessonPresentation} from '../server/lessonPresentation';
 import {lessonRendererHash} from '../server/lessonScenes';
 import {lessonVoiceStyle} from '../server/lessonAudio';
-import {lessonSpeechBinding,lessonSpeechProcessingHash,pendingLessonSpeechTempo,readLessonSpeechProof} from '../server/lessonSpeechProof';
+import {lessonSpeechBinding,lessonSpeechProcessingHash,pendingLessonSpeechTempo,readLessonSpeechProof,readLessonSpeechMetadataCandidate} from '../server/lessonSpeechProof';
 import {hashBytes} from '../server/narrativeScenes';
 import {probeAudio,runFFmpeg} from '../server/core';
 import {withModelSnapshot} from '../server/modelContext';
@@ -110,7 +110,7 @@ test('explicit chapter rerecord revision invalidates only that chapter proof and
 
 test('corrupt persisted proof is not trusted and uses bounded actual legacy processing of confirmed raw bytes',async()=>controlled(async f=>{
  const saved=await f.bootstrap(),original=await f.hashes(),file=path.join(f.work,'ch1/speech-proof.json');await writeFile(file,'{corrupt proof');saved.phase='narration';await writeFile(path.join(f.work,'checkpoint.json'),JSON.stringify(saved));const count=f.events.length;
- await assert.rejects(runLessonWorkflow(f.options),e=>causedBy(e,STOP));assert.deepEqual(await f.hashes(),original);assert.deepEqual(f.asr,[]);const events=f.events.slice(count);assert.equal(events.some(e=>e.tool==='reuse_verified_narration'&&(e.input as any).chapterId==='ch1'),false);assert.ok(events.some(e=>e.tool==='prepare_speech_edges'&&(e.input as any).chapterId==='ch1'));assert.equal(events.some(e=>e.tool==='synthesize_chapter'||e.tool==='synthesize_voice_anchor'),false);assert.equal(JSON.parse(await readFile(file,'utf8')).version,1);
+ await assert.rejects(runLessonWorkflow(f.options),e=>causedBy(e,STOP));assert.deepEqual(await f.hashes(),original);assert.deepEqual(f.asr,['ch1']);const events=f.events.slice(count);assert.equal(events.some(e=>e.tool==='reuse_verified_narration'&&(e.input as any).chapterId==='ch1'),false);assert.ok(events.some(e=>e.tool==='prepare_speech_edges'&&(e.input as any).chapterId==='ch1'));assert.equal(events.some(e=>e.tool==='synthesize_chapter'||e.tool==='synthesize_voice_anchor'),false);assert.equal(JSON.parse(await readFile(file,'utf8')).version,1);
 }));
 
 
@@ -122,4 +122,41 @@ test('two proven frozen waves survive a pending ASR transport failure and resume
  await assert.rejects(runLessonWorkflow({...f.options,analyze:async(item:any,file:string)=>{assert.equal(path.basename(path.dirname(file)),'ch3');assert.equal(hashBytes(await readFile(file)),pendingHash);assert.equal(item.id,pendingId);return normal(item,file);}}),error=>causedBy(error,STOP));
  assert.deepEqual(f.asr,['ch3']);assert.deepEqual(await f.hashes(),hashes);assert.equal(JSON.parse(await readFile(path.join(f.work,'ch3/speech-analysis.json'),'utf8')).sourceHash,pendingHash);
  for(const [i,id] of ['ch1','ch2'].entries())assert.equal((await stat(path.join(f.work,id,'speech.mp3'))).mtimeMs,frozenTimes[i].mtimeMs);const events=f.events.slice(count);assert.equal(events.some(e=>e.tool==='synthesize_chapter'||e.tool==='synthesize_voice_anchor'),false);assert.equal(events.filter(e=>e.tool==='reuse_verified_narration').length,2);
+}));
+
+
+test('accepted source metadata changes rebind raw successful ASR with zero DSP, ASR or TTS and preserve waveform mtimes',async()=>controlled(async f=>{
+ const saved=await f.bootstrap(),original=await f.hashes(),before=await Promise.all(saved.report.chapters.map((c:LessonChapter)=>stat(path.join(f.work,c.id,'speech.mp3'))));
+ const oldProofs=await Promise.all(saved.report.chapters.map((c:LessonChapter)=>readFile(path.join(f.work,c.id,'speech-proof.json'),'utf8')));
+ saved.phase='scenes';saved.report.references[0].title='Updated source metadata';saved.report.references[0].excerpt='Updated reference context, no pronunciation hints or script changes.';
+ saved.report.chapters.forEach((c:LessonChapter)=>{c.claims=[{text:'当前核验过的解释依据',referenceIds:['r1']}];});
+ await writeFile(path.join(f.work,'checkpoint.json'),JSON.stringify(saved));const count=f.events.length;
+ await assert.rejects(runLessonWorkflow(f.options),e=>causedBy(e,STOP));assert.deepEqual(f.asr,[]);assert.deepEqual(await f.hashes(),original);
+ const events=f.events.slice(count);assert.equal(events.filter(e=>e.tool==='revalidate_narration_metadata'&&e.status==='succeeded').length,3);
+ assert.equal(events.some(e=>['prepare_speech_edges','tighten_speech_gaps','transcribe_chapter','synthesize_chapter','synthesize_voice_anchor'].includes(e.tool)),false);
+ for(const [i,c] of saved.report.chapters.entries()){
+  const dir=path.join(f.work,c.id),prior=JSON.parse(oldProofs[i]),proof=JSON.parse(await readFile(path.join(dir,'speech-proof.json'),'utf8'));
+  assert.equal((await stat(path.join(dir,'speech.mp3'))).mtimeMs,before[i].mtimeMs);assert.notEqual(proof.id,prior.id);assert.notEqual(proof.binding.chapterHash,prior.binding.chapterHash);assert.equal(proof.binding.waveformHash,prior.binding.waveformHash);assert.equal(proof.rawAnalysisHash,prior.rawAnalysisHash);assert.match(proof.rawAnalysisHash,/^[a-f0-9]{64}$/);
+  assert.ok(await readLessonSpeechProof(dir,proof.binding));assert.equal(await readLessonSpeechMetadataCandidate(dir,proof.binding),undefined);
+ }
+}));
+
+test('metadata candidate requires immutable selected raw ASR and rejects voice, cues, timing, policy or bytes changes',async()=>controlled(async f=>{
+ const saved=await f.bootstrap(),chapter=saved.report.chapters[0],dir=path.join(f.work,chapter.id),raw=await readFile(path.join(dir,'raw-speech.mp3'));
+ const refs=structuredClone(saved.report.references);refs[0].title='Changed source title';
+ const binding=lessonSpeechBinding(chapter,f.rawKey(chapter),hashBytes(raw),f.pacing,refs,saved.report);
+ const candidate=await readLessonSpeechMetadataCandidate(dir,binding);assert.ok(candidate?.rawAnalysis);assert.notEqual(candidate.rawAnalysis,candidate.analysis);
+ for(const altered of [{...binding,rawKey:f.rawKey(chapter,1)},{...binding,processingHash:'f'.repeat(64)},{...binding,waveformHash:'e'.repeat(64)},{...binding,pacingHash:'d'.repeat(64)},{...binding,targetHash:'c'.repeat(64)},{...binding,chapterId:'other'}])assert.equal(await readLessonSpeechMetadataCandidate(dir,altered),undefined);
+ const rawPath=path.join(dir,'speech-verified-raw-'+candidate.proof.rawAnalysisHash+'.json'),bytes=await readFile(rawPath);await writeFile(rawPath,Buffer.concat([bytes,Buffer.from(' ')]));assert.equal(await readLessonSpeechMetadataCandidate(dir,binding),undefined);await writeFile(rawPath,bytes);
+ const proofPath=path.join(dir,'speech-proof.json'),proofBytes=await readFile(proofPath),legacy=JSON.parse(proofBytes.toString());delete legacy.rawAnalysisHash;const {id,...payload}=legacy;legacy.id=hashBytes(JSON.stringify(payload));await writeFile(proofPath,JSON.stringify(legacy));assert.equal(await readLessonSpeechMetadataCandidate(dir,binding),undefined);assert.ok(await readLessonSpeechProof(dir,legacy.binding));await writeFile(proofPath,proofBytes);
+ for(const name of ['raw-speech.mp3','speech.mp3','speech-analysis.json']){const file=path.join(dir,name),original=await readFile(file);await writeFile(file,Buffer.concat([original,Buffer.from('tamper')]));assert.equal(await readLessonSpeechMetadataCandidate(dir,binding),undefined);await writeFile(file,original);}
+}));
+
+
+test('scenes checkpoint with changed source context and legacy raw provenance falls back to bounded processing',async()=>controlled(async f=>{
+ const saved=await f.bootstrap(),original=await f.hashes();saved.phase='scenes';saved.report.references[0].excerpt='Changed source context with no pronunciation hints.';
+ for(const c of saved.report.chapters){const file=path.join(f.work,c.id,'speech-proof.json'),proof=JSON.parse(await readFile(file,'utf8'));delete proof.rawAnalysisHash;const {id,...payload}=proof;proof.id=hashBytes(JSON.stringify(payload));await writeFile(file,JSON.stringify(proof));}
+ await writeFile(path.join(f.work,'checkpoint.json'),JSON.stringify(saved));const count=f.events.length;
+ await assert.rejects(runLessonWorkflow(f.options),e=>causedBy(e,STOP));assert.deepEqual(await f.hashes(),original);assert.deepEqual(f.asr.sort(),['ch1','ch2','ch3']);
+ const events=f.events.slice(count);assert.equal(events.filter(e=>e.tool==='prepare_speech_edges').length,3);assert.equal(events.some(e=>e.tool==='revalidate_narration_metadata'||e.tool==='synthesize_chapter'),false);
 }));

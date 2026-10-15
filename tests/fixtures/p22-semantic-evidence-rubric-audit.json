@@ -1,0 +1,45 @@
+{
+  "scope": "Public projection of actual 05282 CN review evidence for manual rubric audit. No model execution, score correction or end-to-end acceptance is asserted.",
+  "revision": "05282b5b2bb725ade497dbf9709baf1d72be92da",
+  "originalScoresRemainUnchanged": true,
+  "cases": [
+    {
+      "id": "different-variables",
+      "originalReviewScore": 72,
+      "actualFrameSeconds": [1.96, 5.998],
+      "actualFrameText": ["太细：水走慢，接触变久", "细粉接触面积更多，萃取更快"],
+      "source": "Read public-page ref-4, Brewing fundamentals and theory - Coffeepedia",
+      "sourceMeaning": "Finer particles increase exposed surface and extraction rate; in pour-over brewing grind also affects water passage and contact time.",
+      "rubricAssessment": "The compared quantities differ. Do not call their fast/slow descriptions a direct scientific contradiction. Novice clarity may still need improvement, and other actual layout defects remain."
+    },
+    {
+      "id": "same-axis-direction",
+      "originalReviewScore": 72,
+      "actualFrameSeconds": [23],
+      "actualFrameText": ["向粗：1格", "向细：1格", "磨豆机刻度示意"],
+      "actualObservedGeometry": "Coarse arrow points right and fine arrow points left, but the same frame's grinder dial labels coarse on the left and fine on the right.",
+      "rubricAssessment": "Compare the explicit direction reference within this frame. Its opposite conventions are a real visual inconsistency even though spoken bitter-to-coarse and weak-to-fine are correct."
+    },
+    {
+      "id": "sampled-absence-refuted",
+      "originalReviewScore": 72,
+      "actualFinalFrameSeconds": [6.7],
+      "actualFinalFrameText": ["未知部分保留限制"],
+      "actualObservedGeometry": "Green conclusion panel and question-mark boundary are clearly visible in the actual final movie.",
+      "originalFindingMeaning": "The final movie did not preserve the existing unknown-limit visualization.",
+      "rubricAssessment": "An actual final frame refutes whole-movie absence. Preserve the raw finding and score for audit; do not erase the separate confirmed repeated-observation omission."
+    },
+    {
+      "id": "bound-source-omission",
+      "originalReviewScore": 72,
+      "sourceIdProjection": "source-ball",
+      "sourceHash": "52cee27c96ec89277816c60223fd1e56cbcd586dae235436926ba7e9bc38acc7",
+      "actualSourceFrameSeconds": 16.337,
+      "actualSourceFrameText": ["重复观察，核验解释"],
+      "actualSourceFrameGeometry": "Green evidence panel, three verification nodes and a checkmark.",
+      "allFinalSelectedRangesForThisSource": [{"start": 0, "end": 9.86}],
+      "serverDerivedTypedSourceOmitted": true,
+      "rubricAssessment": "This same-source witness lies outside all selected ranges. The original visual is genuinely omitted and the explicit retention requirement remains unmet, regardless of the refuted unknown-limit finding."
+    }
+  ]
+}

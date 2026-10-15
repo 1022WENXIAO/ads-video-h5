@@ -4,6 +4,8 @@ import { timelineDuration } from './timeline';
 /** Explicit full-frame requests disable added zoom in both automatic and
  * manually submitted arrangements. Ordinary framing defaults are unchanged. */
 export function editFrameZoom(proposed:number,prompt:string):number {
+  const originalFrame=prompt.split(/[，,。！？；;\n]/).some(clause=>/(?:按|以|保持|保留|画面)?原比例完整(?:地)?(?:放|呈现|展示)/.test(clause)&&!/(?:不要|不用|不必|无需|别|禁止|勿)[^，,。！？；;\n]{0,8}原比例完整/.test(clause));
+  if(originalFrame)return 1;
   return /画面完整|完整画面|(?:不要|别|不|禁止|勿|无需)(?:再|进行)?裁(?:剪|切)?(?:(?:视频|原)?画面|镜头)?(?=[，。！？；;\s]|$)|\b(?:no|without)\s+crop(?:ping)?\b|\b(?:do not|don't)\s+crop\b|\bkeep\s+(?:the\s+)?(?:entire|full)\s+frame\b/i.test(prompt)?1:proposed;
 }
 

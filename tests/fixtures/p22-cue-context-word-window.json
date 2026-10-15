@@ -1,0 +1,139 @@
+{
+  "revision": "05282b5b2bb725ade497dbf9709baf1d72be92da",
+  "scope": "Two immutable actual trace word/time windows only; controlled partial analysis projection, not full original ASR, listening, media quality or release acceptance. Raw private evidence retained independently.",
+  "evidenceSha256": "11359c273c30ce2ab134e4c3486aa038ff431d18e6e9ed52e71ce952ee84653c",
+  "records": [
+    {
+      "audioHash": "bc065ed4ebf2499e4195026159c4b40dabd79284334239a749f72b73cd61ec76",
+      "cue": "八点十一",
+      "words": [
+        {
+          "start": 3.06,
+          "end": 3.29,
+          "text": "八"
+        },
+        {
+          "start": 3.29,
+          "end": 3.45,
+          "text": "点"
+        },
+        {
+          "start": 3.45,
+          "end": 3.58,
+          "text": "十"
+        },
+        {
+          "start": 3.58,
+          "end": 3.72,
+          "text": "一"
+        },
+        {
+          "start": 3.72,
+          "end": 3.9,
+          "text": "到"
+        },
+        {
+          "start": 3.9,
+          "end": 4.12,
+          "text": "十"
+        },
+        {
+          "start": 4.12,
+          "end": 4.29,
+          "text": "三"
+        },
+        {
+          "start": 4.29,
+          "end": 4.37,
+          "text": "点"
+        },
+        {
+          "start": 4.37,
+          "end": 4.51,
+          "text": "零"
+        },
+        {
+          "start": 4.51,
+          "end": 4.74,
+          "text": "四"
+        },
+        {
+          "start": 4.74,
+          "end": 4.86,
+          "text": "故"
+        },
+        {
+          "start": 4.86,
+          "end": 5.09,
+          "text": "障"
+        }
+      ]
+    },
+    {
+      "audioHash": "7b263f88b0350cbd28e0263694f968db389168f032aa0f63d2a876625ceaf961",
+      "cue": "八点十一",
+      "words": [
+        {
+          "start": 3.84,
+          "end": 4.05,
+          "text": "八"
+        },
+        {
+          "start": 4.05,
+          "end": 4.29,
+          "text": "点"
+        },
+        {
+          "start": 4.29,
+          "end": 4.5,
+          "text": "十"
+        },
+        {
+          "start": 4.5,
+          "end": 4.74,
+          "text": "一"
+        },
+        {
+          "start": 4.74,
+          "end": 4.98,
+          "text": "到"
+        },
+        {
+          "start": 4.98,
+          "end": 5.25,
+          "text": "十"
+        },
+        {
+          "start": 5.25,
+          "end": 5.46,
+          "text": "三"
+        },
+        {
+          "start": 5.46,
+          "end": 5.58,
+          "text": "点"
+        },
+        {
+          "start": 5.58,
+          "end": 5.79,
+          "text": "零"
+        },
+        {
+          "start": 5.79,
+          "end": 5.88,
+          "text": "四"
+        },
+        {
+          "start": 5.88,
+          "end": 6.15,
+          "text": "故"
+        },
+        {
+          "start": 6.15,
+          "end": 6.48,
+          "text": "障"
+        }
+      ]
+    }
+  ]
+}
