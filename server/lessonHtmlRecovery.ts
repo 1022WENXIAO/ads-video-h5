@@ -1,13 +1,14 @@
 import { randomUUID } from 'node:crypto';
 import { mkdir, readFile, rename, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
+import { parse } from 'parse5';
 import type { Format } from '../src/types';
 import { hashBytes, validateDrawing, type HtmlDrawing } from './narrativeScenes';
 import { currentJobSignal, throwIfJobCancelled } from './jobExecution';
 import { liftCardLabels, reflowCardDetails } from './drawingCardLayout';
 
 type LayoutIssue = { code: string; severity?: string; selector?: string; containerSelector?: string };
-type LayoutReport = { ok?: boolean; issues?: LayoutIssue[]; findings?: LayoutIssue[]; layout?: { findings?: LayoutIssue[] }; lint?: { findings?: LayoutIssue[] }; runtime?: { findings?: LayoutIssue[] }; motion?: { findings?: LayoutIssue[] }; contrast?: { findings?: LayoutIssue[] } };
+type LayoutReport = { ok?: boolean; issues?: LayoutIssue[]; findings?: LayoutIssue[]; layout?: { findings?: LayoutIssue[] }; lint?: { findings?: LayoutIssue[] }; runtime?: { ok?: boolean; findings?: LayoutIssue[] }; motion?: { findings?: LayoutIssue[] }; contrast?: { findings?: LayoutIssue[] } };
 export const drawingContentHash = (drawing: HtmlDrawing) => hashBytes(JSON.stringify({ title: drawing.title, text: drawing.nodes.map(n => n.text).filter(Boolean).sort() }));
 const intersects = (a: { x: number; y: number; w: number; h: number }, b: { x: number; y: number; w: number; h: number }) => Math.min(a.x,a.x+a.w) < Math.max(b.x,b.x+b.w) && Math.max(a.x,a.x+a.w) > Math.min(b.x,b.x+b.w) && Math.min(a.y,a.y+a.h) < Math.max(b.y,b.y+b.h) && Math.max(a.y,a.y+a.h) > Math.min(b.y,b.y+b.h);
 const contains = (a: { x: number; y: number; w: number; h: number }, b: { x: number; y: number; w: number; h: number }) => a.x + 12 <= b.x && b.x + b.w <= a.x + a.w - 12 && a.y + 12 <= b.y && b.y + b.h <= a.y + a.h - 12;
@@ -46,7 +47,8 @@ export function separateCardLabels(drawing: HtmlDrawing, issues: LayoutIssue[], 
 
 interface SceneResult { file: string; analysis: { sourceHash: string }; }
 interface AttemptEvidence { directory: string; manifestHash: string; geometry: boolean; }
-interface NativeState { status: 'running' | 'failed' | 'cancelled' | 'completed'; claimHash: string; terminalHash?: string; evidence?: AttemptEvidence; }
+type NativeRecoveryReason = 'geometry' | 'static-sweep';
+interface NativeState { status: 'running' | 'failed' | 'cancelled' | 'completed'; claimHash: string; terminalHash?: string; evidence?: AttemptEvidence; reason?: NativeRecoveryReason; }
 interface HtmlState<R> {
   version: 1; contextHash: string; attempts: number;
   blocked?: boolean;
@@ -59,13 +61,57 @@ function parseHtmlState<R>(stored:string):HtmlState<R>{
   let saved:HtmlState<R>;
   try { saved=JSON.parse(stored); } catch (error) { throw new Error('HTML局部恢复状态JSON损坏，保留原文件并停止。', {cause:error}); }
   if (!saved || saved.version !== 1 || typeof saved.contextHash !== 'string' || !saved.contextHash || !Number.isInteger(saved.attempts) || saved.attempts < 0 || saved.attempts > 2 || !Array.isArray(saved.failed) || saved.failed.length > saved.attempts || saved.failed.some(failure => !failure || !/^[a-f0-9]{64}$/.test(failure.hash) || typeof failure.feedback !== 'string') || saved.blocked !== undefined && typeof saved.blocked !== 'boolean') throw new Error('HTML局部恢复状态版本或内容无效，保留原文件并停止。');
-  if(saved.native&&(!['running','failed','cancelled','completed'].includes(saved.native.status)||!/^[a-f0-9]{64}$/.test(saved.native.claimHash)||saved.native.terminalHash!==undefined&&!/^[a-f0-9]{64}$/.test(saved.native.terminalHash)||saved.attempts!==2||saved.failed.length!==2))throw new Error('HTML原生恢复状态无效，保留原文件并停止。');
+  if(saved.native&&(!['running','failed','cancelled','completed'].includes(saved.native.status)||!/^[a-f0-9]{64}$/.test(saved.native.claimHash)||saved.native.terminalHash!==undefined&&!/^[a-f0-9]{64}$/.test(saved.native.terminalHash)||saved.native.reason!==undefined&&!['geometry','static-sweep'].includes(saved.native.reason)||saved.attempts!==2||saved.failed.length!==2))throw new Error('HTML原生恢复状态无效，保留原文件并停止。');
   return saved;
 }
 export class LessonHtmlLayoutError extends Error { code = 'HTML_LAYOUT_EXHAUSTED'; }
 
 const artifactNames=['index.html','check-report.json','lint-report.json','inspect-report.json','check-failure.json','lint-failure.json','inspect-failure.json'] as const;
 const geometryCodes=new Set(['content_overlap','text_occluded','text_overflow','out_of_bounds','element_out_of_bounds','overflow']);
+const nativeGeometryCodes=new Set([...geometryCodes,'text_box_overflow']);
+const reportNames=['check-report.json','lint-report.json','inspect-report.json'] as const;
+const reportIssues=(report:LayoutReport):LayoutIssue[]=>[...(report.issues||report.findings||[]),...['layout','lint','runtime','motion','contrast'].flatMap(key=>(report as any)[key]?.findings||[])].filter(issue=>!issue.severity||issue.severity==='error');
+
+// This is eligibility to render a different native scene, never permission to
+// accept the failed authored HTML. Only the server's explicit local paused
+// GSAP timeline contract qualifies; comments and quoted examples do not.
+function hasPausedRegisteredGsap(html:string):boolean{
+  let localGsap=false;const scripts:string[]=[];
+  const visit=(node:any)=>{
+    if(node.nodeName==='script'){
+      const type=(node.attrs?.find((a:any)=>a.name==='type')?.value||'').trim().toLowerCase();
+      if(!['','text/javascript','application/javascript'].includes(type)||node.attrs?.some((a:any)=>a.name==='nomodule'))return;
+      const src=node.attrs?.find((a:any)=>a.name==='src')?.value;
+      if(src==='./gsap.min.js')localGsap=true;
+      if(!src)scripts.push((node.childNodes||[]).filter((n:any)=>n.nodeName==='#text').map((n:any)=>n.value).join(''));
+    }
+    for(const child of node.childNodes||[])visit(child);
+  };visit(parse(html));
+  return localGsap&&scripts.some(script=>{
+    const code=script.replace(/"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|`(?:\\.|[^`\\])*`|\/\*[\s\S]*?\*\/|\/\/[^\r\n]*/g,' ');
+    const topLevel=(at:number)=>{let depth=0;for(const char of code.slice(0,at)){if(char==='{')depth++;else if(char==='}')depth--;}return depth===0;};
+    for(const match of code.matchAll(/\b(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*gsap\.timeline\(\{\s*paused\s*:\s*true\s*\}\)\s*;/g)){
+      if(!topLevel(match.index!))continue;
+      const variable=match[1].replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+      const after=match.index!+match[0].length,registered=new RegExp('\\bwindow\\.__timelines\\.[A-Za-z_$][\\w$]*\\s*=\\s*'+variable+'\\s*;').exec(code.slice(after));
+      if(registered&&topLevel(after+registered.index))return true;
+    }return false;
+  });
+}
+function nativeEvidenceReason(artifacts:Map<string,Buffer>):NativeRecoveryReason|undefined{
+  let failed=false,staticSweep=false;
+  for(const name of reportNames){
+    const bytes=artifacts.get(name);if(!bytes)continue;
+    const report=JSON.parse(bytes.toString()) as LayoutReport,issues=reportIssues(report);
+    if(report.runtime?.ok===false)return;
+    if(report.ok===true&&!issues.length)continue;
+    if(report.ok!==false||!issues.length||issues.some(issue=>!nativeGeometryCodes.has(issue.code)&&issue.code!=='sweep_static'))return;
+    failed=true;
+    if(issues.some(issue=>issue.code==='sweep_static')){if(report.runtime?.ok!==true)return;staticSweep=true;}
+  }
+  if(!failed||staticSweep&&!hasPausedRegisteredGsap(artifacts.get('index.html')!.toString()))return;
+  return staticSweep?'static-sweep':'geometry';
+}
 async function immutableWrite(file:string,bytes:string|Buffer){
   try{await writeFile(file,bytes,{flag:'wx',mode:0o600});}
   catch(error){if((error as NodeJS.ErrnoException).code!=='EEXIST')throw error;const existing=await readFile(file);if(!existing.equals(Buffer.from(bytes)))throw new Error('HTML恢复不可变证据SHA冲突，保留原文件并停止。',{cause:error});}
@@ -78,10 +124,10 @@ async function archiveAttempt(project:string,contextHash:string,name:string,erro
   for(const file of artifactNames)try{artifacts.set(file,await readFile(path.join(project,file)));}catch(cause){if((cause as NodeJS.ErrnoException).code!=='ENOENT')throw cause;}
   if(!artifacts.has('index.html'))return;
   let geometry=false;
-  for(const file of ['check-report.json','lint-report.json','inspect-report.json']){
+  for(const file of reportNames){
     const bytes=artifacts.get(file);if(!bytes)continue;
     let report:LayoutReport;try{report=JSON.parse(bytes.toString());}catch(cause){throw new Error('HTML实际检查报告JSON损坏，保留原文件并停止。',{cause});}
-    const issues=[...(report.issues||report.findings||[]),...['layout','lint','runtime','motion','contrast'].flatMap(key=>(report as any)[key]?.findings||[])].filter(issue=>!issue.severity||issue.severity==='error');
+    const issues=reportIssues(report);
     if(report.ok===true&&!issues.length)continue;
     // Any unknown/incomplete/other failure is decisive regardless of report
     // ordering. A later collision cannot turn it into geometry-only recovery.
@@ -99,16 +145,19 @@ async function archiveAttempt(project:string,contextHash:string,name:string,erro
     return {directory,manifestHash:hashBytes(manifest),geometry:isGeometry};
   }
 }
-async function verifyAttemptEvidence(project:string,evidence:AttemptEvidence|undefined,contextHash:string):Promise<boolean>{
-  if(!evidence)return false;
+async function verifyAttemptEvidence(project:string,evidence:AttemptEvidence|undefined,contextHash:string):Promise<NativeRecoveryReason|undefined>{
+  if(!evidence)return;
   const root=path.join('html-recovery-evidence',hashBytes(contextHash));
   if(path.dirname(evidence.directory)!==root||!/^authored-[12]$/.test(path.basename(evidence.directory)))throw new Error('HTML恢复证据路径无效，保留原文件并停止。');
   const bytes=await readFile(path.join(project,evidence.directory,'manifest.json'));
   if(hashBytes(bytes)!==evidence.manifestHash)throw new Error('HTML恢复证据manifest SHA不一致，保留原文件并停止。');
   const manifest=JSON.parse(bytes.toString());
   if(manifest.version!==1||manifest.contextHash!==contextHash||manifest.geometry!==evidence.geometry||!manifest.files?.['index.html'])throw new Error('HTML恢复证据内容无效，保留原文件并停止。');
-  for(const[file,hash]of Object.entries(manifest.files)){if(!artifactNames.includes(file as any)||hashBytes(await readFile(path.join(project,evidence.directory,file)))!==hash)throw new Error('HTML恢复实际文件SHA不一致，保留原文件并停止。');}
-  return evidence.geometry;
+  const artifacts=new Map<string,Buffer>();
+  for(const[file,hash]of Object.entries(manifest.files)){if(!artifactNames.includes(file as any))throw new Error('HTML恢复实际文件SHA不一致，保留原文件并停止。');const bytes=await readFile(path.join(project,evidence.directory,file));if(hashBytes(bytes)!==hash)throw new Error('HTML恢复实际文件SHA不一致，保留原文件并停止。');artifacts.set(file,bytes);}
+  // Keep the original geometry=false manifest immutable. Static sweep is a
+  // separate, tightly checked recovery reason derived from its actual bytes.
+  return nativeEvidenceReason(artifacts);
 }
 
 /** Two actual layout attempts per unchanged chapter, across calls/restarts.
@@ -173,10 +222,13 @@ export async function recoverLessonHtml<R extends SceneResult>(options: {
     if(!state.native||hashBytes(nativeClaim)!==state.native.claimHash)throw new LessonHtmlLayoutError(options.chapterId+'：原生恢复已启动但状态缺失或倒退，不能重试。');
     const claim=JSON.parse(nativeClaim.toString());
     if(claim.version!==1||claim.contextHash!==options.contextHash||JSON.stringify(claim.evidence)!==JSON.stringify(state.failed.map(f=>f.evidence?.manifestHash)))throw new Error('HTML原生恢复启动证据内容不一致，保留原文件并停止。');
-    for(const failure of state.failed)if(!await verifyAttemptEvidence(options.project,failure.evidence,options.contextHash))throw new Error('HTML原生恢复缺少已保存的真实几何失败，保留原文件并停止。');
+    const reasons:NativeRecoveryReason[]=[];
+    for(const failure of state.failed){const reason=await verifyAttemptEvidence(options.project,failure.evidence,options.contextHash);if(!reason)throw new Error('HTML原生恢复缺少已保存的真实布局失败，保留原文件并停止。');reasons.push(reason);}
+    const reason=reasons.includes('static-sweep')?'static-sweep':'geometry';
+    if(claim.reason!==state.native.reason||claim.reason!==undefined&&claim.reason!==reason||claim.reason===undefined&&reason!=='geometry')throw new Error('HTML原生恢复启动原因与实际证据不一致，保留原文件并停止。');
     if(state.native.status!=='running'){
       const terminal=await readFile(terminalFile);if(hashBytes(terminal)!==state.native.terminalHash)throw new Error('HTML原生恢复终态SHA不一致，保留原文件并停止。');
-      const record=JSON.parse(terminal.toString());if(record.status!==state.native.status||record.claimHash!==state.native.claimHash||JSON.stringify(record.completed)!==JSON.stringify(state.completed)||JSON.stringify(record.evidence)!==JSON.stringify(state.native.evidence))throw new Error('HTML原生恢复终态内容不一致，保留原文件并停止。');
+      const record=JSON.parse(terminal.toString());if(record.status!==state.native.status||record.claimHash!==state.native.claimHash||record.reason!==state.native.reason||JSON.stringify(record.completed)!==JSON.stringify(state.completed)||JSON.stringify(record.evidence)!==JSON.stringify(state.native.evidence))throw new Error('HTML原生恢复终态内容不一致，保留原文件并停止。');
     }
   }else if(state.native)throw new Error('HTML原生恢复启动证据缺失，保留原文件并停止。');
   if (state.completed) {
@@ -213,23 +265,25 @@ export async function recoverLessonHtml<R extends SceneResult>(options: {
     }
   }
   if(options.nativeFallback&&state.attempts===2&&state.failed.length===2){
-    for(const failure of state.failed)if(!await verifyAttemptEvidence(options.project,failure.evidence,options.contextHash))throw exhausted();
+    const reasons:NativeRecoveryReason[]=[];
+    for(const failure of state.failed){const reason=await verifyAttemptEvidence(options.project,failure.evidence,options.contextHash);if(!reason)throw exhausted();reasons.push(reason);}
+    const reason:NativeRecoveryReason=reasons.includes('static-sweep')?'static-sweep':'geometry';
     throwIfJobCancelled();
     await mkdir(nativeDirectory,{recursive:true,mode:0o700});
-    const claim=JSON.stringify({version:1,contextHash:options.contextHash,evidence:state.failed.map(f=>f.evidence!.manifestHash)});
+    const claim=JSON.stringify({version:1,contextHash:options.contextHash,reason,evidence:state.failed.map(f=>f.evidence!.manifestHash)});
     // This immutable claim is also a second guard against a rolled-back state
     // or an interrupted process. An unknown execution is never replayed.
     try{await writeFile(claimFile,claim,{flag:'wx',mode:0o600});}catch(error){if((error as NodeJS.ErrnoException).code==='EEXIST')throw new LessonHtmlLayoutError(options.chapterId+'：原生恢复已有启动证据，不能重试。');throw error;}
-    state.native={status:'running',claimHash:hashBytes(claim)};await persist();
+    state.native={status:'running',claimHash:hashBytes(claim),reason};await persist();
     try{
       await clearCurrentReports(options.project);throwIfJobCancelled();
       const result=await options.nativeFallback();throwIfJobCancelled();const fileHash=hashBytes(await readFile(result.file));
       if(fileHash!==result.analysis.sourceHash)throw new Error('实际原生分镜文件哈希与返回的转写来源不一致。');
-      const completed={rendererKind:'native' as const,result,fileHash},terminal=JSON.stringify({status:'completed',claimHash:state.native.claimHash,completed});
+      const completed={rendererKind:'native' as const,result,fileHash},terminal=JSON.stringify({status:'completed',claimHash:state.native.claimHash,reason,completed});
       await immutableWrite(terminalFile,terminal);state.completed=completed;state.native={...state.native,status:'completed',terminalHash:hashBytes(terminal)};await persist();return result;
     }catch(error){
       const evidence=await archiveAttempt(options.project,options.contextHash,'native-1',error);
-      const status=currentJobSignal()?.aborted?'cancelled' as const:'failed' as const,terminal=JSON.stringify({status,claimHash:state.native.claimHash,error:String(error),...(evidence?{evidence}:{})});
+      const status=currentJobSignal()?.aborted?'cancelled' as const:'failed' as const,terminal=JSON.stringify({status,claimHash:state.native.claimHash,reason,error:String(error),...(evidence?{evidence}:{})});
       await immutableWrite(terminalFile,terminal);state.native={...state.native,status,terminalHash:hashBytes(terminal),...(evidence?{evidence}:{})};await persist();throwIfJobCancelled();throw error;
     }
   }

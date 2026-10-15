@@ -72,11 +72,12 @@ export function validateHotBrief(topics:HotResearchBrief['topics'],refs:Research
   return structuredClone(topics);
 }
 
-export async function refreshHotTopics(previous:ResearchResult,prompt:string,options:{read?:PublicReader;trace?:ReturnType<typeof createToolTrace>}={}):Promise<ResearchResult>{
+export async function refreshHotTopics(previous:ResearchResult,prompt:string,options:{read?:PublicReader;trace?:ReturnType<typeof createToolTrace>;requestedAt?:number}={}):Promise<ResearchResult>{
   if(!previous.current)throw new Error('没有可续查的新闻选题。');
   const now=Date.now(),asOf=new Date(now).toISOString(),windowHours=newsWindowHours(prompt);
-  const read=()=>verifyNewsPages(previous.references,windowHours,options.read,now);
-  const verified=options.trace?await options.trace.run('refresh_news_sources','重读已选新闻原文',{urls:previous.references.map(r=>r.url),asOf,windowHours},read):await read();
+  const cutoff=options.requestedAt??now;
+  const read=()=>verifyNewsPages(previous.references,windowHours,options.read,cutoff);
+  const verified=options.trace?await options.trace.run('refresh_news_sources','重读已选新闻原文',{urls:previous.references.map(r=>r.url),asOf,cutoffUtc:new Date(cutoff).toISOString(),windowHours},read):await read();
   const topics=previous.current.topics.flatMap(topic=>{try{return validateHotBrief([topic],verified.references,previous.current!.signals);}catch{return [];}});
   if(!topics.length)throw new Error('已选新闻原文未能重新满足日期、逐字证据和交叉来源要求。'+verified.failures.slice(-4).join('；'));
   const current={...previous.current,asOf,expiresAt:new Date(now+30*60000).toISOString(),windowHours,topics,failures:verified.failures};
@@ -113,10 +114,15 @@ export async function researchHotTopics(config:ModelConfig,prompt:string,progres
     if(round){
       selection=undefined;
       const recovery=[...rejected].reverse().map(r=>r.recovery).find(r=>r&&!searched.has(r.query));
+      // Exhausted agent-selected candidates are not the user's topic. Reserve
+      // one of the existing final-round queries for the original domain rather
+      // than spending the whole budget renaming the same undated/old event.
+      const discoverDomain=policy.scope==='user-domain'&&round===2&&!references.some(r=>r.freshness==='fresh');
+      const domainQuery=discoverDomain?`${policy.subject.slice(0,160)} 新闻 官方公告 ${beijingDate(requestedAt-windowHours*3600000)} ${beijingDate(requestedAt)}`:undefined;
       await plan({...choose,name:'refine_news_search',label:'补查新闻来源',execute:async(id,args)=>{
-        const next=args as NonNullable<typeof selection>,queries=recovery?[recovery.query,...next.queries.filter(q=>q!==recovery.query)].slice(0,2):next.queries;
+        const next=args as NonNullable<typeof selection>,queries=domainQuery?[domainQuery,...next.queries.filter(q=>q!==domainQuery)].slice(0,next.queries.length):recovery?[recovery.query,...next.queries.filter(q=>q!==recovery.query)].slice(0,2):next.queries;
         if(queries.every(q=>searched.has(q)))throw new Error('补查必须更换查询或来源，不能重复全部失败查询。');
-        return choose.execute(id,{...next,queries});
+        return choose.execute(id,{...next,...(discoverDomain?{signalIds:[]}:{}),queries});
       }},`${userDemand}\n前次未找到合格选题。${policy.scope==='user-domain'?(round===2?'最后一轮必须回到用户原始领域重新选择其他事件，不围绕已失败候选反复改标题。':'若原候选过时或缺少交叉正文，优先重选其他相关事件；只有已有合格事件的交叉报道缺口才继续定向补查。'):'保留用户指定的名称、版本和事件，改查可读的一手公告与其他媒体，不反复尝试访问检查页面。'}换查询、域名或检索传闻核验与官方状态。不要再次返回以下不可用页面：${JSON.stringify([...unusable])}。已搜索：${JSON.stringify([...searched])}；已读资料：${JSON.stringify(references.map(({excerpt,...r})=>r))}；淘汰候选：${JSON.stringify(rejected)}；实际缺口：${JSON.stringify(failures.slice(-12))}。`,()=>Boolean(selection));
     }
     const queries=selection!.queries;queries.forEach(q=>searched.add(q));
@@ -128,7 +134,7 @@ export async function researchHotTopics(config:ModelConfig,prompt:string,progres
     if(candidates)raw=mergeResearch(raw,candidates);
     const unread=newsSourceCandidates(sourceGroups,r=>{const key=newsSourceIdentity(r.url);return !readURLs.has(key)&&!readReferences.has(key)&&!unusable.has(key)&&(attempts.get(key)||0)<2;});
     unread.forEach(r=>{const key=newsSourceIdentity(r.url);attempts.set(key,(attempts.get(key)||0)+1);});
-    const verified=await trace.run('read_news_sources','读取正文与发布时间',{urls:unread.map(r=>r.url),windowHours,attempt:round+1},()=>verifyNewsPages(unread,windowHours,options.read));
+    const verified=await trace.run('read_news_sources','读取正文与发布时间',{urls:unread.map(r=>r.url),windowHours,cutoffUtc:searchContext.cutoffUtc,attempt:round+1},()=>verifyNewsPages(unread,windowHours,options.read,requestedAt));
     failures.push(...verified.failures);
     for(const page of verified.pages){if(page.status==='read'){readURLs.add(newsSourceIdentity(page.url));if(page.finalURL)readURLs.add(newsSourceIdentity(page.finalURL));}else if(!page.retryable)unusable.add(newsSourceIdentity(page.url));}
     verified.references.forEach(r=>readReferences.set(newsSourceIdentity(r.url),r));

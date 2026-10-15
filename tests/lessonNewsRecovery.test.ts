@@ -7,6 +7,7 @@ import {runLessonWorkflow,lessonNewsRecoveryPolicy,lessonNewsResearchRequest,NEW
 import {lessonSettings,validateLesson} from '../server/lessonSpec';
 import {lessonPresentation} from '../server/lessonPresentation';
 import {lessonRendererHash} from '../server/lessonScenes';
+import {newsSourceParserHash} from '../server/newsSourceVersion';
 import {validatePlan} from '../server/core';
 import {hashBytes} from '../server/narrativeScenes';
 import {createNewsPublicationAnnotation} from '../server/newsTime';
@@ -52,7 +53,7 @@ async function seededNews(directory:string,phase='done'){
   const file=path.join(directory,'controlled-fixture.mp4');await writeFile(file,'CONTROLLED hash fixture; not actual video acceptance');
   const rendered={id:'controlled-movie',file},renderedHash=hashBytes(await readFile(file)),candidate=createNewsPublicationCandidate(plan,media,requestedAt)!;assert.ok(candidate);
   const review:RenderReview={status:'passed',score:95,checks:[{name:'新闻报道日期可见',passed:true,detail:'Controlled contract fixture'}],semantic:{score:95,findings:[],suggestions:[]},limitations:['Not a real acceptance result.'],createdAt:new Date().toISOString(),newsPublication:{...candidate,frameVerified:true,renderedSha256:renderedHash,frameEvidence:{chapterId:'c0',quote:annotation.label,frameTime:1,sampledTimes:[1]}}};
-  const checkpoint={fingerprint:hashBytes(JSON.stringify({version:1,owner:'fixture-owner',prompt,export:true})),phase,rendererHash:lessonRendererHash(),requestedAt,research:{summary:'Controlled sourced news',queries:[],references,current:hotResearch},researchRounds:2,report,plan,rendered,renderedHash,renders:2,review};
+  const checkpoint={fingerprint:hashBytes(JSON.stringify({version:1,owner:'fixture-owner',prompt,export:true})),phase,rendererHash:lessonRendererHash(),newsSourceParserHash:newsSourceParserHash(),requestedAt,research:{summary:'Controlled sourced news',queries:[],references,current:hotResearch},researchRounds:2,report,plan,rendered,renderedHash,renders:2,review};
   const options={prompt,requestedAt,config:{id:'fixture',name:'fixture',kind:'text' as const,provider:'ark',baseUrl:'https://example.invalid',enabled:true,apiKey:'fixture',modelId:'fixture'},audioConfig:{id:'audio',name:'fixture',kind:'audio' as const,provider:'ark',baseUrl:'https://example.invalid',enabled:true,apiKey:'fixture',modelId:'seed-audio-1.0'},media,dataDir:directory,mediaDir:directory,ownerId:'fixture-owner',checkpointKey:'case',export:true,progress:async()=>{},analyze:async()=>{throw new Error('Unexpected ASR');},register:async()=>{},persist:async()=>{},saveDraft:async()=>{},render:async()=>{throw new Error('Unexpected render');},review:async()=>review};
   return{options,checkpoint,work};
 }

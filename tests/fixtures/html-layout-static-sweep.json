@@ -1,0 +1,619 @@
+{
+  "provenance": "Public script and minimal actual authored drawings/check findings projected from the sealed P12 failure. Regression audio is a controlled waveform, not the original voice or new video acceptance.",
+  "duration": 18.11,
+  "format": "9:16",
+  "chapter": {
+    "id": "chapter-2",
+    "title": "一个后台连接所有入口",
+    "role": "foundation",
+    "goal": "解释共享后台如何统一终端、桌面、网页和脚本，并说明Code Mode的作用。",
+    "prerequisites": [
+      "chapter-1"
+    ],
+    "narration": "新版会自动启动共享后台。终端、桌面、网页和脚本，都连接同一个进程；会话从终端开始，也能换桌面或网页继续。Code Mode还能把MCP服务和接口端点，变成代理可调用的函数。",
+    "reason": "先画清楚多入口到一个进程的结构，再解释工具函数化，建立后续云端和迁移理解的基础。",
+    "referenceIds": [
+      "ref-11",
+      "ref-20"
+    ],
+    "claims": [
+      {
+        "text": "OpenCode 2.0引入一个在开发者电脑上自动运行的单一后台服务，终端、网页、桌面都与同一底层进程通信。",
+        "referenceIds": [
+          "ref-11"
+        ],
+        "basis": "source"
+      },
+      {
+        "text": "开发者可以在终端开始会话，再通过桌面或网页继续；自定义脚本也能连接到同一服务。",
+        "referenceIds": [
+          "ref-11"
+        ],
+        "basis": "source"
+      },
+      {
+        "text": "Code Mode基于轻量JavaScript解释器，可把MCP服务器和OpenAPI端点转换为代理可程序化调用的函数。",
+        "referenceIds": [
+          "ref-11"
+        ],
+        "basis": "source"
+      },
+      {
+        "text": "Automater对架构变化的概述与SiTech一致：TUI、网页、桌面和脚本通过自动启动的后台服务路由。",
+        "referenceIds": [
+          "ref-20"
+        ],
+        "basis": "synthesis",
+        "explanation": "Automater报道称TUI、web interface、desktop app和@opencode/client scripts通过一个自动启动的后台服务；与SiTech所述共享后台相互印证。"
+      }
+    ],
+    "visual": {
+      "kind": "concept",
+      "takeaway": "多个入口共享同一个后台进程",
+      "items": [
+        {
+          "label": "终端",
+          "detail": "先在终端发起编程会话",
+          "cue": "终端",
+          "illustration": "interface"
+        },
+        {
+          "label": "桌面和网页",
+          "detail": "同一会话可换到桌面或网页继续",
+          "cue": "桌面、网页",
+          "illustration": "interaction"
+        },
+        {
+          "label": "共享后台",
+          "detail": "所有入口连接同一后台进程",
+          "cue": "同一个进程",
+          "illustration": "modules"
+        },
+        {
+          "label": "Code Mode",
+          "detail": "把MCP服务和OpenAPI端点变成可调用函数",
+          "cue": "可调用的函数",
+          "illustration": "code"
+        }
+      ]
+    },
+    "cues": [
+      {
+        "text": "终端",
+        "start": 2.85,
+        "end": 3.34
+      },
+      {
+        "text": "桌面、网页",
+        "start": 3.51,
+        "end": 4.62
+      },
+      {
+        "text": "同一个进程",
+        "start": 6.33,
+        "end": 7.33
+      },
+      {
+        "text": "可调用的函数",
+        "start": 16.47,
+        "end": 17.64
+      }
+    ]
+  },
+  "drawings": [
+    {
+      "title": "一个后台连接所有入口",
+      "nodes": [
+        {
+          "id": "n_terminal",
+          "kind": "card",
+          "x": 60,
+          "y": 260,
+          "w": 250,
+          "h": 112,
+          "text": "终端\n开始会话",
+          "tone": "paper",
+          "fontSize": 34,
+          "highlight": false
+        },
+        {
+          "id": "n_desktop",
+          "kind": "card",
+          "x": 60,
+          "y": 414,
+          "w": 250,
+          "h": 112,
+          "text": "桌面\n继续同一会话",
+          "tone": "paper",
+          "fontSize": 33,
+          "highlight": false
+        },
+        {
+          "id": "n_web",
+          "kind": "card",
+          "x": 60,
+          "y": 568,
+          "w": 250,
+          "h": 112,
+          "text": "网页\n继续同一会话",
+          "tone": "paper",
+          "fontSize": 33,
+          "highlight": false
+        },
+        {
+          "id": "n_script",
+          "kind": "card",
+          "x": 60,
+          "y": 722,
+          "w": 250,
+          "h": 112,
+          "text": "自定义脚本\n连接本地服务",
+          "tone": "paper",
+          "fontSize": 32,
+          "highlight": false
+        },
+        {
+          "id": "n_core",
+          "kind": "circle",
+          "x": 405,
+          "y": 438,
+          "w": 220,
+          "h": 220,
+          "text": "单一共享后台\n同一底层进程\n自动启动",
+          "tone": "blue",
+          "fontSize": 32,
+          "highlight": true
+        },
+        {
+          "id": "line1",
+          "kind": "line",
+          "x": 310,
+          "y": 316,
+          "w": 100,
+          "h": 220,
+          "text": "",
+          "tone": "coral",
+          "fontSize": 36,
+          "highlight": false
+        },
+        {
+          "id": "line2",
+          "kind": "line",
+          "x": 310,
+          "y": 470,
+          "w": 96,
+          "h": 80,
+          "text": "",
+          "tone": "coral",
+          "fontSize": 36,
+          "highlight": false
+        },
+        {
+          "id": "line3",
+          "kind": "line",
+          "x": 310,
+          "y": 624,
+          "w": 96,
+          "h": -72,
+          "text": "",
+          "tone": "coral",
+          "fontSize": 36,
+          "highlight": false
+        },
+        {
+          "id": "line4",
+          "kind": "line",
+          "x": 310,
+          "y": 778,
+          "w": 100,
+          "h": -226,
+          "text": "",
+          "tone": "coral",
+          "fontSize": 36,
+          "highlight": false
+        },
+        {
+          "id": "n_codemode",
+          "kind": "card",
+          "x": 80,
+          "y": 900,
+          "w": 270,
+          "h": 90,
+          "text": "Code Mode\n轻量 JavaScript 解释器",
+          "tone": "paper",
+          "fontSize": 25,
+          "highlight": false
+        },
+        {
+          "id": "n_mcp",
+          "kind": "card",
+          "x": 390,
+          "y": 870,
+          "w": 130,
+          "h": 62,
+          "text": "MCP 服务",
+          "tone": "paper",
+          "fontSize": 24,
+          "highlight": false
+        },
+        {
+          "id": "n_openapi",
+          "kind": "card",
+          "x": 390,
+          "y": 923,
+          "w": 130,
+          "h": 87,
+          "text": "OpenAPI 端点",
+          "tone": "paper",
+          "fontSize": 24,
+          "highlight": false
+        },
+        {
+          "id": "n_functions",
+          "kind": "card",
+          "x": 550,
+          "y": 900,
+          "w": 118,
+          "h": 90,
+          "text": "代理可调用\n函数",
+          "tone": "coral",
+          "fontSize": 24,
+          "highlight": true
+        },
+        {
+          "id": "line5",
+          "kind": "line",
+          "x": 350,
+          "y": 945,
+          "w": 40,
+          "h": 0,
+          "text": "",
+          "tone": "coral",
+          "fontSize": 36,
+          "highlight": false
+        },
+        {
+          "id": "line6",
+          "kind": "line",
+          "x": 520,
+          "y": 901,
+          "w": 30,
+          "h": 30,
+          "text": "",
+          "tone": "coral",
+          "fontSize": 36,
+          "highlight": false
+        },
+        {
+          "id": "line7",
+          "kind": "line",
+          "x": 520,
+          "y": 983,
+          "w": 30,
+          "h": -38,
+          "text": "",
+          "tone": "coral",
+          "fontSize": 36,
+          "highlight": false
+        },
+        {
+          "id": "n_sessionnote",
+          "kind": "text",
+          "x": 390,
+          "y": 690,
+          "w": 230,
+          "h": 87,
+          "text": "会话列表与 API\n由同一进程承接",
+          "tone": "ink",
+          "fontSize": 24,
+          "highlight": false
+        }
+      ]
+    },
+    {
+      "title": "一个后台连接所有入口",
+      "nodes": [
+        {
+          "id": "n_terminal",
+          "kind": "card",
+          "x": 52,
+          "y": 238,
+          "w": 246,
+          "h": 96,
+          "text": "终端\n开始会话",
+          "tone": "paper",
+          "fontSize": 32,
+          "highlight": false
+        },
+        {
+          "id": "n_desktop",
+          "kind": "card",
+          "x": 52,
+          "y": 358,
+          "w": 246,
+          "h": 96,
+          "text": "桌面\n继续同一会话",
+          "tone": "paper",
+          "fontSize": 27,
+          "highlight": false
+        },
+        {
+          "id": "n_web",
+          "kind": "card",
+          "x": 52,
+          "y": 478,
+          "w": 246,
+          "h": 96,
+          "text": "网页\n继续同一会话",
+          "tone": "paper",
+          "fontSize": 27,
+          "highlight": false
+        },
+        {
+          "id": "n_script",
+          "kind": "card",
+          "x": 52,
+          "y": 598,
+          "w": 246,
+          "h": 96,
+          "text": "自定义脚本\n连接本地服务",
+          "tone": "paper",
+          "fontSize": 27,
+          "highlight": false
+        },
+        {
+          "id": "n_core",
+          "kind": "circle",
+          "x": 392,
+          "y": 366,
+          "w": 226,
+          "h": 226,
+          "text": "单一共享后台\n同一底层进程\n自动启动",
+          "tone": "blue",
+          "fontSize": 30,
+          "highlight": true
+        },
+        {
+          "id": "line1",
+          "kind": "line",
+          "x": 298,
+          "y": 286,
+          "w": 94,
+          "h": 194,
+          "text": "",
+          "tone": "coral",
+          "fontSize": 36,
+          "highlight": false
+        },
+        {
+          "id": "line2",
+          "kind": "line",
+          "x": 298,
+          "y": 406,
+          "w": 94,
+          "h": 73,
+          "text": "",
+          "tone": "coral",
+          "fontSize": 36,
+          "highlight": false
+        },
+        {
+          "id": "line3",
+          "kind": "line",
+          "x": 298,
+          "y": 526,
+          "w": 94,
+          "h": -47,
+          "text": "",
+          "tone": "coral",
+          "fontSize": 36,
+          "highlight": false
+        },
+        {
+          "id": "line4",
+          "kind": "line",
+          "x": 298,
+          "y": 646,
+          "w": 94,
+          "h": -167,
+          "text": "",
+          "tone": "coral",
+          "fontSize": 36,
+          "highlight": false
+        },
+        {
+          "id": "n_sessionnote",
+          "kind": "text",
+          "x": 382,
+          "y": 620,
+          "w": 248,
+          "h": 87,
+          "text": "会话列表与 API\n由同一进程承接",
+          "tone": "ink",
+          "fontSize": 24,
+          "highlight": false
+        },
+        {
+          "id": "n_codemode",
+          "kind": "card",
+          "x": 52,
+          "y": 742,
+          "w": 292,
+          "h": 112,
+          "text": "Code Mode\n轻量 JavaScript 解释器",
+          "tone": "paper",
+          "fontSize": 24,
+          "highlight": false
+        },
+        {
+          "id": "n_mcp",
+          "kind": "card",
+          "x": 392,
+          "y": 724,
+          "w": 132,
+          "h": 62,
+          "text": "MCP 服务",
+          "tone": "paper",
+          "fontSize": 24,
+          "highlight": false
+        },
+        {
+          "id": "n_openapi",
+          "kind": "card",
+          "x": 392,
+          "y": 812,
+          "w": 132,
+          "h": 87,
+          "text": "OpenAPI 端点",
+          "tone": "paper",
+          "fontSize": 24,
+          "highlight": false
+        },
+        {
+          "id": "n_functions",
+          "kind": "card",
+          "x": 560,
+          "y": 758,
+          "w": 110,
+          "h": 118,
+          "text": "代理可调用\n函数",
+          "tone": "coral",
+          "fontSize": 24,
+          "highlight": true
+        },
+        {
+          "id": "line5",
+          "kind": "line",
+          "x": 344,
+          "y": 756,
+          "w": 48,
+          "h": 0,
+          "text": "",
+          "tone": "coral",
+          "fontSize": 36,
+          "highlight": false
+        },
+        {
+          "id": "line6",
+          "kind": "line",
+          "x": 344,
+          "y": 842,
+          "w": 48,
+          "h": -48,
+          "text": "",
+          "tone": "coral",
+          "fontSize": 36,
+          "highlight": false
+        },
+        {
+          "id": "line7",
+          "kind": "line",
+          "x": 524,
+          "y": 756,
+          "w": 36,
+          "h": 36,
+          "text": "",
+          "tone": "coral",
+          "fontSize": 36,
+          "highlight": false
+        },
+        {
+          "id": "line8",
+          "kind": "line",
+          "x": 524,
+          "y": 843,
+          "w": 36,
+          "h": -36,
+          "text": "",
+          "tone": "coral",
+          "fontSize": 36,
+          "highlight": false
+        },
+        {
+          "id": "n-src",
+          "kind": "text",
+          "x": 52,
+          "y": 924,
+          "w": 618,
+          "h": 64,
+          "text": "来源：SiTech 与 Automater 报道",
+          "tone": "ink",
+          "fontSize": 24,
+          "highlight": false
+        }
+      ]
+    }
+  ],
+  "reports": [
+    {
+      "ok": false,
+      "runtime": {
+        "ok": true,
+        "findings": []
+      },
+      "layout": {
+        "findings": [
+          {
+            "code": "sweep_static",
+            "severity": "error",
+            "selector": "[data-composition-id]",
+            "message": "Timeline did not advance under seek; every green verdict on this run is unreliable."
+          },
+          {
+            "code": "text_box_overflow",
+            "severity": "error",
+            "selector": "#n_codemode",
+            "containerSelector": "#n_codemode",
+            "message": "Text extends outside its nearest visual/container box."
+          },
+          {
+            "code": "text_occluded",
+            "severity": "error",
+            "selector": "#n_mcp",
+            "containerSelector": "#n_openapi",
+            "message": "Text is hidden beneath an opaque element."
+          }
+        ],
+        "samples": [
+          1.006,
+          3.018,
+          5.031,
+          7.043,
+          9.055,
+          11.067,
+          13.079,
+          15.092,
+          17.104
+        ]
+      }
+    },
+    {
+      "ok": false,
+      "runtime": {
+        "ok": true,
+        "findings": []
+      },
+      "layout": {
+        "findings": [
+          {
+            "code": "sweep_static",
+            "severity": "error",
+            "selector": "[data-composition-id]",
+            "message": "Timeline did not advance under seek; every green verdict on this run is unreliable."
+          }
+        ],
+        "samples": [
+          1.006,
+          3.018,
+          5.031,
+          7.043,
+          9.055,
+          11.067,
+          13.079,
+          15.092,
+          17.104
+        ]
+      }
+    }
+  ]
+}

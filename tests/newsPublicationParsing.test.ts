@@ -67,7 +67,7 @@ test('legal publication time nodes retain their existing datetime and labelled-d
 
 test('explicit article publication evidence keeps priority and old or future headers do not become fresh',()=>{
   const old='2026-10-13T08:00:00-04:00';
-  const structured=`<script type="application/ld+json">${JSON.stringify({'@type':'NewsArticle',headline:'旧报道',datePublished:old})}</script>`;
+  const structured=`<script type="application/ld+json">${JSON.stringify({'@type':'NewsArticle',headline:'谷歌重回前沿模型竞争，Gemini4 Argon能打吗？',datePublished:old})}</script>`;
   const publication=articlePublication(structured+cases[0].html);
   assert.equal(publication.publishedAt,'2026-10-13T12:00:00.000Z');
   assert.equal(publication.dateEvidence,'JSON-LD datePublished: '+old);

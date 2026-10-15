@@ -31,7 +31,9 @@ import { currentResearchExpired, refreshHotTopics, researchHotTopics, newsSearch
 import { wantsCurrentResearch } from './intents';
 import { lessonPresentation } from './lessonPresentation';
 import { writeUrgentBgm } from './bgm';
-import { validateNewsPublicationProof } from './newsPublicationProof';
+import { createNewsPublicationCandidate, validateNewsPublicationProof } from './newsPublicationProof';
+import { newsSourceParserHash, preserveNewsSourceCheckpoint, revalidateNewsSources } from './newsSourceVersion';
+import type { PublicReader } from './publicResearch';
 import { beijingDate,requiresTodayEvent,todayEventFindings,requiresSelectionReason,selectionReasonFindings } from './lessonAcceptance';
 import { newsObservationFindings, createNewsPublicationAnnotation, newsPublicationSourceFindings } from './newsTime';
 import { recoverToolDecision } from './workflowDriver';
@@ -51,6 +53,7 @@ interface Options {
   rebuildScenes?:boolean;
   authorVisual?:typeof authorDrawing;
   produceScene?:typeof produceLessonScene;
+  readNewsSource?:PublicReader;
   render:(plan:EditPlan,bgmFile?:string)=>Promise<{id:string;file:string}>;review:(file:string,plan:EditPlan)=>Promise<RenderReview>;
 }
 export const NEWS_PUBLICATION_GAP = '新闻报道日期来源缺口';
@@ -126,6 +129,9 @@ export async function runLessonWorkflow(o:Options){
   let plan:EditPlan|undefined,rendered:{id:string;file:string}|undefined,review:RenderReview|undefined,renderedHash='';
   let speech=new Map<string,{file:string;analysis:AudioAnalysis}>();
   let best:{plan:EditPlan;rendered:NonNullable<typeof rendered>;review:RenderReview;hash:string}|undefined,savedCheckpoint:any;
+  let sourceParserVersion:string|undefined;
+  let sourceRevalidation:{requiresRender?:boolean;candidate?:{plan:EditPlan;rendered:{id:string;file:string};hash:string;contentHash:string;rendererHash:string}}|undefined;
+  const contentHash=(value:LessonReport)=>hashBytes(JSON.stringify({...value,references:undefined,hotResearch:undefined,factReview:undefined}));
   try{const saved=JSON.parse(await readFile(path.join(work,'checkpoint.json'),'utf8'));if(saved.fingerprint===fingerprint){savedCheckpoint=saved;visualFeedback=saved.visualFeedback||{};for(const key of saved.gapRetakes||[])gapRetakes.add(key);research=saved.research;voiceRevision=saved.voiceRevision||0;pacingRetakes=saved.pacingRetakes||0;chapterVoiceRevisions=saved.chapterVoiceRevisions||{};feedback=saved.feedback||'';repairRequirements=saved.repairRequirements||'';researchRounds=saved.researchRounds||(research?1:0);reviewRetries=saved.reviewRetries||0;reselects=saved.reselects||0;rejectedNewsTopics=Array.isArray(saved.rejectedNewsTopics)?saved.rejectedNewsTopics.filter((s:unknown)=>typeof s==='string'):[];
     if(saved.report){try{const draft=saved.report;if(!draft.explicitDuration)draft.requestedSeconds=settings.requestedSeconds;report=draft;report=validateLesson({...draft,presentation},o.prompt);phase=report.factReview?(report.factReview.needsRepair?'script':o.export?'narration':'done'):'fact-review';}catch(error){phase='script';if(report)report.factReview=undefined;feedback=error instanceof Error?error.message:'检查点脚本需重新校验';repairRequirements=feedback;if(o.rebuildScenes&&saved.best?.plan?.lesson){try{const reviewed=validateLesson(saved.best.plan.lesson,o.prompt);if(reviewed.chapters.every(c=>saved.report.chapters.find((old:LessonChapter)=>old.id===c.id)?.narration===c.narration))report=reviewed;}catch{}}}}
     else if(research)phase='script';
@@ -133,16 +139,21 @@ export async function runLessonWorkflow(o:Options){
     if(['research','budget','script','fact-review'].includes(saved.phase)&&research)phase=saved.phase;
   }}catch{}
   if(o.requestedAt===undefined&&Number.isFinite(savedCheckpoint?.requestedAt))requestedAt=savedCheckpoint.requestedAt;
+  sourceParserVersion=savedCheckpoint?.newsSourceParserHash;
+  sourceRevalidation=savedCheckpoint?.newsSourceRevalidation;
+  const sourceUpgrade=Boolean(current&&savedCheckpoint&&(research?.current||report?.hotResearch)&&sourceParserVersion!==newsSourceParserHash());
+  if((sourceUpgrade||sourceRevalidation)&&Number.isFinite(savedCheckpoint?.requestedAt))requestedAt=savedCheckpoint.requestedAt;
+  if(!sourceUpgrade&&sourceRevalidation&&!sourceRevalidation.requiresRender&&report){report.factReview=undefined;phase='fact-review';}
   let datedMovieEvidence=false;
-  if(o.export&&report&&savedCheckpoint&&canReuseNewsEvidence(report,o.prompt,requestedAt)){
+  if(!sourceUpgrade&&!sourceRevalidation&&o.export&&report&&savedCheckpoint&&canReuseNewsEvidence(report,o.prompt,requestedAt)){
     try{datedMovieEvidence=Boolean(savedCheckpoint.renderedHash&&JSON.stringify(savedCheckpoint.plan?.lesson)===JSON.stringify(report)&&hashBytes(await readFile(savedCheckpoint.rendered.file))===savedCheckpoint.renderedHash);}catch{}
   }
   if(settings.requestedSeconds<=60&&research&&!report&&!scriptBudget)phase='budget';
-  if(current&&research&&currentResearchExpired(research)&&!datedMovieEvidence){if(report)report.factReview=undefined;phase='research';feedback='热点研究已过期，锁定已选事件重新读取当前来源并审查原稿。';}
+  if(!sourceUpgrade&&!sourceRevalidation&&current&&research&&currentResearchExpired(research)&&!datedMovieEvidence){if(report)report.factReview=undefined;phase='research';feedback='热点研究已过期，锁定已选事件重新读取当前来源并审查原稿。';}
   if(current&&report?.factReview&&!report.factReview.needsRepair&&(todayEventFindings(report.factReview.todayEvents,report,o.prompt,requestedAt).length||selectionReasonFindings(report.factReview.selectionReason,report,o.prompt).length||newsObservationFindings(report,requestedAt).length)){report.factReview=undefined;if(phase!=='research')phase='fact-review';}
   if(report?.factReview?.needsRepair&&(!feedback||feedback.includes('超过6次')))feedback=report.factReview.findings.join('；');
   if(current&&report?.factReview?.needsRepair&&feedback.includes(NEWS_PUBLICATION_GAP))phase='research';
-  const persistCheckpoint=async()=>writeFile(path.join(work,'checkpoint.json'),JSON.stringify({fingerprint,requestedAt,rendererHash,phase,research,report,scriptBudget,voiceRevision,pacingRetakes,chapterVoiceRevisions,feedback,repairRequirements,researchRounds,reselects,rejectedNewsTopics,visualFeedback,renders,reviewRetries,plan,rendered,renderedHash,review,best,gapRetakes:[...gapRetakes]}),{mode:0o600});
+  const persistCheckpoint=async()=>writeFile(path.join(work,'checkpoint.json'),JSON.stringify({fingerprint,requestedAt,rendererHash,newsSourceParserHash:sourceParserVersion,newsSourceRevalidation:sourceRevalidation,phase,research,report,scriptBudget,voiceRevision,pacingRetakes,chapterVoiceRevisions,feedback,repairRequirements,researchRounds,reselects,rejectedNewsTopics,visualFeedback,renders,reviewRetries,plan,rendered,renderedHash,review,best,gapRetakes:[...gapRetakes]}),{mode:0o600});
   const restored=new Map<string,WorkflowEvent>();
   try{for(const line of (await readFile(path.join(work,'calls.jsonl'),'utf8')).split('\n').filter(Boolean)){const event=JSON.parse(line) as WorkflowEvent;if(event.callId)restored.set(event.callId,event);}}catch{}
   const logged=new Set(restored.keys());
@@ -153,9 +164,34 @@ export async function runLessonWorkflow(o:Options){
     for(const e of events)if(e.status!=='running'&&e.callId&&!logged.has(e.callId)){await appendFile(path.join(work,'calls.jsonl'),JSON.stringify(e)+'\n',{mode:0o600});logged.add(e.callId);}
     await writeFile(path.join(work,'tools.json'),JSON.stringify(events,null,2),{mode:0o600});await o.progress(events);
   },[o.config.apiKey,o.audioConfig?.apiKey||''],[...restored.values()]);
+  if(sourceUpgrade){
+    await trace.run('revalidate_news_sources','重新核验旧新闻来源版本',{priorParserHash:sourceParserVersion||'missing',parserHash:newsSourceParserHash(),cutoffUtc:new Date(requestedAt).toISOString()},async()=>{
+      const snapshot=await preserveNewsSourceCheckpoint(work);
+      sourceRevalidation??={};
+      // Keep a file candidate, never its old fact/date/review authorization.
+      // Pending narration and ambiguous submissions cannot become completed media.
+      if(!sourceRevalidation.candidate&&o.export&&report&&savedCheckpoint.rendererHash===rendererHash&&['review','repair','done'].includes(savedCheckpoint.phase)&&JSON.stringify(savedCheckpoint.plan?.lesson)===JSON.stringify(report)){
+        try{if(savedCheckpoint.renderedHash&&hashBytes(await readFile(savedCheckpoint.rendered.file))===savedCheckpoint.renderedHash)sourceRevalidation.candidate={plan:validatePlan(savedCheckpoint.plan,o.media),rendered:savedCheckpoint.rendered,hash:savedCheckpoint.renderedHash,contentHash:contentHash(report),rendererHash};}
+        catch(error){throwIfJobCancelled();if((error as NodeJS.ErrnoException)?.code!=='ENOENT'&&!(error instanceof Error&&error.constructor===Error&&!('code'in error)))throw error;}
+      }
+      if(report)report.factReview=undefined;
+      plan=undefined;rendered=undefined;renderedHash='';review=undefined;best=undefined;
+      const previous=research?.current?research:report?.hotResearch?{summary:'旧新闻检查点，来源待重核',queries:[],references:report.references,current:report.hotResearch}:undefined;
+      try{
+        if(!previous)throw new Error('旧新闻检查点缺少已选来源，不能沿用旧日期。');
+        const result=await revalidateNewsSources(previous,report,requestedAt,o.readNewsSource);
+        research=result.research;
+        if(report){report.hotResearch=research.current;const ids=new Set(report.references.map(ref=>ref.id));report.references=research.references.filter(ref=>ids.has(ref.id));}
+        if(result.valid){sourceParserVersion=newsSourceParserHash();phase=report?'fact-review':settings.requestedSeconds<=60&&!scriptBudget?'budget':'script';feedback='新闻来源解析规则已更新；已按原指令时间重读正文与日期，必须重新独立核对原稿，旧成片审查不再授权。';}
+        else{feedback=NEWS_PUBLICATION_GAP+'：旧来源重核不合格：'+result.findings.join('；');if(report)report.factReview={score:0,needsRepair:true,findings:[feedback]};phase='research';sourceRevalidation.candidate=undefined;}
+        await writeFile(path.join(work,'research.json'),JSON.stringify(research,null,2),{mode:0o600});await persistCheckpoint();
+        return{snapshot,valid:result.valid,findings:result.findings,nextTool:currentTool(),preservedAudio:true,preservedBudgets:true};
+      }catch(error){phase='research';feedback='新闻来源版本重核未完成，保留原来源版本和已有音频：'+String(error);await persistCheckpoint();throw error;}
+    });
+  }
   // Resume a verified rendered file at review, instead of synthesizing and
   // rendering it again and consuming the one reserved content-repair attempt.
-  if(o.export&&report?.factReview&&!report.factReview.needsRepair&&savedCheckpoint){
+  if(!sourceUpgrade&&!sourceRevalidation&&o.export&&report?.factReview&&!report.factReview.needsRepair&&savedCheckpoint){
     const saved=savedCheckpoint;
     try{
       if(saved.best?.hash&&hashBytes(await readFile(saved.best.rendered.file))===saved.best.hash){validatePlan(saved.best.plan,o.media);best=saved.best;}
@@ -215,10 +251,15 @@ export async function runLessonWorkflow(o:Options){
       const reusable=Boolean(report?.factReview&&!report.factReview.needsRepair&&!['research','budget','script','fact-review'].includes(phase));
       const restored=reusable?await verifiedSpeech(true):undefined;
       if(restored){restoredSpeech=true;restoreSpeechState(restored);}else speech=new Map();
+      if(sourceRevalidation)sourceRevalidation.candidate=undefined;
       plan=undefined;rendered=undefined;review=undefined;best=undefined;renderedHash='';renders=0;reviewRetries=0;
       await persistCheckpoint();return {preservedAudio:Boolean(restored&&!restored.pending.length),verifiedChapters:[...speech.keys()],pendingChapters:restored?.pending||[],chapters:report?.chapters.map(c=>c.id)||[],nextTool:currentTool()};
     });
   }
+  function assertSourceRenderBudget(){
+    if(o.export&&sourceRevalidation?.requiresRender&&renders>=2)throw new Error('新闻来源重核后，原成片内容、日期或来源文件已变化，不能沿用旧片；两版渲染预算已用尽，保留已有音频和失败记录，不再生成第三版。');
+  }
+  assertSourceRenderBudget();
   if(o.export&&!restoredSpeech&&report?.factReview&&!report.factReview.needsRepair&&['scenes','narration'].includes(savedCheckpoint?.phase)&&phase==='narration'){
     restoreSpeechState(await verifiedSpeech(true));await persistCheckpoint();
   }
@@ -235,6 +276,23 @@ export async function runLessonWorkflow(o:Options){
   if(report?.factReview?.needsRepair&&report.factReview.score>=80&&!report.factReview.adjudication&&!feedback.includes(NEWS_PUBLICATION_GAP)){
     report.factReview=await adjudicateScript(report.factReview);feedback=report.factReview.findings.join('；');
     phase=report.factReview.needsRepair?'script':o.export?'narration':'done';await o.saveDraft(report);await persistCheckpoint();
+  }
+  async function reuseRevalidatedMovie(){
+    const prior=sourceRevalidation?.candidate;sourceRevalidation=undefined;
+    const resumeNarration=async()=>{if(o.export&&report){sourceRevalidation={requiresRender:true};assertSourceRenderBudget();speech=(await verifiedSpeech(true)).reused;}return false;};
+    if(!prior||!report||prior.rendererHash!==rendererHash||contentHash(report)!==prior.contentHash)return resumeNarration();
+    const candidate=validatePlan({...prior.plan,lesson:structuredClone(report)},o.media);
+    if(!createNewsPublicationCandidate(candidate,o.media,requestedAt))return resumeNarration();
+    for(const clip of candidate.clips){
+      const item=o.media.find(item=>item.id===clip.sourceId);
+      if(!item?.analysis?.sourceHash)return resumeNarration();
+      try{if(hashBytes(await readFile(path.join(o.mediaDir,item.id)))!==item.analysis.sourceHash)return resumeNarration();}
+      catch(error){if((error as NodeJS.ErrnoException).code!=='ENOENT')throw error;return resumeNarration();}
+    }
+    try{if(hashBytes(await readFile(prior.rendered.file))!==prior.hash)return resumeNarration();}
+    catch(error){if((error as NodeJS.ErrnoException).code!=='ENOENT')throw error;return resumeNarration();}
+    plan=candidate;rendered=prior.rendered;renderedHash=prior.hash;review=undefined;best=undefined;phase='review';datedMovieEvidence=true;
+    await o.persist(plan);return true;
   }
   const tools:AgentTool[]=[];
   function add(name:string,label:string,description:string,parameters:AgentTool['parameters'],fn:(a:any)=>Promise<unknown>){
@@ -253,7 +311,7 @@ export async function runLessonWorkflow(o:Options){
     researchRounds++;
     let next:Awaited<ReturnType<typeof researchGaps>>;
     try{
-      if(refreshOnly&&research)try{next=await refreshHotTopics(research,o.prompt,{trace});}catch(error){throwIfJobCancelled();feedback+='\n重读已选原文缺口：'+String(error);}
+      if(refreshOnly&&research)try{next=await refreshHotTopics(research,o.prompt,{trace,requestedAt});}catch(error){throwIfJobCancelled();feedback+='\n重读已选原文缺口：'+String(error);}
       next??=current?await researchHotTopics(o.config,lessonNewsResearchRequest(o.prompt,feedback,report?.title,a.topic,a.questions,reselects-(reselect?1:0),researchRounds-1,rejectedNewsTopics),undefined,{trace,requestedAt}):await researchCreativeTopic(o.config,a.topic,a.questions,o.prompt,{trace});
       if(current&&!next.current?.topics.length)throw new Error('热点研究缺少可核验的新稿与交叉来源，不能生成当前热点视频。'+(next.current?.failures.slice(-4).join('；')||''));}
     catch(error){
@@ -262,7 +320,7 @@ export async function runLessonWorkflow(o:Options){
       if(!cached)throw error;
       next={...cached.research,summary:`本次联网检索失败，使用同一用户同一指令的已核验来源缓存（最早取得时间${cached.retrievedAt}，24小时有效）；不是本次新检索，仍需独立审查本版全部声明。\n`+cached.research.summary};
     }
-    if(current){research=mergeResearch(research,next);if(reselect){report=undefined;scriptBudget=undefined;}else if(report){report.hotResearch=research.current;report.references=research.references.filter(r=>report!.references.some(old=>old.id===r.id));report.factReview=undefined;}}
+    if(current){sourceParserVersion=newsSourceParserHash();sourceRevalidation=undefined;research=mergeResearch(research,next);if(reselect){report=undefined;scriptBudget=undefined;}else if(report){report.hotResearch=research.current;report.references=research.references.filter(r=>report!.references.some(old=>old.id===r.id));report.factReview=undefined;}}
     else if(research){const refs=structuredClone(research.references);for(const ref of next.references){const existing=refs.find(r=>r.url===ref.url);if(existing){if(['primary-page','primary-paper','primary-record','public-page'].includes(ref.verification))Object.assign(existing,ref,{id:existing.id});}else refs.push({...ref,id:`ref-${refs.length+1}`});}research={...next,summary:lessonResearchSummary(research.summary.split('\n\n可用原始来源与实际网页摘录')[0]+'\n追加定向查证：\n'+next.summary.split('\n\n可用原始来源与实际网页摘录')[0],refs),references:refs};}
     else research=next;
     phase=refreshOnly?'fact-review':settings.requestedSeconds<=60&&!report&&!scriptBudget?'budget':'script';await writeFile(path.join(work,'research.json'),JSON.stringify(research,null,2),{mode:0o600});return {summary:research.summary,references:research.references,settings,pacing,totalNarrationCharacters:lessonNarrationBudget(settings.requestedSeconds,pacing),nextTool:currentTool()};
@@ -300,7 +358,9 @@ export async function runLessonWorkflow(o:Options){
     return {repaired:a.chapters.map((c:LessonChapter)=>c.id),preserved:report.chapters.filter(c=>!a.chapters.some((u:LessonChapter)=>u.id===c.id)).map(c=>c.id),nextTool:'review_lesson_script'};
   });
   add('review_lesson_script',current?'核查新闻事实与来源':'审查史实与教学结构','独立核查检索证据、公式、数值例子与概念递进。未通过须修改脚本。',Type.Object({}),async()=>{
-    if(!report||!research)throw new Error('先提交教学脚本。');report.factReview=await reviewLessonScript(o.config,report,research.summary,result=>writeFile(path.join(work,'fact-review-response.json'),JSON.stringify(result,null,2),{mode:0o600}),undefined,o.prompt,requestedAt);if(report.factReview.needsRepair&&report.factReview.score>=80&&attempts>=2&&!report.factReview.findings.some(f=>f.includes(NEWS_PUBLICATION_GAP)))report.factReview=await adjudicateScript(report.factReview);feedback=report.factReview.findings.join('；');repairRequirements=report.factReview.needsRepair?feedback:'';if(!report.factReview.needsRepair)attempts=0;phase=report.factReview.needsRepair?((researchRounds<3&&/(?:缺少|未找到|无法取得|不足).*(?:来源|原始.*论文|证据)|需要(?:补充|重新|联网|追加).*(?:来源|检索|查证)/.test(feedback)||feedback.includes(NEWS_PUBLICATION_GAP)||lessonNewsRecoveryPolicy(o.prompt,feedback,reselects,researchRounds).reselect)?'research':'script'):o.export?'narration':'done';await o.saveDraft(report);await writeFile(path.join(work,'script.json'),JSON.stringify(report,null,2),{mode:0o600});return {...report.factReview,targets:phase==='script'?lessonRepairTargets(report,feedback):[],nextTool:phase==='done'?'complete':currentTool()};
+    if(!report||!research)throw new Error('先提交教学脚本。');report.factReview=await reviewLessonScript(o.config,report,research.summary,result=>writeFile(path.join(work,'fact-review-response.json'),JSON.stringify(result,null,2),{mode:0o600}),undefined,o.prompt,requestedAt);if(report.factReview.needsRepair&&report.factReview.score>=80&&attempts>=2&&!report.factReview.findings.some(f=>f.includes(NEWS_PUBLICATION_GAP)))report.factReview=await adjudicateScript(report.factReview);feedback=report.factReview.findings.join('；');repairRequirements=report.factReview.needsRepair?feedback:'';if(!report.factReview.needsRepair)attempts=0;phase=report.factReview.needsRepair?((researchRounds<3&&/(?:缺少|未找到|无法取得|不足).*(?:来源|原始.*论文|证据)|需要(?:补充|重新|联网|追加).*(?:来源|检索|查证)/.test(feedback)||feedback.includes(NEWS_PUBLICATION_GAP)||lessonNewsRecoveryPolicy(o.prompt,feedback,reselects,researchRounds).reselect)?'research':'script'):o.export?'narration':'done';
+    if(!report.factReview.needsRepair&&sourceRevalidation){const nextPhase=phase;phase='fact-review';if(!await reuseRevalidatedMovie())phase=nextPhase;}
+    await o.saveDraft(report);await writeFile(path.join(work,'script.json'),JSON.stringify(report,null,2),{mode:0o600});return {...report.factReview,targets:phase==='script'?lessonRepairTargets(report,feedback):[],nextTool:phase==='done'?'complete':currentTool()};
   });
   add('synthesize_narration',current?'制作新闻播报旁白':'制作统一教学旁白','固定普通话教学声线，复用同一合成参考，实测时长、实际转写、校验年份和台词并取得动画时间码。',Type.Object({}),async()=>{
     if(!report?.factReview||report.factReview.needsRepair||!o.audioConfig)throw new Error('先通过事实审查并配置旁白模型。');
@@ -457,7 +517,7 @@ export async function runLessonWorkflow(o:Options){
     const base:EditPlan={lesson:structuredClone(report),format:report.format,targetSeconds:0,summary:`${report.title} · ${report.chapters.length}章，从直觉到应用`,clips:report.chapters.map((c,i)=>({sceneId:c.id,sourceId:c.mediaId!,start:0,end:c.duration!,purpose:i===0?'hook':i===report!.chapters.length-1?'conclusion':'argument',transition:i?{kind:'fade',duration:pacing.transitionSeconds}:{kind:'cut',duration:0}})),audio:{originalVolume:1,narrationVolume:0,bgmVolume:presentation.bgm ? .25 : 0,normalize:true}};
     base.captions=captionsFromTranscript(base,o.media);plan=validatePlan(base,o.media);await o.persist(plan);phase='render';return {seconds:plan.targetSeconds,chapters:plan.clips.length,captions:plan.captions?.length,nextTool:'render_lesson'};
   });
-  add('render_lesson',current?'渲染新闻成片':'渲染教学成片','输出当前最新方案，生成视频和实际渲染清单。',Type.Object({}),async()=>{if(!plan)throw new Error('先编排教学时间线。');if(current&&research&&currentResearchExpired(research)&&!(datedMovieEvidence&&report&&canReuseNewsEvidence(report,o.prompt,requestedAt))){phase='research';throw new Error('热点研究超过30分钟，渲染前重新查证来源。');}let bgmFile:string|undefined;if(presentation.bgm){bgmFile=path.join(work,'urgent-bgm.wav');await trace.run('produce_background_music','制作紧张氛围配乐',{mood:presentation.mood,source:'original-synthesis'},async()=>{await writeUrgentBgm(bgmFile!);return {generated:true};});}rendered=await o.render(plan,bgmFile);renderedHash=hashBytes(await readFile(rendered.file));renders++;reviewRetries=0;phase='review';return {artifactId:rendered.id,duration:plan.targetSeconds,nextTool:'review_lesson'};});
+  add('render_lesson',current?'渲染新闻成片':'渲染教学成片','输出当前最新方案，生成视频和实际渲染清单。',Type.Object({}),async()=>{if(!plan)throw new Error('先编排教学时间线。');assertSourceRenderBudget();if(current&&research&&currentResearchExpired(research)&&!(datedMovieEvidence&&report&&canReuseNewsEvidence(report,o.prompt,requestedAt))){phase='research';throw new Error('热点研究超过30分钟，渲染前重新查证来源。');}let bgmFile:string|undefined;if(presentation.bgm){bgmFile=path.join(work,'urgent-bgm.wav');await trace.run('produce_background_music','制作紧张氛围配乐',{mood:presentation.mood,source:'original-synthesis'},async()=>{await writeUrgentBgm(bgmFile!);return {generated:true};});}rendered=await o.render(plan,bgmFile);renderedHash=hashBytes(await readFile(rendered.file));renders++;sourceRevalidation=undefined;reviewRetries=0;phase='review';return {artifactId:rendered.id,duration:plan.targetSeconds,nextTool:'review_lesson'};});
   add('review_lesson',current?'检查新闻成片与声音':'审查教学成片与声音','检查实际完整音频、各章抽帧、图解与旁白一致、字幕、概念递进、音色与音量。',Type.Object({}),async()=>{
     if(!plan||!rendered)throw new Error('先渲染教学成片。');review=await o.review(rendered.file,plan);
     // Re-read the actual candidate after the independent review. A passed

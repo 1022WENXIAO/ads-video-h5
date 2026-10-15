@@ -16,6 +16,7 @@ import { lessonVoiceStyle } from '../server/lessonAudio';
 import { NarrationAnalysisError } from '../server/narrationAnalysisRecovery';
 import { createNewsPublicationAnnotation } from '../server/newsTime';
 import { createNewsPublicationCandidate } from '../server/newsPublicationProof';
+import { newsSourceParserHash } from '../server/newsSourceVersion';
 import type { EditPlan, MediaItem } from '../src/types';
 const newsLayout=()=>({fontSize:24,x:40,y:106,width:1200,height:32,sampledTimes:[0,1,14.99],minimumOpacity:1});
 function controlledNewsReview(review:RenderReview,file:string,plan:EditPlan,media:MediaItem[],requestedAt:number,actualHash:string):RenderReview {
@@ -36,7 +37,7 @@ async function seedNewsResearch(directory:string,prompt:string){
   const work=path.join(directory,'lesson-workflows/case');await mkdir(work,{recursive:true});
   const now=Date.now(),current={asOf:new Date(now).toISOString(),expiresAt:new Date(now+30*60000).toISOString(),windowHours:24,signals:[],topics:[],failures:[]};
   const fingerprint=createHash('sha256').update(JSON.stringify({version:1,owner:'fixture-owner',prompt,export:false})).digest('hex');
-  await writeFile(path.join(work,'checkpoint.json'),JSON.stringify({fingerprint,phase:'budget',research:{summary:'受控新闻研究检查点',queries:[],references:[],current},researchRounds:1}));
+  await writeFile(path.join(work,'checkpoint.json'),JSON.stringify({fingerprint,newsSourceParserHash:newsSourceParserHash(),phase:'budget',research:{summary:'受控新闻研究检查点',queries:[],references:[],current},researchRounds:1}));
 }
 
 for(let index=0;index<3;index++)for(const c of cases)test(`${TEXT_MODEL_PRESETS[index].modelId}: ${c.id} dispatches research without waiting for a model decision`,async()=>{
@@ -110,7 +111,7 @@ test('missing daily-event evidence after reselection stops instead of repeatedly
   const chapters:LessonChapter[]=Array.from({length:3},(_,i)=>({id:'c'+i,role:i===0?'hook':i===1?'foundation':'recap',title:'新闻说明'+i,goal:'理解误差与评分',prerequisites:i?['c'+(i-1)]:[],narration:'误差变大损失越高。'.repeat(9),reason:'受控检查点',referenceIds:['r0'],claims:[{text:'误差影响评分',referenceIds:['r0']}],visual:{kind:'concept',takeaway:'误差影响评分',items:[{label:'误差',detail:'预测与实际的差',cue:'误差变大'},{label:'评分',detail:'为偏差计分',cue:'损失越高'}]}}));
   const report=validateLesson({workflowId:'controlled-daily-gap',title:'受控新闻',audience:'初学者',objectives:['理解来源','区分日期'],arc:'核验事件日期',...settings,chapters,references,hotResearch:current,limitations:[]},prompt);
   const fingerprint=createHash('sha256').update(JSON.stringify({version:1,owner:'fixture-owner',prompt,export:false})).digest('hex');
-  await writeFile(path.join(work,'checkpoint.json'),JSON.stringify({fingerprint,phase:'fact-review',research:{summary:'受控已查证候选',queries:[],references,current},report,researchRounds:3,reselects:2}));
+  await writeFile(path.join(work,'checkpoint.json'),JSON.stringify({fingerprint,newsSourceParserHash:newsSourceParserHash(),phase:'fact-review',research:{summary:'受控已查证候选',queries:[],references,current},report,researchRounds:3,reselects:2}));
   let requests=0;
   globalThis.fetch=async(_url,init)=>{
     requests++;assert.equal(JSON.parse(String(init?.body)).stream,undefined,'unsupported dates must not trigger another writing turn');
@@ -269,7 +270,7 @@ for(const mode of ['valid','changed-audio','news','news-binding','news-first','n
     }
     checkpoint.plan.lesson=structuredClone(checkpoint.report);
     checkpoint.fingerprint=createHash('sha256').update(JSON.stringify({version:1,owner:'fixture-owner',prompt:o.prompt,export:true})).digest('hex');
-    await writeFile(path.join(work,'checkpoint.json'),JSON.stringify({...checkpoint,research:{...checkpoint.research,references:checkpoint.report.references,current}}));
+    await writeFile(path.join(work,'checkpoint.json'),JSON.stringify({...checkpoint,newsSourceParserHash:newsSourceParserHash(),research:{...checkpoint.research,references:checkpoint.report.references,current}}));
   }else if(first)await writeFile(path.join(work,'checkpoint.json'),JSON.stringify(checkpoint));
   const speechHashes=new Map<string,string>();
   for(const chapter of checkpoint.report.chapters){
