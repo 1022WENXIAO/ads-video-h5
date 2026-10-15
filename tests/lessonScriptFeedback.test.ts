@@ -72,7 +72,7 @@ test('actual write and partial-repair requests share one allocated budget across
     if(!body.stream){reviews++;return new Response(JSON.stringify({choices:[{message:{content:JSON.stringify(reviews===1?{score:75,needsRepair:true,findings:['c1：受控示例需要修正。']}:{score:92,needsRepair:false,findings:[]})}}]}));}
     const name=body.tool_choice.function.name;assert.ok(['write_lesson_script','revise_lesson_script'].includes(name));
     const tool=body.tools[0].function,system=JSON.stringify(body.messages.filter((message:any)=>message.role==='system'));
-    assert.ok(system.includes(instruction));assert.ok(tool.description.includes(instruction));assert.doesNotMatch(tool.description,/建议3[–-]5章|建议8[–-]12章/);
+    const expectedInstruction=name==='revise_lesson_script'?instruction.replace('完整脚本','合并后的完整脚本'):instruction;assert.ok(system.includes(expectedInstruction));assert.ok(tool.description.includes(expectedInstruction));assert.doesNotMatch(tool.description,/建议3[–-]5章|建议8[–-]12章/);
     assert.equal(tool.parameters.properties.chapters.minItems,name==='write_lesson_script'?3:1);assert.equal(tool.parameters.properties.chapters.maxItems,name==='write_lesson_script'?3:undefined);
     assert.match(tool.parameters.properties.chapters.items.properties.narration.description,new RegExp(`约${budget.perChapterTarget}字.*最多${budget.perChapterMaximum}`));
     assert.match(tool.parameters.properties.chapters.items.properties.visual.description,/comparison.*多个items\.illustration=bar-chart.*必须同时提供barChart/);
@@ -83,9 +83,11 @@ test('actual write and partial-repair requests share one allocated budget across
   try{const result=await runLessonWorkflow(fixture.options);assert.equal(result.report.factReview?.score,92);assert.equal(writes,1);assert.equal(revisions,1);assert.equal(reviews,2);assert.deepEqual(result.report.chapters[0],fixture.draft[0]);assert.deepEqual(result.report.chapters[2],fixture.draft[2]);assert.notEqual(result.report.chapters[1].narration,fixture.draft[1].narration);assert.equal(result.rendered,undefined);}
   finally{globalThis.fetch=original;await rm(fixture.directory,{recursive:true,force:true});}
 });
-test('the unchanged six-attempt cap still ends invalid script submissions without paid media work',async()=>{
+// Parameter failures use the existing consecutive-failure bound, not the six
+// validated script-version allowance reserved for factual correction.
+test('eight consecutive invalid script submissions stop without consuming paid media work',async()=>{
   const fixture=await workflowSetup(),original=globalThis.fetch;let calls=0;
   globalThis.fetch=async(_url,init)=>{const body=JSON.parse(String(init?.body));assert.equal(body.stream,true);calls++;return toolResponse('write_lesson_script',{title:'误差评分',audience:'初学者',objectives:['理解误差','理解评分'],arc:'先误差再评分',chapters:fixture.draft.slice(0,2)},calls);};
-  try{await assert.rejects(()=>runLessonWorkflow(fixture.options),/修正超过6次/);assert.equal(calls,7);assert.equal(fixture.events.filter(event=>event.tool==='write_lesson_script'&&event.status==='failed').length,7);assert.ok(!fixture.events.some(event=>event.tool==='synthesize_narration'));}
+  try{await assert.rejects(()=>runLessonWorkflow(fixture.options),/已分配3章.*实际提交2章/);assert.equal(calls,8);assert.equal(fixture.events.filter(event=>event.tool==='write_lesson_script'&&event.status==='failed').length,8);assert.ok(!fixture.events.some(event=>event.tool==='synthesize_narration'));}
   finally{globalThis.fetch=original;await rm(fixture.directory,{recursive:true,force:true});}
 });

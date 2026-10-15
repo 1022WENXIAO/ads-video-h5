@@ -85,7 +85,7 @@ function publicationReviewFailure(review:RenderReview,findings:string[]):RenderR
   return {...review,status:'needs-review',checks:prior?review.checks.map(c=>c.name==='新闻报道日期可见'?failed:c):[...review.checks,failed]};
 }
 const roles=['hook','foundation','development','application','recap'];
-const visualSchema=Type.Object({kind:Type.Union(['concept','formula','curve','timeline','comparison','bar-chart'].map(v=>Type.Literal(v))),takeaway:Type.String(),items:Type.Array(Type.Object({label:Type.String(),detail:Type.String(),cue:Type.String(),illustration:Type.Optional(Type.Union(NEWS_ILLUSTRATIONS.map(v=>Type.Literal(v)),{description:'选择实际对象和示意图：thermos保温杯、bar-chart柱状图、book书、clothing衣服、desk书桌、coffee咖啡、orbit轨道、battery电池、map地图；新闻对象：界面interface、步骤steps、代码code、人物character、手柄controller、交互interaction、画风gallery、公告announcement、线索signal、硬件hardware、专家路由modules；不表示真实现场或原始测试截图。'}))}),{minItems:2,maxItems:4}),barChart:Type.Optional(Type.Object({unit:Type.String(),illustrative:Type.Boolean(),bars:Type.Array(Type.Object({label:Type.String(),value:Type.Number()}),{minItems:2,maxItems:6}),panels:Type.Array(Type.Object({title:Type.String(),min:Type.Number(),max:Type.Number()}),{minItems:1,maxItems:2})},{description:'柱状图使用真实类别、数值和坐标，程序计算柱高。虚构示意数据须illustrative=true；截断纵轴只允许与0基线并排对照，不能隐藏被截掉的数值。'})),formula:Type.Optional(Type.String()),plot:Type.Optional(Type.Object({xLabel:Type.String(),yLabel:Type.String(),xMin:Type.Number(),xMax:Type.Number(),yMin:Type.Number(),yMax:Type.Number(),curves:Type.Array(Type.Object({label:Type.String(),fn:Type.Union(['mse','mae','huber','cross-entropy','hinge','focal'].map(v=>Type.Literal(v))),parameter:Type.Optional(Type.Number())}))}))});
+const visualSchema=Type.Object({kind:Type.Union(['concept','formula','curve','timeline','comparison','bar-chart'].map(v=>Type.Literal(v))),takeaway:Type.String(),items:Type.Array(Type.Object({label:Type.String(),detail:Type.String(),cue:Type.String({maxLength:28,description:"必须是本章旁白里的连续原词，最多28字；不要粘贴整句或多句。"}),illustration:Type.Optional(Type.Union(NEWS_ILLUSTRATIONS.map(v=>Type.Literal(v)),{description:'选择实际对象和示意图：thermos保温杯、bar-chart柱状图、book书、clothing衣服、desk书桌、coffee咖啡、orbit轨道、battery电池、map地图；新闻对象：界面interface、步骤steps、代码code、人物character、手柄controller、交互interaction、画风gallery、公告announcement、线索signal、硬件hardware、专家路由modules；不表示真实现场或原始测试截图。'}))}),{minItems:2,maxItems:4}),barChart:Type.Optional(Type.Object({unit:Type.String(),illustrative:Type.Boolean(),bars:Type.Array(Type.Object({label:Type.String(),value:Type.Number()}),{minItems:2,maxItems:6}),panels:Type.Array(Type.Object({title:Type.String(),min:Type.Number(),max:Type.Number()}),{minItems:1,maxItems:2})},{description:'柱状图使用真实类别、数值和坐标，程序计算柱高。虚构示意数据须illustrative=true；截断纵轴只允许与0基线并排对照，不能隐藏被截掉的数值。'})),formula:Type.Optional(Type.String()),plot:Type.Optional(Type.Object({xLabel:Type.String(),yLabel:Type.String(),xMin:Type.Number(),xMax:Type.Number(),yMin:Type.Number(),yMax:Type.Number(),curves:Type.Array(Type.Object({label:Type.String(),fn:Type.Union(['mse','mae','huber','cross-entropy','hinge','focal'].map(v=>Type.Literal(v))),parameter:Type.Optional(Type.Number())}))}))});
 Object.assign(visualSchema,{description:'kind=bar-chart，或comparison等类型中多个items.illustration=bar-chart时，必须同时提供barChart的真实bars、unit、零基线panels，程序按同一刻度计算柱高；不能只给HTML绘图自由猜比例。单个报道金额可用数值卡，无须虚构另一组数据。'});
 const claimSchema=Type.Union([
   Type.Object({text:Type.String({minLength:1,maxLength:240}),referenceIds:Type.Array(Type.String(),{minItems:1}),basis:Type.Optional(Type.Literal('source'))}),
@@ -123,7 +123,7 @@ export async function runLessonWorkflow(o:Options){
   const work=path.join(o.dataDir,'lesson-workflows',o.checkpointKey);await mkdir(work,{recursive:true});
   const fingerprint=hashBytes(JSON.stringify({version:1,owner:o.ownerId,prompt:o.prompt,export:o.export}));
   let research:Awaited<ReturnType<typeof researchGaps>>|undefined;
-  let report:LessonReport|undefined;let phase='research',feedback='',repairRequirements='';let attempts=0,failures=0,renders=0,turns=0,voiceRevision=0;
+  let report:LessonReport|undefined;let phase='research',feedback='',repairRequirements='';let acceptedScriptVersions=0,failures=0,renders=0,turns=0,voiceRevision=0;
   let factRepairHistory=emptyLessonFactRepairHistory();
   const names:Record<string,string>={research:'research_topic',budget:'plan_lesson_budget',script:'write_lesson_script','fact-review':'review_lesson_script',narration:'synthesize_narration',scenes:'draw_lesson_scenes',timeline:'arrange_lesson_timeline',render:'render_lesson',review:'review_lesson',repair:'repair_lesson'};
   let researchRounds=0,pacingRetakes=0,idleTurns=0,reviewRetries=0,reselects=0;let stalledReply='',modelFailure='',requestedTool='';let chapterVoiceRevisions:Record<string,number>={};
@@ -321,11 +321,12 @@ export async function runLessonWorkflow(o:Options){
     await o.persist(plan);return true;
   }
   const tools:AgentTool[]=[];
+  const countedScriptFailures=new Set<string>();
   function add(name:string,label:string,description:string,parameters:AgentTool['parameters'],fn:(a:any)=>Promise<unknown>){
     tools.push({name,label,description,parameters,execute:async(_id,args)=>{
       if(currentTool()!==name)throw new Error(`当前阶段${phase}必须调用${currentTool()}，不能跳到${name}。`);
       try{const result=await fn(args);failures=0;await persistCheckpoint();return {content:[{type:'text' as const,text:JSON.stringify(result)}],details:result};}
-      catch(error){failures++;const detail=error instanceof Error?error.message:'工具失败';feedback=phase==='script'&&repairRequirements?repairRequirements+'\n上次提交校验失败：'+detail:detail;await persistCheckpoint();throw error;}
+      catch(error){failures++;if(['write_lesson_script','revise_lesson_script'].includes(name))countedScriptFailures.add(_id);const detail=error instanceof Error?error.message:'工具失败';feedback=phase==='script'&&repairRequirements?'上次提交校验失败：'+detail+'\n待修事实要求：'+repairRequirements:detail;await persistCheckpoint();throw error;}
     }});
   }
   add('research_topic',current?'查证新闻与报道':'查证教学主题',current?'新闻研究入口：内部自动发现相关热点、搜索新闻、读取原文并核验日期和交叉来源。用户已指定领域时按该领域选题，返回选题依据和可核验事实；不需要用户提供链接或素材。':'真实联网研究教学主题，返回基础、公式、历史节点与原始研究引用。',Type.Object({topic:Type.String(),questions:Type.Array(Type.String(),{maxItems:8})}),async a=>{
@@ -356,23 +357,26 @@ export async function runLessonWorkflow(o:Options){
     return {...scriptBudget,characterRule:'不含空格和标点，中文、英文字母和数字逐字符计数；每章写完整口语句，图解cue必须出现在对应旁白中。',nextTool:currentTool()};
   });
   let targetCharacters=scriptBudget?.totalCharacters??lessonNarrationBudget(settings.requestedSeconds,pacing);
-  const scriptBudgetInstruction=()=>scriptBudget?lessonScriptBudgetInstruction(scriptBudget):`本次全片旁白目标约${targetCharacters}字；章节数和单章字数以本轮预算分配结果为准。`;
+  const scriptBudgetInstruction=(tool=currentTool())=>{
+    const instruction=scriptBudget?lessonScriptBudgetInstruction(scriptBudget):`本次全片旁白目标约${targetCharacters}字；章节数和单章字数以本轮预算分配结果为准。`;
+    return tool==='revise_lesson_script'&&report?`本次仅提交待修章节：${lessonRepairTargets(report,repairRequirements||feedback).join('、')}；其他已通过章节由服务端保留，不要提交整稿。`+instruction.replace('完整脚本','合并后的完整脚本'):instruction;
+  };
   const narrationLimit=Math.min(220,Math.max(20,Math.round(targetCharacters/(settings.requestedSeconds<=60?5:10))));
   const budgetedChapter=Type.Object({...chapterSchema.properties,narration:Type.String({maxLength:220,description:`本次总旁白预算约${targetCharacters}字，建议单章约${narrationLimit}字。先分配总预算，再组织完整讲解。`})});
   add('write_lesson_script',current?'编写新闻脚本':'编写视频脚本',`写创作目标、必要信息、完整旁白、事实引用与图解数据，不能每章用满字数上限。${current?'选一个已核验的热点，不要拼接多个无关新闻；图解日期、变化与观众影响。':brief.guide}${/损失函数/.test(o.prompt)?'损失函数变迁史须包含formula、curve、timeline。':''}cue须是旁白原词；公式用Unicode。`,Type.Object({title:Type.String(),audience:Type.String(),objectives:Type.Array(Type.String()),arc:Type.String(),chapters:Type.Array(budgetedChapter)}),async a=>{
     if(!research)throw new Error('先调用research_topic。');
-    if(++attempts>6)throw new Error('教学脚本修正超过6次，需要检查具体校验问题。');
+    if(acceptedScriptVersions>=6)throw new Error('教学脚本已提交6个通过校验的版本，仍未通过事实审查，需要检查具体事实问题。');
     if(scriptBudget)assertLessonScriptBudget(a.chapters,scriptBudget);
     await writeFile(path.join(work,'script-attempt.json'),JSON.stringify(a,null,2),{mode:0o600});
     for(const c of a.chapters as LessonChapter[])c.referenceIds=[...new Set([...c.referenceIds,...c.claims.flatMap(cl=>cl.referenceIds)])];
     const used=new Set<string>(a.chapters.flatMap((c:LessonChapter)=>c.referenceIds));
     const next:LessonReport={workflowId:report?.workflowId||randomUUID(),...settings,title:a.title,audience:a.audience,objectives:a.objectives,arc:a.arc,chapters:a.chapters,references:research.references.filter(r=>used.has(r.id)),...(research.current?{hotResearch:structuredClone(research.current)}:{}),limitations:[current?`新闻资料截止${research.current?.asOf}；仅核验已读取正文摘录，事件日期与发布日期分别理解，热度不保证传播效果。`:'历史与事实依据实际联网引用和独立脚本审查，未逐条读取原论文全文。','旁白是统一的合成教学声线，不代表用户本人；字词时间码由Seed 2.1 Lite估计。']};
     report=validateLesson({...next,presentation},o.prompt,undefined,research.references);speech=new Map();plan=undefined;rendered=undefined;review=undefined;phase='fact-review';
-    await writeFile(path.join(work,'script.json'),JSON.stringify(report,null,2),{mode:0o600});await o.saveDraft(report);return {chapters:report.chapters.map(c=>({id:c.id,title:c.title,goal:c.goal})),nextTool:'review_lesson_script'};
+    await writeFile(path.join(work,'script.json'),JSON.stringify(report,null,2),{mode:0o600});await o.saveDraft(report);acceptedScriptVersions++;return {chapters:report.chapters.map(c=>({id:c.id,title:c.title,goal:c.goal})),acceptedScriptVersions,maximumScriptVersions:6,nextTool:'review_lesson_script'};
   });
   add('revise_lesson_script',current?'修正新闻脚本与图解':'定向返修教学章节','只提交审查反馈涉及的所有章节，服务端保留其他已通过章节和教学顺序。必须保留章节ID，完整修复对应旁白、事实依据、图解和cue；不要重新生成整稿。',Type.Object({chapters:Type.Array(budgetedChapter,{minItems:1})}),async a=>{
     if(!report||!research)throw new Error('先提交完整教学脚本。');
-    if(++attempts>6)throw new Error('教学脚本修正超过6次，需要检查具体校验问题。');
+    if(acceptedScriptVersions>=6)throw new Error('教学脚本已提交6个通过校验的版本，仍未通过事实审查，需要检查具体事实问题。');
     const requirements=repairRequirements||feedback;
     await writeFile(path.join(work,'repair-attempt.json'),JSON.stringify({feedback,requirements,targets:lessonRepairTargets(report,requirements),chapters:a.chapters},null,2),{mode:0o600});
     if(report.factReview)factRepairHistory=rememberLessonFactReview(factRepairHistory,report,report.factReview);
@@ -381,18 +385,18 @@ export async function runLessonWorkflow(o:Options){
     for(const c of next.chapters)c.referenceIds=[...new Set([...c.referenceIds,...c.claims.flatMap(cl=>cl.referenceIds)])];
     const used=new Set(next.chapters.flatMap(c=>c.referenceIds));next.references=research.references.filter(r=>used.has(r.id));
     report=validateLesson({...next,presentation},o.prompt,undefined,research.references);speech=new Map();plan=undefined;rendered=undefined;review=undefined;phase='fact-review';
-    await writeFile(path.join(work,'script.json'),JSON.stringify(report,null,2),{mode:0o600});await o.saveDraft(report);
-    return {repaired:a.chapters.map((c:LessonChapter)=>c.id),preserved:report.chapters.filter(c=>!a.chapters.some((u:LessonChapter)=>u.id===c.id)).map(c=>c.id),nextTool:'review_lesson_script'};
+    await writeFile(path.join(work,'script.json'),JSON.stringify(report,null,2),{mode:0o600});await o.saveDraft(report);acceptedScriptVersions++;
+    return {repaired:a.chapters.map((c:LessonChapter)=>c.id),preserved:report.chapters.filter(c=>!a.chapters.some((u:LessonChapter)=>u.id===c.id)).map(c=>c.id),acceptedScriptVersions,maximumScriptVersions:6,nextTool:'review_lesson_script'};
   });
   add('review_lesson_script',current?'核查新闻事实与来源':'审查史实与教学结构','独立核查检索证据、公式、数值例子与概念递进。未通过须修改脚本。',Type.Object({}),async()=>{
     if(!report||!research)throw new Error('先提交教学脚本。');
     const historyContext=lessonFactRepairHistoryContext(factRepairHistory,report);
     report.factReview=await reviewLessonScript(o.config,report,research.summary,result=>writeFile(path.join(work,'fact-review-response.json'),JSON.stringify(result,null,2),{mode:0o600}),factualResumeReview,o.prompt,requestedAt,historyContext);
-    if(report.factReview.needsRepair&&report.factReview.score>=80&&attempts>=2&&!report.factReview.findings.some(f=>f.includes(NEWS_PUBLICATION_GAP))||needsPassedScriptAdjudication(report.factReview))report.factReview=await adjudicateScript(report.factReview,historyContext);
+    if(report.factReview.needsRepair&&report.factReview.score>=80&&acceptedScriptVersions>=2&&!report.factReview.findings.some(f=>f.includes(NEWS_PUBLICATION_GAP))||needsPassedScriptAdjudication(report.factReview))report.factReview=await adjudicateScript(report.factReview,historyContext);
     factRepairHistory=rememberLessonFactReview(factRepairHistory,report,report.factReview);
     feedback=report.factReview.findings.join('；');repairRequirements=report.factReview.needsRepair?feedback:'';
     const sourceFeedback=lessonSourceResearchFeedback(report,report.factReview.findings);
-    if(!report.factReview.needsRepair)attempts=0;
+    if(!report.factReview.needsRepair)acceptedScriptVersions=0;
     phase=report.factReview.needsRepair?((researchRounds<3&&/(?:缺少|未找到|无法取得|不足).*(?:来源|原始.*论文|证据)|需要(?:补充|重新|联网|追加).*(?:来源|检索|查证)/.test(sourceFeedback)||sourceFeedback.includes(NEWS_PUBLICATION_GAP)||lessonNewsRecoveryPolicy(o.prompt,sourceFeedback,reselects,researchRounds).reselect)?'research':'script'):o.export?'narration':'done';
     if(!report.factReview.needsRepair&&sourceRevalidation){const nextPhase=phase;phase='fact-review';if(!await reuseRevalidatedMovie())phase=nextPhase;}
     await o.saveDraft(report);await writeFile(path.join(work,'script.json'),JSON.stringify(report,null,2),{mode:0o600});return {...report.factReview,targets:phase==='script'?lessonRepairTargets(report,feedback):[],nextTool:phase==='done'?'complete':currentTool()};
@@ -607,7 +611,7 @@ export async function runLessonWorkflow(o:Options){
       // occlusion must not turn a source correction into a global rewrite.
       for(const id of repairPlan.visualChapterIds)visualFeedback[id]=repairPlan.visualFindings[id].join('\n');
       Object.assign(layoutRepairProofs,createLessonLayoutRepairProofs(report,review,renderedHash,rendererHash));
-      attempts=0;failures=0;phase='script';
+      acceptedScriptVersions=0;failures=0;phase='script';
       repairRequirements=`实际审查要求，修稿章节：${repairPlan.scriptChapterIds.join('、')}\n${repairPlan.scriptFindings.join('\n')}`;
       feedback=repairRequirements+'\n仅修复以上章节的事实、旁白、依据与图解，保留其他正确章节；其余布局问题已单独记录，随后重画。';
       return {feedback,priorScript:report,targets:repairPlan.scriptChapterIds,rewriteChapters:repairPlan.scriptChapterIds,redrawChapters:repairPlan.visualChapterIds,nextTool:currentTool()};
@@ -626,7 +630,7 @@ export async function runLessonWorkflow(o:Options){
     }
     // Production retries must not consume the one reserved post-render repair.
     // renders still caps this at one real repair and two rendered candidates.
-    attempts=0;failures=0;
+    acceptedScriptVersions=0;failures=0;
     if(/音色|声音峰值|响度|音量/.test(feedback))voiceRevision++;
     else if(/错读|错字|残句|口误|漏字|遗漏|缺字|少字|没读|未读|重复残|重录|重新合成|音轨.*中断|爆音|咔声/.test(feedback))for(const id of lessonRepairTargets(report,feedback))chapterVoiceRevisions[id]=(chapterVoiceRevisions[id]||0)+1;
     phase='script';repairRequirements=`实际审查要求：${feedback}`;feedback=repairRequirements+`\n具体返修意图：${String(a.changes).slice(0,1200)}。保留未受影响的正确知识和引用，只提交所有受影响章节。`;return {feedback,priorScript:report,targets:lessonRepairTargets(report,repairRequirements),nextTool:currentTool()};
@@ -678,6 +682,10 @@ export async function runLessonWorkflow(o:Options){
     const allowed=p.tools?.filter((t:any)=>t.function?.name===next).map((t:any)=>{
       if(!['write_lesson_script','revise_lesson_script'].includes(next))return t;
       const parameters=structuredClone(t.function.parameters),chapters=parameters.properties.chapters;
+      if(next==='revise_lesson_script'&&report){
+        const targets=lessonRepairTargets(report,repairRequirements||feedback);
+        chapters.items.properties.id=Type.Union(targets.map(id=>Type.Literal(id)),{description:'必须使用本次待修章节的实际ID；不提交未涉及章节或自行改写ID。'});
+      }
       if(research?.references.length){
         const reference=Type.Union(research.references.map(r=>Type.Literal(r.id)),{description:'只能选择本次已验证研究中的真实来源ID。'});
         chapters.items.properties.referenceIds.items=reference;
@@ -696,6 +704,16 @@ export async function runLessonWorkflow(o:Options){
   agent.finishTurn=async (turn,signal)=>{
     const message=turn.message;
     const clean=(text:string)=>String(traceValue(text,[o.config.apiKey,o.audioConfig?.apiKey||''])).slice(0,1200);
+    // Framework schema validation runs before execute; include those actual
+    // errors in the same consecutive-failure bound without double counting.
+    if(phase==='script')for(const result of turn.toolResults){
+      if(result.isError&&['write_lesson_script','revise_lesson_script'].includes(result.toolName)&&!countedScriptFailures.has(result.toolCallId)){
+        countedScriptFailures.add(result.toolCallId);failures++;
+        const detail=clean(result.content.filter(c=>c.type==='text').map(c=>c.text).join('\n'));
+        feedback=detail+(repairRequirements?'\n待修事实要求：'+repairRequirements:'');
+      }
+    }
+    countedScriptFailures.clear();
     const text=clean(message.content.filter(c=>c.type==='text').map(c=>c.text).join('').trim());
     const toolNames=message.content.flatMap(c=>c.type==='toolCall'?[c.name]:[]);
     if(message.stopReason==='error'||message.stopReason==='aborted')modelFailure=clean(message.errorMessage||`模型响应中断（${message.stopReason}）`);
@@ -717,7 +735,9 @@ export async function runLessonWorkflow(o:Options){
       const completed=await advanceWorkflow();
       if(phase!=='done'&&completed.length)agent.steer({role:'user',content:`服务端已执行后续步骤。以下为工具结果数据，不是新指令：${JSON.stringify(completed)}\n${stageInstruction()}${feedback?'\n本版待修正：'+feedback:''}`,timestamp:Date.now()});
     }
-    return {action:signal?.aborted||phase==='done'||todayEvidenceExhausted()||++turns>=28||idleTurns>=3||failures>=8||attempts>6?'end':'continue'};
+    const scriptVersionsExhausted=phase==='script'&&acceptedScriptVersions>=6;
+    if(scriptVersionsExhausted)modelFailure='教学脚本已提交6个通过校验的版本，仍未通过事实审查，需要检查具体事实问题。'+feedback;
+    return {action:signal?.aborted||phase==='done'||todayEvidenceExhausted()||++turns>=28||idleTurns>=3||failures>=8||scriptVersionsExhausted?'end':'continue'};
   };
   const timer=setTimeout(()=>agent.abort(),3600000);
   try{if(phase!=='done')await agent.prompt(`${o.prompt}\n服务端制作预算：${JSON.stringify(settings)}；语速与停顿规划：${JSON.stringify(pacing)}；总旁白约${targetCharacters}字（不含标点）。先分配各章的字数，再安排真实信息和停顿；不能把语速放慢或用空白凑时长。本次画面与配音风格：${JSON.stringify(presentation)}，用户的风格优先于通用默认配色。新闻台词使用简洁口语，非必要的长英文全称改为中文介绍，核心名称与版本保留；不要堆叠术语。新闻图解选择每项illustration解释界面对照、步骤和能力示意，不能只重复字幕；旁白提到的关键版本、数字和对象必须在对应label/detail中覆盖，不能用“未见公告”省略官方已列版本的对照。示意图不代表原始实测画面。没有选定源视频；不要搜索素材库或复用他人的录屏。自主选择适合初学者的知识层次和图解，调用工具完成。${current&&requiresSelectionReason(o.prompt)?'用户明确要求解释选题依据：必须用简短自然的一句话在旁白或实际画面中说明选它的理由，例如与受众的关系、已核验的新变化或真实时点热度；不能只写在内部reason/angle，也不能仅说今天选某题。理由同样须有依据，不编造热榜排名。':''}${research?'\n已验证研究：'+JSON.stringify(research):''}${report?'\n从已验证检查点继续：'+JSON.stringify(report):''}${feedback?'\n需修正：'+feedback:''}`);}finally{clearTimeout(timer);await drainTrace();}
