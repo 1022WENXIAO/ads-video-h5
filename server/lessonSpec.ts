@@ -331,6 +331,8 @@ function speechValueDifference(expected:readonly unknown[],heard:readonly unknow
 interface SpeechClock {start:number;end:number;hour:number;minute?:number;second?:number;valid:boolean;raw:string;hourText:string;minuteText?:string;secondText?:string;unit:string;parts:Array<{start:number;end:number;text:string}>;}
 function speechClocks(text:string):SpeechClock[]{
   const digit='[\\d零〇一二两三四五六七八九十]',number=`${digit}(?:\\s*${digit})*`,periods='上午|下午|凌晨|中午|早上|早晨|清晨|午后|傍晚|晚上|晚间|夜间';
+  const zero='(?:零|〇|0(?:\\s*0)?)',zeroStart=`${zero}(?:\\s*时(?:\\s*${zero}\\s*分(?:\\s*${zero}\\s*秒)?)?|\\s*:\\s*0\\s*0(?:\\s*:\\s*0\\s*0)?)?`;
+  const dailyZeroRange=new RegExp(`(?:每天|每日)\\s*(?:从|自)?\\s*${zeroStart}\\s*(?:至|到|[-~～—])\\s*$`);
   const boundary='[A-Za-z\\d.:点零〇一二两三四五六七八九十百千万亿]';
   const pattern=new RegExp(`(?<!${boundary})(?:(${periods})\\s*)?(${number})\\s*(点|时)\\s*(${number})\\s*分(?:\\s*(${number})\\s*秒)?|(?<!${boundary})(?:(${periods})\\s*)?(\\d(?:\\s*\\d)?)\\s*:\\s*(\\d\\s*\\d)(?:\\s*:\\s*(\\d\\s*\\d))?(?![\\d.:])|(?<!${boundary})(?:(${periods})\\s*)?(${number})\\s*时(?!\\s*(?:${digit}|分|秒))`,'gd');
   const result:SpeechClock[]=[];
@@ -345,7 +347,10 @@ function speechClocks(text:string):SpeechClock[]{
     if(!colon&&/^(?:之|米|贝|钟)/.test(text.slice(m.index!+m[0].length)))continue;
     if(/得分|评分|分数|分值|小数|数值|比值|比例|比率|比分|配比|价格|价钱|单价|金额|售价/.test(prefix)&&!period&&!/时间|时刻|北京时间|发生|事发|截至/.test(prefix))continue;
     let hour=speechNumberValue(hourText.replace(/\s/g,''));const minute=minuteText===undefined?undefined:speechNumberValue(minuteText.replace(/\s/g,'')),second=secondText===undefined?undefined:speechNumberValue(secondText.replace(/\s/g,''));
-    let valid=Number.isInteger(hour)&&hour>=0&&hour<=23&&(minute===undefined||Number.isInteger(minute)&&minute>=0&&minute<=59)&&(second===undefined||Number.isInteger(second)&&second>=0&&second<=59);
+    // 24:00 is only the day-end of an explicit daily zero-start interval.
+    // It is not 00:00, an AM/PM clock, a duration, or permission for 24:01.
+    const dailyEnd=hour===24&&!period&&(unit==='时'||colon)&&(minute===undefined||minute===0)&&(second===undefined||second===0)&&dailyZeroRange.test(text.slice(0,m.index!));
+    let valid=Number.isInteger(hour)&&hour>=0&&(hour<=23||dailyEnd)&&(minute===undefined||Number.isInteger(minute)&&minute>=0&&minute<=59)&&(second===undefined||Number.isInteger(second)&&second>=0&&second<=59);
     if(period==='上午')valid&&=hour<12;
     else if(['早上','早晨','清晨'].includes(period))valid&&=hour>=5&&hour<12;
     else if(period==='凌晨'){if(hour===12)hour=0;valid&&=hour<=5;}

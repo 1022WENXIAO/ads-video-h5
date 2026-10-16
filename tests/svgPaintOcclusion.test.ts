@@ -86,7 +86,7 @@ test('cancellation as the real browser opens closes that owned browser and propa
   }finally{puppeteer.launch=launch;await opened?.close();}
 });
 
-test('real browser rejection joins the existing two-author local recovery and preserves the upstream passing bytes',{timeout:120000},async()=>{
+test('real browser rejection uses a verified automatic label repair within two checks and preserves the upstream passing bytes',{timeout:120000},async()=>{
   await withProject(drawingHtml(actual.drawing,actual.duration,actual.format),async project=>{
     let authors=0,checks=0;
     const result=await recoverLessonHtml({project,chapterId:'chapter-1',contextHash:'actual-p21-svg-geometry-regression',format:'9:16',author:async feedback=>{authors++;if(authors===2)assert.match(feedback,/Actual SVG fill\/stroke/);return authors===1?structuredClone(actual.drawing):clearZones();},produce:async drawing=>{
@@ -95,8 +95,10 @@ test('real browser rejection joins the existing two-author local recovery and pr
       // is asserted by these bytes. The real HTML/browser checks ran above.
       const file=path.join(project,'controlled-result.bin'),bytes='geometry check completed';await writeFile(file,bytes);return{file,analysis:{sourceHash:hashBytes(bytes)}};
     }});
-    assert.ok(result.file);assert.equal(authors,2);assert.equal(checks,2);
+    assert.ok(result.file);assert.equal(authors,1);assert.equal(checks,2);
     const state=JSON.parse(await readFile(path.join(project,'html-recovery.json'),'utf8'));assert.equal(state.attempts,2);assert.equal(state.failed.length,1);assert.ok(!state.native);
+    assert.deepEqual(state.completed.drawing.serverCardLabels.map((binding:any)=>binding.cardId).sort(),['card_check','card_signal']);
+    for(const binding of state.completed.drawing.serverCardLabels){assert.equal(binding.text,actual.drawing.nodes.find(node=>node.id===binding.cardId)!.text);assert.equal(state.completed.drawing.nodes.find((node:any)=>node.id===binding.labelId).text,binding.text);}
     const evidence=path.join(project,state.failed[0].evidence.directory),combined=JSON.parse(await readFile(path.join(evidence,'check-report.json'),'utf8'));
     assert.equal(combined.ok,false);assert.equal(combined.svgPaint.source,'server-svg-paint');assert.equal(combined.svgPaint.htmlHash,actual.provenance.actualHTMLSHA256);
     const original=await readFile(path.join(project,combined.svgPaint.upstreamReport.path));assert.equal(hashBytes(original),combined.svgPaint.upstreamReport.sha256);

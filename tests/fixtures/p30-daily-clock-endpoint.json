@@ -1,0 +1,165 @@
+{
+  "provenance": {
+    "scope": "Minimal actual P30 cached ASR public sentence projection; no new ASR/listening truth/provider/media acceptance. Word text/start/end/complete and sourceHash retained. Private file path and sentence UUID removed.",
+    "originalAnalysisCacheSHA256": "42a8c33fd86100a4da509fa601fece6b44fcaa8fda833221e82c0b0f04439be9",
+    "originalProjectionSHA256": "8f03f59686e3d21bb6940e7d4e235e43a387fe9a2aad1b7812c9363f6fa70397",
+    "sourceHash": "65f362e037845a2d4d6b0ffd60840bebbdc6e4965a0e2152489925c3832b191a"
+  },
+  "narration": "十一月一日起每天零至二十四时全市所有道路禁鸣",
+  "analysis": {
+    "modelId": "doubao-seed-2-1-lite-260915",
+    "sourceHash": "65f362e037845a2d4d6b0ffd60840bebbdc6e4965a0e2152489925c3832b191a",
+    "duration": 10.34,
+    "timing": "model-estimated",
+    "createdAt": "",
+    "status": "ready",
+    "transcript": "十一月一日起每天零至二十四时全市所有道路禁鸣",
+    "sentences": [
+      {
+        "id": "actual-public-sentence-projection",
+        "start": 5.31,
+        "end": 9.22,
+        "words": [
+          {
+            "start": 5.31,
+            "end": 5.52,
+            "text": "十"
+          },
+          {
+            "start": 5.52,
+            "end": 5.67,
+            "text": "一"
+          },
+          {
+            "start": 5.67,
+            "end": 5.75,
+            "text": "月"
+          },
+          {
+            "start": 5.75,
+            "end": 5.91,
+            "text": "一"
+          },
+          {
+            "start": 5.91,
+            "end": 6,
+            "text": "日"
+          },
+          {
+            "start": 6,
+            "end": 6.17,
+            "text": "起"
+          },
+          {
+            "start": 6.3,
+            "end": 6.48,
+            "text": "每"
+          },
+          {
+            "start": 6.48,
+            "end": 6.64,
+            "text": "天"
+          },
+          {
+            "start": 6.64,
+            "end": 6.84,
+            "text": "零"
+          },
+          {
+            "start": 6.84,
+            "end": 7.02,
+            "text": "至"
+          },
+          {
+            "start": 7.02,
+            "end": 7.23,
+            "text": "二"
+          },
+          {
+            "start": 7.23,
+            "end": 7.35,
+            "text": "十"
+          },
+          {
+            "start": 7.35,
+            "end": 7.62,
+            "text": "四"
+          },
+          {
+            "start": 7.68,
+            "end": 7.74,
+            "text": "时"
+          },
+          {
+            "start": 7.77,
+            "end": 8.02,
+            "text": "全"
+          },
+          {
+            "start": 8.02,
+            "end": 8.25,
+            "text": "市"
+          },
+          {
+            "start": 8.25,
+            "end": 8.43,
+            "text": "所"
+          },
+          {
+            "start": 8.43,
+            "end": 8.58,
+            "text": "有"
+          },
+          {
+            "start": 8.58,
+            "end": 8.7,
+            "text": "道"
+          },
+          {
+            "start": 8.7,
+            "end": 8.82,
+            "text": "路"
+          },
+          {
+            "start": 8.82,
+            "end": 8.97,
+            "text": "禁"
+          },
+          {
+            "start": 8.97,
+            "end": 9.22,
+            "text": "鸣"
+          }
+        ],
+        "text": "十一月一日起每天零至二十四时全市所有道路禁鸣",
+        "complete": true
+      }
+    ],
+    "pauses": [
+      {
+        "start": 0.94,
+        "end": 1.53
+      },
+      {
+        "start": 3.155,
+        "end": 3.474
+      },
+      {
+        "start": 4.907,
+        "end": 5.373
+      },
+      {
+        "start": 7.544,
+        "end": 7.85
+      },
+      {
+        "start": 9.122,
+        "end": 9.431
+      }
+    ],
+    "warnings": [
+      "字词时间码由模型估计，已校验格式、顺序和范围，尚未经独立强制对齐。",
+      "停顿是低音量检测结果，不等于已确认无人说话。"
+    ]
+  }
+}

@@ -9,7 +9,7 @@ import { dimensions, planHash } from './renderTimeline';
 import { captionsFromTranscript, timelineOffsets } from './timeline';
 import { loadEditingSkill } from './skills';
 import { excludesBgm } from './intents';
-import { inspectAudioLevels, inspectVoice, soundChecks, hasRejectedVoice } from './audioQuality';
+import { inspectAudioLevels, inspectVoice, soundChecks, hasRejectedVoice, voiceReviewPolicy } from './audioQuality';
 import { newsFreshAtOriginalRequest } from './reviewResults';
 import { newsRenderAcceptance } from './lessonAcceptance';
 import { sampleVisualRetentionSources, pairedVisualRetentionMessages, VISUAL_RETENTION_FRAME_SCALE, type VisualRetentionSourceFrame } from './visualRetentionSources';
@@ -80,7 +80,8 @@ export async function reviewRender(file: string, plan: EditPlan, media: MediaIte
   const [width, height] = dimensions(plan);
   let info = ''; try { info = await runFFmpeg(['-hide_banner', '-i', file]); } catch (e) { info = e instanceof Error ? e.message : ''; }
   add('画幅与音轨', new RegExp(`\\b${width}x${height}\\b`).test(info) && probe.hasAudio, `预期${width}×${height}，${probe.hasAudio ? '有' : '无'}音轨`);
-  const manifest = JSON.parse(await readFile(file.replace(/\.mp4$/, '.render.json'), 'utf8')) as { planHash: string; captions: number; overlays: number; motions?: EditPlan['motions']; avatars?:AvatarRenderRecord[]; drawingEngine?: string; bgm?:boolean; narration?:boolean; audioNormalization?:{mode:string} };
+  const manifest = JSON.parse(await readFile(file.replace(/\.mp4$/, '.render.json'), 'utf8')) as { planHash: string; captions: number; overlays: number; motions?: EditPlan['motions']; avatars?:AvatarRenderRecord[]; drawingEngine?: string; bgm?:boolean; narration?:boolean; generatedNarration?:unknown; audioNormalization?:{mode:string} };
+  const voicePolicy=voiceReviewPolicy(plan,media,prompt,{...manifest,planMatches:manifest.planHash===planHash(plan)});
   if(excludesBgm(prompt))add('无背景音乐',manifest.bgm===false,'按实际渲染混音输入核对，未启用的音量参数不表示新增音轨');
   add('方案版本', manifest.planHash === planHash(plan), '渲染清单哈希与当前方案比对');
   if(plan.avatars?.length){
@@ -181,10 +182,11 @@ export async function reviewRender(file: string, plan: EditPlan, media: MediaIte
   const loudnessMatch = /\{\s*"input_i"[\s\S]*?\}/.exec(loudnessLog);
   const loudness = loudnessMatch ? JSON.parse(loudnessMatch[0]) as { input_i: string; input_tp: string } : undefined;
   const originalSpeech = plan.clips.some((c) => media.find((m) => m.id === c.sourceId)?.analysis?.sentences.length);
-  add('人声响度', !originalSpeech || Boolean(loudness && Number(loudness.input_i) >= -30 && Number(loudness.input_tp) <= 0), loudness ? `综合响度${loudness.input_i} LUFS，峰值${loudness.input_tp} dBTP` : '无法测得响度');
+  const retainedOriginalAudio=(plan.audio?.originalVolume??1)>0&&plan.clips.some(clip=>{const source=media.find(item=>item.id===clip.sourceId);return source?.kind==='video'&&source.hasAudio===true&&(clip.volume??1)>0;});
+  add('人声响度', !(originalSpeech||retainedOriginalAudio) || Boolean(loudness && Number(loudness.input_i) >= -30 && Number(loudness.input_tp) <= 0), loudness ? `综合响度${loudness.input_i} LUFS，峰值${loudness.input_tp} dBTP` : '无法测得响度');
   const limitations = ['源字词时间码为模型估计，未做独立强制对齐。'];
   let audio:RenderReview['audio'];
-  if(originalSpeech||plan.reconstruction||/音色|声音|人声|音量|voice/i.test(prompt)){
+  if(originalSpeech||retainedOriginalAudio||voicePolicy.explicitTarget||plan.reconstruction||manifest.narration===true||/音色|声音|人声|音量|voice/i.test(prompt)){
     try {audio=await inspectAudioLevels(file,plan);audio.userReportedMismatch=hasRejectedVoice(plan,media,prompt);checks.push(...soundChecks(audio));}
     catch {add('声音实测完成度',false,'逐段音量实测失败，不能视为声音一致性通过');}
   }
@@ -202,11 +204,12 @@ export async function reviewRender(file: string, plan: EditPlan, media: MediaIte
     newsDateDetail=newsSourceMatches?`${newsCandidate.chapterId}：抽帧中未确认可读的“${newsCandidate.label}”，只修复日期画面并保留已核验旁白。`:`${newsCandidate.chapterId}：实际分镜文件与报道日期证据哈希不符。`;
   }catch{newsDateDetail=`${newsCandidate?.chapterId||'ch1'}：无法读取实际日期分镜文件，不能只凭元数据通过。`;}
   const config = await getModelConfig('understanding');
-  if (!config) {limitations.push('未配置音频理解模型，未进行成片音频和抽帧语义审查。');if(audio)add('声音审听完成度',false,'未配置模型，音色一致性未经审听');}
+  if(audio&&!voicePolicy.required)limitations.push('本次未设跨素材声线一致性验收：'+voicePolicy.reason+'；未执行同一说话者审听，不代表原声字节身份或成片质量通过。');
+  if (!config) {limitations.push('未配置音频理解模型，未进行成片音频和抽帧语义审查。');if(audio&&voicePolicy.required)add('声音审听完成度',false,'未配置模型，音色一致性未经审听');}
   else {
     const temp = path.join(path.dirname(file), `review-${randomUUID()}`); await mkdir(temp);
     try {
-      if(audio){
+      if(audio&&voicePolicy.required){
         let referenceFile:string|undefined;const r=plan.reconstruction?.voiceReference;
         if(r){const source=media.find(m=>m.id===r.sourceId);const candidate=path.join(path.dirname(path.dirname(file)),'media',r.sourceId);
           if(source?.analysis?.sourceHash===r.sourceHash)try{await access(candidate);if(createHash('sha256').update(await readFile(candidate)).digest('hex')===r.sourceHash)referenceFile=candidate;}catch{}

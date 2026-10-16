@@ -1,15 +1,17 @@
 import { randomUUID } from 'node:crypto';
 import { mkdir, readFile, rename, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
-import { parse } from 'parse5';
+import { isDeepStrictEqual } from 'node:util';
+import { parse, serialize } from 'parse5';
 import type { Format } from '../src/types';
-import { drawingDomId, hashBytes, validateDrawing, type HtmlDrawing } from './narrativeScenes';
+import { drawingDomId, drawingHtml, hashBytes, svgCardLabelZones, validateDrawing, type HtmlDrawing } from './narrativeScenes';
 import { currentJobSignal, throwIfJobCancelled } from './jobExecution';
 import { liftCardLabels, reflowCardDetails } from './drawingCardLayout';
 import {AuthoredDrawingGeometryError} from './drawingGeometry';
 
-type LayoutIssue = { code: string; severity?: string; selector?: string; containerSelector?: string };
-type LayoutReport = { ok?: boolean; issues?: LayoutIssue[]; findings?: LayoutIssue[]; layout?: { findings?: LayoutIssue[] }; lint?: { findings?: LayoutIssue[] }; runtime?: { ok?: boolean; findings?: LayoutIssue[] }; motion?: { findings?: LayoutIssue[] }; contrast?: { findings?: LayoutIssue[] } };
+type EvidenceFile = {path:string;sha256:string};
+type LayoutIssue = { code: string; severity?: string; selector?: string; containerSelector?: string; source?:string;htmlHash?:string;text?:string;time?:number;coveredFraction?:number;evidence?:EvidenceFile };
+type LayoutReport = { ok?: boolean; issues?: LayoutIssue[]; findings?: LayoutIssue[]; layout?: { findings?: LayoutIssue[] }; lint?: { findings?: LayoutIssue[] }; runtime?: { ok?: boolean; findings?: LayoutIssue[] }; motion?: { findings?: LayoutIssue[] }; contrast?: { findings?: LayoutIssue[] };svgPaint?:{source:string;version:number;htmlHash:string;samples:number[];findings:LayoutIssue[];report:EvidenceFile;upstreamReport:EvidenceFile;upstreamStdout:EvidenceFile} };
 export const drawingContentHash = (drawing: HtmlDrawing) => hashBytes(JSON.stringify({ title: drawing.title, text: drawing.nodes.map(n => n.text).filter(Boolean).sort() }));
 const intersects = (a: { x: number; y: number; w: number; h: number }, b: { x: number; y: number; w: number; h: number }) => Math.min(a.x,a.x+a.w) < Math.max(b.x,b.x+b.w) && Math.max(a.x,a.x+a.w) > Math.min(b.x,b.x+b.w) && Math.min(a.y,a.y+a.h) < Math.max(b.y,b.y+b.h) && Math.max(a.y,a.y+a.h) > Math.min(b.y,b.y+b.h);
 const contains = (a: { x: number; y: number; w: number; h: number }, b: { x: number; y: number; w: number; h: number }) => a.x + 12 <= b.x && b.x + b.w <= a.x + a.w - 12 && a.y + 12 <= b.y && b.y + b.h <= a.y + a.h - 12;
@@ -51,6 +53,71 @@ export function separateCardLabels(drawing: HtmlDrawing, issues: LayoutIssue[], 
   }
   if (drawingContentHash(next) !== drawingContentHash(drawing)) return;
   try { return validateDrawing(next, format); } catch { return; }
+}
+
+/** A measured products-path paint collision may put the complete label in a
+ * conservative path-free content zone. Declared boxes only propose a layout;
+ * real loaded-font/paint/contrast checks still consume the remaining attempt. */
+export function splitSvgCoveredCardLabels(drawing:HtmlDrawing,report:LayoutReport,format:Format,html:string):HtmlDrawing|undefined{
+  const svg=report.svgPaint,htmlHash=hashBytes(html),issues=reportIssues(report);
+  if(drawing.serverCardLabels!==undefined||report.ok!==false||report.runtime?.ok===false||!issues.length||!svg||svg.source!=='server-svg-paint'||svg.version!==1||svg.htmlHash!==htmlHash||!Array.isArray(svg.samples)||svg.samples.length!==9||!svg.samples.every(t=>Number.isFinite(t)&&t>=0)||!Array.isArray(svg.findings))return;
+  if([svg.report,svg.upstreamReport,svg.upstreamStdout].some(reference=>!reference||typeof reference.path!=='string'||!/^[a-f0-9]{64}$/.test(reference.sha256)))return;
+  try{validateDrawing(drawing,format);}catch{return;}
+  // Bind the complete current author plane to this exact drawing, including
+  // positions, original text, fonts, paths and compiled IDs. A stale drawing
+  // with matching label text is not the candidate that was measured.
+  const elements=(source:string,predicate:(node:any)=>boolean)=>{const found:any[]=[];const visit=(node:any)=>{if(predicate(node))found.push(node);for(const child of node.childNodes||[])visit(child);};visit(parse(source));return found;};
+  const attr=(node:any,name:string)=>node?.attrs?.find((a:any)=>a.name===name)?.value;
+  const compositions=elements(html,node=>attr(node,'data-composition-id')==='main'),planes=elements(html,node=>attr(node,'class')==='drawing-plane');
+  const duration=Number(attr(compositions[0],'data-duration'));
+  if(compositions.length!==1||planes.length!==1||!Number.isFinite(duration)||duration<=0||duration>600)return;
+  const expected=elements(drawingHtml(drawing,duration,format),node=>attr(node,'class')==='drawing-plane');
+  if(expected.length!==1||serialize(planes[0])!==serialize(expected[0]))return;
+  const cards=new Set<string>();
+  for(const issue of issues){
+    if(issue.code!=='text_occluded'||issue.severity!=='error'||issue.source!=='server-svg-paint'||issue.htmlHash!==htmlHash||!isDeepStrictEqual(issue.evidence,svg.report)||!Number.isFinite(issue.time)||!svg.samples.includes(issue.time!)||!(issue.coveredFraction!>0&&issue.coveredFraction!<=1))return;
+    const {source:_source,htmlHash:_hash,evidence:_evidence,...observation}=issue;
+    if(!svg.findings.some(finding=>isDeepStrictEqual(finding,observation)))return;
+    const card=drawing.nodes.filter(n=>'#'+drawingDomId(n.id)===issue.selector),paths=drawing.nodes.filter(n=>'#'+drawingDomId(n.id)===issue.containerSelector);
+    if(card.length!==1||paths.length!==1||card[0].kind!=='card'||!card[0].text.trim()||card[0].text!==issue.text||paths[0].kind!=='path'||paths[0].text!==''||!contains(card[0],paths[0]))return;
+    cards.add(card[0].id);
+  }
+  const next=structuredClone(drawing);next.serverCardLabels=[];
+  for(const id of cards){
+    const card=next.nodes.find(n=>n.id===id)!,labelId=id+'_svg_label';
+    if(labelId.length>64||next.nodes.some(n=>n.id===labelId))return;
+    const text=card.text,zones=svgCardLabelZones(next,card),minimum=Math.max(32,Math.ceil(card.fontSize*.9));let label:HtmlDrawing['nodes'][number]|undefined;
+    for(let font=card.fontSize;font>=minimum&&!label;font--){
+      for(const zone of zones){
+        // Whole glyphs cannot share the unused fraction at each line end.
+        // This is a conservative candidate estimate, not a font measurement.
+        const lines=text.split(/\r?\n/).reduce((sum,line)=>{let rows=1,width=0;for(const char of line){const glyph=(/[\u0000-\u007f]/.test(char)?.55:1)*font;if(glyph>zone.w)return Infinity;if(width&&width+glyph>zone.w){rows++;width=0;}width+=glyph;}return sum+rows;},0);
+        if(lines*font*1.3<=zone.h){label={...card,...zone,id:labelId,kind:'text',fontSize:font,highlight:false};break;}
+      }
+    }
+    if(!label)return;
+    next.nodes.push(label);card.text='';next.serverCardLabels.push({cardId:id,labelId,text,fontSize:label.fontSize});
+  }
+  if(drawingContentHash(next)!==drawingContentHash(drawing))return;
+  try{return validateDrawing(next,format);}catch{return;}
+}
+
+async function verifiedSvgCardLabelProposal(project:string,drawing:HtmlDrawing,report:LayoutReport,format:Format):Promise<HtmlDrawing|undefined>{
+  const svg=report.svgPaint;if(!svg)return;
+  const html=await readFile(path.join(project,'index.html'),'utf8'),proposal=splitSvgCoveredCardLabels(drawing,report,format,html);if(!proposal)return;
+  const directory=path.dirname(svg.report.path),expectedRoot=path.join('svg-paint-evidence',svg.htmlHash);
+  if(path.dirname(directory)!==expectedRoot||!/^([a-f0-9]{64})-[a-f0-9-]{36}$/.test(path.basename(directory))||path.basename(svg.report.path)!=='server-svg-paint-report.json')return;
+  if(!/^(?:check|lint|inspect)-hyperframes-report\.json$/.test(path.basename(svg.upstreamReport.path))||! /^(?:check|lint|inspect)-hyperframes-stdout\.txt$/.test(path.basename(svg.upstreamStdout.path)))return;
+  for(const reference of [svg.report,svg.upstreamReport,svg.upstreamStdout]){
+    if(!reference||path.dirname(reference.path)!==directory||!/^[a-f0-9]{64}$/.test(reference.sha256))return;
+    let bytes:Buffer;try{bytes=await readFile(path.join(project,reference.path));}catch(error){if((error as NodeJS.ErrnoException).code==='ENOENT')return;throw error;}if(hashBytes(bytes)!==reference.sha256)return;
+    if(reference!==svg.upstreamStdout){let parsed:any;try{parsed=JSON.parse(bytes.toString());}catch{return;}
+      if(reference===svg.report){const {report:_reference,...observation}=svg;if(!isDeepStrictEqual(parsed,observation))return;}
+      else if(parsed.ok!==true||reportIssues(parsed).length)return;
+    }
+  }
+  if(await readFile(path.join(project,'index.html'),'utf8')!==html)return;
+  return proposal;
 }
 
 interface SceneResult { file: string; analysis: { sourceHash: string }; }
@@ -302,7 +369,7 @@ export async function recoverLessonHtml<R extends SceneResult>(options: {
       const evidence=await archiveAttempt(options.project,options.contextHash,'authored-'+state.attempts,error);
       state.failed.push({ hash, feedback, drawing, report, ...(evidence?{evidence}:{}) });
       if(report){
-        const issues=htmlLayoutIssues(report),proposal=separateCardLabels(drawing,issues,options.format)||liftCardLabels(drawing,issues,options.format)||reflowCardDetails(drawing,issues,options.format);
+        const issues=htmlLayoutIssues(report),proposal=state.attempts<2&&await verifiedSvgCardLabelProposal(options.project,drawing,report,options.format)||separateCardLabels(drawing,issues,options.format)||liftCardLabels(drawing,issues,options.format)||reflowCardDetails(drawing,issues,options.format);
         if(proposal&&drawingContentHash(proposal)===drawingContentHash(drawing))try{state.pendingDrawing=validateDrawing(proposal,options.format);}catch{/* Unsafe geometry requires the remaining authored redraw. */}
       }
       await persist();

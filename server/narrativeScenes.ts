@@ -22,16 +22,48 @@ import {addDrawingTextLayoutReport} from './drawingTextLayout';
 
 export const hashBytes = (v: string | Buffer) => createHash('sha256').update(v).digest('hex');
 const escape = (s:string) => s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]!));
-export interface HtmlDrawing { title: string; motion?: 'corporate'|'premium'|'playful'|'energetic'; nodes: Array<{id:string;kind:'card'|'text'|'circle'|'line'|'path';pathData?:string;x:number;y:number;w:number;h:number;text:string;tone:'ink'|'coral'|'blue'|'paper';fontSize:number;highlight:boolean}>; }
+export interface HtmlDrawing { title: string; motion?: 'corporate'|'premium'|'playful'|'energetic'; nodes: Array<{id:string;kind:'card'|'text'|'circle'|'line'|'path';pathData?:string;x:number;y:number;w:number;h:number;text:string;tone:'ink'|'coral'|'blue'|'paper';fontSize:number;highlight:boolean}>; serverCardLabels?:Array<{cardId:string;labelId:string;text:string;fontSize:number}>; }
 const palette = { ink:'#252935',coral:'#fb7353',blue:'#4c95b7',paper:'#fff0e9' };
 export const drawingDomId=(logicalId:string)=>'qj-author-'+logicalId;
 export function drawingDimensions(format:Format='9:16'):[number,number]{return format==='16:9'?[1280,720]:format==='1:1'?[720,720]:[720,1280];}
+/** Conservative candidate zones from declared path boxes, not measured SVG
+ * ink or visual acceptance. The real HTML/font/paint/contrast checks follow. */
+export function svgCardLabelZones(d:HtmlDrawing,card:HtmlDrawing['nodes'][number]):Array<{x:number;y:number;w:number;h:number}>{
+  const box=(n:{x:number;y:number;w:number;h:number})=>({left:Math.min(n.x,n.x+n.w),top:Math.min(n.y,n.y+n.h),right:Math.max(n.x,n.x+n.w),bottom:Math.max(n.y,n.y+n.h)});
+  const overlaps=(a:ReturnType<typeof box>,b:ReturnType<typeof box>)=>a.left<b.right&&a.right>b.left&&a.top<b.bottom&&a.bottom>b.top;
+  const content={left:card.x+15,top:card.y+15,right:card.x+card.w-15,bottom:card.y+card.h-15},outer=box(card),paths=d.nodes.filter(n=>n.kind==='path'&&overlaps(outer,box(n)));
+  if(!paths.length||d.nodes.some(n=>n.kind==='line'&&overlaps(content,box(n)))||paths.some(n=>{const b=box(n);return b.left<content.left||b.right>content.right||b.top<content.top||b.bottom>content.bottom;}))return[];
+  const margin=12,left=Math.min(...paths.map(n=>box(n).left))-margin,right=Math.max(...paths.map(n=>box(n).right))+margin,top=Math.min(...paths.map(n=>box(n).top))-margin,bottom=Math.max(...paths.map(n=>box(n).bottom))+margin;
+  const companions=new Set((d.serverCardLabels||[]).map(b=>b.labelId));
+  let zones=[{x:content.left,y:content.top,w:left-content.left,h:content.bottom-content.top},{x:right,y:content.top,w:content.right-right,h:content.bottom-content.top},{x:content.left,y:content.top,w:content.right-content.left,h:top-content.top},{x:content.left,y:bottom,w:content.right-content.left,h:content.bottom-bottom}].filter(zone=>zone.w>0&&zone.h>0);
+  // A neighbouring label's padded box can touch the card by a pixel even
+  // while its glyphs are outside. Trim only the new zone, never that node.
+  // Keep at most eight conservative rectangles after each bounded obstacle.
+  for(const node of d.nodes.filter(n=>n.id!==card.id&&!companions.has(n.id)&&n.kind!=='path'&&n.kind!=='line')){
+    const obstacle=box(node);
+    zones=zones.flatMap(zone=>{const b=box(zone);return overlaps(b,obstacle)?[{...zone,w:obstacle.left-zone.x},{...zone,x:obstacle.right,w:b.right-obstacle.right},{...zone,h:obstacle.top-zone.y},{...zone,y:obstacle.bottom,h:b.bottom-obstacle.bottom}]:[zone];})
+      .filter(zone=>zone.w>0&&zone.h>0).sort((a,b)=>b.w*b.h-a.w*a.h).slice(0,8);
+  }
+  return zones.sort((a,b)=>b.w*b.h-a.w*a.h);
+}
 export function validateDrawing(d:HtmlDrawing,format:Format='9:16'):HtmlDrawing {
   const [width,height]=drawingDimensions(format),top=height>width?220:160,bottom=height>width?1010:height-170;
   if(d.motion && !['corporate','premium','playful','energetic'].includes(d.motion))throw new Error('动效风格须为corporate、premium、playful或energetic。');
   if (!d.title?.trim() || d.title.length>20 || !Array.isArray(d.nodes) || d.nodes.length<3 || d.nodes.length>30) throw new Error('HTML图需要短标题与3–30个绘制元素。');
   assertVisibleContent([d.title,...d.nodes.map(n=>n.text)]);
   if (new Set(d.nodes.map(n=>n.id)).size !== d.nodes.length) throw new Error('HTML节点ID重复。');
+  // Only the server's measured SVG-paint recovery creates these companions.
+  // Persist the relation so cached drawings keep the original card animation.
+  if(d.serverCardLabels!==undefined){
+    if(!Array.isArray(d.serverCardLabels)||!d.serverCardLabels.length||d.serverCardLabels.length>15)throw new Error('HTML服务端卡片标签绑定无效。');
+    const used=new Set<string>();
+    for(const binding of d.serverCardLabels){
+      if(!binding||Object.keys(binding).sort().join(',')!=='cardId,fontSize,labelId,text'||typeof binding.cardId!=='string'||typeof binding.labelId!=='string'||typeof binding.text!=='string'||!binding.text.trim()||binding.text.length>32||!Number.isInteger(binding.fontSize)||used.has(binding.cardId)||used.has(binding.labelId)||binding.cardId===binding.labelId)throw new Error('HTML服务端卡片标签绑定无效。');
+      used.add(binding.cardId);used.add(binding.labelId);
+      const card=d.nodes.find(n=>n.id===binding.cardId),label=d.nodes.find(n=>n.id===binding.labelId);
+      if(!card||!label||card.kind!=='card'||card.text!==''||label.kind!=='text'||label.text!==binding.text||label.highlight!==false||label.pathData!==undefined||label.fontSize!==binding.fontSize||label.fontSize>card.fontSize||label.fontSize<Math.max(32,Math.ceil(card.fontSize*.9))||label.tone!==card.tone||!svgCardLabelZones(d,card).some(zone=>zone.x===label.x&&zone.y===label.y&&zone.w===label.w&&zone.h===label.h))throw new Error('HTML服务端卡片标签须保留完整原文字、颜色和合法避图区域，仅允许有界字号调整。');
+    }
+  }
   const issues:DrawingGeometryIssue[]=[];let geometryMessage='';
   for (const n of d.nodes) {
     const line=n.kind==='line'||n.kind==='path';
@@ -62,17 +94,21 @@ export function drawingHtml(d:HtmlDrawing,duration:number,format:Format='9:16',p
   // Logical author IDs remain intact in the drawing and diagnostic metadata.
   // A separate DOM namespace protects the composition, date and motion nodes.
   const domId=drawingDomId;
+  const companions=new Map((d.serverCardLabels||[]).map(binding=>[binding.cardId,binding.labelId]));
+  const companionIds=new Set(companions.values());
+  const companionCards=new Map((d.serverCardLabels||[]).map(binding=>[binding.labelId,d.nodes.find(n=>n.id===binding.cardId)!]));
+  const motionSelector=(id:string)=>'#'+domId(id)+(companions.has(id)?',#'+domId(companions.get(id)!):'');
   // Keep HTML cards outside SVG foreignObject. HyperFrames' HTML serializer
   // can self-close empty XHTML divs inside SVG, nesting later cards and notes.
   const paths=(kind:'line'|'path')=>d.nodes.filter(n=>n.kind===kind).map(n=>`<path id="${domId(n.id)}" data-drawing-id="${n.id}" d="${n.kind==='path'?escape(n.pathData!):`M${n.x} ${n.y} L${n.x+n.w} ${n.y+n.h}`}" fill="${n.kind==='path'?palette.paper:'none'}" stroke="${palette[n.tone]}" stroke-width="5" stroke-linecap="round"/>`).join('');
   const lines=paths('line'),products=paths('path');
-  const nodes=d.nodes.filter(n=>n.kind!=='line'&&n.kind!=='path').map(n=>`<div id="${domId(n.id)}" data-drawing-id="${n.id}" class="node ${n.kind}" ${numericDrawingText(n.text)?'data-qj-number="true"':''} style="left:${n.x}px;top:${n.y}px;width:${n.w}px;height:${n.h}px;font-size:${n.fontSize}px;background:${n.kind==='text'?'transparent':n.tone==='paper'?palette.paper:'#fffdfa'};color:${n.tone==='coral'?'#b43c27':n.tone==='blue'?'#28617d':palette.ink};border-color:${palette[n.tone]}">${escape(n.text)}</div>`).join('');
+  const nodes=d.nodes.filter(n=>n.kind!=='line'&&n.kind!=='path').map(n=>{const card=companionCards.get(n.id);return `<div id="${domId(n.id)}" data-drawing-id="${n.id}" class="node ${n.kind}" ${numericDrawingText(n.text)?'data-qj-number="true"':''} style="left:${n.x}px;top:${n.y}px;width:${n.w}px;height:${n.h}px;font-size:${n.fontSize}px;background:${n.kind==='text'?'transparent':n.tone==='paper'?palette.paper:'#fffdfa'};color:${n.tone==='coral'?'#b43c27':n.tone==='blue'?'#28617d':palette.ink};border-color:${palette[n.tone]}${card?`;transform-origin:${card.x+card.w/2-n.x}px ${card.y+card.h/2-n.y}px`:''}">${escape(n.text)}</div>`;}).join('');
   const profile = {corporate:['power3.out',.45],premium:['sine.out',.65],playful:['back.out(1.15)',.5],energetic:['expo.out',.32]}[d.motion||'corporate'];
   const enterDuration=Math.min(Number(profile[1]),duration*.3);
-  const cards=d.nodes.filter(n=>n.kind!=='line'&&n.kind!=='path');
+  const cards=d.nodes.filter(n=>n.kind!=='line'&&n.kind!=='path'&&!companionIds.has(n.id));
   const spacing=cards.length>1?Math.min(.08,.4/(cards.length-1)):0;
-  const enters=d.nodes.map(n=>n.kind==='line'||n.kind==='path'?`QJMotion.connectorFlow(tl,'#${domId(n.id)}',${Math.min(.55,duration*.3)},${enterDuration});`:`QJMotion.cardSettle(tl,'#${domId(n.id)}',${(.18+cards.indexOf(n)*spacing).toFixed(3)},${enterDuration},'${profile[0]}');`).join('');
-  const highlights=d.nodes.filter(n=>duration>=2&&n.highlight&&n.kind!=='line').map((n,i)=>`tl.to('#${domId(n.id)}',{${n.kind==='path'?"stroke:'#fb7353'":"backgroundColor:'#fff0e9',borderColor:'#fb7353'"},duration:.35,ease:'sine.inOut'},${Math.min(duration-.8,1.2+i*Math.max(.5,(duration-2)/Math.max(1,d.nodes.filter(n=>n.highlight).length))).toFixed(2)});${n.kind==='path'?'':`QJMotion.focusPulse(tl,'#${domId(n.id)}',${Math.min(duration-.7,1.2+i*Math.max(.5,(duration-2)/Math.max(1,d.nodes.filter(n=>n.highlight).length))).toFixed(2)},.6);`}`).join('');
+  const enters=d.nodes.filter(n=>!companionIds.has(n.id)).map(n=>n.kind==='line'||n.kind==='path'?`QJMotion.connectorFlow(tl,'#${domId(n.id)}',${Math.min(.55,duration*.3)},${enterDuration});`:`QJMotion.cardSettle(tl,'${motionSelector(n.id)}',${(.18+cards.indexOf(n)*spacing).toFixed(3)},${enterDuration},'${profile[0]}');`).join('');
+  const highlights=d.nodes.filter(n=>duration>=2&&n.highlight&&n.kind!=='line'&&!companionIds.has(n.id)).map((n,i)=>`tl.to('#${domId(n.id)}',{${n.kind==='path'?"stroke:'#fb7353'":"backgroundColor:'#fff0e9',borderColor:'#fb7353'"},duration:.35,ease:'sine.inOut'},${Math.min(duration-.8,1.2+i*Math.max(.5,(duration-2)/Math.max(1,d.nodes.filter(n=>n.highlight).length))).toFixed(2)});${n.kind==='path'?'':`QJMotion.focusPulse(tl,'${motionSelector(n.id)}',${Math.min(duration-.7,1.2+i*Math.max(.5,(duration-2)/Math.max(1,d.nodes.filter(n=>n.highlight).length))).toFixed(2)},.6);`}`).join('');
   return `<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><style>@font-face{font-family:'PingFang SC';src:local('PingFang SC')}html,body{margin:0;width:${width}px;height:${height}px;overflow:hidden;background:#fffdfa}#main{width:${width}px;height:${height}px;position:relative;font-family:'PingFang SC',Arial,sans-serif;color:#252935}.scene-content{box-sizing:border-box;width:100%;height:100%;padding:${portrait?64:28}px 0;display:flex;flex-direction:column;align-items:center;gap:10px}#title{position:relative;z-index:2;font-size:${titleSize}px;font-weight:800;width:${width-80}px;margin:0;text-align:center;line-height:1.2}.drawing-plane,svg{position:absolute;inset:0;width:${width}px;height:${height}px}svg{overflow:visible}svg.products{z-index:2;pointer-events:none}.text,.circle{z-index:3!important}.node.text{padding:0}.node{position:absolute;z-index:1;box-sizing:border-box;padding:12px;display:flex;align-items:center;justify-content:center;text-align:center;line-height:1.3;font-weight:700;overflow-wrap:anywhere;white-space:pre-line}${NUMERIC_DRAWING_CSS}.card{border:3px solid;border-radius:20px}.circle{border:3px solid;border-radius:50%;padding:4px}.ambient{position:absolute;width:360px;height:360px;border-radius:50%;background:#fff0e9;opacity:.45;pointer-events:none}.ambient-a{left:-160px;top:60px}.ambient-b{right:-220px;bottom:180px;background:#e6f1f5}#note{font-size:20px;line-height:1.4;text-align:center;width:${width-80}px;left:40px;color:#252935;position:absolute;top:${portrait?180:106}px;margin:0;z-index:2}${publicationAnnotation?newsPublicationNoteCss(portrait):''}</style><script src="./gsap.min.js"></script></head><body><section id="main" data-composition-id="main" data-width="${width}" data-height="${height}" data-start="0" data-duration="${duration}"><div id="ambient-a" class="ambient ambient-a" data-layout-ignore></div><div id="ambient-b" class="ambient ambient-b" data-layout-ignore></div><div class="scene-content"><h1 id="title">${escape(d.title)}</h1></div><div class="drawing-plane"><svg viewBox="0 0 ${width} ${height}" aria-label="${escape(d.title)}">${lines}</svg>${nodes}<svg class="products" viewBox="0 0 ${width} ${height}" aria-label="示意产品">${products}</svg></div>${publicationAnnotation?newsPublicationNoteHtml(publicationAnnotation):'<p id="note">流程 / 画面为示意</p>'}</section><script>${motionLibrary}window.__timelines={};const tl=gsap.timeline({paused:true});tl.from('#title',{y:20,opacity:0,duration:.6,ease:'power3.out'},.1);${publicationAnnotation?'':"tl.from('#note',{opacity:0,duration:.5,ease:'sine.out'},.25);"}${enters}${highlights}QJMotion.ambientFloat(tl,'#ambient-a',.1,${Math.max(.1,duration-.1)},6);QJMotion.ambientFloat(tl,'#ambient-b',.1,${Math.max(.1,duration-.1)},-4);window.__timelines.main=tl;${NUMERIC_DRAWING_CHECK_SCRIPT}</script></body></html>`;
 }
 export async function authorDrawing(config:ModelConfig,beat:ReconstructionBeat,format:Format='9:16'):Promise<HtmlDrawing> {
@@ -86,6 +122,7 @@ export async function authorDrawing(config:ModelConfig,beat:ReconstructionBeat,f
     const content=body.choices?.[0]?.message?.content||'';
     try {
       const drawing=JSON.parse(content) as HtmlDrawing;
+      if(Object.hasOwn(drawing,'serverCardLabels'))throw new Error('serverCardLabels是服务端保留绑定，绘图模型不得提交。');
       for(const n of drawing.nodes||[]){
         // Some JSON responses serialize plain numeric coordinates as strings.
         // Accept only finite numeric literals; never evaluate expressions.

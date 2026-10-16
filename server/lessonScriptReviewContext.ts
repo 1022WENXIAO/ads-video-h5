@@ -3,6 +3,23 @@ import { lessonResearchSummary } from './lessonResearch';
 import { newsObservationContext } from './newsTime';
 import { compactSpeech } from './lessonSpec';
 
+export const LESSON_PUBLISHED_CONTENT_FACT_CONTRACT =
+  '先按publishedContentReview.chapters核对观众将接收的标题、旁白和plannedVisual中的文字、数据、公式。internalClaimEvidence及report.chapters中的claims、goal、reason是内部证据或规划，visual.items.cue只是时序锚点；这些字段完整不能证明旁白或画面已保留其限定。' +
+  '逐条对照当前来源的适用对象、范围、前提、例外、时限、比较基线与数量边界。删掉会扩大适用范围、改变起算点或确定性的限定是实际事实错误，列入findings并needsRepair=true，不能仅列建议；例如仅限特定安全条件的例外不能概括成整个场景都适用，声画均未交代期限时不能把一年内从第三次起改成无期限的三次后。' +
+  '可结合本章同步旁白与图解判断：简述由画面明确补足且两者含义一致时，不要求逐字重复所有限定；任一渠道的确定相反断言不能由另一渠道抵消，内部claims也不能补足声画都缺失的条件。只保留与本片实际断言相关的限定，不要求罗列来源的所有背景、例外或在每章重复日期。' +
+  '认定条件丢失须引用本版实际chapter.id、旁白或图解中的原句、关联来源的决定性限定，并说明范围或结论如何改变；依据不足或仅是表达可更清楚时如实说明，不虚构缺陷。';
+
+export function lessonPublishedContentReviewContext(report:LessonReport){
+  return {
+    contract:LESSON_PUBLISHED_CONTENT_FACT_CONTRACT,
+    chapters:report.chapters.map(chapter=>({
+      chapterId:chapter.id,
+      publishedChannels:{title:chapter.title,narration:chapter.narration,plannedVisual:chapter.visual},
+      internalClaimEvidence:chapter.claims,
+    })),
+  };
+}
+
 export function selectedLessonSignalEvidence(report:LessonReport){
   const topics=report.hotResearch?.topics||[],signals=report.hotResearch?.signals||[];
   const selectedIds=[...new Set(topics.flatMap(topic=>topic.signalIds||[]))];
@@ -30,6 +47,7 @@ export function lessonScriptReviewContext(report: LessonReport) {
       acceptance: '核对本版旁白、图解数据、事实来源和原用户主题约束。实际MP4、配音、播放、画面遮挡与音画时长在后续阶段真实验收；脚本阶段不以尚未生成的媒体作为缺陷，也不由检索模型的自述决定系统工具能力。',
     },
     researchSummary: lessonResearchSummary('', report.references),
+    publishedContentReview:lessonPublishedContentReviewContext(report),
     report: script,
     ...(report.hotResearch?{
       newsScriptScope:{
