@@ -1,0 +1,23 @@
+{
+  "provenance": {
+    "kind": "Controlled geometry projection of an actual validation error; not the original model drawing",
+    "terminalSnapshotSha256": "5d846d35aac99a443e019dfcdc4d701fb417acfa102b60fae8a076c0ebcd5c20",
+    "originalProposalPersisted": false,
+    "actualError": "HTML layout rejected: 数字节点step1_num的完整数值“1”必须单行显示；至少保留31px宽与现有30px字号，扩大合法宽度或重排，不能拆开数字或缩小字号。",
+    "known": {"nodeId":"step1_num","text":"1","fontSize":30,"minimumWidth":31},
+    "unknownOriginalFields": ["x","y","w","h","other drawing nodes"],
+    "controlledCoordinates": true
+  },
+  "drawing": {
+    "title": "冰箱异味先找源头",
+    "motion": "corporate",
+    "nodes": [
+      {"id":"heading","kind":"text","x":80,"y":245,"w":560,"h":80,"text":"先找源头，再处理","tone":"ink","fontSize":36,"highlight":false},
+      {"id":"step1","kind":"card","x":100,"y":380,"w":520,"h":170,"text":"","tone":"paper","fontSize":36,"highlight":true},
+      {"id":"step1_num","kind":"circle","x":140,"y":430,"w":30,"h":47,"text":"1","tone":"blue","fontSize":30,"highlight":true},
+      {"id":"step1_label","kind":"text","x":240,"y":430,"w":300,"h":70,"text":"先找源头","tone":"ink","fontSize":30,"highlight":true},
+      {"id":"controlled_path","kind":"path","x":200,"y":650,"w":300,"h":1,"text":"","pathData":"M200 650L500 650","tone":"ink","fontSize":24,"highlight":false},
+      {"id":"conclusion","kind":"text","x":100,"y":760,"w":520,"h":70,"text":"清洁后仍有异味再辅助","tone":"blue","fontSize":30,"highlight":false}
+    ]
+  }
+}

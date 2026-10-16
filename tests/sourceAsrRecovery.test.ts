@@ -50,7 +50,7 @@ async function setup(t:test.TestContext,index=0){
   media.analysis!.sourceHash=hash(await readFile(file));media.analysis!.modelId=config.modelId;
   const dir=path.join(directory,'audio-understanding',media.id);await mkdir(dir,{recursive:true});
   const key=`2:${config.modelId}:${media.analysis!.sourceHash}`;
-  await writeFile(path.join(dir,'analysis.json'),JSON.stringify({cacheKey:key+':segmentation-4',analysis:media.analysis}),{mode:0o600});
+  await writeFile(path.join(dir,'analysis.json'),JSON.stringify({cacheKey:key+':segmentation-5',analysis:media.analysis}),{mode:0o600});
   await writeFile(path.join(dir,'chunk-0.json'),JSON.stringify({cacheKey:key,start:0,end:media.duration,sentences:fixture.sources[index].primary}),{mode:0o600});
   const originalAnalysis=await readFile(path.join(dir,'analysis.json')),originalChunk=await readFile(path.join(dir,'chunk-0.json'));
   const reason=sourceAsrRecoveryReasons(media.analysis!)[0];

@@ -1,0 +1,406 @@
+{
+  "provenance": {
+    "kind": "deidentified actual P32 raw ASR word/time/complete projection",
+    "rawChunkSha256": "57b973bbf4b4836dd31cccec89041673b0a0f966fce2c7c63c57ab97f94795ea",
+    "sourceSha256": "52cee27c96ec89277816c60223fd1e56cbcd586dae235436926ba7e9bc38acc7",
+    "modelId": "doubao-seed-2-1-lite-260915",
+    "duration": 16.67,
+    "originalSemanticResponsePreserved": false,
+    "groupingNote": "Only the rejected candidate range is observed in the original error. The complete grouping below is controlled regression input, not a reconstructed original response."
+  },
+  "primary": [
+    {
+      "start": 0,
+      "end": 8.335,
+      "text": "观察一个现象时先记录看到了什么再提出可能的解释这段画面是程序绘制的示意不代表",
+      "complete": false,
+      "words": [
+        {
+          "start": 0,
+          "end": 0.09,
+          "text": "观"
+        },
+        {
+          "start": 0.09,
+          "end": 0.3,
+          "text": "察"
+        },
+        {
+          "start": 0.3,
+          "end": 0.37,
+          "text": "一"
+        },
+        {
+          "start": 0.37,
+          "end": 0.48,
+          "text": "个"
+        },
+        {
+          "start": 0.48,
+          "end": 0.69,
+          "text": "现"
+        },
+        {
+          "start": 0.69,
+          "end": 0.93,
+          "text": "象"
+        },
+        {
+          "start": 0.93,
+          "end": 1.29,
+          "text": "时"
+        },
+        {
+          "start": 1.32,
+          "end": 1.62,
+          "text": "先"
+        },
+        {
+          "start": 1.62,
+          "end": 1.8,
+          "text": "记"
+        },
+        {
+          "start": 1.8,
+          "end": 1.95,
+          "text": "录"
+        },
+        {
+          "start": 1.95,
+          "end": 2.19,
+          "text": "看"
+        },
+        {
+          "start": 2.19,
+          "end": 2.29,
+          "text": "到"
+        },
+        {
+          "start": 2.29,
+          "end": 2.37,
+          "text": "了"
+        },
+        {
+          "start": 2.37,
+          "end": 2.56,
+          "text": "什"
+        },
+        {
+          "start": 2.56,
+          "end": 2.83,
+          "text": "么"
+        },
+        {
+          "start": 3,
+          "end": 3.21,
+          "text": "再"
+        },
+        {
+          "start": 3.21,
+          "end": 3.43,
+          "text": "提"
+        },
+        {
+          "start": 3.43,
+          "end": 3.66,
+          "text": "出"
+        },
+        {
+          "start": 3.66,
+          "end": 3.87,
+          "text": "可"
+        },
+        {
+          "start": 3.87,
+          "end": 4.11,
+          "text": "能"
+        },
+        {
+          "start": 4.11,
+          "end": 4.17,
+          "text": "的"
+        },
+        {
+          "start": 4.17,
+          "end": 4.35,
+          "text": "解"
+        },
+        {
+          "start": 4.35,
+          "end": 4.7,
+          "text": "释"
+        },
+        {
+          "start": 5.58,
+          "end": 5.79,
+          "text": "这"
+        },
+        {
+          "start": 5.79,
+          "end": 5.94,
+          "text": "段"
+        },
+        {
+          "start": 5.94,
+          "end": 6.12,
+          "text": "画"
+        },
+        {
+          "start": 6.12,
+          "end": 6.45,
+          "text": "面"
+        },
+        {
+          "start": 6.45,
+          "end": 6.67,
+          "text": "是"
+        },
+        {
+          "start": 6.67,
+          "end": 6.9,
+          "text": "程"
+        },
+        {
+          "start": 6.9,
+          "end": 7.11,
+          "text": "序"
+        },
+        {
+          "start": 7.11,
+          "end": 7.32,
+          "text": "绘"
+        },
+        {
+          "start": 7.32,
+          "end": 7.42,
+          "text": "制"
+        },
+        {
+          "start": 7.42,
+          "end": 7.56,
+          "text": "的"
+        },
+        {
+          "start": 7.56,
+          "end": 7.77,
+          "text": "示"
+        },
+        {
+          "start": 7.77,
+          "end": 8,
+          "text": "意"
+        },
+        {
+          "start": 8.07,
+          "end": 8.16,
+          "text": "不"
+        },
+        {
+          "start": 8.16,
+          "end": 8.22,
+          "text": "代"
+        },
+        {
+          "start": 8.22,
+          "end": 8.335,
+          "text": "表"
+        }
+      ]
+    },
+    {
+      "start": 8.335,
+      "end": 16.615,
+      "text": "是真实现场把观察和推测分开可以让表达更清楚也让后续核验有明确的方向",
+      "complete": true,
+      "words": [
+        {
+          "start": 8.335,
+          "end": 8.485,
+          "text": "是"
+        },
+        {
+          "start": 8.485,
+          "end": 8.695,
+          "text": "真"
+        },
+        {
+          "start": 8.695,
+          "end": 8.845,
+          "text": "实"
+        },
+        {
+          "start": 8.845,
+          "end": 9.055,
+          "text": "现"
+        },
+        {
+          "start": 9.055,
+          "end": 9.395,
+          "text": "场"
+        },
+        {
+          "start": 10.135,
+          "end": 10.315,
+          "text": "把"
+        },
+        {
+          "start": 10.315,
+          "end": 10.525,
+          "text": "观"
+        },
+        {
+          "start": 10.525,
+          "end": 10.735,
+          "text": "察"
+        },
+        {
+          "start": 10.735,
+          "end": 10.885,
+          "text": "和"
+        },
+        {
+          "start": 10.885,
+          "end": 11.065,
+          "text": "推"
+        },
+        {
+          "start": 11.065,
+          "end": 11.305,
+          "text": "测"
+        },
+        {
+          "start": 11.305,
+          "end": 11.545,
+          "text": "分"
+        },
+        {
+          "start": 11.545,
+          "end": 11.965,
+          "text": "开"
+        },
+        {
+          "start": 12.055,
+          "end": 12.255,
+          "text": "可"
+        },
+        {
+          "start": 12.255,
+          "end": 12.415,
+          "text": "以"
+        },
+        {
+          "start": 12.415,
+          "end": 12.655,
+          "text": "让"
+        },
+        {
+          "start": 12.655,
+          "end": 12.865,
+          "text": "表"
+        },
+        {
+          "start": 12.865,
+          "end": 13.105,
+          "text": "达"
+        },
+        {
+          "start": 13.105,
+          "end": 13.315,
+          "text": "更"
+        },
+        {
+          "start": 13.315,
+          "end": 13.615,
+          "text": "清"
+        },
+        {
+          "start": 13.615,
+          "end": 13.985,
+          "text": "楚"
+        },
+        {
+          "start": 14.095,
+          "end": 14.255,
+          "text": "也"
+        },
+        {
+          "start": 14.255,
+          "end": 14.425,
+          "text": "让"
+        },
+        {
+          "start": 14.425,
+          "end": 14.605,
+          "text": "后"
+        },
+        {
+          "start": 14.605,
+          "end": 14.785,
+          "text": "续"
+        },
+        {
+          "start": 14.785,
+          "end": 14.995,
+          "text": "核"
+        },
+        {
+          "start": 14.995,
+          "end": 15.345,
+          "text": "验"
+        },
+        {
+          "start": 15.385,
+          "end": 15.625,
+          "text": "有"
+        },
+        {
+          "start": 15.625,
+          "end": 15.865,
+          "text": "明"
+        },
+        {
+          "start": 15.865,
+          "end": 16.065,
+          "text": "确"
+        },
+        {
+          "start": 16.065,
+          "end": 16.165,
+          "text": "的"
+        },
+        {
+          "start": 16.165,
+          "end": 16.405,
+          "text": "方"
+        },
+        {
+          "start": 16.405,
+          "end": 16.615,
+          "text": "向"
+        }
+      ]
+    }
+  ],
+  "observedRejectedCandidate": {
+    "first": 23,
+    "last": 42,
+    "complete": true
+  },
+  "controlledCanonicalGrouping": [
+    {
+      "first": 0,
+      "last": 22,
+      "complete": true
+    },
+    {
+      "first": 23,
+      "last": 42,
+      "complete": true
+    },
+    {
+      "first": 43,
+      "last": 70,
+      "complete": true
+    }
+  ]
+}

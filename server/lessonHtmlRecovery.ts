@@ -4,7 +4,8 @@ import path from 'node:path';
 import { isDeepStrictEqual } from 'node:util';
 import { parse, serialize } from 'parse5';
 import type { Format } from '../src/types';
-import { drawingDomId, drawingHtml, hashBytes, svgCardLabelZones, validateDrawing, type HtmlDrawing } from './narrativeScenes';
+import { drawingDimensions, drawingDomId, drawingHtml, hashBytes, svgCardLabelZones, validateDrawing, type HtmlDrawing } from './narrativeScenes';
+import {fitNumericDrawingSlots} from './drawingNumberLayout';
 import { currentJobSignal, throwIfJobCancelled } from './jobExecution';
 import { liftCardLabels, reflowCardDetails } from './drawingCardLayout';
 import {AuthoredDrawingGeometryError} from './drawingGeometry';
@@ -342,7 +343,10 @@ export async function recoverLessonHtml<R extends SceneResult>(options: {
   while (state.attempts < 2 && !state.blocked) {
     throwIfJobCancelled();
     const prior = state.failed.at(-1);let drawing:HtmlDrawing;
-    try{drawing=validateDrawing(state.pendingDrawing || await options.author(prior?.feedback || ''),options.format);}
+    try{
+      const proposed=state.pendingDrawing || await options.author(prior?.feedback || ''),[width,height]=drawingDimensions(options.format);
+      drawing=validateDrawing(fitNumericDrawingSlots(proposed,{left:40,top:height>width?220:160,right:width-40,bottom:height>width?1010:height-170})||proposed,options.format);
+    }
     catch(error){
       throwIfJobCancelled();if(!(error instanceof AuthoredDrawingGeometryError))throw error;
       verifyRejectedProposal(error,options.format);

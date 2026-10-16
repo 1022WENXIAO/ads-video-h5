@@ -15,7 +15,7 @@ import { motionLibrary } from './motionComponents';
 import { loadMotionDesignContext } from './skills';
 import { safeErrorText } from './executionErrors';
 import { assertVisibleContent } from './visibleContent';
-import { numericDrawingText, assertNumericDrawingNode, NUMERIC_DRAWING_CSS, NUMERIC_DRAWING_CHECK_SCRIPT } from './drawingNumberLayout';
+import { numericDrawingText, assertNumericDrawingNode, fitNumericDrawingSlots, NumericDrawingSlotError, NUMERIC_DRAWING_CSS, NUMERIC_DRAWING_CHECK_SCRIPT } from './drawingNumberLayout';
 import {AuthoredDrawingGeometryError,type DrawingGeometryIssue} from './drawingGeometry';
 import {addSvgTextPaintReport} from './svgPaintOcclusion';
 import {addDrawingTextLayoutReport} from './drawingTextLayout';
@@ -72,7 +72,11 @@ export function validateDrawing(d:HtmlDrawing,format:Format='9:16'):HtmlDrawing 
     if(n.x<40||n.y<top||n.x+n.w<40||n.y+n.h<top||n.x+n.w>width-40||n.y+n.h>bottom){issues.push({code:'node_bounds',nodeId:n.id,box:{x:n.x,y:n.y,w:n.w,h:n.h},safeZone:{left:40,top,right:width-40,bottom}});geometryMessage||=invalid();}
     if(n.kind==='path'&&(!n.pathData||!/^[MmZzLlHhVvCcSsQqTtAa0-9eE.,\s+-]{1,3000}$/.test(n.pathData)))throw new Error(`节点${n.id}必须提供仅含SVG路径命令与数字的pathData。`);
     if(!line){
-      assertNumericDrawingNode(n);
+      try{assertNumericDrawingNode(n);}catch(error){
+        if(!(error instanceof NumericDrawingSlotError))throw error;
+        issues.push({code:'numeric_slot',nodeId:n.id,box:{x:n.x,y:n.y,w:n.w,h:n.h},requiredWidth:error.requiredWidth,requiredHeight:error.requiredHeight});geometryMessage||=error.message;
+        continue;
+      }
       const units=[...n.text].reduce((v,c)=>v+(/[\u0000-\u007f]/.test(c)?.55:1),0);
       const padding=n.kind==='text'?0:n.kind==='circle'?8:24;
       const required=Math.ceil(units*n.fontSize/Math.max(1,n.w-padding))*n.fontSize*1.3+padding;
@@ -137,13 +141,15 @@ export async function authorDrawing(config:ModelConfig,beat:ReconstructionBeat,f
         n.fontSize=Math.max(24,Math.min(64,Math.floor(n.fontSize)));
         const units=[...n.text].reduce((v,c)=>v+(/[\u0000-\u007f]/.test(c)?.55:1),0),padding=numericDrawingText(n.text)&&n.kind==='text'?0:n.kind==='circle'?8:24;
         const height=()=>Math.ceil(units*n.fontSize/Math.max(1,n.w-padding))*n.fontSize*1.3+padding;
-        if(!numericDrawingText(n.text))while(n.fontSize>24&&height()>n.h)n.fontSize--;
-        if(height()>n.h)n.h=Math.ceil(height());
-        const needed=Math.ceil(height());
-        if(n.y+n.h>bottom&&needed<=bottom-top){n.h=Math.max(needed,Math.min(n.h,bottom-n.y));n.y=Math.max(top,Math.min(n.y,bottom-n.h));}
+        if(!numericDrawingText(n.text)){
+          while(n.fontSize>24&&height()>n.h)n.fontSize--;
+          if(height()>n.h)n.h=Math.ceil(height());
+          const needed=Math.ceil(height());
+          if(n.y+n.h>bottom&&needed<=bottom-top){n.h=Math.max(needed,Math.min(n.h,bottom-n.y));n.y=Math.max(top,Math.min(n.y,bottom-n.h));}
+        }
         }
       }
-      return validateDrawing(drawing,format);
+      return validateDrawing(fitNumericDrawingSlots(drawing,{left:40,top,right:width-40,bottom})||drawing,format);
     }catch(e){
       const reason=e instanceof Error?e.message:'Invalid layout';
       if(attempt===2){const message='HTML layout rejected: '+reason.replaceAll(config.apiKey,'[redacted]').slice(0,650);if(e instanceof AuthoredDrawingGeometryError)throw new AuthoredDrawingGeometryError(e.draft,e.format,e.issues,message,content);throw new Error(message);}
