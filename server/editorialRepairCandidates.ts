@@ -1,5 +1,5 @@
 import type { EditPlan, MediaItem, RenderReview, SelectedScene } from '../shared/types';
-import { extractVisualRetentionRequirements, parseVisualRetentionChecks, visualRetentionSelectionNeeded } from './visualRetentionReview';
+import { extractVisualRetentionRequirements, parseVisualRetentionChecks, visualRetentionSelectionNeeded, visualRetentionUnverifiedPlanningWitnesses } from './visualRetentionReview';
 import { timelineOffsets } from './timeline';
 
 export interface EditorialRepairSelection {
@@ -54,11 +54,12 @@ export function editorialRepairCandidates(options:{
   validate:(selections:EditorialRepairSelection[])=>EditPlan|undefined;
 }):EditorialRepairCandidates|undefined{
   const {review,prompt,plan,sources}=options;
-  if(!visualRetentionSelectionNeeded(review,prompt,plan))return;
+  const planning=visualRetentionUnverifiedPlanningWitnesses(review,prompt,plan,sources);
+  if(!planning&&!visualRetentionSelectionNeeded(review,prompt,plan))return;
   const requirements=extractVisualRetentionRequirements(prompt),checks=parseVisualRetentionChecks(review.semantic?.visualRetentionChecks)!;
   const used=new Set(plan.clips.map(c=>c.sourceId));
   let invalidWitness=false;
-  const witnesses=checks.flatMap((check,index)=>{
+  const witnesses=planning||checks.flatMap((check,index)=>{
     const trusted=review.semantic!.visualRetentionChecks![index],w=trusted.sourceEvidence;
     if(check.status!=='unmet'||trusted.sourceOmitted!==true||!w||!requirements.some(r=>r.id===check.id&&r.quote===check.quote))return [];
     const matches=sources.filter(s=>s.id===w.sourceId),source=matches[0],analysis=source?.analysis;
@@ -82,12 +83,21 @@ export function editorialRepairCandidates(options:{
     if(visited>=5000){limited=true;return;}visited++;
     if(index<pool.length){search(index+1,selected);search(index+1,[...selected,pool[index]]);return;}
     if(!selected.length||[...used].some(id=>!selected.some(row=>row.source.id===id)))return;
-    if(validated>=240){limited=true;return;}validated++;
+    // Necessary upper envelope only; real validators below still decide every
+    // cut and silence margin. This avoids spending the bounded validations on
+    // selections that cannot possibly cover a mandatory observation.
+    if(planning&&witnesses.some(w=>{const rows=selected.filter(row=>row.source.id===w.sourceId);return !rows.length||w.time<Math.min(...rows.map(row=>row.sentence.start))-.1||w.time>=Math.max(...rows.map(row=>row.sentence.end))+.35;}))return;
     const selections=sources.filter(s=>used.has(s.id)).map(source=>({sourceId:source.id,sentenceIds:selected.filter(row=>row.source.id===source.id).map(row=>row.sentence.id),reason:'候选仅核算完整原句、原时长和已绑定画面见证；叙事意义仍须核对',purpose:plan.clips.find(c=>c.sourceId===source.id)?.purpose||'argument' as SelectedScene['purpose']}));
-    const checked=options.validate(structuredClone(selections));
-    if(!checked||!Number.isFinite(checked.targetSeconds)||witnesses.some(w=>!checked.clips.some(c=>c.sourceId===w.sourceId&&w.time>=c.start&&w.time<c.end)))return;
-    const selectedKeys=new Set(selected.map(row=>key(row.source.id,row.sentence.id)));
-    candidates.push({seconds:checked.targetSeconds,selections,avoidsCaptionConcern:[...avoided].every(k=>!selectedKeys.has(k)),retainedSentences:[...retained].filter(k=>selectedKeys.has(k)).length});
+    const adjacent=Boolean(planning)&&selections.some(entry=>{const all=sources.find(s=>s.id===entry.sourceId)!.analysis!.sentences;return entry.sentenceIds.some((id,i)=>i>0&&all.findIndex(s=>s.id===id)===all.findIndex(s=>s.id===entry.sentenceIds[i-1])+1);});
+    const variants=adjacent?[selections,selections.flatMap(entry=>entry.sentenceIds.map(id=>({...entry,sentenceIds:[id]})))]:[selections];
+    for(const variant of variants){
+      if(planning&&variant.reduce((count,entry)=>{const all=sources.find(s=>s.id===entry.sourceId)!.analysis!.sentences;return count+entry.sentenceIds.filter((id,i)=>!i||all.findIndex(s=>s.id===id)!==all.findIndex(s=>s.id===entry.sentenceIds[i-1])+1).length;},0)>16)continue;
+      if(validated>=240){limited=true;return;}validated++;
+      const checked=options.validate(structuredClone(variant));
+      if(!checked||!Number.isFinite(checked.targetSeconds)||witnesses.some(w=>!checked.clips.some(c=>c.sourceId===w.sourceId&&w.time>=c.start&&w.time<c.end)))continue;
+      const selectedKeys=new Set(selected.map(row=>key(row.source.id,row.sentence.id)));
+      candidates.push({seconds:checked.targetSeconds,selections:variant,avoidsCaptionConcern:[...avoided].every(k=>!selectedKeys.has(k)),retainedSentences:[...retained].filter(k=>selectedKeys.has(k)).length});
+    }
   }
   search(0,[]);
   // Preferences choose suggestions, never change the validator's duration band.
@@ -100,5 +110,5 @@ export function editorialRepairCandidates(options:{
   const best=candidates[0];
   pick(candidates.filter(c=>c.avoidsCaptionConcern===best?.avoidsCaptionConcern&&c.retainedSentences===best?.retainedSentences).sort((a,b)=>a.seconds-b.seconds)[0]);
   for(const candidate of candidates){pick(candidate);if(picked.length===3)break;}
-  return {detail:'以下最多3项只证明当前完整原句、原时长门禁与已绑定缺失见证可行；优先保留其它原句，并包含较短的合法组合，可避开明确字幕缺陷涉及的原句。不证明意义完整或全部用户画面表达通过，不能自动选定、补词或改变需求；须重新选句、独立完整性审查和新成片复核。'+(limited?'搜索触及5000节点或240次校验上界，未穷尽，不能断言无解。':candidates.length?'':'当前有界搜索未找到候选，不能据此宣称素材无解。'),candidates:picked,search:{visited,validated,limited}};
+  return {detail:(planning?'原审查仍为未验证；以下只规划包含当前选段外的真实源见证并保留已满足见证，以新成片消除不确定性，不认定原片缺失。':'')+'以下最多3项只证明当前完整原句、原时长门禁与已绑定画面见证可行；优先保留其它原句，并包含较短的合法组合，可避开明确字幕缺陷涉及的原句。不证明意义完整或全部用户画面表达通过，不能自动选定、补词或改变需求；须重新选句、独立完整性审查和新成片复核。'+(limited?'搜索触及5000节点或240次校验上界，未穷尽，不能断言无解。':candidates.length?'':'当前有界搜索未找到候选，不能据此宣称素材无解。'),candidates:picked,search:{visited,validated,limited}};
 }

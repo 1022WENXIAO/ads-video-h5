@@ -4,7 +4,8 @@ import { validateSemanticReview,reviewFindings } from './reviewResults';
 import { requestReviewJson, type ReviewObserver } from './reviewAssets';
 import { blocksModelOutputRecovery } from './executionErrors';
 import { bindVisualRetentionSources, visualRetentionFindings, visualRetentionReviewInstruction, VisualRetentionReviewError, type VisualRetentionRequirement, type VisualRetentionAttempt, type VisualRetentionSourceContext } from './visualRetentionReview';
-import { numericVisualFindings,type VisualReviewContext } from './visualReviewEvidence';
+import { numericVisualFindings,parseNumericVisualChecks,type VisualReviewContext } from './visualReviewEvidence';
+import { parseVisualRetentionChecks } from './visualRetentionReview';
 
 export type SemanticReviewProtocolStage='message-json'|'review-schema'|'news-publication'|'numeric-evidence'|'retention-binding'|'retention-checks';
 const protocolStages={
@@ -15,7 +16,51 @@ const protocolStages={
   'retention-binding':{code:'SEMANTIC_RETENTION_BINDING_INVALID',detail:'视觉保留原素材证据绑定无效'},
   'retention-checks':{code:'SEMANTIC_RETENTION_CHECKS_INVALID',detail:'视觉保留逐项观察无效'},
 } as const;
-export interface SemanticReviewProtocolDiagnostic {attempt:number;stage:SemanticReviewProtocolStage;code:typeof protocolStages[SemanticReviewProtocolStage]['code'];detail:string;rawScore?:number}
+export interface SemanticReviewFieldDiagnostic {path:string;expected:string;actualType:'missing'|'null'|'array'|'object'|'string'|'number'|'boolean';missing:boolean}
+export interface SemanticReviewProtocolDiagnostic {attempt:number;stage:SemanticReviewProtocolStage;code:typeof protocolStages[SemanticReviewProtocolStage]['code'];detail:string;rawScore?:number;fields?:SemanticReviewFieldDiagnostic[]}
+
+// Diagnostic-only: the existing validators still decide validity. Never retain
+// a provider value, property name, exception text or inferred repair verdict.
+function fieldDiagnostic(path:string,expected:string,value:unknown):SemanticReviewFieldDiagnostic {
+  const actualType=value===undefined?'missing':value===null?'null':Array.isArray(value)?'array':typeof value;
+  return {path,expected,actualType:actualType as SemanticReviewFieldDiagnostic['actualType'],missing:value===undefined};
+}
+function schemaDiagnostic(value:any):{stage:SemanticReviewProtocolStage;fields:SemanticReviewFieldDiagnostic[]} {
+  const core=(fields:SemanticReviewFieldDiagnostic[])=>({stage:'review-schema' as const,fields});
+  if(!value||typeof value!=='object'||Array.isArray(value))return core([fieldDiagnostic('$','JSON object',value)]);
+  const fields:SemanticReviewFieldDiagnostic[]=[];
+  if(!Number.isFinite(value.score)||value.score<0||value.score>100)fields.push(fieldDiagnostic('score','finite number in [0,100]',value.score));
+  if(typeof value.needsRepair!=='boolean')fields.push(fieldDiagnostic('needsRepair','JSON boolean',value.needsRepair));
+  for(const name of ['findings','suggestions'] as const){
+    if(name==='suggestions'&&value[name]==null)continue;
+    try{reviewFindings(value[name]);}catch{
+      const items=value[name];
+      if(!Array.isArray(items))fields.push(fieldDiagnostic(name,'array of readable findings',items));
+      else for(let i=0;i<items.length&&fields.length<6;i++){
+        try{reviewFindings([items[i]]);}catch{fields.push(fieldDiagnostic(`${name}[${i}]`,'nonempty string or readable finding object',items[i]));}
+      }
+    }
+  }
+  if(fields.length)return core(fields.slice(0,6));
+  try{parseNumericVisualChecks(value.numericVisualChecks);}catch{
+    return {stage:'numeric-evidence',fields:[fieldDiagnostic('numericVisualChecks','valid numeric-observation array with chapterId/frameTime/claim/expectedCount/observedCount/observedEvidence',value.numericVisualChecks)]};
+  }
+  try{parseVisualRetentionChecks(value.visualRetentionChecks);}catch{
+    return {stage:'retention-checks',fields:[fieldDiagnostic('visualRetentionChecks','valid retention-check array with id/quote/status/frameTimes/detail',value.visualRetentionChecks)]};
+  }
+  // Isolate the optional publication field through the same strict validator,
+  // rather than copying its length/range rules or changing accepted inputs.
+  try{validateSemanticReview({...value,numericVisualChecks:undefined,visualRetentionChecks:undefined});}catch{
+    return {stage:'news-publication',fields:[fieldDiagnostic('newsPublication','object with visible:boolean,chapterId:string,quote:string,frameTime:finite number',value.newsPublication)]};
+  }
+  return core([fieldDiagnostic('$','valid semantic-review object',value)]);
+}
+function protocolFeedback(diagnostic:SemanticReviewProtocolDiagnostic,requiresNewsPublication:boolean):string {
+  return '上一轮成片评审的输出协议未通过，不是本地判定影片有错或替你决定needsRepair。安全字段诊断：'+JSON.stringify(diagnostic)+
+    '。请仅依据上面同一份实际音频和抽帧重新评审，按具体字段纠正格式；原始评分及已经可读的处置仍保留，不要求沿用或提高旧分，不得删除真实缺陷来通过校验。回复内容必须是单个有效JSON对象，不含代码块或额外说明。完整核心字段：score为0到100的有限number；needsRepair为JSON boolean（true/false，不是字符串，不能省略）；findings为可读问题字符串或问题对象的array，没有真实缺陷才返回[]；suggestions为array。不得用分数推导或代填缺失的needsRepair。'+
+    (requiresNewsPublication?'新闻另须newsPublication:{visible:boolean,chapterId:string,quote:string,frameTime:number}，只据本次真实抽帧填写；无法确认就如实visible=false，不从期望文案推定可见。':'')+
+    '若返回可选numericVisualChecks或visualRetentionChecks，须符合本次原有完整字段及真实章节/时间/要求绑定；未知保持未知，不编造证据。';
+}
 export class SemanticReviewProtocolError extends Error {
   readonly diagnostics:readonly SemanticReviewProtocolDiagnostic[];
   constructor(diagnostics:SemanticReviewProtocolDiagnostic[],cause:unknown){
@@ -50,18 +95,22 @@ export async function requestSemanticReview(config:ModelConfig,messages:unknown[
     let rawScore:number|null=null;
     // A previous parse failure must never brand a later HTTP/network failure.
     let protocolStage:SemanticReviewProtocolStage|undefined;
+    let raw:unknown;
+    let messageContent:unknown;
     try {
       const body=await requestReviewJson(config,{model:config.modelId,thinking:{type:'disabled'},response_format:{type:'json_object'},max_tokens:8000,messages:reviewMessages},'semantic',attempt,observe);
       protocolStage='message-json';
-      const raw=JSON.parse(body.choices?.[0]?.message?.content||'');
-      if(Number.isFinite(raw?.score))rawScore=raw.score;
+      messageContent=body.choices?.[0]?.message?.content;
+      raw=JSON.parse((messageContent||'') as string);
+      const parsed=raw as any;
+      if(Number.isFinite(parsed?.score))rawScore=parsed.score;
       protocolStage='review-schema';
       // Preserve valid core fields before nested evidence bindings can fail.
       // Store the original parsed finding text before the existing typo filter.
-      if(Number.isFinite(raw?.score)&&raw.score>=0&&raw.score<=100&&typeof raw.needsRepair==='boolean'){
+      if(Number.isFinite(parsed?.score)&&parsed.score>=0&&parsed.score<=100&&typeof parsed.needsRepair==='boolean'){
         let originalFindings:string[]|undefined;
-        try{originalFindings=reviewFindings(raw.findings);}catch{/* Invalid core finding text remains unknown. */}
-        if(originalFindings)dispositionAttempts.push({attempt:attempt+1,score:raw.score,needsRepair:raw.needsRepair,findings:originalFindings});
+        try{originalFindings=reviewFindings(parsed.findings);}catch{/* Invalid core finding text remains unknown. */}
+        if(originalFindings)dispositionAttempts.push({attempt:attempt+1,score:parsed.score,needsRepair:parsed.needsRepair,findings:originalFindings});
       }
       const result=validateSemanticReview(raw);
       protocolStage='news-publication';
@@ -77,7 +126,7 @@ export async function requestSemanticReview(config:ModelConfig,messages:unknown[
       // Record the model's original flag before conservative normalization.
       // Conflicting field roles require clarification, never local deletion of
       // a finding or a higher grade. Reuse the existing two-request budget.
-      if(!attempt&&raw.needsRepair===false&&result.findings.length){
+      if(!attempt&&parsed.needsRepair===false&&result.findings.length){
         reviewMessages.push({role:'user',content:'上一轮needsRepair=false，但findings仍非空，字段处置相互矛盾。原始评分'+result.score+'、flag和问题列表已保留，不要求提高评分，也不能删除真实缺陷来消除矛盾。仅依据上面同一份实际音频和抽帧重新核对：findings只列仍需返修的实际缺陷；若有真实缺陷应保留并令needsRepair=true。核验通过、无错字或正常动效等肯定观察不能填入findings；没有实际缺陷时返回findings:[]，可选改进放suggestions。待澄清列表：'+JSON.stringify(result.findings)});
         await jobDelay(600);continue;
       }
@@ -91,16 +140,25 @@ export async function requestSemanticReview(config:ModelConfig,messages:unknown[
     } catch(error) {
       retainDisposition(error);
       try{throwIfJobCancelled();}catch(cancelled){throw retainDisposition(cancelled);}
-      if(protocolStage)protocolDiagnostics.push({attempt:attempt+1,stage:protocolStage,...protocolStages[protocolStage],...(rawScore===null?{}:{rawScore})});
+      let fields:SemanticReviewFieldDiagnostic[]|undefined;
+      if(protocolStage==='review-schema'){
+        const diagnostic=schemaDiagnostic(raw);protocolStage=diagnostic.stage;fields=diagnostic.fields;
+      }else if(protocolStage==='message-json')fields=[fieldDiagnostic('message.content','valid JSON object',messageContent)];
+      else if(protocolStage==='news-publication')fields=[fieldDiagnostic('newsPublication','required actual-frame publication observation',(raw as any)?.newsPublication)];
+      else if(protocolStage==='numeric-evidence')fields=[fieldDiagnostic('numericVisualChecks','observations bound to this request\'s actual chapter and frame times',(raw as any)?.numericVisualChecks)];
+      else if(protocolStage==='retention-binding')fields=[fieldDiagnostic('visualRetentionChecks','source evidence bound to this request\'s actual source frames',(raw as any)?.visualRetentionChecks)];
+      else if(protocolStage==='retention-checks')fields=[fieldDiagnostic('visualRetentionChecks','all original requirements bound to this request\'s actual frame times',(raw as any)?.visualRetentionChecks)];
+      if(protocolStage)protocolDiagnostics.push({attempt:attempt+1,stage:protocolStage,...protocolStages[protocolStage],...(rawScore===null?{}:{rawScore}),...(fields?{fields}:{})});
       if(error instanceof VisualRetentionReviewError){
         retentionAttempts.push({score:rawScore,error:error.message});
         if(attempt){const failure=new VisualRetentionReviewError(error.message,{cause:error,attempts:retentionAttempts});retentionProtocolDiagnostics.set(failure,protocolDiagnostics.map(diagnostic=>({...diagnostic})));throw retainDisposition(failure);}
-        reviewMessages.push({role:'user',content:'上一轮视觉保留核验协议无效：'+error.message+' 原分和失败证据保留，不要求提分。仅依据相同实际帧逐项纠正：'+visualRetentionReviewInstruction(retentionRequirements)});
+        reviewMessages.push({role:'user',content:'视觉保留协议存在缺项或无效绑定；原分和失败证据保留，仅依据同一份实际帧纠正。'+protocolFeedback(protocolDiagnostics.at(-1)!,requiresNewsPublication)+visualRetentionReviewInstruction(retentionRequirements)});
       }
       if(attempt||blocksModelOutputRecovery(error)){
         if(attempt&&protocolStage)throw retainDisposition(new SemanticReviewProtocolError(protocolDiagnostics,error));
         throw error;
       }
+      if(protocolStage&&!(error instanceof VisualRetentionReviewError))reviewMessages.push({role:'user',content:protocolFeedback(protocolDiagnostics.at(-1)!,requiresNewsPublication)});
       try{await jobDelay(600);}catch(cancelled){throw retainDisposition(cancelled);}
     }
   }

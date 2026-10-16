@@ -1,15 +1,17 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {copyFile,mkdtemp,readFile,rm,writeFile} from 'node:fs/promises';
-import {tmpdir} from 'node:os';
+import {copyFile,mkdir,mkdtemp,readFile,rm,writeFile} from 'node:fs/promises';
+import {homedir,tmpdir} from 'node:os';
 import path from 'node:path';
 import {createRequire} from 'node:module';
+import {pathToFileURL} from 'node:url';
 import {checkHtmlProject,drawingHtml,hashBytes,type HtmlDrawing} from '../server/narrativeScenes';
 import {inspectSvgTextPaint} from '../server/svgPaintOcclusion';
 import {recoverLessonHtml} from '../server/lessonHtmlRecovery';
 import {runWithJobSignal,JobCancelledError} from '../server/jobExecution';
 
 const actual=JSON.parse(await readFile(new URL('./fixtures/p21-svg-text-occlusion.json',import.meta.url),'utf8')) as {drawing:HtmlDrawing;duration:number;format:'9:16';provenance:{actualHTMLSHA256:string}};
+const leaf=JSON.parse(await readFile(new URL('./fixtures/p36-leaf-stroke-label-interference.json',import.meta.url),'utf8')) as {html:string;inspectionTime:number;provenance:{actualHTMLSHA256:string};clearZoneChanges:Array<{id:string;oldTop:number;newTop:number}>};
 async function withProject<T>(html:string,run:(project:string)=>Promise<T>){
   const project=await mkdtemp(path.join(tmpdir(),'qingjian-svg-paint-'));
   try{await writeFile(path.join(project,'index.html'),html);await copyFile('node_modules/gsap/dist/gsap.min.js',path.join(project,'gsap.min.js'));return await run(project);}
@@ -23,9 +25,57 @@ function clearZones(){
   }
   return drawing;
 }
-function controlled(pathData:string,options:{fill?:string;stroke?:string;strokeOpacity?:number;opacity?:number;z?:number;dash?:boolean;owned?:boolean;timeline?:boolean}={}){
-  return `<!doctype html><html><head><style>html,body{margin:0}#main{position:relative;width:720px;height:1280px;background:white}#label{position:absolute;left:120px;top:300px;font:700 40px Arial,sans-serif;z-index:1}.products{position:absolute;inset:0;width:720px;height:1280px;pointer-events:none;z-index:${options.z??2};opacity:${options.opacity??1}}</style><script src="./gsap.min.js"></script></head><body><section id="main" data-composition-id="main" data-width="720" data-height="1280" data-duration="4"><div id="label">TEST</div><svg class="products" viewBox="0 0 720 1280"><path id="graphic" ${options.owned===false?'':'data-drawing-id="graphic"'} d="${pathData}" fill="${options.fill??'none'}" stroke="${options.stroke??'black'}" stroke-opacity="${options.strokeOpacity??1}" stroke-width="5" ${options.dash?'stroke-dasharray="300" stroke-dashoffset="300"':''}/></svg></section><script>${options.timeline===false?'':`window.__timelines={main:gsap.timeline({paused:true})};window.__timelines.main.to('#graphic',{${options.dash?'strokeDashoffset:0,':'opacity:1,'}duration:1},1);`}</script></body></html>`;
+function controlled(pathData:string,options:{fill?:string;stroke?:string;strokeOpacity?:number;opacity?:number;z?:number;dash?:boolean;owned?:boolean;timeline?:boolean;labelBackground?:string;strokeWidth?:number}={}){
+  return `<!doctype html><html><head><style>html,body{margin:0}#main{position:relative;width:720px;height:1280px;background:white}#label{position:absolute;left:120px;top:300px;font:700 40px Arial,sans-serif;z-index:1;background:${options.labelBackground??'transparent'}}.products{position:absolute;inset:0;width:720px;height:1280px;pointer-events:none;z-index:${options.z??2};opacity:${options.opacity??1}}</style><script src="./gsap.min.js"></script></head><body><section id="main" data-composition-id="main" data-width="720" data-height="1280" data-duration="4"><div id="label">TEST</div><svg class="products" viewBox="0 0 720 1280"><path id="graphic" ${options.owned===false?'':'data-drawing-id="graphic"'} d="${pathData}" fill="${options.fill??'none'}" stroke="${options.stroke??'black'}" stroke-opacity="${options.strokeOpacity??1}" stroke-width="${options.strokeWidth??5}" ${options.dash?'stroke-dasharray="300" stroke-dashoffset="300"':''}/></svg></section><script>${options.timeline===false?'':`window.__timelines={main:gsap.timeline({paused:true})};window.__timelines.main.to('#graphic',{${options.dash?'strokeDashoffset:0,':'opacity:1,'}duration:1},1);`}</script></body></html>`;
 }
+
+// Opt-in local evidence only. Default CI does not take diagnostic PNGs.
+async function captureLeafEvidence(project:string,name:string,report:unknown){
+  const output=process.env.QINGJIAN_SVG_BELOW_STROKE_QA_DIR;if(!output)return;
+  const require=createRequire(createRequire(import.meta.url).resolve('hyperframes/package.json'));
+  const [{default:puppeteer},browsers]=await Promise.all([import(require.resolve('puppeteer-core')),import(require.resolve('@puppeteer/browsers'))]);
+  let executablePath=process.env.HYPERFRAMES_BROWSER_PATH||process.env.PRODUCER_HEADLESS_SHELL_PATH;
+  for(const cacheDir of [path.join(homedir(),'.cache/hyperframes/chrome'),path.join(homedir(),'.cache/puppeteer')]){
+    if(executablePath)break;
+    executablePath=(await browsers.getInstalledBrowsers({cacheDir})).find((b:any)=>b.platform===browsers.detectBrowserPlatform()&&['chrome-headless-shell','chrome'].includes(b.browser))?.executablePath;
+  }
+  assert.ok(executablePath,'local QA requires an already installed browser');await mkdir(output,{recursive:true,mode:0o700});
+  const browser=await puppeteer.launch({executablePath,headless:true,args:['--no-sandbox','--disable-setuid-sandbox','--allow-file-access-from-files']});
+  try{
+    const page=await browser.newPage();await page.setViewport({width:720,height:1280});await page.setRequestInterception(true);
+    page.on('request',(request:any)=>{void (/^(?:file:|data:)/.test(request.url())?request.continue():request.abort()).catch(()=>{});});
+    await page.goto(pathToFileURL(path.join(project,'index.html')).href,{waitUntil:'load'});await page.evaluate(()=>document.fonts.ready);
+    await page.evaluate((time:number)=>{(window as any).__timelines.main.pause().seek(time,false);},leaf.inspectionTime);
+    await page.screenshot({path:path.join(output,name+'.png')});
+    await writeFile(path.join(output,name+'.json'),JSON.stringify({htmlHash:hashBytes(await readFile(path.join(project,'index.html'))),time:leaf.inspectionTime,report},null,2),{flag:'wx',mode:0o600});
+  }finally{await browser.close();}
+}
+
+test('actual transparent leaf labels reject visible under-strokes; spatially separated same words/fonts/paths pass',{timeout:60000},async()=>{
+  assert.equal(hashBytes(leaf.html),leaf.provenance.actualHTMLSHA256);
+  await withProject(leaf.html,async project=>{
+    const result=(await inspectSvgTextPaint(project))!;assert.equal(result.htmlHash,leaf.provenance.actualHTMLSHA256);assert.equal(result.samples.length,9);
+    for(const id of ['dry_text','wet_text'])assert.ok(result.findings.some(f=>f.selector==='#qj-author-'+id&&f.code==='content_overlap'&&f.paintRelation==='visible-below-stroke'&&f.visibleStrokeSamples!>0),id);
+    assert.ok(result.findings.every(f=>f.affectedGlyphs?.some(g=>g.coveredInkSamples>=4&&g.coveredFraction>=.15)));
+    assert.equal(await readFile(path.join(project,'index.html'),'utf8'),leaf.html);await captureLeafEvidence(project,'actual-before',result);
+  });
+  let clear=leaf.html;
+  for(const change of leaf.clearZoneChanges){
+    const before=new RegExp(`(id="qj-author-${change.id}"[^>]*style="[^"]*top:)${change.oldTop}px`);assert.match(clear,before);clear=clear.replace(before,`$1${change.newTop}px`);
+  }
+  assert.equal(clear.replace(/top:900px/g,'top:954px'),leaf.html,'only the two label positions change; words, font, paths and animation remain exact');
+  await withProject(clear,async project=>{const result=(await inspectSvgTextPaint(project))!;assert.deepEqual(result.findings,[]);await captureLeafEvidence(project,'clear-zone-after',result);});
+});
+
+test('below-stroke visibility excludes opaque label/ancestor/sibling paint, under-fill and normal underline; actual dash reveal remains bounded',{timeout:90000},async()=>{
+  const opaqueAncestor=controlled('M100 325H400',{z:0}).replace('<div id="label">TEST</div>','<div style="position:absolute;left:100px;top:280px;width:320px;height:90px;z-index:1;background:white"><div id="label" style="left:20px;top:20px">TEST</div></div>');
+  const opaqueSibling=controlled('M100 325H400',{z:0}).replace('z-index:1;background:transparent','z-index:2;background:transparent').replace('<div id="label">TEST</div>','<div style="position:absolute;left:100px;top:280px;width:320px;height:90px;z-index:1;background:white"></div><div id="label">TEST</div>');
+  for(const html of [controlled('M100 325H400',{z:0,labelBackground:'white'}),opaqueAncestor,opaqueSibling,controlled('M80 270H400V370H80Z',{z:0,fill:'#eee',stroke:'none'}),controlled('M100 350H400',{z:0}),controlled('M100 325H400',{z:0,strokeOpacity:0})])await withProject(html,async project=>assert.deepEqual((await inspectSvgTextPaint(project))?.findings,[]));
+  // This synthetic positive uses a clearly crossing ten-pixel stroke; the
+  // actual five-pixel leaf strokes are independently covered above.
+  await withProject(controlled('M100 325H400',{z:0,strokeWidth:10}),async project=>assert.ok((await inspectSvgTextPaint(project))!.findings.some(f=>f.paintRelation==='visible-below-stroke')));
+  await withProject(controlled('M100 325H400',{z:0,dash:true,strokeWidth:10}),async project=>{const result=(await inspectSvgTextPaint(project))!;assert.ok(result.findings.some(f=>f.paintRelation==='visible-below-stroke'));assert.ok(result.findings.every(f=>f.time>1),'an undrawn dash cannot create visible interference');});
+});
 
 test('actual P21 SVG fill and probe strokes hide loaded-font card text even though the old check passed',{timeout:45000},async()=>{
   const before=structuredClone(actual.drawing),html=drawingHtml(actual.drawing,actual.duration,actual.format);

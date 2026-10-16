@@ -12,7 +12,7 @@ import { createToolTrace } from './toolTrace';
 import { throwIfJobCancelled } from './jobExecution';
 import { editFrameZoom, editProposalNarrativeFeedback, editSentenceBudgetHint } from './editProposal';
 import { editorialRepairCandidates, type EditorialRepairSelection } from './editorialRepairCandidates';
-import { extractVisualRetentionRequirements, parseVisualRetentionChecks, visualRetentionSelectionNeeded } from './visualRetentionReview';
+import { extractVisualRetentionRequirements, parseVisualRetentionChecks, visualRetentionSelectionNeeded, visualRetentionUnverifiedPlanningWitnesses, type VisualRetentionPlanningWitness } from './visualRetentionReview';
 import { durationSourceRecovery, SourceAsrRecoveryError, sourceAsrRecoveryReasons, sourceWitnessHasCompleteSpeech, visualRetentionSourceRecovery, type SourceAsrRecoveryReason } from './sourceAsrRecovery';
 
 type SceneSelection = {sourceId: string; sentenceIds: string[]; reason: string; purpose: SelectedScene['purpose']};
@@ -85,7 +85,9 @@ export async function runEditorialWorkflow(o: WorkflowOptions) {
   const events: WorkflowEvent[]=[];
   let decision:string|undefined;let feedback='';let retentionStopped=false;
   let repairCandidates:ReturnType<typeof editorialRepairCandidates>;
+  let planningWitnesses:VisualRetentionPlanningWitness[]|undefined;
   const retentionRequirements=extractVisualRetentionRequirements(o.prompt),rejectedRetentionSelections=new Set<string>();
+  const unverifiedRetentionSelections=new Set<string>();
   let manualArrange=false,arrangeCandidate:EditPlan|undefined;
   const sceneKey=(scene:SelectedScene)=>JSON.stringify([scene.sourceId,scene.sourceHash,scene.start,scene.end,scene.sentenceIds,scene.quote]);
   const selectionKey=(selected:SelectedScene[])=>JSON.stringify(selected.map(sceneKey));
@@ -130,7 +132,7 @@ export async function runEditorialWorkflow(o: WorkflowOptions) {
       try {const value=await execute(args);feedback='';if(decision===name)decision=undefined;return result(value);}
       catch(e){feedback=e instanceof Error?e.message:'工具失败';failures++;
         if(name==='arrange_timeline'&&/绘制动效/.test(feedback))decision='write_narrative';
-        else if(name==='arrange_timeline'&&!preserve&&/剪辑方案时长[\d.]+秒不符合用户要求|口播精剪只能选择已分析的完整句子|口播精剪剪点应位于完整句子外缘|口播精剪片段包含未选中的半句|剪辑方案句子ID无效/.test(feedback)){
+        else if(name==='arrange_timeline'&&!preserve&&/剪辑方案时长[\d.]+秒不符合用户要求|口播精剪只能选择已分析的完整句子|口播精剪剪点应位于完整句子外缘|口播精剪片段包含未选中的半句|剪辑方案句子ID无效|选段必须覆盖已绑定的原画面见证/.test(feedback)){
           if(o.recheckSource&&/剪辑方案时长[\d.]+秒不符合用户要求/.test(feedback)){
             const shortage=durationSourceRecovery(o.sources,o.prompt);
             if(shortage?.candidates.length){
@@ -167,6 +169,7 @@ export async function runEditorialWorkflow(o: WorkflowOptions) {
     if(!analyzed)throw new Error('先完成全部素材转写。');const selected=selectScenes(splitSceneSelections(a.scenes,o.sources),o.sources),rejected=rejectedSelections.get(selectionKey(selected));
     if(rejected)throw new Error('该完整选句组合已经编排失败，仅改理由或重复提交不能修复；请按具体时长缺口调整完整句组。'+rejected);
     if(rejectedRetentionSelections.has(selectionKey(selected)))throw new Error('该完整选句组合的实际成片未保留用户点名的原有画面表达；仅改理由或叙事不能修复，请选择包含该表达且保留完整原话的真实源片段。');
+    if(unverifiedRetentionSelections.has(selectionKey(selected)))throw new Error('该选句组合的画面保留状态仍未验证；本次仅授权包含原选段外的已绑定源见证以消除不确定性，不能只改理由或重复原选段。');
     const unchecked=selected.filter(scene=>!verifiedScenes.has(sceneKey(scene)));if(unchecked.length)await o.verifySelection?.(unchecked);
     for(const scene of selected){verifiedScenes.add(sceneKey(scene));const visual=visuals.get(sceneKey(scene));if(visual)scene.visual=structuredClone(visual);}
     scenes=selected;script=undefined;manualArrange=false;invalidate();return scenes;
@@ -185,6 +188,7 @@ export async function runEditorialWorkflow(o: WorkflowOptions) {
     const base:EditPlan={format:a.format,summary:script.premise,targetSeconds:0,fineCut:true,clips:ordered.map((s,i)=>({sceneId:s.id,sourceId:s.sourceId,start:s.start,end:s.end,sentenceIds:s.sentenceIds,purpose:s.purpose,zoom:editFrameZoom(a.zoom,o.prompt),transition:i&&a.fade?{kind:'fade',duration:a.fade}:{kind:'cut',duration:0}})),audio:{originalVolume:1,bgmVolume:.12,narrationVolume:1,normalize:true}};
     arrangeCandidate=base;
     const candidate=applyTimelineRequest(validatePlan(base,o.sources),o.prompt+' 同步字幕',o.sources);
+    if(planningWitnesses?.some(w=>!candidate.clips.some(c=>c.sourceId===w.sourceId&&w.time>=c.start&&w.time<c.end)))throw new Error('选段必须覆盖已绑定的原画面见证，包含待消除不确定性的源时刻并保留已满足见证；不能只改理由或重复原选段。');
     const offsets=timelineOffsets(candidate);
     candidate.motions=script.beats.flatMap((b,i)=>b.graphic==='none'?[]:[{sceneId:b.sceneId,kind:b.graphic,label:b.label,zone:ordered[i].visual!.safeZone,start:+(offsets[i]+.15).toFixed(3),end:+(offsets[i]+candidate.clips[i].end-candidate.clips[i].start-.1).toFixed(3)}]);
     if (/至少(?:两|2)种/.test(o.prompt) && new Set(candidate.motions.map((m)=>m.kind)).size<2) throw new Error('绘制动效需至少两种，且各自有信息用途，请修改叙事脚本。');
@@ -206,11 +210,13 @@ export async function runEditorialWorkflow(o: WorkflowOptions) {
       let checks:ReturnType<typeof parseVisualRetentionChecks>;
       try{checks=parseVisualRetentionChecks(review.semantic?.visualRetentionChecks);}catch{checks=undefined;}
       const bound=checks&&checks.length===retentionRequirements.length&&new Set(checks.map(check=>check.id)).size===checks.length&&checks.every(check=>retentionRequirements.some(required=>required.id===check.id&&required.quote===check.quote)&&(check.status==='unverified'||check.frameTimes.length>0));
-      if(!bound||checks!.some(check=>check.status==='unverified')){
+      const resolving=bound?visualRetentionUnverifiedPlanningWitnesses(review,o.prompt,plan,o.sources):undefined;
+      if(!bound||checks!.some(check=>check.status==='unverified')&&!resolving){
         retentionStopped=true;review.limitations.push('用户明确要求保留的画面尚未验证；保留当前成片和原始评分，不把未知当作缺失，也不重复渲染相同选段。');
-      }else if(visualRetentionSelectionNeeded(review,o.prompt,plan)){
-        if(preserve){retentionStopped=true;review.limitations.push('实际审查发现未保留用户点名的画面表达，但当前要求固定选段；保留原成片和问题，不能擅自重选。');}
+      }else if(resolving||visualRetentionSelectionNeeded(review,o.prompt,plan)){
+        if(preserve){retentionStopped=true;review.limitations.push(resolving?'画面保留状态仍未验证，但当前要求固定选段；保留原成片、原分和不确定性，不能擅自包含选段外见证或认定缺失。':'实际审查发现未保留用户点名的画面表达，但当前要求固定选段；保留原成片和问题，不能擅自重选。');}
         else if(renderCount<2){
+          planningWitnesses=resolving;
           const checked=review,checkedPlan=plan,candidates=visualRetentionSourceRecovery(checked,o.prompt,plan,o.sources),rejectedKey=selectionKey(scenes);
           if(candidates.length){scenes=[];script=undefined;invalidate();}
           for(const sourceId of new Set(candidates.map(candidate=>candidate.sourceId))){
@@ -220,7 +226,7 @@ export async function runEditorialWorkflow(o: WorkflowOptions) {
               terminalSourceError=new SourceAsrRecoveryError('用户明确要求保留的实际源画面仍落在无法合法选用的未完成原声中；同一音频的有限独立复听已使用，保留原成片、原评分与两版识别，不能补写词尾、强制完整或重复提交。');throw terminalSourceError;
             }
           }
-          rejectedRetentionSelections.add(rejectedKey);decision='select_scenes';
+          (resolving?unverifiedRetentionSelections:rejectedRetentionSelections).add(rejectedKey);decision='select_scenes';
           repairCandidates=editorialRepairCandidates({review:checked,prompt:o.prompt,plan:checkedPlan,sources:o.sources,validate:selections=>validateRepairCandidate(selections,checkedPlan)});
           if(candidates.length)return {...checked,...(repairCandidates?{repairCandidates}:{})};
         }

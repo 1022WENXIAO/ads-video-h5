@@ -75,10 +75,23 @@ test('unfinished review retains the film while actual defects still require repa
 test('semantic request retries incomplete output but never retries a real rejection or forbidden access',async()=>{
   const original=globalThis.fetch;let calls=0;
   const messages=[{role:'user',content:[{type:'input_audio',input_audio:{data:'actual-audio',format:'wav'}},{type:'image_url',image_url:{url:'actual-frame'}}]}];
+  const before=structuredClone(messages);
   const response=(value:unknown)=>new Response(JSON.stringify({choices:[{message:{content:typeof value==='string'?value:JSON.stringify(value)}}]}));
   try {
-    globalThis.fetch=async(_url,options)=>{calls++;const body=JSON.parse(String(options?.body));assert.deepEqual(body.messages,messages);assert.equal(body.thinking.type,'disabled');return response(calls===1?'':{score:85,needsRepair:false,findings:[],suggestions:[]});};
+    globalThis.fetch=async(_url,options)=>{
+      calls++;assert.ok(calls<=2,'protocol correction never adds a third request');const body=JSON.parse(String(options?.body));
+      if(calls===1)assert.deepEqual(body.messages,before);
+      else{
+        assert.equal(body.messages.length,before.length+1,'only one correction message may be appended');
+        assert.deepEqual(body.messages.slice(0,-1),before,'all original audio/frame/messages remain byte-for-byte unchanged');
+        const correction=body.messages.at(-1);assert.deepEqual(Object.keys(correction).sort(),['content','role']);assert.equal(correction.role,'user');
+        assert.equal(typeof correction.content,'string');assert.match(correction.content,/SEMANTIC_MESSAGE_JSON_INVALID/);assert.match(correction.content,/message\.content.*valid JSON object/);
+        assert.match(correction.content,/score.*needsRepair.*findings.*suggestions/);assert.doesNotMatch(correction.content,/test-private-key|actual-audio|actual-frame/);
+      }
+      assert.equal(body.thinking.type,'disabled');return response(calls===1?'':{score:85,needsRepair:false,findings:[],suggestions:[]});
+    };
     assert.equal((await requestSemanticReview(config(),messages)).score,85);assert.equal(calls,2);
+    assert.deepEqual(messages,before,'retry feedback cannot mutate the caller media context');
     calls=0;globalThis.fetch=async()=>{calls++;return response({score:70,needsRepair:true,findings:['ch2实际错读'],suggestions:[]});};
     assert.equal((await requestSemanticReview(config(),messages)).needsRepair,true);assert.equal(calls,1);
     calls=0;globalThis.fetch=async()=>{calls++;return new Response('',{status:403});};

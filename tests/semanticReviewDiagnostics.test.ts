@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {mkdtemp,readFile,writeFile,rm} from 'node:fs/promises';
 import path from 'node:path';
 import {tmpdir} from 'node:os';
-import {requestSemanticReview,SemanticReviewProtocolError,semanticReviewProtocolDiagnostics} from '../server/semanticReview';
+import {requestSemanticReview,SemanticReviewProtocolError,semanticReviewProtocolDiagnostics,semanticReviewDispositionAttempts} from '../server/semanticReview';
 import {VisualRetentionReviewError} from '../server/visualRetentionReview';
 import {runWithJobSignal,JobCancelledError} from '../server/jobExecution';
 import {TextTransportError} from '../server/executionErrors';
@@ -18,6 +18,75 @@ const config={id:'controlled-review',name:'Controlled review',provider:'ark',kin
 const good={score:76,needsRepair:true,findings:['Controlled original low verdict'],suggestions:[]};
 const response=(value:unknown)=>Response.json({choices:[{message:{content:JSON.stringify(value)}}]});
 const badJson=()=>Response.json({choices:[{message:{content:'not-json PRIVATE_RESPONSE_SENTINEL Bearer never-serialize-me https://private.invalid/path'}}]});
+
+// These malformed responses are controlled simulations. P36 retained HTTP200,
+// raw89/86 and review-schema diagnostics, not its original provider response.
+test('specific missing/type feedback repairs only the protocol on the same media within two requests',async t=>{
+  const original=globalThis.fetch;t.after(()=>{globalThis.fetch=original;});
+  const cases=[
+    {name:'missing needsRepair',bad:{score:89,findings:[],suggestions:[]},field:'needsRepair',type:'missing',missing:true},
+    {name:'string needsRepair',bad:{score:89,needsRepair:'PRIVATE_BOOLEAN_TOKEN',findings:[],suggestions:[]},field:'needsRepair',type:'string',missing:false},
+    {name:'numeric needsRepair',bad:{score:89,needsRepair:0,findings:[],suggestions:[]},field:'needsRepair',type:'number',missing:false},
+    {name:'findings object',bad:{score:89,needsRepair:true,findings:{PRIVATE_DYNAMIC_KEY:'PRIVATE_FINDING_BODY'},suggestions:[]},field:'findings',type:'object',missing:false},
+    {name:'unreadable finding item',bad:{score:89,needsRepair:true,findings:[{PRIVATE_DYNAMIC_KEY:'PRIVATE_FINDING_BODY'}],suggestions:[]},field:'findings[0]',type:'object',missing:false},
+  ];
+  for(const item of cases)await t.test(item.name,async()=>{
+    const messages=[{role:'user',content:[{type:'input_audio',input_audio:{data:'controlled-original-audio',format:'mp3'}},{type:'image_url',image_url:{url:'data:image/jpeg;base64,controlled-original-frame'}}]}];
+    const before=structuredClone({messages,bad:item.bad}),requests:any[]=[];
+    globalThis.fetch=async(_url,options)=>{
+      requests.push(JSON.parse(String(options?.body)));
+      assert.ok(requests.length<=2,'schema repair cannot create request3');
+      return response(requests.length===1?item.bad:good);
+    };
+    const result=await requestSemanticReview(config,messages);
+    assert.equal(requests.length,2);assert.deepEqual(requests[0].messages,messages);
+    assert.deepEqual(requests[1].messages.slice(0,-1),messages,'same actual evidence stays intact');
+    const feedback=requests[1].messages.at(-1).content;
+    assert.match(feedback,/score.*needsRepair.*findings.*suggestions/);
+    assert.ok(feedback.includes(item.field));assert.match(feedback,/JSON boolean/);assert.match(feedback,/不要求沿用或提高旧分/);
+    assert.doesNotMatch(feedback,/PRIVATE_|controlled-not-a-real-secret/);
+    assert.equal(requests[1].max_tokens,8000);assert.deepEqual(requests[1].thinking,{type:'disabled'});
+    assert.deepEqual(requests[1].response_format,{type:'json_object'});
+    const diagnostic=result.protocolDiagnostics![0];assert.equal(diagnostic.stage,'review-schema');assert.equal(diagnostic.rawScore,89);
+    assert.deepEqual(diagnostic.fields,[{path:item.field,expected:item.field==='needsRepair'?'JSON boolean':item.field==='findings'?'array of readable findings':'nonempty string or readable finding object',actualType:item.type,missing:item.missing}]);
+    assert.equal(result.score,76);assert.equal(result.needsRepair,true);assert.deepEqual(result.findings,good.findings,'the recovered actual defect is not discarded');
+    assert.deepEqual(result.dispositionAttempts,[{attempt:2,score:76,needsRepair:true,findings:good.findings}],'invalid core never becomes an invented first disposition');
+    assert.deepEqual({messages,bad:item.bad},before,'caller data and malformed fixture remain unchanged');
+  });
+});
+
+test('protocol repair never promotes a legal low score or a recovered real defect',async t=>{
+  const original=globalThis.fetch;t.after(()=>{globalThis.fetch=original;});
+  for(const verdict of [{score:74,needsRepair:false,findings:[],suggestions:[]},{score:91,needsRepair:true,findings:['chapter-2：受控实际字幕遮挡，须返修。'],suggestions:[]}]){
+    let calls=0;globalThis.fetch=async()=>response(++calls===1?{score:89,findings:[],suggestions:[]}:verdict);
+    const result=await requestSemanticReview(config,[]);
+    assert.equal(calls,2);assert.equal(result.score,verdict.score);assert.equal(result.needsRepair,true);assert.deepEqual(result.findings,verdict.findings);
+    assert.deepEqual(result.dispositionAttempts,[{attempt:2,score:verdict.score,needsRepair:verdict.needsRepair,findings:verdict.findings}]);
+  }
+  let calls=0;globalThis.fetch=async()=>{calls++;return response({score:74,needsRepair:false,findings:[]});};
+  const low=await requestSemanticReview(config,[]);assert.equal(calls,1,'a legal low verdict needs no schema retry');assert.equal(low.score,74);assert.equal(low.needsRepair,true);
+});
+
+test('malformed optional evidence gets its own safe protocol stage without losing valid core dispositions',async t=>{
+  const original=globalThis.fetch;t.after(()=>{globalThis.fetch=original;});
+  const cases=[
+    {bad:{...good,newsPublication:{visible:true,chapterId:'chapter-1',quote:'PRIVATE_NEWS_BODY',frameTime:'PRIVATE_TIME'}},stage:'news-publication',field:'newsPublication'},
+    {bad:{...good,suggestions:null,numericVisualChecks:{PRIVATE_DYNAMIC_KEY:'PRIVATE_NUMERIC_BODY'}},stage:'numeric-evidence',field:'numericVisualChecks'},
+    {bad:{...good,visualRetentionChecks:'PRIVATE_RETENTION_BODY'},stage:'retention-checks',field:'visualRetentionChecks'},
+  ];
+  for(const item of cases){
+    const requests:any[]=[];globalThis.fetch=async(_url,options)=>{requests.push(JSON.parse(String(options?.body)));return response(item.bad);};
+    await assert.rejects(requestSemanticReview(config,[]),error=>{
+      assert.ok(error instanceof SemanticReviewProtocolError||error instanceof VisualRetentionReviewError);
+      const diagnostics=semanticReviewProtocolDiagnostics(error)!;
+      assert.deepEqual(diagnostics.map(d=>d.stage),[item.stage,item.stage]);assert.equal(diagnostics[0].fields![0].path,item.field);
+      assert.deepEqual(semanticReviewDispositionAttempts(error),[1,2].map(attempt=>({attempt,score:76,needsRepair:true,findings:good.findings})));
+      assert.doesNotMatch(JSON.stringify(diagnostics)+requests[1].messages.at(-1).content,/PRIVATE_|controlled-not-a-real-secret/);
+      return true;
+    });
+    assert.equal(requests.length,2);assert.ok(requests[1].messages.at(-1).content.includes(item.field));
+  }
+});
 
 test('two HTTP200 protocol failures retain their actual distinct stages and only a parsed finite raw score',async t=>{
   const original=globalThis.fetch;t.after(()=>{globalThis.fetch=original;});let calls=0;const metrics:any[]=[];

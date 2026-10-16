@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto';
-import type { EditPlan, RenderReview, VisualRetentionCheck } from '../shared/types';
+import type { EditPlan, MediaItem, RenderReview, VisualRetentionCheck } from '../shared/types';
+import { timelineOffsets } from './timeline';
 export type { VisualRetentionCheck } from '../shared/types';
 export interface VisualRetentionRequirement { id:string; quote:string }
 export interface VisualRetentionAttempt { score:number|null; checks?:VisualRetentionCheck[]; error?:string }
@@ -91,4 +92,60 @@ export function visualRetentionSelectionNeeded(review:RenderReview,prompt:string
       return Boolean(plan.editorial?.scenes.some(s=>s.sourceId===source.sourceId&&s.sourceHash===source.sourceHash))&&ranges.length>0&&ranges.every(c=>source.time<c.start||source.time>=c.end);
     });
   }catch{return false;}
+}
+
+export interface VisualRetentionPlanningWitness {
+  sourceId:string;sourceHash:string;time:number;
+  purpose:'resolve-unverified'|'preserve-met'|'preserve-observed'|'confirmed-omission';
+  outputTime?:number;
+}
+/** Planning permission only: include a bound, currently unselected source
+ * observation to resolve uncertainty in a NEW movie. Never change the review
+ * status, invent sourceOmitted, or treat a selected time as semantic acceptance.
+ * sources is the caller's already owner-scoped original-media catalog. */
+export function visualRetentionUnverifiedPlanningWitnesses(review:RenderReview,prompt:string,plan:EditPlan,sources:readonly MediaItem[]):VisualRetentionPlanningWitness[]|undefined{
+  if(review.status!=='needs-review')return;
+  try{
+    const requirements=extractVisualRetentionRequirements(prompt),checks=parseVisualRetentionChecks(review.semantic?.visualRetentionChecks);
+    if(!requirements.length||!checks||checks.length!==requirements.length||new Set(checks.map(c=>c.id)).size!==checks.length||!checks.some(c=>c.status==='unverified'))return;
+    const owners=new Set(sources.filter(s=>plan.clips.some(c=>c.sourceId===s.id)).flatMap(s=>s.ownerId?[s.ownerId]:[]));
+    if(owners.size>1)return;
+    const offsets=timelineOffsets(plan);
+    const witnesses:VisualRetentionPlanningWitness[]=[];
+    for(const [index,check] of checks.entries()){
+      if(!requirements.some(r=>r.id===check.id&&r.quote===check.quote)||check.status!=='unverified'&&!check.frameTimes.length)return;
+      const trusted=review.semantic!.visualRetentionChecks![index],w=trusted.sourceEvidence;
+      // This narrow planning path must preserve prior met observations too.
+      // Without a bound source location we cannot constrain the new selection.
+      if(!w||!/^[a-f0-9]{64}$/.test(w.sourceHash||'')||!Number.isFinite(w.time)||w.time<0)return;
+      const matches=sources.filter(s=>s.id===w.sourceId),source=matches[0],analysis=source?.analysis;
+      if(matches.length!==1||source.kind!=='video'||source.hasAudio===false||analysis?.status!=='ready'||analysis.sourceHash!==w.sourceHash||!Number.isFinite(analysis.duration)||analysis.duration<=0||w.time>=analysis.duration||!Number.isFinite(source.duration)||source.duration!<=0||w.time>=source.duration!||!plan.editorial?.scenes.some(s=>s.sourceId===source.id&&s.sourceHash===w.sourceHash))return;
+      const ranges=plan.clips.filter(c=>c.sourceId===source.id);
+      if(!ranges.length||ranges.some(c=>!Number.isFinite(c.start)||!Number.isFinite(c.end)||c.end<=c.start))return;
+      const outside=ranges.every(c=>w.time<c.start||w.time>=c.end);
+      if(check.status==='unverified'){
+        if(trusted.sourceOmitted!==undefined||!outside)return;
+        witnesses.push({sourceId:w.sourceId,sourceHash:w.sourceHash!,time:w.time,purpose:'resolve-unverified'});
+        // A compound requirement may already be partly visible. Preserve the
+        // actual output observations while adding its unselected source frame;
+        // this is NOT a claim that the entire requirement was met. The review
+        // caller has already bound these frameTimes to the actual sampled movie.
+        for(const outputTime of check.frameTimes){
+          const matches=plan.clips.flatMap((clip,index)=>outputTime>=offsets[index]&&outputTime<offsets[index]+clip.end-clip.start?[{clip,index}]:[]);
+          if(matches.length!==1)return; // Cross-fades cannot identify one source.
+          const {clip,index}=matches[0],sourcesAtTime=sources.filter(s=>s.id===clip.sourceId),observed=sourcesAtTime[0],a=observed?.analysis;
+          const time=clip.start+outputTime-offsets[index];
+          if(sourcesAtTime.length!==1||observed.kind!=='video'||observed.hasAudio===false||a?.status!=='ready'||!/^[a-f0-9]{64}$/.test(a.sourceHash)||!Number.isFinite(time)||time<clip.start||time>=clip.end||!Number.isFinite(a.duration)||time>=a.duration||!Number.isFinite(observed.duration)||time>=observed.duration!||!plan.editorial?.scenes.some(s=>s.id===clip.sceneId&&s.sourceId===observed.id&&s.sourceHash===a.sourceHash))return;
+          witnesses.push({sourceId:observed.id,sourceHash:a.sourceHash,time,purpose:'preserve-observed',outputTime});
+        }
+      }else if(check.status==='unmet'){
+        if(trusted.sourceOmitted!==true||!outside)return;
+        witnesses.push({sourceId:w.sourceId,sourceHash:w.sourceHash!,time:w.time,purpose:'confirmed-omission'});
+      }else{
+        if(trusted.sourceOmitted!==undefined||outside)return;
+        witnesses.push({sourceId:w.sourceId,sourceHash:w.sourceHash!,time:w.time,purpose:'preserve-met'});
+      }
+    }
+    return witnesses;
+  }catch{return;}
 }
