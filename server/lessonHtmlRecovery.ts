@@ -9,6 +9,7 @@ import {fitNumericDrawingSlots} from './drawingNumberLayout';
 import { currentJobSignal, throwIfJobCancelled } from './jobExecution';
 import { liftCardLabels, reflowCardDetails } from './drawingCardLayout';
 import {AuthoredDrawingGeometryError} from './drawingGeometry';
+import {proposeIndependentTextLayout} from './drawingIndependentTextLayout';
 
 type EvidenceFile = {path:string;sha256:string};
 type LayoutIssue = { code: string; severity?: string; selector?: string; containerSelector?: string; source?:string;htmlHash?:string;text?:string;time?:number;coveredFraction?:number;evidence?:EvidenceFile };
@@ -118,6 +119,21 @@ async function verifiedSvgCardLabelProposal(project:string,drawing:HtmlDrawing,r
     }
   }
   if(await readFile(path.join(project,'index.html'),'utf8')!==html)return;
+  return proposal;
+}
+
+async function verifiedIndependentTextProposal(project:string,drawing:HtmlDrawing,report:LayoutReport,format:Format):Promise<HtmlDrawing|undefined>{
+  if(report.ok!==false||report.runtime?.ok===false)return;
+  try{validateDrawing(drawing,format);}catch{return;}
+  const proposal=proposeIndependentTextLayout(drawing,reportIssues(report),drawingDimensions(format),drawingDomId);if(!proposal)return;
+  try{validateDrawing(proposal,format);}catch{return;}
+  const html=await readFile(path.join(project,'index.html'),'utf8');
+  const find=(source:string,predicate:(node:any)=>boolean)=>{const found:any[]=[];const visit=(node:any)=>{if(predicate(node))found.push(node);for(const child of node.childNodes||[])visit(child);};visit(parse(source));return found;};
+  const attr=(node:any,name:string)=>node?.attrs?.find((a:any)=>a.name===name)?.value;
+  const roots=find(html,n=>attr(n,'data-composition-id')==='main'),planes=find(html,n=>attr(n,'class')==='drawing-plane'),duration=Number(attr(roots[0],'data-duration'));
+  if(roots.length!==1||planes.length!==1||!Number.isFinite(duration)||duration<=0||duration>600)return;
+  const expected=find(drawingHtml(drawing,duration,format),n=>attr(n,'class')==='drawing-plane');
+  if(expected.length!==1||serialize(expected[0])!==serialize(planes[0])||await readFile(path.join(project,'index.html'),'utf8')!==html)return;
   return proposal;
 }
 
@@ -373,7 +389,7 @@ export async function recoverLessonHtml<R extends SceneResult>(options: {
       const evidence=await archiveAttempt(options.project,options.contextHash,'authored-'+state.attempts,error);
       state.failed.push({ hash, feedback, drawing, report, ...(evidence?{evidence}:{}) });
       if(report){
-        const issues=htmlLayoutIssues(report),proposal=state.attempts<2&&await verifiedSvgCardLabelProposal(options.project,drawing,report,options.format)||separateCardLabels(drawing,issues,options.format)||liftCardLabels(drawing,issues,options.format)||reflowCardDetails(drawing,issues,options.format);
+        const issues=htmlLayoutIssues(report),proposal=state.attempts<2&&(await verifiedSvgCardLabelProposal(options.project,drawing,report,options.format)||separateCardLabels(drawing,issues,options.format)||liftCardLabels(drawing,issues,options.format)||reflowCardDetails(drawing,issues,options.format)||await verifiedIndependentTextProposal(options.project,drawing,report,options.format));
         if(proposal&&drawingContentHash(proposal)===drawingContentHash(drawing))try{state.pendingDrawing=validateDrawing(proposal,options.format);}catch{/* Unsafe geometry requires the remaining authored redraw. */}
       }
       await persist();

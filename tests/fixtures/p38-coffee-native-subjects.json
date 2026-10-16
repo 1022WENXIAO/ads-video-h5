@@ -1,0 +1,40 @@
+{
+  "provenance": {
+    "kind": "extracted actual first-plan chapter-1 and review-tool public projection; not a model-authored drawing proposal or fresh media acceptance",
+    "snapshotSha256": "21848670356a6179678757d3e21047f47c9d880aa7b0a8084c2c028c7346334e",
+    "observedAt": "2026-10-16T17:40:36.809127Z",
+    "nativeHtmlSha256": "f18beb37a5aaee505c3a4c61821bfe408b9c88a82bab21837d37531d051c707f",
+    "firstReviewScore": 64,
+    "firstReviewFinding": "chapter-1：两张配图（冷杯会吸热、冲煮头待暖）均使用游戏手柄图标，与文案描述的咖啡机冲煮头、金属手柄完全不符。",
+    "originalRequestExcerpt": "用厨房台面、咖啡豆和杯子这些日常画面轻松讲，给新手一个好记的做法。"
+  },
+  "chapter": {
+    "id": "chapter-1",
+    "title": "灯亮不等于热透",
+    "narration": "早上第一杯，别急着按萃取。灯亮只说明机器开机，冲煮头、手柄和杯子还可能偏凉，会吸走热水的热量。",
+    "visual": {
+      "kind": "concept",
+      "takeaway": "开机灯亮，只代表机器已通电，不代表全系统热透。",
+      "items": [
+        {
+          "label": "冷杯会吸热",
+          "detail": "凉水杯和金属手柄接触热水时，会分走一部分热量。",
+          "cue": "杯子还可能偏凉",
+          "illustration": "coffee"
+        },
+        {
+          "label": "冲煮头待暖",
+          "detail": "冲煮头和手柄从蓝色逐渐变暖，暗示有效温度在建立。",
+          "cue": "冲煮头、手柄",
+          "illustration": "hardware"
+        },
+        {
+          "label": "厨房台面",
+          "detail": "咖啡豆、杯子和家用咖啡机放在同一台面，画面轻松日常。",
+          "cue": "早上第一杯",
+          "illustration": "desk"
+        }
+      ]
+    }
+  }
+}

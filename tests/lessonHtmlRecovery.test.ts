@@ -47,7 +47,16 @@ test('real HyperFrames gate rejects the captured overlap and accepts only the un
     await assert.rejects(checkHtmlProject(project, { fullCheck: true }), /content_overlap/);
     const actual = JSON.parse(await readFile(path.join(project, 'check-report.json'), 'utf8'));
     assert.ok(htmlLayoutIssues(actual).some(issue=>issue.selector?.startsWith('#qj-author-')&&issue.containerSelector?.startsWith('#qj-author-')),'real checker reports the compiled namespace');
-    const fixed = separateCardLabels(fixture.drawing, htmlLayoutIssues(actual), '9:16'); assert.ok(fixed);
+    assert.equal(actual.ok,false);
+    assert.ok(actual.layout.findings.some((issue:any)=>issue.code==='text_occluded'&&issue.source==='server-svg-paint'&&issue.selector==='#qj-author-wave_card'&&issue.containerSelector==='#qj-author-wave_chart'),'the same rejected check now includes its independent real SVG defect');
+    const upstreamBytes=await readFile(path.join(project,actual.svgPaint.upstreamReport.path));assert.equal(hashBytes(upstreamBytes),actual.svgPaint.upstreamReport.sha256);
+    const upstream=JSON.parse(upstreamBytes.toString());assert.equal(upstream.ok,false);assert.ok(upstream.layout.findings.some((issue:any)=>issue.code==='content_overlap'),'the original failed CLI decision is preserved');
+    const pairs=[['#qj-author-revenue_card','#qj-author-revenue_value'],['#qj-author-loss_card','#qj-author-loss_value'],['#qj-author-main_card','#qj-author-main_status']];
+    const partial=htmlLayoutIssues(actual).filter(issue=>issue.code==='content_overlap'&&pairs.some(pair=>pair.includes(issue.selector!)&&pair.includes(issue.containerSelector!)));
+    assert.ok(pairs.every(pair=>partial.some(issue=>pair.includes(issue.selector!)&&pair.includes(issue.containerSelector!))));
+    // This explicit subset demonstrates only the card/value proposal. The
+    // complete original report remains failed and the SVG defect must persist.
+    const fixed = separateCardLabels(fixture.drawing, partial, '9:16'); assert.ok(fixed);
     assert.equal(drawingContentHash(fixed), drawingContentHash(fixture.drawing));
     await writeFile(path.join(project, 'index.html'), drawingHtml(fixed, 15.88, '9:16'));
     await assert.rejects(checkHtmlProject(project, { fullCheck: true }), /Actual SVG fill\/stroke/);

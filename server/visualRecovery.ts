@@ -41,6 +41,21 @@ const renderingDefect=(text:string)=>renderedSurface(text)&&/拼写错误|错写
 // verified narration. The existing spoken/source/caption guards still apply.
 const illustrationRecognitionDefect=(text:string)=>/(?:插画|插图|图形|示意图|轮廓)[^。；;\n]{0,200}(?:(?:难以|无法|不能|不易)(?:清楚|明确)?(?:识别|辨认)|认不出)/.test(text);
 const visualDefect=(text:string)=>layoutDefect(text)||renderingDefect(text)||illustrationRecognitionDefect(text)||/图标|配图|没有.*(?:图|画)|未呈现|缺乏.*图解|缺少.*(?:示意|图解)|未.*(?:画出|展示)|静态卡片|任务清单|图解仅复现文字|无法.*直观|(?:画面|卡片|图解|视觉|抽帧|提示条).*(?:错误|误写|缺失|遗漏|误导|误以为|归属|绑定|合并|混乱|不符|不一致|制作备注|内部说明)|抽帧.*(?:未出现|未展示)|动画/.test(text);
+// Repeating a correct scene heading is a rendering defect. Keep this separate
+// from an inaccurate title or a request to repeat unverified claims: the usual
+// spoken, caption and source guards below still decide those cases.
+function duplicateTitleRenderingDefect(text:string,chapters:LessonChapter[]):boolean{
+  if(!/画面|页面|屏幕|分镜|图解|顶部|排版|渲染/.test(text))return false;
+  // A formatting symptom cannot freeze a title whose evidence is still
+  // unverified. These common paraphrases belong to this new route only;
+  // existing display-only source-name spelling repairs keep their contract.
+  const unquoted=scopeText(text);
+  if(/(?:来源|原文|报道|证据|claims?)[^，,。；;\n]{0,16}(?:没有|尚未|未曾|未能|还没|未经)(?:被|做|进行|完成)?(?:过|了)?(?:核验|核实|证实)|(?:事实|结论|说法|信息)[^，,。；;\n]{0,12}(?:尚未证实|未经核实|未被证实|没有证据支持)/i.test(unquoted))return false;
+  const duplicate=/(?:出现|显示|展示|绘制|渲染|印)(?:了)?(?:两次|两处|两遍|二次|2次|多次|多处)[^。；;\n]{0,50}(?:大)?标题|(?:大)?标题[^。；;\n]{0,40}(?:重复(?:显示|绘制|渲染)?|(?:出现|显示|印)(?:了)?(?:两次|两处|两遍|二次|2次|多次|多处))|重复(?:显示|绘制|渲染)[^。；;\n]{0,30}(?:大)?标题/.test(text);
+  if(!duplicate)return false;
+  const quoted=[...text.matchAll(/[“「"]([^”」"]{2,80})[”」"]/g)].map(match=>match[1].trim());
+  return !quoted.length||quoted.some(title=>chapters.some(chapter=>chapter.title===title));
+}
 const unsafeVisual=(text:string)=>/事实错误|数据错误|公式错误|旁白错误|字幕|音色|音量|错读|图解说明不准确/.test(text);
 const sourceUnverified=(text:string)=>/(?:来源|原文|报道|证据|claims?)(?:本身|内容|事实|引用)?(?:尚|仍|目前|还)?(?:未核验|未核实|不可靠|无依据|缺失|不足|无法核验|不支持|不明|不明确|未知|未确认)/i.test(text);
 // A rejected citation or source-bound fact cannot be authorized by an
@@ -150,7 +165,7 @@ export function lessonRepairPlan(report:LessonReport,review:RenderReview):Lesson
     // confirms a literal, current narrated line. An unscoped data/fact fault
     // or an unknown source is not permission to freeze questionable speech.
     const displayOnlyValue=correct&&quotedNarration(text,chapters)&&text.replace(displayedValueFault,'')!==text&&!unsafeVisual(text.replace(displayedValueFault,''));
-    const pureVisual=!scripted&&!sourceUnverified(text)&&!sourceClaimFault(text)&&(!unsafeVisual(text)||displayOnlyValue)&&visualDefect(text)&&(!hasSpoken||correct);
+    const pureVisual=!scripted&&!sourceUnverified(text)&&!sourceClaimFault(text)&&(!unsafeVisual(text)||displayOnlyValue)&&(visualDefect(text)||duplicateTitleRenderingDefect(text,chapters))&&(!hasSpoken||correct);
     if(pureVisual||narrationVisual.has(text)){for(const id of targets){visual.add(id);(result.visualFindings[id]??=[]).push(text);}continue;}
     if(!hasSpoken||!sourceConflict(text)){if(speechOnlyRepair(single)){sound.push({text,targets});continue;}}
     for(const id of targets)script.add(id);result.scriptFindings.push(text);

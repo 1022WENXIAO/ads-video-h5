@@ -17,6 +17,7 @@ import {visualRepairTargets,speechOnlyRepair,lessonVisualBrief} from './visualRe
 import {assertVisibleContent} from './visibleContent';
 import {voiceComparisonTask} from './audioQuality';
 import {lessonDrawingCueTimes} from './lessonDrawingCues';
+import {lessonIllustrationSubject,type CoffeeIllustrationObject} from './lessonIllustrationSubjects';
 
 const escape=(s:string)=>s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]!));
 const colors=['#e56a48','#397ba4','#7b65a5'];
@@ -77,16 +78,36 @@ function formulaSvg(formula:string):string{
 }
 
 export const NEWS_ILLUSTRATIONS=['interface','steps','code','character','controller','interaction','gallery','announcement','signal','hardware','modules','thermos','bar-chart','book','clothing','desk','coffee','orbit','battery','map'] as const;
-function newsIllustration(item:LessonVisual['items'][number],index:number):string{
+function coffeeIllustration(objects:CoffeeIllustrationObject[]):string {
+  const shapes:Record<CoffeeIllustrationObject,string>={
+    machine:'<rect x="31" y="15" width="116" height="110" rx="10" fill="#e5edf3" stroke="currentColor" stroke-width="3"/><rect x="44" y="29" width="90" height="24" rx="4" fill="#54779b"/><path d="M52 65H126V79H52ZM90 80V96M116 75H155M43 113H135" fill="#95a2b5" stroke="currentColor" stroke-width="4"/><circle cx="120" cy="41" r="5" fill="var(--news-accent)"/>',
+    'group-head':'<path d="M40 27H140V67Q90 95 40 67Z" fill="#c5ced5" stroke="currentColor" stroke-width="4"/><ellipse cx="90" cy="67" rx="50" ry="17" fill="#e5edf3" stroke="currentColor" stroke-width="4"/><path d="M59 65H121M64 74H116M61 38H119" stroke="#54779b" stroke-width="3"/>',
+    portafilter:'<path d="M83 82L149 112Q157 113 160 105Q161 99 153 96L93 68Z" fill="#54779b" stroke="currentColor" stroke-width="3"/><path d="M30 55H101L94 83Q66 101 37 83Z" fill="#c5ced5" stroke="currentColor" stroke-width="3"/><ellipse cx="66" cy="55" rx="37" ry="16" fill="#e5edf3" stroke="currentColor" stroke-width="3"/><path d="M43 54H89M49 62H83" stroke="#95a2b5" stroke-width="3"/>',
+    filter:'<path d="M45 28H135L109 105H71Z" fill="#b87652" stroke="currentColor" stroke-width="3"/><path d="M59 39L79 94M121 39L101 94M71 107H109" stroke="#54779b" stroke-width="3"/>',
+    cup:'<path d="M44 45H119V108Q82 129 44 108Z" fill="#f6ecd9" stroke="currentColor" stroke-width="4"/><ellipse cx="82" cy="45" rx="38" ry="10" fill="#e5edf3" stroke="currentColor" stroke-width="3"/><path d="M120 57H132Q157 76 132 94H120M35 128H134" fill="none" stroke="currentColor" stroke-width="5"/>',
+    beans:'<ellipse cx="65" cy="72" rx="30" ry="45" transform="rotate(-25 65 72)" fill="#b87652" stroke="currentColor" stroke-width="3"/><path d="M60 35Q44 73 72 110" fill="none" stroke="#f6ecd9" stroke-width="5"/><ellipse cx="122" cy="81" rx="26" ry="39" transform="rotate(25 122 81)" fill="#b87652" stroke="currentColor" stroke-width="3"/><path d="M130 49Q105 81 114 116" fill="none" stroke="#f6ecd9" stroke-width="5"/>',
+    counter:'<path d="M8 120H172V132H8ZM24 132V143M156 132V143" fill="#c69a72" stroke="currentColor" stroke-width="3"/>',
+  };
+  const component=(kind:CoffeeIllustrationObject,transform='')=>`<g data-coffee-object="${kind}"${transform?` transform="${transform}"`:''}>${shapes[kind]}</g>`;
+  // Draw only the named objects. A kitchen combination is a real composition,
+  // not the former one-size-fits-all pour-over symbol or a stock computer desk.
+  if(objects.length===4&&['machine','cup','beans','counter'].every(kind=>objects.includes(kind as CoffeeIllustrationObject)))return component('counter')+component('machine','translate(2 23) scale(.6)')+component('cup','translate(99 56) scale(.43)')+component('beans','translate(105 91) scale(.22)');
+  if(objects.length===1)return component(objects[0]);
+  const counter=objects.includes('counter'),items=objects.filter(kind=>kind!=='counter'),columns=items.length===1?1:2,rows=Math.ceil(items.length/columns),height=counter?114:145;
+  return (counter?component('counter'):'')+items.map((kind,i)=>{const w=180/columns,h=height/rows,scale=Math.min(w/180,h/145)*.9,x=(i%columns)*w+(w-180*scale)/2,y=Math.floor(i/columns)*h+(h-145*scale)/2;return component(kind,`translate(${x} ${y}) scale(${scale})`);}).join('');
+}
+function newsIllustration(item:LessonVisual['items'][number],index:number,chapter:Pick<LessonChapter,'title'|'narration'>):string{
   const subject=item.label+' '+item.detail;
+  const semantic=lessonIllustrationSubject(item,chapter);
+  if(semantic.ambiguous)return '';
   const inferred=/风格|画风/.test(subject)?'gallery':/视线|鼠标|交互/.test(subject)?'interaction':/英雄|超人|角色/.test(subject)?'character':/代码|编程|JavaScript/i.test(subject)?'code':/公告|官网/.test(subject)?'announcement':/界面|标签|页面/.test(subject)?'interface':/步骤|第.{1,2}步|关闭联网/.test(subject)?'steps':'signal';
-  const object=/保温|真空|杯壁|反射层/.test(subject)?'thermos':/柱状|纵轴|横轴|零基线/.test(subject)?'bar-chart':/读书|阅读|书页/.test(subject)?'book':/T恤|折衣|衣服|衣袖/.test(subject)?'clothing':/书桌|桌面|收纳/.test(subject)?'desk':/咖啡|滤杯|手冲/.test(subject)?'coffee':/月亮|地球|日食|月食/.test(subject)?'orbit':/电池|储能/.test(subject)?'battery':/杭州|城市|地图/.test(subject)?'map':/手柄|摇杆|GameCube/i.test(subject)?'controller':/专家|路由|稀疏模块/.test(subject)?'modules':/显卡|显存|内存|固态|硬盘|\b(?:GPU|CPU|SSD|VRAM|RAM)\b|RTX\s*\d|RX\s*\d/i.test(subject)?'hardware':/画风|绘画风格/.test(subject)?'gallery':/英雄|超人/.test(subject)?'character':undefined;
+  const object=(/保温|真空|反射层/.test(subject)||/杯壁/.test(subject)&&!semantic.coffeeObjects.length)?'thermos':/柱状|纵轴|横轴|零基线/.test(subject)?'bar-chart':/读书|阅读|书页/.test(subject)?'book':/T恤|折衣|衣服|衣袖/.test(subject)?'clothing':semantic.coffeeObjects.length?'coffee':/书桌|桌面|收纳/.test(subject)?'desk':/月亮|地球|日食|月食/.test(subject)?'orbit':/电池|储能/.test(subject)?'battery':/杭州|城市|地图/.test(subject)?'map':semantic.controller?'controller':/专家|路由|稀疏模块/.test(subject)?'modules':/显卡|显存|内存|固态|硬盘|\b(?:GPU|CPU|SSD|VRAM|RAM)\b|RTX\s*\d|RX\s*\d/i.test(subject)?'hardware':/画风|绘画风格/.test(subject)?'gallery':/英雄|超人/.test(subject)?'character':undefined;
   // A suggested illustration is a production hint, not evidence that the
   // pictured object exists in this item. Unknown objects keep their actual
   // label/detail instead of being replaced with a CPU, thermos or cursor.
   const grounded:Record<string,RegExp>={
     hardware:/显卡|显存|内存|固态|硬盘|处理器|\b(?:GPU|CPU|SSD|VRAM|RAM|DDR\d?)\b|RTX\s*\d|RX\s*\d/i,
-    modules:/专家|路由|稀疏模块/,controller:/手柄|摇杆|GameCube/i,
+    modules:/专家|路由|稀疏模块/,
     character:/英雄|超人|角色|人物/,gallery:/风格|画风/,
     interaction:/视线|鼠标|交互|点击|触控/,code:/代码|编程|JavaScript/i,
     interface:/界面|标签|页面/,announcement:/公告|官网|通报/,
@@ -94,9 +115,9 @@ function newsIllustration(item:LessonVisual['items'][number],index:number):strin
     signal:/信号|线索|消息|来源|证据|状态|确认|核查/,
     thermos:/保温|真空|杯壁|反射层/,'bar-chart':/柱状|纵轴|横轴|零基线|\d+(?:\.\d+)?(?:亿美元|亿元|万美元|万元|美元|元|%|％|GB|MB|台|个|人|次)/,
     book:/读书|阅读|书页/,clothing:/T恤|折衣|衣服|衣袖/,desk:/书桌|桌面|收纳/,
-    coffee:/咖啡|滤杯|手冲/,orbit:/月亮|地球|日食|月食/,battery:/电池|储能/,map:/杭州|城市|地图/,
+    orbit:/月亮|地球|日食|月食/,battery:/电池|储能/,map:/杭州|城市|地图/,
   };
-  const requested=item.illustration&&NEWS_ILLUSTRATIONS.includes(item.illustration)&&grounded[item.illustration]?.test(subject)?item.illustration:undefined;
+  const requested=item.illustration&&NEWS_ILLUSTRATIONS.includes(item.illustration)&&(item.illustration==='controller'?semantic.controller:item.illustration==='coffee'?semantic.coffeeObjects.length>0:grounded[item.illustration]?.test(subject))?item.illustration:undefined;
   const kind=object||requested||(grounded[inferred]?.test(subject)?inferred:undefined);
   if(!kind)return '';
   const hero='<path d="M65 53L38 120Q90 139 145 117L110 53" fill="var(--news-accent)" opacity=".7"/><circle cx="88" cy="33" r="17" fill="currentColor"/><path d="M62 57Q87 47 115 57L124 104H107L100 86V133H78V86L70 104H53Z" fill="#54779b"/><path d="M79 66L97 66L103 78L88 91L74 78Z" fill="var(--news-accent)"/>';
@@ -120,7 +141,7 @@ function newsIllustration(item:LessonVisual['items'][number],index:number):strin
     book:'<path d="M15 28Q50 13 90 35Q130 13 165 28V117Q127 103 90 123Q52 103 15 117Z" fill="#f6ecd9" stroke="currentColor" stroke-width="3"/><path d="M90 35V123M30 48L73 58M30 70L73 80M110 58L151 48M110 80L151 70" stroke="#54779b" stroke-width="3"/>',
     clothing:'<path d="M60 27L31 34L13 70L43 85L55 64V127H125V64L138 85L168 70L149 34L120 27Q90 49 60 27Z" fill="#54779b" stroke="currentColor" stroke-width="3"/><path d="M72 53V114M108 53V114M61 85H119" stroke="#f6ecd9" stroke-width="2" stroke-dasharray="4 4"/>',
     desk:'<path d="M14 91H166V105H14ZM31 105V134M149 105V134" fill="#c69a72" stroke="currentColor" stroke-width="3"/><rect x="43" y="23" width="96" height="58" rx="5" fill="#54779b"/><path d="M90 81V91M67 89H113" stroke="currentColor" stroke-width="4"/>',
-    coffee:'<path d="M48 30H132L108 81H72Z" fill="#b87652" stroke="currentColor" stroke-width="3"/><path d="M62 95H119V126H62ZM119 99H135Q148 114 129 120H119" fill="none" stroke="currentColor" stroke-width="3"/><path d="M90 82V92M59 40L78 73M121 40L102 73" stroke="#54779b" stroke-width="3"/>',
+    coffee:coffeeIllustration(semantic.coffeeObjects),
     orbit:'<ellipse cx="93" cy="75" rx="74" ry="45" fill="none" stroke="#95a2b5" stroke-width="2"/><circle cx="90" cy="75" r="23" fill="#54779b"/><circle cx="150" cy="49" r="12" fill="#c7c5bc"/><path d="M16 47L61 70M16 76H61M16 105L61 80" stroke="var(--news-accent)" stroke-width="3"/>',
     battery:'<rect x="18" y="45" width="135" height="66" rx="7" fill="none" stroke="currentColor" stroke-width="3"/><path d="M153 65H164V91H153" fill="currentColor"/><path d="M72 54L55 82H86L76 103L115 72H86L98 54Z" fill="var(--news-accent)"/>',
     map:'<path d="M18 36L62 21L114 38L162 21V112L114 128L62 111L18 128Z" fill="#e5edf3" stroke="currentColor" stroke-width="3"/><path d="M62 21V111M114 38V128" stroke="#95a2b5" stroke-width="2"/><circle cx="92" cy="68" r="13" fill="var(--news-accent)"/><path d="M86 77L92 88L99 77" fill="var(--news-accent)"/>',
@@ -150,7 +171,7 @@ export function lessonSceneHtml(chapter:LessonChapter,index:number,total:number,
   // focusPulse. Without it, the last card reaches past the content zone at
   // early seek times even when its static text and the CLI are valid.
   const newsChartCards=news&&Boolean(barChart);
-  const cards=chapter.visual.items.map((item,i)=>`<article id="item-${i}" class="teaching-item"><span class="item-number">${String(i+1).padStart(2,'0')}</span><div><h2>${escape(item.label)}</h2><p>${escape(barChartDetail(item,barChart))}</p></div>${!barChart&&(news||!side&&(item.illustration||/保温|真空|杯壁|反射层|柱状|纵轴|横轴|零基线|读书|阅读|书页|T恤|衣服|书桌|收纳|咖啡|滤杯|月亮|地球|日食|月食|电池|杭州|地图|步骤/.test(item.label+' '+item.detail)))?newsIllustration(item,i):''}</article>`).join('');
+  const cards=chapter.visual.items.map((item,i)=>`<article id="item-${i}" class="teaching-item"><span class="item-number">${String(i+1).padStart(2,'0')}</span><div><h2>${escape(item.label)}</h2><p>${escape(barChartDetail(item,barChart))}</p></div>${!barChart&&(news||!side&&(item.illustration||/保温|真空|杯壁|反射层|柱状|纵轴|横轴|零基线|读书|阅读|书页|T恤|衣服|书桌|收纳|咖啡|滤杯|月亮|地球|日食|月食|电池|杭州|地图|步骤/.test(item.label+' '+item.detail)))?newsIllustration(item,i,chapter):''}</article>`).join('');
   const graphic=barChart?barChartSvg(barChart):chapter.visual.kind==='curve'?curveSvg(chapter):chapter.visual.kind==='formula'?formulaSvg(chapter.visual.formula!):'';
   const cues=chapter.cues||chapter.visual.items.map((v,i)=>({text:v.cue,start:.4+i*Math.max(1,(duration-3)/chapter.visual.items.length),end:1+i}));
   const enters=chapter.visual.items.map((_,i)=>{
@@ -182,8 +203,8 @@ ${motionLibrary}window.__timelines={};const tl=gsap.timeline({paused:true});tl.f
 export function lessonRendererHash(){
   // Include helpers behind the renderer/caption functions as well as their
   // entry points: a changed closure policy must invalidate prior evidence.
-  const policies=['./lessonBarChartGrounding.ts','./lessonDrawingCues.ts','./timeline.ts','./generatedCaptionGroups.ts','./lessonHtmlRecovery.ts','./lessonHtmlFallbackPolicy.ts','./drawingGeometry.ts','./drawingNumberLayout.ts','./svgPaintOcclusion.ts','./drawingTextLayout.ts','./drawingCardLayout.ts','./narrativeScenes.ts','./visualRecovery.ts','./visualReviewEvidence.ts','./visualRetentionReview.ts','./visualRetentionSources.ts','./reviewResults.ts','./semanticReview.ts','./renderReview.ts','./reviewFrameTextLayoutContext.ts','./audioQuality.ts','./reviewFrameSampling.ts','./lessonLayoutRepair.ts','./lessonModelVersions.ts','./lessonModelSpelling.ts','./lessonRepairScope.ts','./lessonScriptReviewContext.ts','./lessonEvidenceConcordance.ts','./lessonAcceptance.ts','./lessonAudio.ts','./lessonSpeechProof.ts','./narrationBatchRecovery.ts','./taskPool.ts','./narrationHomophones.ts','./generatedNarrationOrthography.ts','./lessonSpec.ts','./lessonCommonSpelling.ts','./lessonSpeechCoverage.ts','./newsTime.ts','../package.json'].map(file=>readFileSync(new URL(file,import.meta.url),'utf8'));
-  return hashBytes([...policies,CARD_LAYOUT_RENDERER_SIGNATURE,lessonSceneHtml,newsIllustration,curveSvg,formulaSvg,drawingHtml,authorDrawing,validateDrawing,drawingDimensions,produceLessonScene,barChartSvg,validateBarChart,chapterBarChart,inferBarData,barChartDetail,quantitativeBarIntent,requireBarChartData,visualRepairTargets,speechOnlyRepair,lessonVisualBrief,createNewsPublicationAnnotation,newsPublicationTimestamp,newsPublicationNoteHtml,newsPublicationNoteCss,inspectNewsPublicationHtml,numericDrawingText,assertNumericDrawingNode,NUMERIC_DRAWING_CSS,NUMERIC_DRAWING_CHECK_SCRIPT,assertVisibleContent,correctLessonTranscript,lessonCaptionAnalysis,captionsFromTranscript,voiceComparisonTask].map(fn=>fn.toString()).join('\n'));
+  const policies=['./lessonIllustrationSubjects.ts','./lessonBarChartGrounding.ts','./lessonDrawingCues.ts','./timeline.ts','./generatedCaptionGroups.ts','./lessonHtmlRecovery.ts','./lessonHtmlFallbackPolicy.ts','./drawingGeometry.ts','./drawingNumberLayout.ts','./svgPaintOcclusion.ts','./drawingTextLayout.ts','./drawingCardLayout.ts','./drawingIndependentTextLayout.ts','./narrativeScenes.ts','./visualRecovery.ts','./visualReviewEvidence.ts','./visualRetentionReview.ts','./visualRetentionSources.ts','./reviewResults.ts','./semanticReview.ts','./renderReview.ts','./reviewFrameTextLayoutContext.ts','./audioQuality.ts','./reviewFrameSampling.ts','./lessonLayoutRepair.ts','./lessonModelVersions.ts','./lessonModelSpelling.ts','./lessonRepairScope.ts','./lessonScriptReviewContext.ts','./lessonEvidenceConcordance.ts','./lessonAcceptance.ts','./lessonAudio.ts','./lessonSpeechProof.ts','./narrationBatchRecovery.ts','./taskPool.ts','./narrationHomophones.ts','./generatedNarrationOrthography.ts','./lessonSpec.ts','./lessonCommonSpelling.ts','./lessonSpeechCoverage.ts','./newsTime.ts','../package.json'].map(file=>readFileSync(new URL(file,import.meta.url),'utf8'));
+  return hashBytes([...policies,CARD_LAYOUT_RENDERER_SIGNATURE,lessonSceneHtml,newsIllustration,coffeeIllustration,curveSvg,formulaSvg,drawingHtml,authorDrawing,validateDrawing,drawingDimensions,produceLessonScene,barChartSvg,validateBarChart,chapterBarChart,inferBarData,barChartDetail,quantitativeBarIntent,requireBarChartData,visualRepairTargets,speechOnlyRepair,lessonVisualBrief,createNewsPublicationAnnotation,newsPublicationTimestamp,newsPublicationNoteHtml,newsPublicationNoteCss,inspectNewsPublicationHtml,numericDrawingText,assertNumericDrawingNode,NUMERIC_DRAWING_CSS,NUMERIC_DRAWING_CHECK_SCRIPT,assertVisibleContent,correctLessonTranscript,lessonCaptionAnalysis,captionsFromTranscript,voiceComparisonTask].map(fn=>fn.toString()).join('\n'));
 }
 
 export async function produceLessonScene(chapter:LessonChapter,index:number,total:number,format:Format,speechFile:string,analysis:AudioAnalysis,project:string,pacing?:LessonPacing,presentation?:LessonPresentation,news=false,drawing?:HtmlDrawing,barChart?:LessonBarChart,publicationAnnotation?:NewsPublicationAnnotation){

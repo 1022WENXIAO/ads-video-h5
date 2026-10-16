@@ -1,0 +1,37 @@
+{
+  "scope": "Public minimal projection of actual P38 saved source quotes and failed tool details. The provider response body was not saved in the supplied snapshot; all response objects in tests are controlled simulations.",
+  "snapshotSha256": "60f3a9c5af8302bb14a3f069987a801de7fa89c41e82d291a5b79024d1188931",
+  "observations": [
+    { "callSuffix": "4tk4tlk1jdjo1kmjufy9thzm", "selectedQuote": "结论应当由证据支持", "next": "暂时没有把握的部分", "rejectedContextText": "暂时没有把握的部分" },
+    { "callSuffix": "oa5ia2wu4lxv94luqrvqfxhp", "selectedQuote": "结论应当由证据支持", "next": "暂时没有把握的部分", "rejectedContextText": "暂时没有把握的部分" },
+    { "callSuffix": "omql3oios40qmds9mfujcq6z", "selectedQuote": "不能把猜测说成事实", "previous": "需要保留限制", "rejectedContextText": "需要保留限制" }
+  ],
+  "source": {
+    "id": "source-context",
+    "name": "Public recorded quote context",
+    "kind": "video",
+    "duration": 17.25,
+    "hasAudio": true,
+    "shots": [],
+    "analysis": {
+      "modelId": "doubao-seed-2-1-lite-260915",
+      "sourceHash": "d08c3de9a8ad9be03eb542e3bfbdd3e7f7a97c9641459b0b6dfea1fd827099d1",
+      "duration": 17.25,
+      "timing": "model-estimated",
+      "createdAt": "2026-10-16T17:43:03.420Z",
+      "status": "ready",
+      "transcript": "比较两个方案时\n要先保持比较条件一致再看差异来自哪里\n这段画面也是程序绘制的示意\n结论应当由证据支持\n暂时没有把握的部分\n需要保留限制\n不能把猜测说成事实",
+      "sentences": [
+        { "id": "s0", "start": 0.05, "end": 1.43, "text": "比较两个方案时", "complete": false, "words": [{ "start": 0.05, "end": 1.43, "text": "比较两个方案时" }] },
+        { "id": "s1", "start": 1.62, "end": 5.14, "text": "要先保持比较条件一致再看差异来自哪里", "complete": true, "words": [{ "start": 1.62, "end": 5.14, "text": "要先保持比较条件一致再看差异来自哪里" }] },
+        { "id": "s2", "start": 5.85, "end": 8.41, "text": "这段画面也是程序绘制的示意", "complete": true, "words": [{ "start": 5.85, "end": 8.41, "text": "这段画面也是程序绘制的示意" }] },
+        { "id": "s3", "start": 9.15, "end": 11.28, "text": "结论应当由证据支持", "complete": true, "words": [{ "start": 9.15, "end": 11.28, "text": "结论应当由证据支持" }] },
+        { "id": "s4", "start": 12.36, "end": 13.97, "text": "暂时没有把握的部分", "complete": false, "words": [{ "start": 12.36, "end": 13.97, "text": "暂时没有把握的部分" }] },
+        { "id": "s5", "start": 14.16, "end": 15.41, "text": "需要保留限制", "complete": false, "words": [{ "start": 14.16, "end": 15.41, "text": "需要保留限制" }] },
+        { "id": "s6", "start": 15.63, "end": 17.25, "text": "不能把猜测说成事实", "complete": true, "words": [{ "start": 15.63, "end": 17.25, "text": "不能把猜测说成事实" }] }
+      ],
+      "pauses": [],
+      "warnings": ["Public fixture keeps actual sentence ranges/text/complete flags; words are compact test-only whole-sentence wrappers, not the actual production word grid."]
+    }
+  }
+}
