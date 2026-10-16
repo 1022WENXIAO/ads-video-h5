@@ -1,0 +1,187 @@
+{
+  "provenance": {
+    "kind": "minimal public projection; not a complete checkpoint or wire response",
+    "snapshotSha256": "e45233b48db2b5a73d2868649a872ae5f6f6fd54335255c0a6ac32ef16ec7e45",
+    "priorPublishedFields": "exact first plan chapter-1 title/narration/visual; current visual is controlled minimal projection of observed new clock and unclear local attribution",
+    "limitation": "Different-language actors are not machine-aliases. Ref3 and ref8 quotations are actual; raw score is observed and remains unchanged."
+  },
+  "prior": {
+    "title": "日本气象厅撤回9.9级地震速报",
+    "audience": "关注突发新闻、手机会收到预警的普通观众",
+    "objectives": [
+      "分清报道时间、误报时间和实际地震时间",
+      "确认实际为堪察加6.9级，9.9级速报已取消",
+      "知道收到预警先避险，再等官方更正，未确认原因不当定论"
+    ],
+    "arc": "先用报道日期和8分钟误报建立问题，再区分误报地点与实际地震，最后说明普通人应对方式和信息边界。",
+    "requestedSeconds": 30,
+    "explicitDuration": true,
+    "format": "9:16",
+    "limitations": [
+      "新闻资料截止2026-10-16T09:58:36.003Z；仅核验已读取正文摘录，事件日期与发布日期分别理解，热度不保证传播效果。",
+      "旁白是统一的合成教学声线，不代表用户本人；字词时间码由Seed 2.1 Lite估计。"
+    ],
+    "workflowId": "public-precision-projection",
+    "references": [
+      {
+        "id": "ref-3",
+        "title": "日本误报称发生9.9级地震 系统错误引发短暂恐慌_中华网",
+        "url": "https://3g.china.com/act/news/10000169/20261016/49798232.html",
+        "verification": "news-page",
+        "retrievedAt": "2026-10-16T10:00:11.320Z",
+        "excerpt": "实际上发生的地震位于俄罗斯堪察加半岛南部，当地时间12点35分左右震动，震级为6.9，属于深源地震。",
+        "originalExcerptSha256": "2ed7863496645429d0edf9a05cdef159a98bd3e29501ff5019e37b842c6e4c80"
+      },
+      {
+        "id": "ref-8",
+        "title": "6.9-magnitude quake hits Russia's Kamchatka",
+        "url": "https://www.chinadailyhk.com/hk/article/641230",
+        "verification": "news-page",
+        "retrievedAt": "2026-10-16T10:00:16.796Z",
+        "excerpt": "The quake occurred at 15:35 local time (0335 GMT) at a depth of 127.8 km.",
+        "originalExcerptSha256": "d2af9c8ef0143f42bb8034fd8634c0d7af096ebfbb9a82388252da2187ce6953"
+      }
+    ],
+    "chapters": [
+      {
+        "id": "ch1",
+        "title": "报道日期与误报",
+        "role": "hook",
+        "goal": "让观众立刻知道这是2026年10月16日报道的日本9.9级速报撤回事件。",
+        "prerequisites": [],
+        "narration": "报道日期是二零二六年十月十六日。日本气象厅中午十二点四十推送千岛群岛九点九级地震，八分钟后撤回。",
+        "reason": "开场直接满足用户要求，固定报道日期、误报时刻和持续时间，避免把旧闻当新事。",
+        "visual": {
+          "kind": "timeline",
+          "takeaway": "报道当天，9.9级速报只短暂存在后被取消",
+          "items": [
+            {
+              "label": "报道日期：2026-10-16",
+              "detail": "央视网14:20报道速报后取消；事件也发生在10月16日",
+              "cue": "报道日期是二零二六年十月十六日",
+              "illustration": "announcement"
+            },
+            {
+              "label": "12:40推送",
+              "detail": "误报内容：千岛群岛 M9.9 紧急地震速报",
+              "cue": "十二点四十推送千岛群岛九点九级地震",
+              "illustration": "signal"
+            },
+            {
+              "label": "8分钟后撤回",
+              "detail": "12:48取消，不能把9.9级当成已确认发生",
+              "cue": "八分钟后撤回",
+              "illustration": "steps"
+            }
+          ]
+        },
+        "referenceIds": [
+          "ref-3",
+          "ref-8"
+        ],
+        "claims": [
+          {
+            "text": "俄罗斯堪察加半岛南部发生地震。",
+            "basis": "source",
+            "referenceIds": [
+              "ref-3",
+              "ref-8"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "current": {
+    "title": "日本气象厅撤回9.9级地震速报",
+    "audience": "关注突发新闻、手机会收到预警的普通观众",
+    "objectives": [
+      "分清报道时间、误报时间和实际地震时间",
+      "确认实际为堪察加6.9级，9.9级速报已取消",
+      "知道收到预警先避险，再等官方更正，未确认原因不当定论"
+    ],
+    "arc": "先用报道日期和8分钟误报建立问题，再区分误报地点与实际地震，最后说明普通人应对方式和信息边界。",
+    "requestedSeconds": 30,
+    "explicitDuration": true,
+    "format": "9:16",
+    "limitations": [
+      "新闻资料截止2026-10-16T09:58:36.003Z；仅核验已读取正文摘录，事件日期与发布日期分别理解，热度不保证传播效果。",
+      "旁白是统一的合成教学声线，不代表用户本人；字词时间码由Seed 2.1 Lite估计。"
+    ],
+    "workflowId": "public-precision-projection",
+    "references": [
+      {
+        "id": "ref-3",
+        "title": "日本误报称发生9.9级地震 系统错误引发短暂恐慌_中华网",
+        "url": "https://3g.china.com/act/news/10000169/20261016/49798232.html",
+        "verification": "news-page",
+        "retrievedAt": "2026-10-16T10:00:11.320Z",
+        "excerpt": "实际上发生的地震位于俄罗斯堪察加半岛南部，当地时间12点35分左右震动，震级为6.9，属于深源地震。",
+        "originalExcerptSha256": "2ed7863496645429d0edf9a05cdef159a98bd3e29501ff5019e37b842c6e4c80"
+      },
+      {
+        "id": "ref-8",
+        "title": "6.9-magnitude quake hits Russia's Kamchatka",
+        "url": "https://www.chinadailyhk.com/hk/article/641230",
+        "verification": "news-page",
+        "retrievedAt": "2026-10-16T10:00:16.796Z",
+        "excerpt": "The quake occurred at 15:35 local time (0335 GMT) at a depth of 127.8 km.",
+        "originalExcerptSha256": "d2af9c8ef0143f42bb8034fd8634c0d7af096ebfbb9a82388252da2187ce6953"
+      }
+    ],
+    "chapters": [
+      {
+        "id": "ch1",
+        "title": "报道日期与误报",
+        "role": "hook",
+        "goal": "让观众立刻知道这是2026年10月16日报道的日本9.9级速报撤回事件。",
+        "prerequisites": [],
+        "narration": "报道日期是二零二六年十月十六日。日本气象厅中午十二点四十推送千岛群岛九点九级地震，八分钟后撤回。",
+        "reason": "开场直接满足用户要求，固定报道日期、误报时刻和持续时间，避免把旧闻当新事。",
+        "visual": {
+          "kind": "timeline",
+          "takeaway": "报道当天，9.9级速报只短暂存在后被取消",
+          "items": [
+            {
+              "label": "堪察加12:35",
+              "detail": "当地约12:35；时间为当地时间",
+              "cue": "报道日期是二零二六年十月十六日"
+            },
+            {
+              "label": "12:40推送",
+              "detail": "误报内容：千岛群岛 M9.9 紧急地震速报",
+              "cue": "十二点四十推送千岛群岛九点九级地震",
+              "illustration": "signal"
+            },
+            {
+              "label": "8分钟后撤回",
+              "detail": "12:48取消，不能把9.9级当成已确认发生",
+              "cue": "八分钟后撤回",
+              "illustration": "steps"
+            }
+          ]
+        },
+        "referenceIds": [
+          "ref-3",
+          "ref-8"
+        ],
+        "claims": [
+          {
+            "text": "俄罗斯堪察加半岛南部发生地震。",
+            "basis": "source",
+            "referenceIds": [
+              "ref-3",
+              "ref-8"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "rawReview": {
+    "score": 82,
+    "needsRepair": false,
+    "findings": [],
+    "suggestions": []
+  }
+}

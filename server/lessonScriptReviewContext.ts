@@ -2,6 +2,7 @@ import type { LessonReport } from '../shared/types';
 import { lessonResearchSummary } from './lessonResearch';
 import { newsObservationContext } from './newsTime';
 import { compactSpeech } from './lessonSpec';
+import {lessonPrecisionReviewContext,type LessonPrecisionBaseline} from './lessonEvidenceConcordance';
 
 export const LESSON_PUBLISHED_CONTENT_FACT_CONTRACT =
   '先按publishedContentReview.chapters核对观众将接收的标题、旁白和plannedVisual中的文字、数据、公式。internalClaimEvidence及report.chapters中的claims、goal、reason是内部证据或规划，visual.items.cue只是时序锚点；这些字段完整不能证明旁白或画面已保留其限定。' +
@@ -38,7 +39,7 @@ export function selectedLessonSignalEvidence(report:LessonReport){
 // Search-model prose can contain workflow refusals, plans or capability claims.
 // It is useful research context, but is not source evidence and cannot define
 // what a script-stage reviewer requires from the still-unexecuted renderer.
-export function lessonScriptReviewContext(report: LessonReport) {
+export function lessonScriptReviewContext(report: LessonReport,precisionBaseline?:LessonPrecisionBaseline) {
   const { factReview: _oldReview, voice: _voice, ...script } = report;
   return {
     reviewStage: {
@@ -48,6 +49,7 @@ export function lessonScriptReviewContext(report: LessonReport) {
     },
     researchSummary: lessonResearchSummary('', report.references),
     publishedContentReview:lessonPublishedContentReviewContext(report),
+    precisionEvidence:lessonPrecisionReviewContext(report,precisionBaseline),
     report: script,
     ...(report.hotResearch?{
       newsScriptScope:{
