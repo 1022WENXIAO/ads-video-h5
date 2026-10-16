@@ -16,6 +16,7 @@ import { motionLibrary } from './motionComponents';
 import {visualRepairTargets,speechOnlyRepair,lessonVisualBrief} from './visualRecovery';
 import {assertVisibleContent} from './visibleContent';
 import {voiceComparisonTask} from './audioQuality';
+import {lessonDrawingCueTimes} from './lessonDrawingCues';
 
 const escape=(s:string)=>s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]!));
 const colors=['#e56a48','#397ba4','#7b65a5'];
@@ -181,7 +182,7 @@ ${motionLibrary}window.__timelines={};const tl=gsap.timeline({paused:true});tl.f
 export function lessonRendererHash(){
   // Include helpers behind the renderer/caption functions as well as their
   // entry points: a changed closure policy must invalidate prior evidence.
-  const policies=['./lessonHtmlRecovery.ts','./lessonHtmlFallbackPolicy.ts','./drawingGeometry.ts','./drawingNumberLayout.ts','./svgPaintOcclusion.ts','./drawingTextLayout.ts','./drawingCardLayout.ts','./narrativeScenes.ts','./visualRecovery.ts','./visualReviewEvidence.ts','./visualRetentionReview.ts','./visualRetentionSources.ts','./reviewResults.ts','./semanticReview.ts','./renderReview.ts','./audioQuality.ts','./reviewFrameSampling.ts','./lessonLayoutRepair.ts','./lessonModelVersions.ts','./lessonModelSpelling.ts','./lessonRepairScope.ts','./lessonScriptReviewContext.ts','./lessonAudio.ts','./lessonSpeechProof.ts','./narrationBatchRecovery.ts','./taskPool.ts','./narrationHomophones.ts','./generatedNarrationOrthography.ts','./lessonSpec.ts','./lessonCommonSpelling.ts','./lessonSpeechCoverage.ts','./newsTime.ts','../package.json'].map(file=>readFileSync(new URL(file,import.meta.url),'utf8'));
+  const policies=['./lessonDrawingCues.ts','./timeline.ts','./generatedCaptionGroups.ts','./lessonHtmlRecovery.ts','./lessonHtmlFallbackPolicy.ts','./drawingGeometry.ts','./drawingNumberLayout.ts','./svgPaintOcclusion.ts','./drawingTextLayout.ts','./drawingCardLayout.ts','./narrativeScenes.ts','./visualRecovery.ts','./visualReviewEvidence.ts','./visualRetentionReview.ts','./visualRetentionSources.ts','./reviewResults.ts','./semanticReview.ts','./renderReview.ts','./audioQuality.ts','./reviewFrameSampling.ts','./lessonLayoutRepair.ts','./lessonModelVersions.ts','./lessonModelSpelling.ts','./lessonRepairScope.ts','./lessonScriptReviewContext.ts','./lessonAudio.ts','./lessonSpeechProof.ts','./narrationBatchRecovery.ts','./taskPool.ts','./narrationHomophones.ts','./generatedNarrationOrthography.ts','./lessonSpec.ts','./lessonCommonSpelling.ts','./lessonSpeechCoverage.ts','./newsTime.ts','../package.json'].map(file=>readFileSync(new URL(file,import.meta.url),'utf8'));
   return hashBytes([...policies,CARD_LAYOUT_RENDERER_SIGNATURE,lessonSceneHtml,newsIllustration,curveSvg,formulaSvg,drawingHtml,authorDrawing,validateDrawing,drawingDimensions,produceLessonScene,barChartSvg,validateBarChart,chapterBarChart,inferBarData,barChartDetail,quantitativeBarIntent,requireBarChartData,visualRepairTargets,speechOnlyRepair,lessonVisualBrief,createNewsPublicationAnnotation,newsPublicationTimestamp,newsPublicationNoteHtml,newsPublicationNoteCss,inspectNewsPublicationHtml,numericDrawingText,assertNumericDrawingNode,NUMERIC_DRAWING_CSS,NUMERIC_DRAWING_CHECK_SCRIPT,assertVisibleContent,correctLessonTranscript,lessonCaptionAnalysis,captionsFromTranscript,voiceComparisonTask].map(fn=>fn.toString()).join('\n'));
 }
 
@@ -191,7 +192,7 @@ export async function produceLessonScene(chapter:LessonChapter,index:number,tota
   barChart=chapterBarChart(chapter,barChart);
   const lead=pacing?.leadSeconds??.35,tail=pacing?.tailSeconds??.55,duration=+(analysis.duration+lead+tail).toFixed(3);
   const shifted={...chapter,cues:chapter.cues?.map(c=>({...c,start:c.start+lead,end:c.end+lead}))};
-  const html=drawing&&!barChart?drawingHtml(drawing,duration,format,publicationAnnotation):lessonSceneHtml(shifted,index,total,duration,format,presentation,news,barChart,publicationAnnotation),htmlHash=hashBytes(html);await mkdir(project,{recursive:true});
+  const html=drawing&&!barChart?drawingHtml(drawing,duration,format,publicationAnnotation,lessonDrawingCueTimes(shifted,drawing,duration)):lessonSceneHtml(shifted,index,total,duration,format,presentation,news,barChart,publicationAnnotation),htmlHash=hashBytes(html);await mkdir(project,{recursive:true});
   const visual=path.join(project,'visual.mp4'),output=path.join(project,'scene.mp4');
   const rendererHash=lessonRendererHash();
   let cached=false;try{const meta=JSON.parse(await readFile(path.join(project,'visual-cache.json'),'utf8'));cached=meta.htmlHash===htmlHash&&meta.rendererHash===rendererHash&&meta.visualHash===hashBytes(await readFile(visual))&&Math.abs((await probeVideo(visual)).duration-duration)<.1;}catch{}

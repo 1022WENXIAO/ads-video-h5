@@ -19,6 +19,7 @@ import { numericDrawingText, assertNumericDrawingNode, fitNumericDrawingSlots, N
 import {AuthoredDrawingGeometryError,type DrawingGeometryIssue} from './drawingGeometry';
 import {addSvgTextPaintReport} from './svgPaintOcclusion';
 import {addDrawingTextLayoutReport} from './drawingTextLayout';
+import type {DrawingCueTimes} from './lessonDrawingCues';
 
 export const hashBytes = (v: string | Buffer) => createHash('sha256').update(v).digest('hex');
 const escape = (s:string) => s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]!));
@@ -88,7 +89,7 @@ export function validateDrawing(d:HtmlDrawing,format:Format='9:16'):HtmlDrawing 
   if(issues.length)throw new AuthoredDrawingGeometryError(d,format,issues,geometryMessage);
   return structuredClone(d);
 }
-export function drawingHtml(d:HtmlDrawing,duration:number,format:Format='9:16',publicationAnnotation?:NewsPublicationAnnotation):string {
+export function drawingHtml(d:HtmlDrawing,duration:number,format:Format='9:16',publicationAnnotation?:NewsPublicationAnnotation,cueTimes?:DrawingCueTimes):string {
   validateDrawing(d,format);
   // The validated framework note owns this exact complete label. Keep the
   // author proposal intact; other dates and text containing extra facts stay.
@@ -112,7 +113,16 @@ export function drawingHtml(d:HtmlDrawing,duration:number,format:Format='9:16',p
   const cards=d.nodes.filter(n=>n.kind!=='line'&&n.kind!=='path'&&!companionIds.has(n.id));
   const spacing=cards.length>1?Math.min(.08,.4/(cards.length-1)):0;
   const enters=d.nodes.filter(n=>!companionIds.has(n.id)).map(n=>n.kind==='line'||n.kind==='path'?`QJMotion.connectorFlow(tl,'#${domId(n.id)}',${Math.min(.55,duration*.3)},${enterDuration});`:`QJMotion.cardSettle(tl,'${motionSelector(n.id)}',${(.18+cards.indexOf(n)*spacing).toFixed(3)},${enterDuration},'${profile[0]}');`).join('');
-  const highlights=d.nodes.filter(n=>duration>=2&&n.highlight&&n.kind!=='line'&&!companionIds.has(n.id)).map((n,i)=>`tl.to('#${domId(n.id)}',{${n.kind==='path'?"stroke:'#fb7353'":"backgroundColor:'#fff0e9',borderColor:'#fb7353'"},duration:.35,ease:'sine.inOut'},${Math.min(duration-.8,1.2+i*Math.max(.5,(duration-2)/Math.max(1,d.nodes.filter(n=>n.highlight).length))).toFixed(2)});${n.kind==='path'?'':`QJMotion.focusPulse(tl,'${motionSelector(n.id)}',${Math.min(duration-.7,1.2+i*Math.max(.5,(duration-2)/Math.max(1,d.nodes.filter(n=>n.highlight).length))).toFixed(2)},.6);`}`).join('');
+  const highlights=d.nodes.filter(n=>duration>=2&&n.highlight&&n.kind!=='line'&&!companionIds.has(n.id)).map((n,i)=>{
+    if(cueTimes!==undefined){
+      const at=Object.hasOwn(cueTimes,n.id)?cueTimes[n.id]:undefined;
+      if(at===undefined||!Number.isFinite(at)||at<0||at>=duration)return '';
+      // A late verified cue must not be moved earlier to fit a full pulse.
+      const remaining=duration-at;
+      return `tl.to('#${domId(n.id)}',{${n.kind==='path'?"stroke:'#fb7353'":"backgroundColor:'#fff0e9',borderColor:'#fb7353'"},duration:${Math.min(.35,remaining).toFixed(3)},ease:'sine.inOut'},${at.toFixed(3)});${n.kind==='path'?'':`QJMotion.focusPulse(tl,'${motionSelector(n.id)}',${at.toFixed(3)},${Math.min(.6,remaining).toFixed(3)});`}`;
+    }
+    return `tl.to('#${domId(n.id)}',{${n.kind==='path'?"stroke:'#fb7353'":"backgroundColor:'#fff0e9',borderColor:'#fb7353'"},duration:.35,ease:'sine.inOut'},${Math.min(duration-.8,1.2+i*Math.max(.5,(duration-2)/Math.max(1,d.nodes.filter(n=>n.highlight).length))).toFixed(2)});${n.kind==='path'?'':`QJMotion.focusPulse(tl,'${motionSelector(n.id)}',${Math.min(duration-.7,1.2+i*Math.max(.5,(duration-2)/Math.max(1,d.nodes.filter(n=>n.highlight).length))).toFixed(2)},.6);`}`;
+  }).join('');
   return `<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><style>@font-face{font-family:'PingFang SC';src:local('PingFang SC')}html,body{margin:0;width:${width}px;height:${height}px;overflow:hidden;background:#fffdfa}#main{width:${width}px;height:${height}px;position:relative;font-family:'PingFang SC',Arial,sans-serif;color:#252935}.scene-content{box-sizing:border-box;width:100%;height:100%;padding:${portrait?64:28}px 0;display:flex;flex-direction:column;align-items:center;gap:10px}#title{position:relative;z-index:2;font-size:${titleSize}px;font-weight:800;width:${width-80}px;margin:0;text-align:center;line-height:1.2}.drawing-plane,svg{position:absolute;inset:0;width:${width}px;height:${height}px}svg{overflow:visible}svg.products{z-index:2;pointer-events:none}.text,.circle{z-index:3!important}.node.text{padding:0}.node{position:absolute;z-index:1;box-sizing:border-box;padding:12px;display:flex;align-items:center;justify-content:center;text-align:center;line-height:1.3;font-weight:700;overflow-wrap:anywhere;white-space:pre-line}${NUMERIC_DRAWING_CSS}.card{border:3px solid;border-radius:20px}.circle{border:3px solid;border-radius:50%;padding:4px}.ambient{position:absolute;width:360px;height:360px;border-radius:50%;background:#fff0e9;opacity:.45;pointer-events:none}.ambient-a{left:-160px;top:60px}.ambient-b{right:-220px;bottom:180px;background:#e6f1f5}#note{font-size:20px;line-height:1.4;text-align:center;width:${width-80}px;left:40px;color:#252935;position:absolute;top:${portrait?180:106}px;margin:0;z-index:2}${publicationAnnotation?newsPublicationNoteCss(portrait):''}</style><script src="./gsap.min.js"></script></head><body><section id="main" data-composition-id="main" data-width="${width}" data-height="${height}" data-start="0" data-duration="${duration}"><div id="ambient-a" class="ambient ambient-a" data-layout-ignore></div><div id="ambient-b" class="ambient ambient-b" data-layout-ignore></div><div class="scene-content"><h1 id="title">${escape(d.title)}</h1></div><div class="drawing-plane"><svg viewBox="0 0 ${width} ${height}" aria-label="${escape(d.title)}">${lines}</svg>${nodes}<svg class="products" viewBox="0 0 ${width} ${height}" aria-label="示意产品">${products}</svg></div>${publicationAnnotation?newsPublicationNoteHtml(publicationAnnotation):'<p id="note">流程 / 画面为示意</p>'}</section><script>${motionLibrary}window.__timelines={};const tl=gsap.timeline({paused:true});tl.from('#title',{y:20,opacity:0,duration:.6,ease:'power3.out'},.1);${publicationAnnotation?'':"tl.from('#note',{opacity:0,duration:.5,ease:'sine.out'},.25);"}${enters}${highlights}QJMotion.ambientFloat(tl,'#ambient-a',.1,${Math.max(.1,duration-.1)},6);QJMotion.ambientFloat(tl,'#ambient-b',.1,${Math.max(.1,duration-.1)},-4);window.__timelines.main=tl;${NUMERIC_DRAWING_CHECK_SCRIPT}</script></body></html>`;
 }
 export async function authorDrawing(config:ModelConfig,beat:ReconstructionBeat,format:Format='9:16'):Promise<HtmlDrawing> {

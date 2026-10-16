@@ -3,6 +3,7 @@ import { excludesBgm } from './intents';
 import { createHash } from 'node:crypto';
 import { validateLesson } from './lessonSpec';
 import { validateAvatarTracks } from './avatarAssets';
+import {generatedCaptionGroups} from './generatedCaptionGroups';
 
 export function timelineOffsets(plan: EditPlan): number[] {
   let position = 0;
@@ -19,7 +20,7 @@ export function captionsFromTranscript(plan: EditPlan, media: MediaItem[], style
   const offsets = timelineOffsets(plan); const captions: TimelineText[] = [];
   const sourceCaptionOwners=new Map<TimelineText,{clip:number;sentence:NonNullable<MediaItem['analysis']>['sentences'][number]|undefined;last:NonNullable<MediaItem['analysis']>['sentences'][number]['words'][number]}>();
   plan.clips.forEach((clip, index) => {
-    const analysis = media.find((m) => m.id === clip.sourceId)?.analysis;
+    const source = media.find((m) => m.id === clip.sourceId),analysis = source?.analysis;
     const allWords = analysis?.sentences.flatMap((s) => s.words) || [];
     const wordOwners=new Map(analysis?.sentences.flatMap(sentence=>sentence.words.map(word=>[word,sentence] as const)));
     const wordIndices=new Map(allWords.map((word,i)=>[word,i]));
@@ -40,6 +41,16 @@ export function captionsFromTranscript(plan: EditPlan, media: MediaItem[], style
       // Protecting a decimal in concatenated ASR must not erase that boundary.
       if(analysis?.captionBoundarySource==='matched-clauses'){let end=0;for(const word of words){end+=word.text.length;if(breakWords.has(word))safeEnds.add(end);}}
       for(const span of quantities){for(let k=span.start+1;k<span.end;k++)safeEnds.delete(k);safeEnds.add(span.end);}
+    }
+    const matchedChapters=plan.lesson?.chapters?.filter(ch=>ch.mediaId===clip.sourceId&&(!clip.sceneId||ch.id===clip.sceneId))||[];
+    const reviewed=plan.lesson?.factReview;
+    const generation=source?.generation,chapter=matchedChapters[0];
+    const generated=chapter&&generation?.mode==='generated'&&generation.workflowId===plan.lesson?.workflowId&&generation.beatId===chapter.id&&generation.lineHash===createHash('sha256').update(chapter.narration).digest('hex');
+    const groups=analysis&&matchedChapters.length===1&&generated&&reviewed&&reviewed.score>=80&&reviewed.needsRepair===false&&Array.isArray(reviewed.findings)&&reviewed.findings.length===0
+      ?generatedCaptionGroups(matchedChapters[0].narration,analysis,words,safeEnds,breakWords):undefined;
+    if(groups){
+      for(const group of groups)captions.push({start:+(offsets[index]+group[0].start-clip.start).toFixed(3),end:+(offsets[index]+group.at(-1)!.end-clip.start).toFixed(3),text:group.map(w=>w.text).join(''),style,animation:'none'});
+      return;
     }
     let position=0;let pendingBreak=false;
     let text = ''; let start = 0; let end = 0;let firstWord:typeof words[number]|undefined;let lastWord:typeof words[number]|undefined;let previousEndedClause=true;

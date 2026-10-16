@@ -1,0 +1,411 @@
+{
+  "provenance": {
+    "kind": "extracted-working-caption-projection",
+    "snapshotSHA256": "cbe1b54ac57ec9553b599cf2755cb4231da456038641d802d7adf67fce00ca2f",
+    "originalPlanSHA256": "ffeef3779fa8d552e1e29ac98fd197caa74fe6d8d0e0c8b851876cea6b6d8b23",
+    "originalAnalysisSourceHash": "41291720a889101c75e77ea999b96c3d0449519e334992c97f9a4bdaea8d02e7",
+    "scope": "Original 49 working-caption word objects and sentence texts/times/completeness, actual clip timing and reviewed narration. Sentence/media/workflow IDs are aliases. This is not raw ASR or an independent listening/movie acceptance claim."
+  },
+  "narration": "通报说，当地正紧急追溯涉事桂花干流向，并对收购、加工、销售各环节开展全县拉网式排查，相关商户已被依法采取措施。",
+  "analysis": {
+    "modelId": "doubao-seed-2-1-lite-260915",
+    "sourceHash": "41291720a889101c75e77ea999b96c3d0449519e334992c97f9a4bdaea8d02e7",
+    "duration": 10.29,
+    "timing": "model-estimated",
+    "createdAt": "2026-10-16T05:46:29.077Z",
+    "status": "ready",
+    "transcript": "通报说当地正紧急追溯涉事桂花干流向并对收购加工销售各环节开展全县拉网式排查\n相关商户已被依法采取措施",
+    "sentences": [
+      {
+        "id": "sentence-1",
+        "start": 0.21,
+        "end": 7.8100000000000005,
+        "words": [
+          {
+            "start": 0.21,
+            "end": 0.37,
+            "text": "通"
+          },
+          {
+            "start": 0.37,
+            "end": 0.5700000000000001,
+            "text": "报"
+          },
+          {
+            "start": 0.5700000000000001,
+            "end": 0.89,
+            "text": "说"
+          },
+          {
+            "start": 1.05,
+            "end": 1.2599999999999998,
+            "text": "当"
+          },
+          {
+            "start": 1.2599999999999998,
+            "end": 1.44,
+            "text": "地"
+          },
+          {
+            "start": 1.44,
+            "end": 1.65,
+            "text": "正"
+          },
+          {
+            "start": 1.65,
+            "end": 1.79,
+            "text": "紧"
+          },
+          {
+            "start": 1.79,
+            "end": 1.9500000000000002,
+            "text": "急"
+          },
+          {
+            "start": 1.9500000000000002,
+            "end": 2.11,
+            "text": "追"
+          },
+          {
+            "start": 2.11,
+            "end": 2.3400000000000003,
+            "text": "溯"
+          },
+          {
+            "start": 2.3400000000000003,
+            "end": 2.56,
+            "text": "涉"
+          },
+          {
+            "start": 2.56,
+            "end": 2.73,
+            "text": "事"
+          },
+          {
+            "start": 2.73,
+            "end": 2.88,
+            "text": "桂"
+          },
+          {
+            "start": 2.88,
+            "end": 3.02,
+            "text": "花"
+          },
+          {
+            "start": 3.02,
+            "end": 3.15,
+            "text": "干"
+          },
+          {
+            "start": 3.15,
+            "end": 3.3000000000000003,
+            "text": "流"
+          },
+          {
+            "start": 3.3000000000000003,
+            "end": 3.54,
+            "text": "向"
+          },
+          {
+            "start": 3.66,
+            "end": 3.81,
+            "text": "并"
+          },
+          {
+            "start": 3.81,
+            "end": 3.93,
+            "text": "对"
+          },
+          {
+            "start": 3.93,
+            "end": 4.08,
+            "text": "收"
+          },
+          {
+            "start": 4.08,
+            "end": 4.32,
+            "text": "购"
+          },
+          {
+            "start": 4.5,
+            "end": 4.71,
+            "text": "加"
+          },
+          {
+            "start": 4.71,
+            "end": 5.07,
+            "text": "工"
+          },
+          {
+            "start": 5.16,
+            "end": 5.4,
+            "text": "销"
+          },
+          {
+            "start": 5.4,
+            "end": 5.55,
+            "text": "售"
+          },
+          {
+            "start": 5.55,
+            "end": 5.71,
+            "text": "各"
+          },
+          {
+            "start": 5.71,
+            "end": 5.91,
+            "text": "环"
+          },
+          {
+            "start": 5.91,
+            "end": 6.12,
+            "text": "节"
+          },
+          {
+            "start": 6.12,
+            "end": 6.36,
+            "text": "开"
+          },
+          {
+            "start": 6.36,
+            "end": 6.51,
+            "text": "展"
+          },
+          {
+            "start": 6.51,
+            "end": 6.72,
+            "text": "全"
+          },
+          {
+            "start": 6.72,
+            "end": 6.87,
+            "text": "县"
+          },
+          {
+            "start": 6.87,
+            "end": 7.05,
+            "text": "拉"
+          },
+          {
+            "start": 7.05,
+            "end": 7.2,
+            "text": "网"
+          },
+          {
+            "start": 7.2,
+            "end": 7.32,
+            "text": "式"
+          },
+          {
+            "start": 7.32,
+            "end": 7.5,
+            "text": "排"
+          },
+          {
+            "start": 7.5,
+            "end": 7.8100000000000005,
+            "text": "查"
+          }
+        ],
+        "text": "通报说当地正紧急追溯涉事桂花干流向并对收购加工销售各环节开展全县拉网式排查",
+        "complete": true
+      },
+      {
+        "id": "sentence-2",
+        "start": 8.07,
+        "end": 9.93,
+        "words": [
+          {
+            "start": 8.07,
+            "end": 8.28,
+            "text": "相"
+          },
+          {
+            "start": 8.28,
+            "end": 8.43,
+            "text": "关"
+          },
+          {
+            "start": 8.43,
+            "end": 8.61,
+            "text": "商"
+          },
+          {
+            "start": 8.61,
+            "end": 8.87,
+            "text": "户"
+          },
+          {
+            "start": 8.87,
+            "end": 9,
+            "text": "已"
+          },
+          {
+            "start": 9,
+            "end": 9.1,
+            "text": "被"
+          },
+          {
+            "start": 9.1,
+            "end": 9.239999999999998,
+            "text": "依"
+          },
+          {
+            "start": 9.239999999999998,
+            "end": 9.389999999999999,
+            "text": "法"
+          },
+          {
+            "start": 9.389999999999999,
+            "end": 9.54,
+            "text": "采"
+          },
+          {
+            "start": 9.54,
+            "end": 9.69,
+            "text": "取"
+          },
+          {
+            "start": 9.69,
+            "end": 9.75,
+            "text": "措"
+          },
+          {
+            "start": 9.75,
+            "end": 9.93,
+            "text": "施"
+          }
+        ],
+        "text": "相关商户已被依法采取措施",
+        "complete": true
+      }
+    ],
+    "pauses": [
+      {
+        "start": 0,
+        "end": 0.12
+      },
+      {
+        "start": 0.751,
+        "end": 1.116
+      },
+      {
+        "start": 4.213,
+        "end": 4.564
+      },
+      {
+        "start": 7.638,
+        "end": 8.109
+      },
+      {
+        "start": 10.059999999999999,
+        "end": 10.29
+      }
+    ],
+    "warnings": [
+      "字词时间码由模型估计，已校验格式、顺序和范围，尚未经独立强制对齐。",
+      "停顿是低音量检测结果，不等于已确认无人说话。",
+      "字幕标点边界由已验证脚本的完整匹配短句映射到真实ASR字词；未替换原话或补齐缺失语音。"
+    ],
+    "captionBreaks": [
+      2,
+      16,
+      36,
+      48
+    ],
+    "captionBoundarySource": "matched-clauses"
+  },
+  "generation": {
+    "workflowId": "generated-caption-fixture",
+    "beatId": "chapter-2",
+    "mode": "generated",
+    "lineHash": "ba3ec0e6a9666a2cb5e14527a7415dcbc6d33d12b9faf65475d9ce6d4f62a360",
+    "audioHash": "c3766b675e884731b74cccc4df4b86bf12e0ccb5e230f19622e9f207028fd26f",
+    "htmlHash": "5f61d5a06b385a615b186e4fa5c19bf2b22cef723403e696e519bac0724724eb",
+    "referenceHash": "314497f44995a076b79b83d7f61ad397d13cdc0905a350444e75797437070f00"
+  },
+  "clipIndex": 1,
+  "clips": [
+    {
+      "sceneId": "chapter-1",
+      "sourceId": "scene-media-1",
+      "start": 0,
+      "end": 10.84,
+      "purpose": "hook",
+      "transition": {
+        "kind": "cut",
+        "duration": 0
+      },
+      "zoom": 1,
+      "volume": 1
+    },
+    {
+      "sceneId": "chapter-2",
+      "sourceId": "scene-media-2",
+      "start": 0,
+      "end": 10.29,
+      "purpose": "argument",
+      "transition": {
+        "kind": "fade",
+        "duration": 0.18
+      },
+      "zoom": 1,
+      "volume": 1
+    },
+    {
+      "sceneId": "chapter-3",
+      "sourceId": "scene-media-3",
+      "start": 0,
+      "end": 9.28,
+      "purpose": "conclusion",
+      "transition": {
+        "kind": "fade",
+        "duration": 0.18
+      },
+      "zoom": 1,
+      "volume": 1
+    }
+  ],
+  "factReview": {
+    "score": 94,
+    "needsRepair": false,
+    "findings": []
+  },
+  "originalCaptions": [
+    {
+      "start": 10.87,
+      "end": 11.55,
+      "text": "通报说",
+      "style": "subtitle",
+      "animation": "none"
+    },
+    {
+      "start": 11.71,
+      "end": 14.2,
+      "text": "当地正紧急追溯涉事桂花干流向",
+      "style": "subtitle",
+      "animation": "none"
+    },
+    {
+      "start": 14.32,
+      "end": 17.38,
+      "text": "并对收购加工销售各环节开展全",
+      "style": "subtitle",
+      "animation": "none"
+    },
+    {
+      "start": 17.38,
+      "end": 18.47,
+      "text": "县拉网式排查",
+      "style": "subtitle",
+      "animation": "none"
+    },
+    {
+      "start": 18.73,
+      "end": 20.59,
+      "text": "相关商户已被依法采取措施",
+      "style": "subtitle",
+      "animation": "none"
+    }
+  ]
+}
