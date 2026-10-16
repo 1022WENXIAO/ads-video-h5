@@ -74,5 +74,5 @@ export function barChartSvg(chart:LessonBarChart):string{
     }).join('');
     return `<g><text x="${(left+right)/2}" y="30" text-anchor="middle" font-size="${panels===1?26:22}">${escape(panel.title)}</text><text x="${left}" y="54" font-size="18">单位：${escape(chart.unit||'数值')}</text>${ticks}<path d="M${left} ${top}V${bottom}H${right}" fill="none" stroke="#626773" stroke-width="2"/>${bars}${panel.min>0?`<text x="${(left+right)/2}" y="379" text-anchor="middle" font-size="20" fill="#a64a31">截断示意：下限 ${panel.min}</text>`:''}</g>`;
   }).join('');
-  return `<svg class="chart" viewBox="0 0 700 405" role="img" aria-label="${escape(chart.illustrative?'示意柱状图':'柱状图')}" font-family="Arial,'PingFang SC',sans-serif" fill="#282c38">${contents}<text x="350" y="402" text-anchor="middle" font-size="18">${chart.illustrative?'示意数据 · ':''}类别与原始数值相同；柱高依对应刻度计算</text></svg>`;
+  return `<svg class="chart" viewBox="0 0 700 405" role="img" aria-label="${escape(chart.illustrative?'示意柱状图':'柱状图')}" font-family="Arial,'PingFang SC',sans-serif" fill="#282c38">${contents}<text x="350" y="402" text-anchor="middle" font-size="18">${chart.illustrative?'示意数据 · ':''}柱高依所示数值与对应刻度计算</text></svg>`;
 }

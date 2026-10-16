@@ -128,7 +128,11 @@ export interface WorkflowEvent {
 export type LessonCurveFunction = 'mse' | 'mae' | 'huber' | 'cross-entropy' | 'hinge' | 'focal';
 export type LessonIllustration = 'interface' | 'steps' | 'code' | 'character' | 'controller' | 'interaction' | 'gallery' | 'announcement' | 'signal' | 'hardware' | 'modules' | 'thermos' | 'bar-chart' | 'book' | 'clothing' | 'desk' | 'coffee' | 'orbit' | 'battery' | 'map';
 export interface LessonBarChart {
-  bars: Array<{label:string;value:number}>;
+  bars: Array<{label:string;value:number;evidence?:{
+    referenceId:string;sourceHash?:string;sourceQuote:string;
+    entityQuote:string;metricQuote:string;valueQuote:string;
+    operation?:'identity'|'range-min'|'range-max';
+  }}>;
   unit: string;
   illustrative: boolean;
   panels: Array<{title:string;min:number;max:number}>;

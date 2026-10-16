@@ -1,0 +1,1107 @@
+{
+  "provenance": {
+    "revision": "249cad12915afb57fe797b6fae542cdec03cd008",
+    "runId": "c87a9989-dbb5-4e36-b427-fc443ae62ecd",
+    "artifactId": "c151d75c-787f-46f5-bb99-dd89d015d0bb",
+    "autoScore": 90,
+    "autoStatus": "failed",
+    "rawReviewSHA256": "bc5f850bcd262dadb9e3b13181ddb498b406a52b95dc634418c84bc09d381b39",
+    "renderManifestSHA256": "efd8c57d419f8ddd7df9872fb5766688b7587db5915b32501f3c43e64ad0c41d",
+    "movieSHA256": "0cc1169350f92eff8a1c9f5af4e6e3b13f6f20c824f860a31a5b91fb8ca37d5a",
+    "boundary": "Actual raw review and manifest retained. Controlled HTTP tests do not establish model quality or promote this failed result."
+  },
+  "plan": {
+    "format": "16:9",
+    "summary": "用两段程序示意动态图解形成约20秒方法对照：小球段先声明程序示意边界，再把观察与推测分开并保留重复核验的画面表达；双轨道小车段先统一起点和计时等条件，再把结论限制在证据支持范围内。",
+    "targetSeconds": 20.28,
+    "fineCut": true,
+    "clips": [
+      {
+        "sceneId": "scene-1",
+        "sourceId": "51fe6459-b1eb-412a-8a8d-6f3cd79312d9",
+        "start": 5.63,
+        "end": 16.67,
+        "sentenceIds": [
+          "51fe6459-b1eb-412a-8a8d-6f3cd79312d9:sentence:1",
+          "51fe6459-b1eb-412a-8a8d-6f3cd79312d9:sentence:2"
+        ],
+        "purpose": "hook",
+        "zoom": 1,
+        "transition": {
+          "kind": "cut",
+          "duration": 0
+        },
+        "volume": 1
+      },
+      {
+        "sceneId": "scene-2",
+        "sourceId": "34f70767-c04c-4bda-a81d-a7ec7364bd6b",
+        "start": 0,
+        "end": 5.06,
+        "sentenceIds": [
+          "34f70767-c04c-4bda-a81d-a7ec7364bd6b:sentence:0"
+        ],
+        "purpose": "argument",
+        "zoom": 1,
+        "transition": {
+          "kind": "cut",
+          "duration": 0
+        },
+        "volume": 1
+      },
+      {
+        "sceneId": "scene-3",
+        "sourceId": "34f70767-c04c-4bda-a81d-a7ec7364bd6b",
+        "start": 8.87,
+        "end": 11.18,
+        "sentenceIds": [
+          "34f70767-c04c-4bda-a81d-a7ec7364bd6b:sentence:2"
+        ],
+        "purpose": "argument",
+        "zoom": 1,
+        "transition": {
+          "kind": "cut",
+          "duration": 0
+        },
+        "volume": 1
+      },
+      {
+        "sceneId": "scene-4",
+        "sourceId": "34f70767-c04c-4bda-a81d-a7ec7364bd6b",
+        "start": 15.38,
+        "end": 17.25,
+        "sentenceIds": [
+          "34f70767-c04c-4bda-a81d-a7ec7364bd6b:sentence:4"
+        ],
+        "purpose": "argument",
+        "zoom": 1,
+        "transition": {
+          "kind": "cut",
+          "duration": 0
+        },
+        "volume": 1
+      }
+    ],
+    "audio": {
+      "originalVolume": 1,
+      "bgmVolume": 0.12,
+      "narrationVolume": 1,
+      "normalize": true
+    },
+    "avatars": [],
+    "captions": [
+      {
+        "start": 0.1,
+        "end": 1.03,
+        "text": "这段画面",
+        "style": "subtitle",
+        "animation": "none"
+      },
+      {
+        "start": 1.03,
+        "end": 2.63,
+        "text": "是程序绘制的示意",
+        "style": "subtitle",
+        "animation": "none"
+      },
+      {
+        "start": 2.71,
+        "end": 3.95,
+        "text": "不是真实现场",
+        "style": "subtitle",
+        "animation": "none"
+      },
+      {
+        "start": 4.66,
+        "end": 5.26,
+        "text": "把观察",
+        "style": "subtitle",
+        "animation": "none"
+      },
+      {
+        "start": 5.26,
+        "end": 5.41,
+        "text": "和",
+        "style": "subtitle",
+        "animation": "none"
+      },
+      {
+        "start": 5.41,
+        "end": 6.4,
+        "text": "推测分开",
+        "style": "subtitle",
+        "animation": "none"
+      },
+      {
+        "start": 6.58,
+        "end": 7.09,
+        "text": "可以让",
+        "style": "subtitle",
+        "animation": "none"
+      },
+      {
+        "start": 7.09,
+        "end": 8.34,
+        "text": "表达更清楚",
+        "style": "subtitle",
+        "animation": "none"
+      },
+      {
+        "start": 8.62,
+        "end": 8.98,
+        "text": "也让",
+        "style": "subtitle",
+        "animation": "none"
+      },
+      {
+        "start": 8.98,
+        "end": 9.91,
+        "text": "后续核验",
+        "style": "subtitle",
+        "animation": "none"
+      },
+      {
+        "start": 9.94,
+        "end": 10.59,
+        "text": "有明确",
+        "style": "subtitle",
+        "animation": "none"
+      },
+      {
+        "start": 10.59,
+        "end": 11.02,
+        "text": "的方向",
+        "style": "subtitle",
+        "animation": "none"
+      },
+      {
+        "start": 11.1,
+        "end": 12.03,
+        "text": "比较两个方案",
+        "style": "subtitle",
+        "animation": "none"
+      },
+      {
+        "start": 12.03,
+        "end": 12.44,
+        "text": "时",
+        "style": "subtitle",
+        "animation": "none"
+      },
+      {
+        "start": 12.63,
+        "end": 14.07,
+        "text": "要先保持比较条件",
+        "style": "subtitle",
+        "animation": "none"
+      },
+      {
+        "start": 14.07,
+        "end": 14.53,
+        "text": "一致",
+        "style": "subtitle",
+        "animation": "none"
+      },
+      {
+        "start": 14.58,
+        "end": 15,
+        "text": "再看",
+        "style": "subtitle",
+        "animation": "none"
+      },
+      {
+        "start": 15,
+        "end": 16.04,
+        "text": "差异来自哪里",
+        "style": "subtitle",
+        "animation": "none"
+      },
+      {
+        "start": 16.2,
+        "end": 17.1,
+        "text": "结论应当",
+        "style": "subtitle",
+        "animation": "none"
+      },
+      {
+        "start": 17.1,
+        "end": 18.35,
+        "text": "由证据支持",
+        "style": "subtitle",
+        "animation": "none"
+      },
+      {
+        "start": 18.51,
+        "end": 18.78,
+        "text": "不能",
+        "style": "subtitle",
+        "animation": "none"
+      },
+      {
+        "start": 18.78,
+        "end": 19.78,
+        "text": "把猜测说成",
+        "style": "subtitle",
+        "animation": "none"
+      },
+      {
+        "start": 19.78,
+        "end": 20.19,
+        "text": "事实",
+        "style": "subtitle",
+        "animation": "none"
+      }
+    ],
+    "motions": [
+      {
+        "sceneId": "scene-1",
+        "kind": "steps",
+        "label": "示意→分开→核验",
+        "zone": "bottom",
+        "start": 0.15,
+        "end": 10.94
+      },
+      {
+        "sceneId": "scene-2",
+        "kind": "steps",
+        "label": "同起点同时",
+        "zone": "bottom",
+        "start": 11.19,
+        "end": 16
+      },
+      {
+        "sceneId": "scene-3",
+        "kind": "underline",
+        "label": "证据支持",
+        "zone": "top",
+        "start": 16.25,
+        "end": 18.31
+      },
+      {
+        "sceneId": "scene-4",
+        "kind": "circle",
+        "label": "猜测≠事实",
+        "zone": "bottom",
+        "start": 18.56,
+        "end": 20.18
+      }
+    ],
+    "editorial": {
+      "scenes": [
+        {
+          "id": "scene-1",
+          "sourceId": "51fe6459-b1eb-412a-8a8d-6f3cd79312d9",
+          "sourceName": "controlled-semantic-v3-1.mp4",
+          "sourceHash": "52cee27c96ec89277816c60223fd1e56cbcd586dae235436926ba7e9bc38acc7",
+          "sentenceIds": [
+            "51fe6459-b1eb-412a-8a8d-6f3cd79312d9:sentence:1",
+            "51fe6459-b1eb-412a-8a8d-6f3cd79312d9:sentence:2"
+          ],
+          "start": 5.73,
+          "end": 16.65,
+          "quote": "这段画面是程序绘制的示意不是真实现场把观察和推测分开可以让表达更清楚也让后续核验有明确的方向",
+          "reason": "小球段连续保留程序示意边界与观察/推测分开的完整方法句；sentence:2覆盖至源素材末尾，包含审查指出的“重复观察，核验解释”现有画面表达，避免只停在前半段。",
+          "purpose": "hook",
+          "visual": {
+            "observations": "三帧为米白底科普演示PPT，顶部横向排布标题、流程模块与小字标注，中下部左右分栏：左侧为斜坡运动轨迹示意图，右侧为解释假设示意图。逐帧动效为流程模块依次变色高亮，第三帧右下角新增绿色勾选标识与圆点连线标记。所有文字均集中在画面8%-55%高度区间，底部62%-76%区域为纯色空白，无图示与文字内容。",
+            "safeZone": "bottom",
+            "frameTimes": [
+              7.04,
+              11.19,
+              15.34
+            ]
+          }
+        },
+        {
+          "id": "scene-2",
+          "sourceId": "34f70767-c04c-4bda-a81d-a7ec7364bd6b",
+          "sourceName": "controlled-semantic-v3-2.mp4",
+          "sourceHash": "d08c3de9a8ad9be03eb542e3bfbdd3e7f7a97c9641459b0b6dfea1fd827099d1",
+          "sentenceIds": [
+            "34f70767-c04c-4bda-a81d-a7ec7364bd6b:sentence:0"
+          ],
+          "start": 0.06,
+          "end": 5,
+          "quote": "比较两个方案时要先保持比较条件一致再看差异来自哪里",
+          "reason": "双轨道小车段保留条件一致的核心原则，并用两句独立完整的证据边界句收束；所选片段可保留画面中已有的“未知部分保留限制”表达，同时避开此前审查不通过的单独“保留限制”句。",
+          "purpose": "argument",
+          "visual": {
+            "observations": "这是一张简约扁平化风格的科普流程示意图，背景为纯白色。顶部居左显示黑色大字标题“公平比较，结论才有依据”，标题下方是横向排布的流程模块：从左到右依次是带白色文字的蓝色填充块“条件一致”、浅灰底色的“比较”块、箭头指向浅灰底色的“结论”块，右上角还有淡灰色小字“程序示意・非真实现场”。画面中下部分左右对称摆放两组对比元素：左侧是标有蓝色小字“方案A”的蓝色简笔小汽车，停在带刻度的黑色水平轨道起点旁，车上方配有L型指针的圆形计时图标，图标右侧标注黑色小字“同一条件”，车下方标注灰色小字“相同起点・相同计时”；右侧是对应标有橙色小字“方案B”的橙色简笔小汽车，轨道、计时图标、下方注释文字与左侧完全对齐。最底部居中是一行极小的灰色提示文字“差异仅为方法示意，不代表实际产品性能”。",
+            "safeZone": "bottom",
+            "frameTimes": [
+              0.653,
+              2.53,
+              4.407
+            ]
+          }
+        },
+        {
+          "id": "scene-3",
+          "sourceId": "34f70767-c04c-4bda-a81d-a7ec7364bd6b",
+          "sourceName": "controlled-semantic-v3-2.mp4",
+          "sourceHash": "d08c3de9a8ad9be03eb542e3bfbdd3e7f7a97c9641459b0b6dfea1fd827099d1",
+          "sentenceIds": [
+            "34f70767-c04c-4bda-a81d-a7ec7364bd6b:sentence:2"
+          ],
+          "start": 8.97,
+          "end": 11.12,
+          "quote": "结论应当由证据支持",
+          "reason": "双轨道小车段保留条件一致的核心原则，并用两句独立完整的证据边界句收束；所选片段可保留画面中已有的“未知部分保留限制”表达，同时避开此前审查不通过的单独“保留限制”句。",
+          "purpose": "argument",
+          "visual": {
+            "observations": "该演示画面为白底扁平化科普动画，顶部横向排布标题「公平比较，结论才有依据」、流程框「条件一致-比较-结论」，右上角标注小字备注；中部左右分栏呈现蓝色方案A、橙色方案B的小车竞速示意图，搭配对应计时标识；底部为灰色免责小字。三帧画面内容完全一致，仅小车位置存在细微位移，全画面无遮挡关键文字的元素。",
+            "safeZone": "top",
+            "frameTimes": [
+              9.228,
+              10.045,
+              10.862
+            ]
+          }
+        },
+        {
+          "id": "scene-4",
+          "sourceId": "34f70767-c04c-4bda-a81d-a7ec7364bd6b",
+          "sourceName": "controlled-semantic-v3-2.mp4",
+          "sourceHash": "d08c3de9a8ad9be03eb542e3bfbdd3e7f7a97c9641459b0b6dfea1fd827099d1",
+          "sentenceIds": [
+            "34f70767-c04c-4bda-a81d-a7ec7364bd6b:sentence:4"
+          ],
+          "start": 15.48,
+          "end": 17.16,
+          "quote": "不能把猜测说成事实",
+          "reason": "双轨道小车段保留条件一致的核心原则，并用两句独立完整的证据边界句收束；所选片段可保留画面中已有的“未知部分保留限制”表达，同时避开此前审查不通过的单独“保留限制”句。",
+          "purpose": "argument",
+          "visual": {
+            "observations": "该扁平化科普图表分为上下两大模块，顶部流程含从左向右排布的标题、条件一致、比较、结论区块，中部左右对称放置方案A、方案B的车辆对比轨道，底部居中放置备注文字，整体无人物。画面背景为纯净米白色，无复杂图案。经检查，顶部与中部区域没有预留的空白放置区，底部备注文字上下存在充足的浅米白色空白区域，将内容放在此处不会遮挡标题、流程图、车辆对比、底部备注等任何原有核心信息。",
+            "safeZone": "bottom",
+            "frameTimes": [
+              15.682,
+              16.32,
+              16.958
+            ]
+          }
+        }
+      ],
+      "script": {
+        "premise": "用两段程序示意动态图解形成约20秒方法对照：小球段先声明程序示意边界，再把观察与推测分开并保留重复核验的画面表达；双轨道小车段先统一起点和计时等条件，再把结论限制在证据支持范围内。",
+        "audience": "需要快速理解科学观察、公平比较与证据边界的普通观众、学生和科普短视频受众。",
+        "arc": "边界与方法：小球段先明确画面是程序绘制、不是真实现场，再说明观察和推测要分开，后续核验才有方向，并让素材末尾“重复观察、核验解释”的现有画面进入成片。方法对照：双轨道小车段先保持起点、计时等比较条件一致，再看差异来自哪里。证据收束：先说结论应当由证据支持，再以“不能把猜测说成事实”结束。未单独选用此前审查不通过的“保留限制”句，未知限制依赖原画面已有表达。",
+        "style": "约20秒横屏方法对照短片；保留普通话原声、原比例完整横屏画面和现有扁平化程序示意UI；加原声字幕，不新增配音、图片、真人、实景、采访、品牌或新闻片段；珊瑚色图形仅放在底部或非遮挡区域，使用小型白底标签，避开原有顶部文字、流程UI和底部字幕。",
+        "beats": [
+          {
+            "sceneId": "scene-1",
+            "intent": "先建立小球段的证据边界：这是程序绘制示意而非真实现场；随后强调观察和推测分开，为重复观察与核验提供方向。",
+            "graphic": "steps",
+            "label": "示意→分开→核验"
+          },
+          {
+            "sceneId": "scene-2",
+            "intent": "转到双轨道小车段，突出相同起点、相同计时等条件一致后，才适合比较两个方案。",
+            "graphic": "steps",
+            "label": "同起点同时"
+          },
+          {
+            "sceneId": "scene-3",
+            "intent": "明确比较后的结论必须由证据支持，避免把差异直接解释成事实。",
+            "graphic": "underline",
+            "label": "证据支持"
+          },
+          {
+            "sceneId": "scene-4",
+            "intent": "以完整原句收束证据边界：不能把猜测说成事实，结论停在素材可支持的位置。",
+            "graphic": "circle",
+            "label": "猜测≠事实"
+          }
+        ]
+      }
+    },
+    "version": 2
+  },
+  "render": {
+    "planHash": "52c1c481b6c88205fb7ae9f1e4ba2adaf49e42b62648fb56f89a62934012428c",
+    "width": 960,
+    "height": 540,
+    "duration": 20.28,
+    "captions": 23,
+    "overlays": 0,
+    "motions": [
+      {
+        "sceneId": "scene-1",
+        "kind": "steps",
+        "label": "示意→分开→核验",
+        "zone": "bottom",
+        "start": 0.15,
+        "end": 10.94
+      },
+      {
+        "sceneId": "scene-2",
+        "kind": "steps",
+        "label": "同起点同时",
+        "zone": "bottom",
+        "start": 11.19,
+        "end": 16
+      },
+      {
+        "sceneId": "scene-3",
+        "kind": "underline",
+        "label": "证据支持",
+        "zone": "top",
+        "start": 16.25,
+        "end": 18.31
+      },
+      {
+        "sceneId": "scene-4",
+        "kind": "circle",
+        "label": "猜测≠事实",
+        "zone": "bottom",
+        "start": 18.56,
+        "end": 20.18
+      }
+    ],
+    "drawingEngine": "GSAP/HyperFrames",
+    "textLayout": {
+      "version": 1,
+      "method": "observed-blank",
+      "width": 960,
+      "height": 540,
+      "captions": [
+        {
+          "x": 568,
+          "y": 437,
+          "width": 152,
+          "height": 52,
+          "fontSize": 32,
+          "lines": [
+            "这段画面"
+          ]
+        },
+        {
+          "x": 504,
+          "y": 437,
+          "width": 280,
+          "height": 52,
+          "fontSize": 32,
+          "lines": [
+            "是程序绘制的示意"
+          ]
+        },
+        {
+          "x": 536,
+          "y": 437,
+          "width": 216,
+          "height": 52,
+          "fontSize": 32,
+          "lines": [
+            "不是真实现场"
+          ]
+        },
+        {
+          "x": 584,
+          "y": 437,
+          "width": 120,
+          "height": 52,
+          "fontSize": 32,
+          "lines": [
+            "把观察"
+          ]
+        },
+        {
+          "x": 616,
+          "y": 437,
+          "width": 56,
+          "height": 52,
+          "fontSize": 32,
+          "lines": [
+            "和"
+          ]
+        },
+        {
+          "x": 568,
+          "y": 437,
+          "width": 152,
+          "height": 52,
+          "fontSize": 32,
+          "lines": [
+            "推测分开"
+          ]
+        },
+        {
+          "x": 584,
+          "y": 437,
+          "width": 120,
+          "height": 52,
+          "fontSize": 32,
+          "lines": [
+            "可以让"
+          ]
+        },
+        {
+          "x": 552,
+          "y": 437,
+          "width": 184,
+          "height": 52,
+          "fontSize": 32,
+          "lines": [
+            "表达更清楚"
+          ]
+        },
+        {
+          "x": 600,
+          "y": 437,
+          "width": 88,
+          "height": 52,
+          "fontSize": 32,
+          "lines": [
+            "也让"
+          ]
+        },
+        {
+          "x": 568,
+          "y": 437,
+          "width": 152,
+          "height": 52,
+          "fontSize": 32,
+          "lines": [
+            "后续核验"
+          ]
+        },
+        {
+          "x": 584,
+          "y": 437,
+          "width": 120,
+          "height": 52,
+          "fontSize": 32,
+          "lines": [
+            "有明确"
+          ]
+        },
+        {
+          "x": 584,
+          "y": 437,
+          "width": 120,
+          "height": 52,
+          "fontSize": 32,
+          "lines": [
+            "的方向"
+          ]
+        },
+        {
+          "x": 536,
+          "y": 437,
+          "width": 216,
+          "height": 52,
+          "fontSize": 32,
+          "lines": [
+            "比较两个方案"
+          ]
+        },
+        {
+          "x": 616,
+          "y": 437,
+          "width": 56,
+          "height": 52,
+          "fontSize": 32,
+          "lines": [
+            "时"
+          ]
+        },
+        {
+          "x": 504,
+          "y": 437,
+          "width": 280,
+          "height": 52,
+          "fontSize": 32,
+          "lines": [
+            "要先保持比较条件"
+          ]
+        },
+        {
+          "x": 600,
+          "y": 437,
+          "width": 88,
+          "height": 52,
+          "fontSize": 32,
+          "lines": [
+            "一致"
+          ]
+        },
+        {
+          "x": 600,
+          "y": 437,
+          "width": 88,
+          "height": 52,
+          "fontSize": 32,
+          "lines": [
+            "再看"
+          ]
+        },
+        {
+          "x": 536,
+          "y": 437,
+          "width": 216,
+          "height": 52,
+          "fontSize": 32,
+          "lines": [
+            "差异来自哪里"
+          ]
+        },
+        {
+          "x": 568,
+          "y": 437,
+          "width": 152,
+          "height": 52,
+          "fontSize": 32,
+          "lines": [
+            "结论应当"
+          ]
+        },
+        {
+          "x": 552,
+          "y": 437,
+          "width": 184,
+          "height": 52,
+          "fontSize": 32,
+          "lines": [
+            "由证据支持"
+          ]
+        },
+        {
+          "x": 600,
+          "y": 437,
+          "width": 88,
+          "height": 52,
+          "fontSize": 32,
+          "lines": [
+            "不能"
+          ]
+        },
+        {
+          "x": 552,
+          "y": 437,
+          "width": 184,
+          "height": 52,
+          "fontSize": 32,
+          "lines": [
+            "把猜测说成"
+          ]
+        },
+        {
+          "x": 600,
+          "y": 437,
+          "width": 88,
+          "height": 52,
+          "fontSize": 32,
+          "lines": [
+            "事实"
+          ]
+        }
+      ],
+      "overlays": [],
+      "motions": [
+        {
+          "x": 372,
+          "y": 8,
+          "width": 216,
+          "height": 44,
+          "fontSize": 24,
+          "lines": [
+            "示意→分开→核验"
+          ]
+        },
+        {
+          "x": 408,
+          "y": 8,
+          "width": 144,
+          "height": 44,
+          "fontSize": 24,
+          "lines": [
+            "同起点同时"
+          ]
+        },
+        {
+          "x": 420,
+          "y": 8,
+          "width": 120,
+          "height": 44,
+          "fontSize": 24,
+          "lines": [
+            "证据支持"
+          ]
+        },
+        {
+          "x": 408,
+          "y": 8,
+          "width": 144,
+          "height": 44,
+          "fontSize": 24,
+          "lines": [
+            "猜测≠事实"
+          ]
+        }
+      ],
+      "analysis": {
+        "frames": 609,
+        "width": 256,
+        "height": 144,
+        "certain": true
+      }
+    },
+    "audioNormalization": {
+      "mode": "segment-two-pass+mix-two-pass",
+      "targetLufs": -16,
+      "targetTruePeakDb": -1.5,
+      "segments": [
+        {
+          "sourceId": "51fe6459-b1eb-412a-8a8d-6f3cd79312d9",
+          "start": 5.63,
+          "end": 16.67,
+          "measurement": {
+            "integrated": -21.36,
+            "truePeak": -7.97,
+            "range": 1.8,
+            "threshold": -31.56,
+            "offset": 0.24
+          },
+          "preparationFilter": "aformat=sample_rates=44100:channel_layouts=stereo,volume=6.320dB,acompressor=threshold=0.1:ratio=2:attack=10:release=160:knee=2.828:makeup=1:link=average",
+          "filter": "loudnorm=I=-16:TP=-1.5:LRA=7:measured_I=-21.36:measured_TP=-7.97:measured_LRA=1.8:measured_thresh=-31.56:offset=0.24:linear=true",
+          "candidateSpreads": [
+            {
+              "ratio": 2,
+              "spreadLu": 5.9
+            }
+          ]
+        },
+        {
+          "sourceId": "34f70767-c04c-4bda-a81d-a7ec7364bd6b",
+          "start": 0,
+          "end": 5.06,
+          "measurement": {
+            "integrated": -21.08,
+            "truePeak": -8.67,
+            "range": 1.3,
+            "threshold": -31.08,
+            "offset": 0.3
+          },
+          "preparationFilter": "aformat=sample_rates=44100:channel_layouts=stereo,volume=10.560dB,acompressor=threshold=0.1:ratio=2:attack=10:release=160:knee=2.828:makeup=1:link=average",
+          "filter": "loudnorm=I=-16:TP=-1.5:LRA=7:measured_I=-21.08:measured_TP=-8.67:measured_LRA=1.3:measured_thresh=-31.08:offset=0.3:linear=true",
+          "candidateSpreads": [
+            {
+              "ratio": 2,
+              "spreadLu": 4.9
+            }
+          ]
+        },
+        {
+          "sourceId": "34f70767-c04c-4bda-a81d-a7ec7364bd6b",
+          "start": 8.87,
+          "end": 11.18,
+          "measurement": {
+            "integrated": -20.63,
+            "truePeak": -10.86,
+            "range": 0,
+            "threshold": -30.63,
+            "offset": -0.01
+          },
+          "preparationFilter": "aformat=sample_rates=44100:channel_layouts=stereo,volume=7.990dB,acompressor=threshold=0.1:ratio=2:attack=10:release=160:knee=2.828:makeup=1:link=average",
+          "filter": "loudnorm=I=-16:TP=-1.5:LRA=7:measured_I=-20.63:measured_TP=-10.86:measured_LRA=0:measured_thresh=-30.63:offset=-0.01:linear=true",
+          "candidateSpreads": [
+            {
+              "ratio": 2,
+              "spreadLu": 5.4
+            }
+          ]
+        },
+        {
+          "sourceId": "34f70767-c04c-4bda-a81d-a7ec7364bd6b",
+          "start": 15.38,
+          "end": 17.25,
+          "measurement": {
+            "integrated": -20.74,
+            "truePeak": -8.81,
+            "range": 0,
+            "threshold": -30.74,
+            "offset": 0
+          },
+          "preparationFilter": "aformat=sample_rates=44100:channel_layouts=stereo,volume=10.110dB,acompressor=threshold=0.1:ratio=2:attack=10:release=160:knee=2.828:makeup=1:link=average",
+          "filter": "loudnorm=I=-16:TP=-1.5:LRA=7:measured_I=-20.74:measured_TP=-8.81:measured_LRA=0:measured_thresh=-30.74:offset=0:linear=true",
+          "candidateSpreads": [
+            {
+              "ratio": 2,
+              "spreadLu": 1.8
+            }
+          ]
+        }
+      ],
+      "mix": {
+        "integrated": -16.12,
+        "truePeak": -2.64,
+        "range": 1.8,
+        "threshold": -26.27,
+        "offset": 0.21
+      },
+      "mixFilter": "loudnorm=I=-16:TP=-1.5:LRA=7:measured_I=-16.12:measured_TP=-2.64:measured_LRA=1.8:measured_thresh=-26.27:offset=0.21:linear=true,"
+    },
+    "narration": false,
+    "avatars": [],
+    "bgm": false
+  },
+  "rawReview": {
+    "status": "needs-review",
+    "score": 82,
+    "checks": [
+      {
+        "name": "实际时长",
+        "passed": true,
+        "detail": "文件20.280秒，方案20.28秒"
+      },
+      {
+        "name": "画幅与音轨",
+        "passed": true,
+        "detail": "预期960×540，有音轨"
+      },
+      {
+        "name": "方案版本",
+        "passed": true,
+        "detail": "渲染清单哈希与当前方案比对"
+      },
+      {
+        "name": "分镜证据与叙事",
+        "passed": true,
+        "detail": "原话、源时间码、选择理由、脚本顺序与实际方案比对"
+      },
+      {
+        "name": "绘制动效合成",
+        "passed": true,
+        "detail": "实际合成4段GSAP透明绘制层，关键时刻参与抽帧审查"
+      },
+      {
+        "name": "字幕执行",
+        "passed": true,
+        "detail": "实际渲染指令包含23条字幕，0条叠字"
+      },
+      {
+        "name": "覆盖层执行",
+        "passed": true,
+        "detail": "渲染0条叠字"
+      },
+      {
+        "name": "推镜执行",
+        "passed": true,
+        "detail": "检查渲染方案的逐片段缩放"
+      },
+      {
+        "name": "转场执行",
+        "passed": true,
+        "detail": "检查实际渲染方案的入场叠化"
+      },
+      {
+        "name": "响度归一化执行",
+        "passed": true,
+        "detail": "渲染记录包含逐段和混音两遍测量/处理参数，仍须实测输出一致性"
+      },
+      {
+        "name": "字幕原话",
+        "passed": true,
+        "detail": "字幕与选中原声逐字稿比对"
+      },
+      {
+        "name": "字幕时间映射",
+        "passed": true,
+        "detail": "字幕时间与源字词到成片的映射比对，源时间仍为模型估计"
+      },
+      {
+        "name": "完整句子",
+        "passed": true,
+        "detail": "精剪片段必须覆盖所选完整原句"
+      },
+      {
+        "name": "人声响度",
+        "passed": true,
+        "detail": "综合响度-16.01 LUFS，峰值-2.52 dBTP"
+      },
+      {
+        "name": "分段人声响度一致性",
+        "passed": true,
+        "detail": "各段实际LUFS：scene-1=-15.92；scene-2=-15.94；scene-3=-15.9；scene-4=-15.92。极差0.04 LU，限值2.5 LU；静音段无有效响度单独列出。"
+      },
+      {
+        "name": "段落衔接音量跳变",
+        "passed": true,
+        "detail": "相邻段综合响度最大差0.04 LU，限值2 LU；scene-1→scene-2@11.04s: 0.02 LU，头尾瞬时差4.4 LU；scene-2→scene-3@16.1s: 0.04 LU，头尾瞬时差2.9 LU；scene-3→scene-4@18.41s: 0.02 LU，头尾瞬时差2.1 LU。头尾瞬时差需听辨，不能将自然重音直接当作失败。"
+      },
+      {
+        "name": "段内音量稳定性",
+        "passed": true,
+        "detail": "有声窗P90−P10：scene-1=6 LU；scene-2=4.9 LU；scene-3=5.4 LU；scene-4=1.8 LU，限值8 LU；忽略低能量停顿，保留自然语气。"
+      },
+      {
+        "name": "声音峰值与削波",
+        "passed": true,
+        "detail": "实际各段真峰值：scene-1=-2.52 dBTP；scene-2=-3.49 dBTP；scene-3=-6.17 dBTP；scene-4=-4 dBTP；编码后上限−1 dBTP，处理目标−1.5 dBTP。"
+      },
+      {
+        "name": "成片语义审查",
+        "passed": false,
+        "detail": "10.14秒的成片帧中，顶部中央动效标签显示文字「示意→分开→核验」，与画面顶部原有的重复标注「程序示意・非真实现场」紧邻排布，标签遮挡了部分原有小字标注，存在文字重叠可读性下降的问题。；16.47秒的成片帧中，顶部新增动效下划线标记「证据支持」与原有顶部小字标注「程序示意・非真实现场」重叠，遮挡了部分原有文字内容，影响可读性。；18.78秒、19.345秒、19.66秒的成片帧中，顶部新增动效圈出标记「猜测≠事实」与原有顶部小字标注「程序示意・非真实现场」重叠，遮挡了部分原有文字内容，影响可读性。"
+      }
+    ],
+    "semantic": {
+      "visualRetentionChecks": [
+        {
+          "id": "visual-retention-6f934ae217c2ad67",
+          "quote": "请保留“程序示意、不是真实现场”的标注",
+          "status": "met",
+          "frameTimes": [
+            0.37,
+            1.25,
+            5.52,
+            10.14,
+            11.41,
+            13.57,
+            16.224,
+            16.47,
+            17.255,
+            18.78,
+            19.345,
+            19.66,
+            19.874
+          ],
+          "detail": "在0.37秒、1.25秒、5.52秒、10.14秒等多组成片帧的右上角均清晰显示「程序示意・非真实现场」小字标注，与用户要求保留的标注内容一致，标注本身未被完全遮挡，仍可辨认。"
+        },
+        {
+          "id": "visual-retention-8e479a529147d040",
+          "quote": "也保留重复观察和未知部分有限制的现有画面表达",
+          "status": "met",
+          "frameTimes": [
+            10.14,
+            16.47,
+            17.255,
+            19.345,
+            19.66,
+            19.874
+          ],
+          "detail": "10.14秒的小球段成片帧右上角清晰显示「重复观察，核验解释」绿色文字，对应重复观察的现有画面表达；16.47秒、17.255秒、19.345秒的双轨道段成片帧右上角清晰显示「未知部分保留限制」橙色文字搭配问号标识，对应未知部分有限制的现有画面表达，两类原有画面表达均完整保留在成片中。"
+        }
+      ],
+      "score": 82,
+      "findings": [
+        "10.14秒的成片帧中，顶部中央动效标签显示文字「示意→分开→核验」，与画面顶部原有的重复标注「程序示意・非真实现场」紧邻排布，标签遮挡了部分原有小字标注，存在文字重叠可读性下降的问题。",
+        "16.47秒的成片帧中，顶部新增动效下划线标记「证据支持」与原有顶部小字标注「程序示意・非真实现场」重叠，遮挡了部分原有文字内容，影响可读性。",
+        "18.78秒、19.345秒、19.66秒的成片帧中，顶部新增动效圈出标记「猜测≠事实」与原有顶部小字标注「程序示意・非真实现场」重叠，遮挡了部分原有文字内容，影响可读性。"
+      ],
+      "suggestions": [
+        "可将新增动效标签的放置位置下移到画面底部空白字幕上方区域，避免与原有顶部的「程序示意・非真实现场」标注重叠，保证原有标注完整清晰可读。",
+        "可适当减小新增动效标签的字号，进一步降低与原有UI元素的视觉冲突。"
+      ]
+    },
+    "audio": {
+      "limits": {
+        "targetLufs": -16,
+        "truePeakDb": -1.5,
+        "segmentSpreadLu": 2.5,
+        "adjacentJumpLu": 2,
+        "withinSpreadLu": 8
+      },
+      "segments": [
+        {
+          "id": "scene-1",
+          "mode": "original",
+          "start": 0,
+          "end": 11.04,
+          "integratedLufs": -15.92,
+          "truePeakDb": -2.52,
+          "voicedSpreadLu": 6,
+          "headLufs": -12.6,
+          "tailLufs": -18.1
+        },
+        {
+          "id": "scene-2",
+          "mode": "original",
+          "start": 11.04,
+          "end": 16.1,
+          "integratedLufs": -15.94,
+          "truePeakDb": -3.49,
+          "voicedSpreadLu": 4.9,
+          "headLufs": -13.7,
+          "tailLufs": -16.9
+        },
+        {
+          "id": "scene-3",
+          "mode": "original",
+          "start": 16.1,
+          "end": 18.41,
+          "integratedLufs": -15.9,
+          "truePeakDb": -6.17,
+          "voicedSpreadLu": 5.4,
+          "headLufs": -14,
+          "tailLufs": -18
+        },
+        {
+          "id": "scene-4",
+          "mode": "original",
+          "start": 18.41,
+          "end": 20.28,
+          "integratedLufs": -15.92,
+          "truePeakDb": -4,
+          "voicedSpreadLu": 1.8,
+          "headLufs": -15.9,
+          "tailLufs": -16.3
+        }
+      ],
+      "segmentSpreadLu": 0.04,
+      "jumps": [
+        {
+          "from": "scene-1",
+          "to": "scene-2",
+          "time": 11.04,
+          "integratedDeltaLu": 0.02,
+          "boundaryDeltaLu": 4.4
+        },
+        {
+          "from": "scene-2",
+          "to": "scene-3",
+          "time": 16.1,
+          "integratedDeltaLu": 0.04,
+          "boundaryDeltaLu": 2.9
+        },
+        {
+          "from": "scene-3",
+          "to": "scene-4",
+          "time": 18.41,
+          "integratedDeltaLu": 0.02,
+          "boundaryDeltaLu": 2.1
+        }
+      ],
+      "userReportedMismatch": false
+    },
+    "transport": {
+      "mode": "inline",
+      "requests": [
+        {
+          "stage": "semantic",
+          "attempt": 1,
+          "bytes": 1228646,
+          "durationMs": 14674,
+          "status": 200
+        },
+        {
+          "stage": "semantic",
+          "attempt": 2,
+          "bytes": 1231303,
+          "durationMs": 17021,
+          "status": 200
+        }
+      ]
+    },
+    "limitations": [
+      "源字词时间码为模型估计，未做独立强制对齐。",
+      "本次未设跨素材声线一致性验收：仅保留已知原视频各自原声，未要求跨素材统一说话者；仍须验收实际原声、响度、峰值、衔接和成片语义；未执行同一说话者审听，不代表原声字节身份或成片质量通过。",
+      "视觉保留审查同次请求使用最多2段原素材各4张真实对照帧，实际源SHA、同刻映射和末尾见证：[{\"sourceId\":\"51fe6459-b1eb-412a-8a8d-6f3cd79312d9\",\"sourceName\":\"controlled-semantic-v3-1.mp4\",\"sourceHash\":\"52cee27c96ec89277816c60223fd1e56cbcd586dae235436926ba7e9bc38acc7\",\"purpose\":\"mapped\",\"clipIndex\":0,\"mappedOutputTime\":0.37,\"sourceTime\":6},{\"sourceId\":\"51fe6459-b1eb-412a-8a8d-6f3cd79312d9\",\"sourceName\":\"controlled-semantic-v3-1.mp4\",\"sourceHash\":\"52cee27c96ec89277816c60223fd1e56cbcd586dae235436926ba7e9bc38acc7\",\"purpose\":\"mapped\",\"clipIndex\":0,\"mappedOutputTime\":5.52,\"sourceTime\":11.15},{\"sourceId\":\"51fe6459-b1eb-412a-8a8d-6f3cd79312d9\",\"sourceName\":\"controlled-semantic-v3-1.mp4\",\"sourceHash\":\"52cee27c96ec89277816c60223fd1e56cbcd586dae235436926ba7e9bc38acc7\",\"purpose\":\"mapped\",\"clipIndex\":0,\"mappedOutputTime\":10.14,\"sourceTime\":15.77},{\"sourceId\":\"51fe6459-b1eb-412a-8a8d-6f3cd79312d9\",\"sourceName\":\"controlled-semantic-v3-1.mp4\",\"sourceHash\":\"52cee27c96ec89277816c60223fd1e56cbcd586dae235436926ba7e9bc38acc7\",\"purpose\":\"tail\",\"sourceTime\":16.337},{\"sourceId\":\"34f70767-c04c-4bda-a81d-a7ec7364bd6b\",\"sourceName\":\"controlled-semantic-v3-2.mp4\",\"sourceHash\":\"d08c3de9a8ad9be03eb542e3bfbdd3e7f7a97c9641459b0b6dfea1fd827099d1\",\"purpose\":\"mapped\",\"clipIndex\":1,\"mappedOutputTime\":13.57,\"sourceTime\":2.53},{\"sourceId\":\"34f70767-c04c-4bda-a81d-a7ec7364bd6b\",\"sourceName\":\"controlled-semantic-v3-2.mp4\",\"sourceHash\":\"d08c3de9a8ad9be03eb542e3bfbdd3e7f7a97c9641459b0b6dfea1fd827099d1\",\"purpose\":\"mapped\",\"clipIndex\":2,\"mappedOutputTime\":17.255,\"sourceTime\":10.025},{\"sourceId\":\"34f70767-c04c-4bda-a81d-a7ec7364bd6b\",\"sourceName\":\"controlled-semantic-v3-2.mp4\",\"sourceHash\":\"d08c3de9a8ad9be03eb542e3bfbdd3e7f7a97c9641459b0b6dfea1fd827099d1\",\"purpose\":\"mapped\",\"clipIndex\":3,\"mappedOutputTime\":19.345,\"sourceTime\":16.315},{\"sourceId\":\"34f70767-c04c-4bda-a81d-a7ec7364bd6b\",\"sourceName\":\"controlled-semantic-v3-2.mp4\",\"sourceHash\":\"d08c3de9a8ad9be03eb542e3bfbdd3e7f7a97c9641459b0b6dfea1fd827099d1\",\"purpose\":\"tail\",\"sourceTime\":16.905}]；有界抽样不证明全源视频已完整观看。",
+      "语义审查模型原始处置（原分和flag保留，不等同验收结果）：[{\"attempt\":1,\"score\":82,\"needsRepair\":false,\"findings\":[]},{\"attempt\":2,\"score\":82,\"needsRepair\":true,\"findings\":[\"10.14秒的成片帧中，顶部中央动效标签显示文字「示意→分开→核验」，与画面顶部原有的重复标注「程序示意・非真实现场」紧邻排布，标签遮挡了部分原有小字标注，存在文字重叠可读性下降的问题。\",\"16.47秒的成片帧中，顶部新增动效下划线标记「证据支持」与原有顶部小字标注「程序示意・非真实现场」重叠，遮挡了部分原有文字内容，影响可读性。\",\"18.78秒、19.345秒、19.66秒的成片帧中，顶部新增动效圈出标记「猜测≠事实」与原有顶部小字标注「程序示意・非真实现场」重叠，遮挡了部分原有文字内容，影响可读性。\"]}]",
+      "原始视觉保留逐项评分及模型抽帧观察保留为审计，未提分：[{\"score\":82,\"error\":\"视觉保留核验缺少有效id、原句、状态、实际抽帧秒数或观察说明。\"},{\"score\":82,\"checks\":[{\"id\":\"visual-retention-6f934ae217c2ad67\",\"quote\":\"请保留“程序示意、不是真实现场”的标注\",\"status\":\"met\",\"frameTimes\":[0.37,1.25,5.52,10.14,11.41,13.57,16.224,16.47,17.255,18.78,19.345,19.66,19.874],\"detail\":\"在0.37秒、1.25秒、5.52秒、10.14秒等多组成片帧的右上角均清晰显示「程序示意・非真实现场」小字标注，与用户要求保留的标注内容一致，标注本身未被完全遮挡，仍可辨认。\"},{\"id\":\"visual-retention-8e479a529147d040\",\"quote\":\"也保留重复观察和未知部分有限制的现有画面表达\",\"status\":\"met\",\"frameTimes\":[10.14,16.47,17.255,19.345,19.66,19.874],\"detail\":\"10.14秒的小球段成片帧右上角清晰显示「重复观察，核验解释」绿色文字，对应重复观察的现有画面表达；16.47秒、17.255秒、19.345秒的双轨道段成片帧右上角清晰显示「未知部分保留限制」橙色文字搭配问号标识，对应未知部分有限制的现有画面表达，两类原有画面表达均完整保留在成片中。\"}]}]",
+      "语义审查协议阶段诊断（不含模型正文）：[{\"attempt\":1,\"stage\":\"retention-checks\",\"code\":\"SEMANTIC_RETENTION_CHECKS_INVALID\",\"detail\":\"视觉保留逐项观察无效\",\"rawScore\":82,\"fields\":[{\"path\":\"visualRetentionChecks\",\"expected\":\"valid retention-check array with id/quote/status/frameTimes/detail\",\"actualType\":\"array\",\"missing\":false}]}]",
+      "语义审查覆盖完整音频和17张关键抽帧，未逐帧审阅整片。"
+    ],
+    "createdAt": "2026-10-16T14:40:08.733Z"
+  }
+}

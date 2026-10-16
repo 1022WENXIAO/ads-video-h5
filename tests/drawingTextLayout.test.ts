@@ -11,7 +11,14 @@ import {JobCancelledError,runWithJobSignal} from '../server/jobExecution';
 
 const actual=JSON.parse(await readFile(new URL('./fixtures/p23-authored-text-overlap.json',import.meta.url),'utf8'));
 async function withProject<T>(html:string,run:(project:string)=>Promise<T>){const project=await mkdtemp(path.join(tmpdir(),'qingjian-drawing-text-'));try{await writeFile(path.join(project,'index.html'),html);await copyFile('node_modules/gsap/dist/gsap.min.js',path.join(project,'gsap.min.js'));return await run(project);}finally{await rm(project,{recursive:true,force:true});}}
-function actualHtml(which:'first'|'second'){return drawingHtml(actual[which],actual.duration,actual.format,actual.publicationAnnotation);}
+function actualHtml(which:'first'|'second'){
+  const compiled=drawingHtml(actual[which],actual.duration,actual.format,actual.publicationAnnotation);
+  // Reconstruct the historical incident, whose exact bytes predate the narrow
+  // prose balance style. The current compiler is exercised separately.
+  const historical=compiled.replaceAll(';text-wrap:balance','');
+  assert.equal(hashBytes(historical),actual.provenance[which+'HtmlHash'],'only the new conditional wrap property may differ from the original incident');
+  return historical;
+}
 function separated(){const drawing=structuredClone(actual.first) as HtmlDrawing;Object.assign(drawing.nodes.find(n=>n.id==='target')!,{x:80,y:870,w:560});return drawing;}
 function overlappingLabels():HtmlDrawing{return{title:'实际文字几何',motion:'corporate',nodes:[
   {id:'left',kind:'text',x:100,y:300,w:400,h:80,text:'核查问题',tone:'ink',fontSize:40,highlight:false},

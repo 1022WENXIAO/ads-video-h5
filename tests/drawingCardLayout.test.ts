@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {copyFile,mkdtemp,readFile,rm,writeFile} from 'node:fs/promises';
+import {copyFile,mkdir,mkdtemp,readFile,rm,writeFile} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import path from 'node:path';
 import {liftCardLabels,reflowCardDetails} from '../server/drawingCardLayout';
@@ -34,7 +34,18 @@ for(const[index,attempt]of knowledge.attempts.entries())test(`P8 knowledge ${ind
     assert.equal(drawingContentHash(separated),drawingContentHash(before));
     assert.deepEqual(separated.nodes.filter(n=>n.kind==='path'||n.kind==='line'),before.nodes.filter(n=>n.kind==='path'||n.kind==='line'));
     assert.deepEqual(separated.nodes.filter(n=>n.text).map(n=>[n.text,n.fontSize]).sort(),before.nodes.filter(n=>n.text).map(n=>[n.text,n.fontSize]).sort());
-    await writeFile(path.join(project,'index.html'),drawingHtml(separated,10,'16:9'));await checkHtmlProject(project,{fullCheck:true});
+    const oldClearHtml=drawingHtml(separated,10,'16:9');await writeFile(path.join(project,'index.html'),oldClearHtml);
+    await assert.rejects(checkHtmlProject(project,{fullCheck:true}),/content_overlap/,'the older SVG-clear variant still has a real visible card-border collision');
+    const oldClearReport=JSON.parse(await readFile(path.join(project,'check-report.json'),'utf8'));
+    assert.ok(oldClearReport.drawingText.findings.some((f:any)=>f.paintRelation==='visible-css-border'&&f.selector===(index===0?'#qj-author-stage1_clear_label':'#qj-author-factText')&&f.containerSelector==='#qj-author-stage1'));
+    const clear=structuredClone(separated);
+    if(index===0){for(const[id,x]of [['stage1_clear_label',40],['stage3_clear_label',850]]as const)Object.assign(clear.nodes.find(n=>n.id===id)!,{x,y:420,w:390,h:130});}
+    else{for(const[id,x]of [['factText',40],['evidenceNote',850]]as const)Object.assign(clear.nodes.find(n=>n.id===id)!,{x,y:505,w:390,h:40});}
+    validateDrawing(clear,'16:9');assert.equal(drawingContentHash(clear),drawingContentHash(before));
+    assert.deepEqual(clear.nodes.map(({x,y,w,h,...node})=>node),separated.nodes.map(({x,y,w,h,...node})=>node),'the controlled clear changes geometry only');
+    assert.deepEqual(clear.nodes.filter(n=>n.kind==='path'||n.kind==='line'),before.nodes.filter(n=>n.kind==='path'||n.kind==='line'));
+    const clearHtml=drawingHtml(clear,10,'16:9');await writeFile(path.join(project,'index.html'),clearHtml);await checkHtmlProject(project,{fullCheck:true});
+    const output=process.env.QINGJIAN_CARD_LAYOUT_QA_DIR;if(output){await mkdir(output,{recursive:true,mode:0o700});await copyFile(path.join(project,'gsap.min.js'),path.join(output,'gsap.min.js'));for(const[name,bytes]of [[`knowledge-${index+1}-old-clear.html`,oldClearHtml],[`knowledge-${index+1}-clear.html`,clearHtml],[`knowledge-${index+1}-old-clear-report.json`,JSON.stringify(oldClearReport,null,2)],[`knowledge-${index+1}-clear-report.json`,await readFile(path.join(project,'check-report.json'),'utf8')]])await writeFile(path.join(output,name),bytes,{flag:'wx',mode:0o600});}
   }finally{await rm(project,{recursive:true,force:true});}
 });
 

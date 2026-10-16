@@ -37,7 +37,10 @@ const sourceConflict=(text:string)=>/(?:来源|原文|报道|事实|证据|claim
 const layoutDefect=(text:string)=>/遮挡|遮住|盖住|重叠|越界|截断|裁切|溢出|超出.*(?:边界|画面|安全区)|(?:字体|字号|文字|标签).*(?:过小|太小|不可读|无法辨认|难以辨认)|(?:孤字|单字)(?:换行|成行|占一行)/.test(text);
 const renderedSurface=(text:string)=>/画面|分镜|图解|示意图|标签|卡片|渲染|排版|连线|箭头/.test(text);
 const renderingDefect=(text:string)=>renderedSurface(text)&&/拼写错误|错写|误写|排版割裂|(?:连线|箭头).*(?:交叉|错乱|穿插)|(?:图解|图形|视觉)可读性(?:缺陷|问题)/.test(text);
-const visualDefect=(text:string)=>layoutDefect(text)||renderingDefect(text)||/图标|配图|没有.*(?:图|画)|未呈现|缺乏.*图解|缺少.*(?:示意|图解)|未.*(?:画出|展示)|静态卡片|任务清单|图解仅复现文字|无法.*直观|(?:画面|卡片|图解|视觉|抽帧|提示条).*(?:错误|误写|缺失|遗漏|误导|误以为|归属|绑定|合并|混乱|不符|不一致|制作备注|内部说明)|抽帧.*(?:未出现|未展示)|动画/.test(text);
+// Recognizing a drawn object concerns its depiction, not the wording of the
+// verified narration. The existing spoken/source/caption guards still apply.
+const illustrationRecognitionDefect=(text:string)=>/(?:插画|插图|图形|示意图|轮廓)[^。；;\n]{0,200}(?:(?:难以|无法|不能|不易)(?:清楚|明确)?(?:识别|辨认)|认不出)/.test(text);
+const visualDefect=(text:string)=>layoutDefect(text)||renderingDefect(text)||illustrationRecognitionDefect(text)||/图标|配图|没有.*(?:图|画)|未呈现|缺乏.*图解|缺少.*(?:示意|图解)|未.*(?:画出|展示)|静态卡片|任务清单|图解仅复现文字|无法.*直观|(?:画面|卡片|图解|视觉|抽帧|提示条).*(?:错误|误写|缺失|遗漏|误导|误以为|归属|绑定|合并|混乱|不符|不一致|制作备注|内部说明)|抽帧.*(?:未出现|未展示)|动画/.test(text);
 const unsafeVisual=(text:string)=>/事实错误|数据错误|公式错误|旁白错误|字幕|音色|音量|错读|图解说明不准确/.test(text);
 const sourceUnverified=(text:string)=>/(?:来源|原文|报道|证据|claims?)(?:本身|内容|事实|引用)?(?:尚|仍|目前|还)?(?:未核验|未核实|不可靠|无依据|缺失|不足|无法核验|不支持|不明|不明确|未知|未确认)/i.test(text);
 // A rejected citation or source-bound fact cannot be authorized by an

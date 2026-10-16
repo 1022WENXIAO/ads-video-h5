@@ -10,6 +10,7 @@ interface Rect {left:number;top:number;right:number;bottom:number;width:number;h
 export interface DrawingTextFinding {
   code:'content_overlap'|'text_overflow'|'orphan_line';severity:'error'|'warning';time:number;
   selector:string;containerSelector?:string;text:string;message:string;characters:string[];rect:Rect;
+  paintRelation?:'visible-css-border';visibleBorderSamples?:number;
 }
 export interface DrawingTextFrame {
   time:number;nodes:Array<{selector:string;text:string;font:string;lines:Array<{text:string;rect:Rect}>}>;
@@ -36,8 +37,10 @@ export function auditDrawingTextLayout(input:{time:number}):DrawingTextFrame {
   const colorCanvas=document.createElement('canvas');colorCanvas.width=colorCanvas.height=1;
   const colorContext=colorCanvas.getContext('2d',{willReadFrequently:true});
   if(!colorContext)throw new Error('Drawing text inspection cannot measure text opacity.');
-  const colorAlpha=(color:string)=>{colorContext.clearRect(0,0,1,1);colorContext.fillStyle=color;colorContext.fillRect(0,0,1,1);return colorContext.getImageData(0,0,1,1).data[3]/255;};
-  const cache=new Map<string,Array<{x:number;y:number}>>();let characters=0,totalPoints=0;
+  const colors=new Map<string,Uint8ClampedArray>();
+  const colorRgba=(color:string)=>{let rgba=colors.get(color);if(!rgba){colorContext.clearRect(0,0,1,1);colorContext.fillStyle=color;colorContext.fillRect(0,0,1,1);rgba=colorContext.getImageData(0,0,1,1).data;colors.set(color,rgba);}return rgba;};
+  const colorAlpha=(color:string)=>colorRgba(color)[3]/255;
+  const cache=new Map<string,{ink:Array<{x:number;y:number}>;alpha:Uint8ClampedArray;width:number;height:number}>();let characters=0,totalPoints=0;
   const measured=elements.filter(e=>e.textContent?.trim()&&opacity(e)*colorAlpha(getComputedStyle(e).color)>=.6).map(element=>{
     const style=getComputedStyle(element),font=`${style.fontStyle} ${style.fontWeight} ${style.fontSize} ${style.fontFamily}`;
     if(style.writingMode!=='horizontal-tb')throw new Error('Drawing text inspection cannot infer this writing mode.');
@@ -49,21 +52,21 @@ export function auditDrawingTextLayout(input:{time:number}):DrawingTextFrame {
         clips.push(rect({left:/hidden|clip|scroll|auto/.test(s.overflowX)?r.left+p.clientLeft*sx:-Infinity,right:/hidden|clip|scroll|auto/.test(s.overflowX)?r.left+(p.clientLeft+p.clientWidth)*sx:Infinity,top:/hidden|clip|scroll|auto/.test(s.overflowY)?r.top+p.clientTop*sy:-Infinity,bottom:/hidden|clip|scroll|auto/.test(s.overflowY)?r.top+(p.clientTop+p.clientHeight)*sy:Infinity}));
       }
     }
-    const glyphs:Array<{char:string;rect:Rect;points:Array<{x:number;y:number}>;clipped:number}>=[],walker=document.createTreeWalker(element,NodeFilter.SHOW_TEXT);
+    const glyphs:Array<{char:string;rect:Rect;points:Array<{x:number;y:number}>;clipped:number;raster:NonNullable<ReturnType<typeof cache.get>>}>=[],walker=document.createTreeWalker(element,NodeFilter.SHOW_TEXT);
     while(walker.nextNode()){
       const node=walker.currentNode,text=node.textContent||'';let offset=0;const range=document.createRange();
       for(const char of text){const start=offset;offset+=char.length;if(!char.trim())continue;if(++characters>1024)throw new Error('Drawing text inspection exceeds the bounded character count.');
         range.setStart(node,start);range.setEnd(node,offset);const r=rect(range.getBoundingClientRect());if(r.width<.1||r.height<.1)continue;
-        const key=font+'\0'+char;let ink=cache.get(key);
-        if(!ink){ctx.font=font;const m=ctx.measureText(char),height=m.fontBoundingBoxAscent+m.fontBoundingBoxDescent;
+        const key=font+'\0'+char;let raster=cache.get(key);
+        if(!raster){ctx.font=font;const m=ctx.measureText(char),height=m.fontBoundingBoxAscent+m.fontBoundingBoxDescent;
           if(!Number.isFinite(height)||height<=0||height>192||m.width<=0||m.width>192)throw new Error('Drawing text inspection cannot measure the bounded loaded font.');
           canvas.width=Math.ceil(m.width);canvas.height=Math.ceil(height);ctx.font=font;ctx.fillStyle='#000';ctx.textBaseline='alphabetic';ctx.fillText(char,0,m.fontBoundingBoxAscent);
-          const pixels=ctx.getImageData(0,0,canvas.width,canvas.height);ink=[];
-          for(let y=1;y<pixels.height;y+=2)for(let x=1;x<pixels.width;x+=2)if(pixels.data[(y*pixels.width+x)*4+3]>=128)ink.push({x:(x+.5)/m.width,y:(y+.5)/height});cache.set(key,ink);
+          const pixels=ctx.getImageData(0,0,canvas.width,canvas.height),ink:Array<{x:number;y:number}>=[];
+          for(let y=1;y<pixels.height;y+=2)for(let x=1;x<pixels.width;x+=2)if(pixels.data[(y*pixels.width+x)*4+3]>=128)ink.push({x:(x+.5)/m.width,y:(y+.5)/height});raster={ink,alpha:pixels.data,width:pixels.width,height:pixels.height};cache.set(key,raster);
         }
-        const points=ink.map(p=>({x:r.left+p.x*r.width,y:r.top+p.y*r.height}));totalPoints+=points.length;if(totalPoints>180000)throw new Error('Drawing text inspection exceeds the bounded raster size.');
+        const points=raster.ink.map(p=>({x:r.left+p.x*r.width,y:r.top+p.y*r.height}));totalPoints+=points.length;if(totalPoints>180000)throw new Error('Drawing text inspection exceeds the bounded raster size.');
         const clipped=points.filter(p=>clips.some(c=>p.x<c.left-1||p.x>c.right+1||p.y<c.top-1||p.y>c.bottom+1)).length;
-        glyphs.push({char,rect:r,points,clipped});
+        glyphs.push({char,rect:r,points,clipped,raster});
       }
     }
     const lines:Array<{text:string;rect:Rect;glyphs:typeof glyphs}>=[];
@@ -71,6 +74,41 @@ export function auditDrawingTextLayout(input:{time:number}):DrawingTextFrame {
     return{element,selector:'#'+CSS.escape(element.id),text:element.textContent?.trim()||'',font,glyphs,lines};
   });
   const findings:DrawingTextFinding[]=[];
+  // Only straight, solid sides of owned cards are known paint here. Rounded
+  // corners, dashed borders and other CSS paint are deliberately not inferred.
+  const borders=elements.filter(e=>e.classList.contains('card')&&opacity(e)>=.6).flatMap(element=>{
+    const s=getComputedStyle(element),r=rect(element.getBoundingClientRect());
+    if(!element.offsetWidth||!element.offsetHeight||s.filter!=='none'||s.mixBlendMode!=='normal'||s.borderImageSource!=='none'||s.clipPath!=='none'||s.backgroundImage!=='none')return[];
+    // A line's alpha alone does not prove it is visible: white paint over a
+    // white card is not interference. Only known opaque, plain card fill is
+    // supported; no surrounding CSS background reconstruction is inferred.
+    const background=colorRgba(s.backgroundColor);if(background[3]!==255)return[];
+    const distinctBorder=(color:string)=>{const rgba=colorRgba(color),alpha=rgba[3]/255;return Math.max(...[0,1,2].map(i=>Math.abs(rgba[i]-background[i])*alpha*opacity(element)))>=12;};
+    for(let p:Element|null=element;p;p=p.parentElement){const transform=getComputedStyle(p).transform;if(transform!=='none'){const m=new DOMMatrix(transform);if(!m.is2D||Math.abs(m.b)>.0001||Math.abs(m.c)>.0001||m.a<=0||m.d<=0)return[];}}
+    const sx=r.width/element.offsetWidth,sy=r.height/element.offsetHeight;
+    const radius=(value:string)=>{const parts=value.split(/\s+/);if(parts.some(p=>!/^\d+(?:\.\d+)?px$|^0$/.test(p)))return;return [parseFloat(parts[0])*sx,parseFloat(parts[1]||parts[0])*sy];};
+    const tl=radius(s.borderTopLeftRadius),tr=radius(s.borderTopRightRadius),bl=radius(s.borderBottomLeftRadius),br=radius(s.borderBottomRightRadius);if(!tl||!tr||!bl||!br)return[];
+    const edges=[
+      {style:s.borderTopStyle,color:s.borderTopColor,width:parseFloat(s.borderTopWidth)*sy,box:{left:r.left+tl[0],right:r.right-tr[0],top:r.top,bottom:r.top+parseFloat(s.borderTopWidth)*sy}},
+      {style:s.borderBottomStyle,color:s.borderBottomColor,width:parseFloat(s.borderBottomWidth)*sy,box:{left:r.left+bl[0],right:r.right-br[0],top:r.bottom-parseFloat(s.borderBottomWidth)*sy,bottom:r.bottom}},
+      {style:s.borderLeftStyle,color:s.borderLeftColor,width:parseFloat(s.borderLeftWidth)*sx,box:{left:r.left,right:r.left+parseFloat(s.borderLeftWidth)*sx,top:r.top+tl[1],bottom:r.bottom-bl[1]}},
+      {style:s.borderRightStyle,color:s.borderRightColor,width:parseFloat(s.borderRightWidth)*sx,box:{left:r.right-parseFloat(s.borderRightWidth)*sx,right:r.right,top:r.top+tr[1],bottom:r.bottom-br[1]}},
+    ].filter(e=>e.style==='solid'&&e.width>0&&Number.isFinite(e.width)&&colorAlpha(e.color)*opacity(element)>=.6&&distinctBorder(e.color)&&e.box.left<e.box.right&&e.box.top<e.box.bottom);
+    return edges.length?[{element,rect:r,edges}]:[];
+  });
+  const onBorder=(border:typeof borders[number],x:number,y:number)=>border.edges.some(e=>x>=e.box.left&&x<=e.box.right&&y>=e.box.top&&y<=e.box.bottom);
+  const visibleBorder=(border:typeof borders[number],label:HTMLElement,x:number,y:number)=>{
+    if(!onBorder(border,x,y))return false;
+    const stack=document.elementsFromPoint(x,y),labelIndex=stack.indexOf(label),borderIndex=stack.indexOf(border.element);
+    if(labelIndex<0||borderIndex<=labelIndex)return false;
+    for(const hit of stack.slice(0,borderIndex)){
+      const s=getComputedStyle(hit);if(opacity(hit)<=.01)continue;
+      if(s.filter!=='none'||s.mixBlendMode!=='normal'||s.backgroundImage!=='none'||colorAlpha(s.backgroundColor)*opacity(hit)>.01)return false;
+      if(hit instanceof SVGGeometryElement||hit instanceof SVGTextContentElement)return false;
+      if(hit instanceof HTMLElement&&hit!==label&&!hit.contains(label)&&!label.contains(hit)&&(hit.textContent?.trim()||[s.borderTopWidth,s.borderRightWidth,s.borderBottomWidth,s.borderLeftWidth].some(w=>parseFloat(w)>0)))return false;
+    }
+    return true;
+  };
   for(const item of measured){
     const clipped=item.glyphs.filter(g=>g.clipped>=3&&g.clipped/g.points.length>=.08);
     if(clipped.length)findings.push({code:'text_overflow',severity:'error',time:input.time,selector:item.selector,text:item.text,characters:clipped.map(g=>g.char),rect:union(clipped.map(g=>g.rect)),message:'Actual loaded-font glyph ink is outside the viewport or an actual clipping ancestor. Move the complete text into its visible region.'});
@@ -79,6 +117,29 @@ export function auditDrawingTextLayout(input:{time:number}):DrawingTextFrame {
     // deliberately authored line breaks are outside this advisory policy.
     const last=item.lines.at(-1),previous=item.lines.at(-2);
     if(!item.element.classList.contains('circle')&&!item.text.includes('\n')&&[...item.text].length>=16&&last&&previous&&/^\p{Script=Han}$/u.test(last.text)&&[...previous.text].length>=8&&!/[=+×÷%％°℃℉μΩ]/u.test(item.text)&&!/[零〇一二两三四五六七八九十百千万亿\d]\s*[年月日时分秒元块美元欧元吨千克克公斤斤米厘米毫米升毫升度瓦焦帕赫兹袋杯份批台个本次件品牌]/u.test(item.text))findings.push({code:'orphan_line',severity:'warning',time:input.time,selector:item.selector,text:item.text,characters:[last.text],rect:last.rect,message:'A long authored label naturally wraps its final Han onto a single-character line. Rebalance the line width without deleting its content; this observation alone is not clipping.'});
+    const style=getComputedStyle(item.element),labelBox=rect(item.element.getBoundingClientRect());
+    if(colorAlpha(style.backgroundColor)>.01||style.backgroundImage!=='none'||style.filter!=='none'||style.mixBlendMode!=='normal')continue;
+    for(const border of borders){
+      if(border.element===item.element||border.element.contains(item.element)||item.element.contains(border.element)||labelBox.left>=border.rect.left&&labelBox.right<=border.rect.right&&labelBox.top>=border.rect.top&&labelBox.bottom<=border.rect.bottom)continue;
+      const affected:typeof item.glyphs=[];let visible=0;
+      for(const glyph of item.glyphs){
+        if(!border.edges.some(e=>glyph.rect.left<e.box.right&&glyph.rect.right>e.box.left&&glyph.rect.top<e.box.bottom&&glyph.rect.bottom>e.box.top))continue;
+        // This CSS line/text collision uses the existing text/text ink rule.
+        // The separate SVG paint guard retains its original 15% threshold.
+        const hits=glyph.points.filter(p=>visibleBorder(border,item.element,p.x,p.y));if(hits.length<4||hits.length/glyph.points.length<.08)continue;
+        let gaps=0;
+        for(let i=0;i<Math.min(16,hits.length);i++){
+          const point=hits[Math.floor(i*hits.length/Math.min(16,hits.length))];
+          for(const[dx,dy]of [[-2,0],[2,0],[0,-2],[0,2],[-4,0],[4,0],[0,-4],[0,4]]){
+            const x=point.x+dx,y=point.y+dy,nx=(x-glyph.rect.left)/glyph.rect.width,ny=(y-glyph.rect.top)/glyph.rect.height;if(nx<0||nx>=1||ny<0||ny>=1)continue;
+            if(glyph.raster.alpha[(Math.floor(ny*glyph.raster.height)*glyph.raster.width+Math.floor(nx*glyph.raster.width))*4+3]<32&&visibleBorder(border,item.element,x,y)){gaps++;break;}
+          }
+        }
+        if(gaps){affected.push(glyph);visible+=gaps;}
+      }
+      if(affected.length)findings.push({code:'content_overlap',severity:'error',time:input.time,selector:item.selector,containerSelector:'#'+CSS.escape(border.element.id),text:item.text,characters:affected.map(g=>g.char),rect:union(affected.map(g=>g.rect)),paintRelation:'visible-css-border',visibleBorderSamples:visible,message:'A visible solid card border below an independent transparent label crosses loaded-font glyph ink and remains visible in glyph gaps. Separate the complete label and card; box overlap alone is not this finding.'});
+      if(findings.length>64)throw new Error('Drawing text inspection exceeds the bounded finding count.');
+    }
   }
   for(let a=0;a<measured.length;a++)for(let b=a+1;b<measured.length;b++){
     const first=measured[a],second=measured[b],pairs:Array<[typeof first.glyphs[number],typeof second.glyphs[number]]>=[];

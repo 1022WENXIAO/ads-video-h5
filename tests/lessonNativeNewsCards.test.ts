@@ -98,6 +98,13 @@ test('native news charts preserve typography, chart scale, dates and timing in r
       await page.setViewport(item.format==='9:16'?{width:720,height:1280}:{width:1280,height:720});
       await page.goto(pathToFileURL(path.join(dir,'index.html')).href);await page.evaluate(()=>document.fonts.ready);await tagLeafText(page);
       const originalChart=await page.evaluate((source:string)=>new DOMParser().parseFromString(source,'text/html').querySelector('#graphic')!.innerHTML,actual.originalHtml);
+      // Preserve the original incident bytes. The sole permitted SVG delta is
+      // this neutral footer, which no longer asserts unverified source identity.
+      const oldFooter='<text x="350" y="402" text-anchor="middle" font-size="18">类别与原始数值相同；柱高依对应刻度计算</text>';
+      const neutralFooter='<text x="350" y="402" text-anchor="middle" font-size="18">柱高依所示数值与对应刻度计算</text>';
+      assert.equal(originalChart.split(oldFooter).length-1,1,'exactly one historical footer is replaced');
+      assert.equal(originalChart.includes(neutralFooter),false);
+      const expectedChart=originalChart.replace(oldFooter,neutralFooter);
       const audits=[];
       const oldTimes=[.6,3.94,6.079,7.28,actual.duration-.1];
       const earlyAndFocus=item.format==='9:16'?[
@@ -135,7 +142,9 @@ test('native news charts preserve typography, chart scale, dates and timing in r
         assert.equal(frame.note,item.note?annotation.label+' · 画面示意':undefined);
         // The graphics and cue-driven GSAP expressions are not rescaled or
         // delayed to make room for the text cards.
-        assert.equal(frame.chart,originalChart);
+        assert.equal(frame.chart.split(neutralFooter).length-1,1,'the new neutral footer retains its exact geometry and font');
+        assert.equal(frame.chart.includes(oldFooter),false);
+        assert.equal(frame.chart,expectedChart,'all SVG geometry, labels, values and fonts remain byte-exact after the sole footer replacement');
         if(item.name==='actual-four'){
           assert.equal(frame.chartCssSize.width,originalChartRect.cssWidth);assert.equal(frame.chartCssSize.height,originalChartRect.cssHeight,'preserve the exact computed SVG dimensions');
           // The already frozen service probe uses <.01px for raw DOMRects:

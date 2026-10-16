@@ -17,6 +17,7 @@ import { NarrationAnalysisError } from '../server/narrationAnalysisRecovery';
 import { createNewsPublicationAnnotation } from '../server/newsTime';
 import { createNewsPublicationCandidate } from '../server/newsPublicationProof';
 import { newsSourceParserHash } from '../server/newsSourceVersion';
+import { lessonPrecisionSourceHash } from '../server/lessonEvidenceConcordance';
 import type { EditPlan, MediaItem } from '../src/types';
 const newsLayout=()=>({fontSize:24,x:40,y:106,width:1200,height:32,sampledTimes:[0,1,14.99],minimumOpacity:1});
 function controlledNewsReview(review:RenderReview,file:string,plan:EditPlan,media:MediaItem[],requestedAt:number,actualHash:string):RenderReview {
@@ -252,7 +253,14 @@ for(const mode of ['valid','changed-audio','news','news-binding','news-first','n
   if(first)Object.assign(checkpoint,{rendererHash:'controlled-first-scene-checkpoint'});
   if(mode==='news-specialized'){
     const [chart,formula,curve]=checkpoint.report.chapters;
-    chart.visual={...chart.visual,kind:'bar-chart',barChart:{bars:[{label:'甲',value:2},{label:'乙',value:4}],unit:'示意值',illustrative:true,panels:[{title:'从零比较',min:0,max:4}]}};
+    // Controlled current-source proposal only, not a production article or an
+    // exemption for illustrative source values. Classroom calculation cases
+    // retain their separate non-news contract in lessonBarChartGrounding tests.
+    chart.visual={...chart.visual,kind:'bar-chart',barChart:{bars:[
+      {label:'甲',value:2,evidence:{referenceId:'r1',sourceQuote:'甲误差计数为二个',entityQuote:'甲',metricQuote:'误差计数',valueQuote:'二个'}},
+      {label:'乙',value:4,evidence:{referenceId:'r1',sourceQuote:'乙误差计数为四个',entityQuote:'乙',metricQuote:'误差计数',valueQuote:'四个'}},
+    ],unit:'个',illustrative:false,panels:[{title:'误差计数，从零比较',min:0,max:4}]}};
+    chart.claims.push({text:'甲误差计数为二个，乙误差计数为四个。',referenceIds:['r1'],basis:'source'});
     formula.visual={...formula.visual,kind:'formula',formula:'误差=预测−实际'};
     curve.visual={...curve.visual,kind:'curve',plot:{xLabel:'误差',yLabel:'评分',xMin:-2,xMax:2,yMin:0,yMax:4,curves:[{label:'平方误差',fn:'mse'}]}};
   }
@@ -261,7 +269,9 @@ for(const mode of ['valid','changed-audio','news','news-binding','news-first','n
     const now=Date.now(),current={asOf:new Date(now).toISOString(),expiresAt:new Date(now+30*60000).toISOString(),windowHours:72,signals:[],topics:[{title:'Controlled news event',hook:'Controlled event',angle:'Controlled evidence',signalIds:[],facts:[{text:'Controlled fixture: error magnitude and score.',evidence:[{referenceId:'r1',quote:'Controlled fixture: error magnitude and score.'}]}],visualPlan:'Controlled visual',uncertainties:[]}],failures:[]};
     checkpoint.report.hotResearch=current;
     checkpoint.report.references=[...checkpoint.report.references.map(r=>({...r,verification:'news-page' as const,freshness:'fresh' as const,publishedAt:new Date(now).toISOString(),dateEvidence:'Controlled published-time fixture'})),{id:'r2',title:'Controlled independent news source',url:'https://news.example.net/story',verification:'news-page',freshness:'fresh',publishedAt:new Date(now).toISOString(),excerpt:'Controlled fixture: an independently read news body.'}];
+    if(mode==='news-specialized')Object.assign(checkpoint.report.references.find(r=>r.id==='r1')!,{title:'Controlled synthetic measurement source; not production evidence',url:'https://news.example.com/controlled-measurement',excerpt:'Controlled fixture: error magnitude and score. CONTROLLED TEST PROPOSAL ONLY. 甲误差计数为二个。乙误差计数为四个。'});
     checkpoint.report=validateLesson(checkpoint.report,o.prompt);
+    if(mode==='news-specialized')for(const bar of checkpoint.report.chapters[0].visual.barChart!.bars)assert.equal(bar.evidence!.sourceHash,lessonPrecisionSourceHash(checkpoint.report.references.find(r=>r.id==='r1')!),'source evidence is bound to the current controlled reference');
     Object.assign(o,{requestedAt:now});Object.assign(checkpoint,{requestedAt:now});
     const annotation=createNewsPublicationAnnotation(checkpoint.report,now)!;assert.ok(annotation);
     for(const chapter of checkpoint.report.chapters){

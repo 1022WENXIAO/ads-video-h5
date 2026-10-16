@@ -1,0 +1,131 @@
+{
+  "provenance": {
+    "kind": "Minimal public P37 chart/source projection; not a full checkpoint, raw provider response or new media acceptance",
+    "originalCheckpointSHA256": "53373da95f3ea2c03d915bb50eb554d65f59bbd2c012ed0e810b05b3d629bdac",
+    "originalReviewSHA256": "a8821059e66f29cb7e336b8e2536230ab41752379379ce3e16c2d454afbd0dcc",
+    "actualVisibleFrameSHA256": "147c581a6a190d907d5f36028db7c4bb3f148e1c2cc4a37e09dca12ed08dc2f2",
+    "sourceFullExcerptSHA256": {
+      "ref-1": "acb527e15312754d39356d89cea135c7070c1c55fece9eace924c51e4326327e",
+      "ref-5": "d9ac1e4420ac233605ad8e71fcfaf3472d60e0fdfbb793fd7765d5cc4e7b6b52"
+    },
+    "sourceBodiesCachedOnly": true
+  },
+  "sourcePassages": [
+    {
+      "id": "ref-1",
+      "quote": "分别判处李慧芳无期徒刑，剥夺政治权利终身，并处没收个人财产人民币五十万元，判处朱敬琳有期徒刑十五年，并处罚金人民币三十万元"
+    },
+    {
+      "id": "ref-5-sidebar",
+      "quote": "网红流浪汉沈巍现状，病休已超30年",
+      "role": "unrelated recommended-story text; not the measured entity or metric"
+    }
+  ],
+  "chapter": {
+    "id": "chapter-2",
+    "narration": "李慧芳被判无期，朱敬琳获刑十五年，四名后厨获刑六到八年。法院认定，管理人员授意后厨把有毒有害非食品原料加入餐食。",
+    "claims": [
+      {
+        "text": "李慧芳被判无期徒刑，剥夺政治权利终身，没收个人财产50万元；朱敬琳被判15年并处罚金30万元。",
+        "referenceIds": [
+          "ref-1",
+          "ref-2"
+        ],
+        "basis": "source"
+      },
+      {
+        "text": "牛爱元、文亚芳、贺旭霞、安春玲分别被判八年至六年不等有期徒刑并处罚金。",
+        "referenceIds": [
+          "ref-1",
+          "ref-5"
+        ],
+        "basis": "source"
+      },
+      {
+        "text": "法院认定李慧芳、朱敬琳授意或安排后厨人员在食品中掺入有毒、有害非食品原料，供幼儿和教职工食用。",
+        "referenceIds": [
+          "ref-1",
+          "ref-5"
+        ],
+        "basis": "source"
+      }
+    ],
+    "visual": {
+      "kind": "bar-chart",
+      "takeaway": "责任越核心，刑罚越重",
+      "items": [
+        {
+          "label": "李慧芳：无期",
+          "detail": "实际负责人，无期徒刑，没收财产50万元",
+          "cue": "李慧芳被判无期",
+          "illustration": "bar-chart"
+        },
+        {
+          "label": "朱敬琳：15年",
+          "detail": "执行园长，有期徒刑15年，罚金30万元",
+          "cue": "朱敬琳获刑十五年",
+          "illustration": "bar-chart"
+        },
+        {
+          "label": "四名后厨：6—8年",
+          "detail": "牛爱元、文亚芳、贺旭霞、安春玲获刑",
+          "cue": "四名后厨获刑六到八年",
+          "illustration": "bar-chart"
+        }
+      ],
+      "barChart": {
+        "unit": "年",
+        "illustrative": false,
+        "bars": [
+          {
+            "label": "李慧芳",
+            "value": 30
+          },
+          {
+            "label": "朱敬琳",
+            "value": 15
+          },
+          {
+            "label": "后厨最高",
+            "value": 8
+          },
+          {
+            "label": "后厨最低",
+            "value": 6
+          }
+        ],
+        "panels": [
+          {
+            "title": "有期徒刑年数；无期以30年位置标示",
+            "min": 0,
+            "max": 30
+          }
+        ]
+      }
+    }
+  },
+  "preservedOriginalOutcome": {
+    "evaluationScore": 100,
+    "evaluationStatus": "passed",
+    "scriptFactReview": {
+      "score": 96,
+      "needsRepair": false,
+      "findings": [],
+      "suggestions": [
+        "chapter-2：条形图takeaway为“责任越核心，刑罚越重”，但裁判刑期差异还受犯罪事实、性质、情节和社会危害程度等因素影响；为避免把图表解读成法院直接作出的“责任—刑罚”单因结论，可改为“六名被告均获刑，两名管理人员刑期更重”，并保留图中“无期以30年位置标示”的说明。",
+        "chapter-1：事件时间图解目前只写“2025年，血铅异常被查处和通报”，如需精确背景，可补充为“2025年7月被查处和通报”，但不能把血铅异常事件与2026年10月16日宣判、报道混为同一时间。"
+      ],
+      "adjudication": {
+        "modelId": "doubao-seed-2-1-lite-260915",
+        "primaryScore": 96,
+        "primaryNeedsRepair": false,
+        "primaryFindings": []
+      }
+    },
+    "renderSemanticScore": 89,
+    "renderStatus": "passed",
+    "renderFindings": [],
+    "numericObservationInterpretation": "4 expected columns versus4 observed; unit/source semantics were not machine-grounded"
+  },
+  "expected": "Initial source-based life=30 years must fail; original scores remain unchanged"
+}

@@ -78,6 +78,8 @@ export function semanticReviewProtocolDiagnostics(error:unknown):readonly Semant
 
 export const SEMANTIC_EVIDENCE_REVIEW_INSTRUCTION = '\n证据判读边界：判定自相矛盾前，先核对是否在比较同一变量、量纲、参照刻度、时间区间和条件，并引用对应文字、旁白或成片帧。不同过程的速率、流速、累计量和接触时长不是同一个量，不能只因一处说快、另一处说慢或久就判为矛盾。箭头方向须与同帧明确的同一轴、刻度、方向标签及旁白核对；同一基准下的相反指向仍是实际缺陷，不能用习惯方向或别的机器/坐标系替代该图的明确基准。逐张核对本次实际成片帧与原素材帧的身份；任一实际成片帧已经出现某项内容，就不能因其他帧未出现而断言整片未保留该内容，但仍须分别核对其他保留义务。仅在所给成片抽样中未看见，应写“抽样未确认/待查”，不能推断完整视频缺失。视觉保留协议可用本次同源哈希、源帧时间与全部实际选片范围证明原画面在范围之外，并返回真实sourceEvidence；只有服务端完成这些绑定后派生的typed sourceOmitted才是源画面未选入的可信证据，不得自行声明该标志，也不能以单帧未见冒充这种全量范围证据。保留原始评分、真实缺陷和不确定性，不为纠正误判而提高分数或掩盖另一项未满足要求。事件日期与报道日期的区分须按用户原始指令规定的范围，核对整片实际可见表达；只有用户明确要求每章或每页分别呈现时，才逐项要求重复。不能仅因其他章节没有重复首章已呈现的日期，就增设逐章重复义务或断言混淆；实际日期错误、精度不足或整片未清楚区分事件与报道时间，仍须按原要求如实报告。';
 
+export const SEMANTIC_SPATIAL_REVIEW_INSTRUCTION = '\n文字遮挡须依据同一张实际成片帧：指出发生交叠的两段文字或图形、各自相对位置及被遮住的具体部分。同处顶部、水平相邻或距离较近本身不是重叠；看见二者间有空白间隔时，不能写成标签遮住文字。渲染坐标参照只用于定位新增标签，不能替代本帧像素，也不能证明原素材文字安全；真实相交、不可读、裁剪、孤字排版等问题仍须报告。无法确认遮挡时保留不确定性，不编造被遮文字。纠正输出格式或证据绑定，不代表影片出现了新缺陷，不需要为了协议返修补写findings；同时不得删除已核实的缺陷或提高原分来通过。';
+
 export interface SemanticReviewDispositionAttempt {attempt:number;score:number;needsRepair:boolean;findings:string[]}
 const dispositionHistory=new WeakMap<object,readonly SemanticReviewDispositionAttempt[]>();
 export function semanticReviewDispositionAttempts(error:unknown):readonly SemanticReviewDispositionAttempt[]|undefined{

@@ -5,14 +5,25 @@ import { compactSpeech } from './lessonSpec';
 import {lessonPrecisionReviewContext,type LessonPrecisionBaseline} from './lessonEvidenceConcordance';
 
 export const LESSON_PUBLISHED_CONTENT_FACT_CONTRACT =
-  '先按publishedContentReview.chapters核对观众将接收的标题、旁白和plannedVisual中的文字、数据、公式。internalClaimEvidence及report.chapters中的claims、goal、reason是内部证据或规划，visual.items.cue只是时序锚点；这些字段完整不能证明旁白或画面已保留其限定。' +
+  '先按publishedContentReview的documentPublishedChannels、publicationFieldMap和chapters逐项核对观众将接收的全片标题、章节标题、旁白、takeaway、信息点文字以及图表数据、坐标和公式关系。所有实际发表的断言都须符合事实，即使用户没有要求讲该结论，也不能只核对claims列表而漏过图解标题或总结。internalClaimEvidence及report.chapters中的claims、goal、reason是内部证据或规划，visual.items.cue只是时序锚点；这些字段完整不能证明旁白或画面已保留其限定，未发表的规划也不能被指认为观众已听见或看见的断言。' +
   '逐条对照当前来源的适用对象、范围、前提、例外、时限、比较基线与数量边界。删掉会扩大适用范围、改变起算点或确定性的限定是实际事实错误，列入findings并needsRepair=true，不能仅列建议；例如仅限特定安全条件的例外不能概括成整个场景都适用，声画均未交代期限时不能把一年内从第三次起改成无期限的三次后。' +
   '可结合本章同步旁白与图解判断：简述由画面明确补足且两者含义一致时，不要求逐字重复所有限定；任一渠道的确定相反断言不能由另一渠道抵消，内部claims也不能补足声画都缺失的条件。只保留与本片实际断言相关的限定，不要求罗列来源的所有背景、例外或在每章重复日期。' +
+  '标题、takeaway或图表概括中的因果、比较和单调关系也是独立事实断言。排序、相关性、不同对象的结果或来源明确说明的多因素判断，本身不能证明某单一因素决定结果，或该因素越大结果必然越大；未发表的准确claims不能替这种结论提供支持。实际发表了无依据的确定因果或数量关系时须列入findings并needsRepair=true，不能只作为措辞建议。可以删除这条非必要结论，或改为当前来源直接支持的、有范围和不确定性限定的观察；不要求为保留它补充无必要的精确量或研究。明确限定于本组、本案或条件相同情形且说明推断边界的合理synthesis可通过；不能机械拒绝带“越”字的句子。内置数学定义、课堂演算及其有说明的函数关系仍按calculation核算，不要求新闻来源或额外precision witness。' +
   '认定条件丢失须引用本版实际chapter.id、旁白或图解中的原句、关联来源的决定性限定，并说明范围或结论如何改变；依据不足或仅是表达可更清楚时如实说明，不虚构缺陷。';
 
 export function lessonPublishedContentReviewContext(report:LessonReport){
   return {
     contract:LESSON_PUBLISHED_CONTENT_FACT_CONTRACT,
+    documentPublishedChannels:{title:report.title},
+    // One fixed field map covers each current chapter without duplicating
+    // narration/items or creating a new model-output coverage protocol.
+    // Cue and source-witness metadata are intentionally outside this map.
+    publicationFieldMap:{
+      chapter:['title','narration'],
+      plannedVisual:['takeaway','items[].label','items[].detail','formula'],
+      barChart:['bars[].label','bars[].value','unit','panels[].title','panels[].min','panels[].max'],
+      plot:['xLabel','yLabel','xMin','xMax','yMin','yMax','curves[].label','curves[].fn','curves[].parameter'],
+    },
     chapters:report.chapters.map(chapter=>({
       chapterId:chapter.id,
       publishedChannels:{title:chapter.title,narration:chapter.narration,plannedVisual:chapter.visual},

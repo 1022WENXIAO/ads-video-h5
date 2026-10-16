@@ -1,0 +1,69 @@
+{
+  "provenance": {
+    "kind": "public actual trace/checkpoint projection, not raw provider response or complete first review",
+    "snapshotSha256": "a3c1b1abebacf603f6d8401e93b8ddf2ef5b5521947b2d19c906ebca01c4db90",
+    "checkpointSha256": "681b960beafc30d664d43c8d56d681d96f533b5f6cfa3cfc9baa0e34892b9519",
+    "firstArtifactId": "7cee8ec5-6653-43a4-9e03-077d683d729f",
+    "secondArtifactId": "b5f46751-a531-495b-91b9-124145f78924",
+    "observedRenders": 2,
+    "scope": "Routing only. This fixture does not establish media quality or clinical advice."
+  },
+  "title": "运动鞋有味先通风",
+  "chapters": [
+    {
+      "id": "chapter-1",
+      "title": "回家别急着喷",
+      "narration": "下班回家，运动鞋有点味道？先别马上猛喷香氛。鞋里还潮，香味和异味容易混在一起，放进封闭鞋架也难散。"
+    },
+    {
+      "id": "chapter-2",
+      "title": "先把潮气散开",
+      "narration": "汗湿和细菌积聚，是鞋臭的常见原因。先把鞋放通风处，鞋垫抽出来，让风穿过去，鞋慢慢干透，才算处理潮源。"
+    },
+    {
+      "id": "chapter-3",
+      "title": "第二天干爽出门",
+      "narration": "第二天出门前，鞋干爽了，再穿会舒服很多。有点异味不等于鞋坏了；先干爽，再按说明少量除臭。"
+    }
+  ],
+  "acceptedFacts": {
+    "score": 95,
+    "needsRepair": false,
+    "findings": []
+  },
+  "firstReview": {
+    "status": "needs-review",
+    "score": 85,
+    "findings": [
+      "chapter-2: 12.156秒、13.496秒等稳定抽帧中，步骤1的文字内容为“阴暗潮湿环境促进皮肤常见细菌滋生”，旁白仅讲解“汗湿和细菌积聚，是鞋臭的常见原因”，未对该机制做解释，图解没有帮助新手理解汗湿、细菌和异味的因果关系，仅重复相关关键词。",
+      "chapter-3: 22.623秒至29.478秒所有稳定抽帧中，鞋状插画仅有顶部鞋垫结构，鞋面为无鞋带的半圆轮廓，与用户指定的运动鞋场景关联性不足，新手难以识别为运动鞋。"
+    ]
+  },
+  "observedRepair": {
+    "targets": [
+      "chapter-2",
+      "chapter-3"
+    ],
+    "rewriteChapters": [
+      "chapter-2",
+      "chapter-3"
+    ],
+    "redrawChapters": [],
+    "nextTool": "revise_lesson_script"
+  },
+  "secondReview": {
+    "status": "needs-review",
+    "score": 88,
+    "findings": [
+      "chapter-1（11.3秒稳定抽帧）：右下角文本框“先放通风处，至完全干透”的“透”字被强制孤字换行至下一行，属于排版缺陷，应将该文本框内容调整为单行或按短语自然换行，避免单字孤行。"
+    ]
+  },
+  "observedFinal": {
+    "phase": "done",
+    "renders": 2,
+    "visualFeedback": {},
+    "layoutRepairProofs": {},
+    "chapter1HtmlHashBefore": "7788b97c92dee692cc64152e9184e05603bd2da572001e91beedac1788c8e535",
+    "chapter1HtmlHashAfter": "7788b97c92dee692cc64152e9184e05603bd2da572001e91beedac1788c8e535"
+  }
+}

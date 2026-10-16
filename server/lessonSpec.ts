@@ -1,4 +1,5 @@
 import {requireBarChartData} from './barChart';
+import {bindLessonBarChartEvidence} from './lessonBarChartGrounding';
 import type { AudioAnalysis, Format, LessonChapter, LessonPacing, LessonReport, LessonVisual, ResearchReference } from '../src/types';
 import { intentText, wantsCurrentResearch } from './intents';
 import { assertVisibleContent } from './visibleContent';
@@ -167,7 +168,7 @@ export function validateLesson(report:LessonReport,prompt:string,plannedPacing?:
   });
   if(report.chapters[0].role!=='hook'||report.chapters.at(-1)!.role!=='recap'||!report.chapters.some(c=>c.role==='foundation'))errors.push('视频须有hook开场、foundation必要信息和recap收束，保留用户要求的内容类型。');
   if(errors.length)throw new Error(errors.join('\n'));
-  return structuredClone(report);
+  return bindLessonBarChartEvidence(report);
 }
 
 // Normalize spoken year forms without replacing the transcript itself.
