@@ -55,6 +55,29 @@ test('exact quantitative value, reference object and unit are bound; supported p
   assert.equal(lessonPrecisionReviewContext(report('观测站记录事件采用Fable5.1模型，另有三点五版本。'),baseline()),undefined);
 });
 
+test('Chinese decimal quantity units are not clock prefixes and retain strict same-source value binding',()=>{
+  for(const [amount,wrong]of [['两点五公里','两点六公里'],['十二点三五分钟','十二点三六分钟']]){
+    for(const basis of ['source','synthesis'] as const){
+      const text=`观测站记录事件距离${amount}。`,value=report(text,text);value.chapters[0].claims[0].basis=basis;
+      const before=JSON.stringify(value),context=lessonPrecisionReviewContext(value,baseline())!;
+      assert.deepEqual(context.assertions.map(a=>({value:a.value,kind:a.kind})),[{value:amount,kind:'quantity'}]);
+      assert.deepEqual(findings(value,witness(value,amount)),[]);assert.equal(JSON.stringify(value),before);
+      const changed=report(text,text.replace(amount,wrong));changed.chapters[0].claims[0].basis=basis;assert.ok(findings(changed,witness(changed,wrong)).length,'wrong quantity remains blocked');
+    }
+  }
+});
+
+test('minute duration suffix cannot become a clock, without inventing an unsupported decimal reading or weakening a real clock',()=>{
+  const duration=report('观测站记录事件持续十二点三十五分钟。');
+  assert.equal(lessonPrecisionReviewContext(duration,baseline()),undefined,'unsupported existing decimal grammar remains with ordinary fact review, not a fictitious clock');
+  assert.deepEqual(findings(duration,[]),[]);
+  const clockText='观测站记录事件于十二点三十五分 UTC。',clock=report(clockText,clockText);
+  assert.deepEqual(lessonPrecisionReviewContext(clock,baseline())!.assertions.map(a=>a.kind),['clock']);
+  assert.deepEqual(findings(clock,witness(clock,'十二点三十五分 UTC')),[]);
+  const wrong=report(clock.chapters[0].narration,'观测站记录事件于十二点三十六分 UTC。');
+  assert.ok(findings(wrong,witness(wrong,'十二点三十六分 UTC')).length,'wrong clock is not treated as a duration');
+});
+
 test('quantity binding preserves adjacent bounds and approximation; a changed bound is a new assertion, and a new interval is conservatively unsupported',()=>{
   for(const qualifier of ['至少','不低于','不少于','大于','超过','最多','至多','不超过','小于','不足','约','大约','近']){
     const source=`观测站记录事件距离${qualifier}3米。`,same=report(source,source),value=report('观测站记录事件距离3米。',source);

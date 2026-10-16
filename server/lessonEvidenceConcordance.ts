@@ -55,13 +55,14 @@ function quantityRelation(text:string,start:number,end:number){
 }
 function precisions(text:string):Precision[]{
   const out:Precision[]=[];
+  const units='千米|公里|厘米|毫米|米|千克|公斤|毫克|克|万元|亿元|元|小时|分钟|秒|毫升|升|摄氏度|度|级|台|份|批|人|个|倍|%|％';
+  const quantityTail=new RegExp(`^(?:${units})`);
   const add=(kind:Precision['kind'],m:RegExpMatchArray,value:string,unit:string)=>{const start=m.index!,end=start+m[0].length;if(out.some(p=>start<p.end&&end>p.start))return;out.push({kind,value,unit,start,end,...(kind==='clock'?zoneAt(text,start,end):{})});};
   for(const m of text.matchAll(/(?<![\d.])([01]?\d|2[0-3]):([0-5]\d)(?::([0-5]\d))?(?![\d.])/g))add('clock',m,String(Number(m[1])*3600+Number(m[2])*60+Number(m[3]||0)),'second-of-day');
-  for(const m of text.matchAll(new RegExp(`(${numeral})(?:点|时)(${numeral})(?:分)?(?:(${numeral})秒)?`,'g'))){const tail=text.slice(m.index!+m[0].length),head=text.slice(Math.max(0,m.index!-16),m.index);if(/^(?:级|倍|元|米|克|个|份|批|版|模型|版本|％|%)/.test(tail)||/[A-Za-z0-9]$/.test(head)||/(?:版本|型号)\s*$/.test(head))continue;const h=number(m[1]),min=number(m[2]),s=number(m[3]||'0');if(h!==undefined&&h<=23&&min!==undefined&&min<60&&s!==undefined&&s<60)add('clock',m,String(h*3600+min*60+s),'second-of-day');}
+  for(const m of text.matchAll(new RegExp(`(${numeral})(?:点|时)(${numeral})(?:分)?(?:(${numeral})秒)?`,'g'))){const tail=text.slice(m.index!+m[0].length),head=text.slice(Math.max(0,m.index!-16),m.index);if(quantityTail.test(tail.trimStart())||m[0].endsWith('分')&&tail.startsWith('钟')||/^(?:版|模型|版本)/.test(tail)||/[A-Za-z0-9]$/.test(head)||/(?:版本|型号)\s*$/.test(head))continue;const h=number(m[1]),min=number(m[2]),s=number(m[3]||'0');if(h!==undefined&&h<=23&&min!==undefined&&min<60&&s!==undefined&&s<60)add('clock',m,String(h*3600+min*60+s),'second-of-day');}
   for(const m of text.matchAll(/(?<!\d)([0-2]\d)([0-5]\d)(?=\s*(?:GMT|UTC|JST|BJT)(?![A-Za-z]))/g)){if(Number(m[1])<24)add('clock',m,String(Number(m[1])*3600+Number(m[2])*60),'second-of-day');}
   for(const m of text.matchAll(/\b(20\d{2})-(\d{2})-(\d{2})\b/g))add('date',m,`${Number(m[1])}-${Number(m[2])}-${Number(m[3])}`,'date');
   for(const m of text.matchAll(new RegExp(`(?:(${numeral})年)?(${numeral})月(${numeral})日`,'g'))){const values=m.slice(1).map(v=>v?number(v):undefined);if(values[1]!==undefined&&values[2]!==undefined)add('date',m,values.map(v=>v??'').join('-'),'date');}
-  const units='千米|公里|厘米|毫米|米|千克|公斤|毫克|克|万元|亿元|元|小时|分钟|秒|毫升|升|摄氏度|度|级|台|份|批|人|个|倍|%|％';
   for(const m of text.matchAll(new RegExp(`(${numeral}(?:[点.]${numeral})?)\\s*(${units})`,'g'))){const value=number(m[1]);if(value!==undefined){add('quantity',m,String(value),m[2]);const p=out.find(p=>p.start===m.index&&p.kind==='quantity');if(p){p.relation=quantityRelation(text,p.start,p.end);if(m[2]==='级'){const prefix=text.slice(Math.max(0,m.index!-8),m.index);p.role=/震度|烈度/.test(prefix)?'intensity':/震级|magnitude/i.test(prefix)||/^地震/.test(text.slice(p.end))?'magnitude':undefined;}}}}
   return out.sort((a,b)=>a.start-b.start);
 }
