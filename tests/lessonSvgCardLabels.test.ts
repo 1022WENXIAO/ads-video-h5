@@ -7,6 +7,7 @@ import {pathToFileURL} from 'node:url';
 import {createRequire} from 'node:module';
 import {authorDrawing,checkHtmlProject,drawingHtml,hashBytes,svgCardLabelZones,validateDrawing,type HtmlDrawing} from '../server/narrativeScenes';
 import {drawingContentHash,recoverLessonHtml,splitSvgCoveredCardLabels} from '../server/lessonHtmlRecovery';
+import {runWithJobSignal,throwIfJobCancelled} from '../server/jobExecution';
 
 const fixture=JSON.parse(await readFile(new URL('./fixtures/p30-svg-covered-card-label.json',import.meta.url),'utf8'));
 const source=(drawing:HtmlDrawing)=>drawingHtml(drawing,fixture.duration,fixture.format);
@@ -54,7 +55,7 @@ test('an author cannot inject the reserved server linkage through its JSON reply
   try{const result=await authorDrawing({baseUrl:'https://controlled.invalid',modelId:'controlled',apiKey:'not-a-secret'} as any,{title:'收纳示意',line:'只修图解',visualBrief:'同一原图'} as any);assert.equal(calls,2);assert.equal(result.serverCardLabels,undefined);}finally{globalThis.fetch=fetch;}
 });
 
-async function installedBrowser(){
+async function installedBrowser(signal?:AbortSignal){
   const require=createRequire(createRequire(import.meta.url).resolve('hyperframes/package.json'));
   const [{default:puppeteer},browsers]=await Promise.all([import(require.resolve('puppeteer-core')),import(require.resolve('@puppeteer/browsers'))]);
   let executablePath=process.env.HYPERFRAMES_BROWSER_PATH||process.env.PRODUCER_HEADLESS_SHELL_PATH;
@@ -63,33 +64,42 @@ async function installedBrowser(){
     if(match){executablePath=match.executablePath;break;}
   }
   assert.ok(executablePath,'use only the already installed rendering browser');
-  return puppeteer.launch({executablePath,headless:true,args:['--no-sandbox','--disable-setuid-sandbox','--disable-dev-shm-usage','--allow-file-access-from-files']});
+  return puppeteer.launch({executablePath,headless:true,signal,args:['--no-sandbox','--disable-setuid-sandbox','--disable-dev-shm-usage','--allow-file-access-from-files']});
 }
 
-test('real captured SVG paint failures use one remaining check with paired entry/focus motion, immutable evidence and no extra author call',{timeout:120000},async()=>{
+test('real captured SVG paint failures use one remaining check with paired entry/focus motion, immutable evidence and no extra author call',{timeout:120000},async t=>runWithJobSignal(t.signal,async()=>{
+  const started=performance.now(),phases:Array<{name:string;elapsedMs:number;durationMs:number;status:string}>=[];
+  const phase=async<T>(name:string,action:()=>Promise<T>)=>{const at=performance.now();console.log('SVG card-label phase start',name,Math.round(at-started)+'ms');try{const result=await action();phases.push({name,elapsedMs:performance.now()-started,durationMs:performance.now()-at,status:'completed'});console.log('SVG card-label phase completed',name,Math.round(performance.now()-at)+'ms');return result;}catch(error){phases.push({name,elapsedMs:performance.now()-started,durationMs:performance.now()-at,status:'failed'});console.log('SVG card-label phase failed',name,Math.round(performance.now()-at)+'ms');throw error;}};
+  // These optional files are local human-view diagnostics, not assertions.
+  // Real CLI/paint/contrast/font/motion checks run regardless of this flag.
+  const diagnosticPng=process.env.QINGJIAN_SVG_CARD_LABEL_DIAGNOSTIC_PNG==='1';
   const qa=await mkdtemp(path.join(tmpdir(),'qingjian-p31-svg-card-label-qa-')),project=path.join(qa,'project');
-  const {mkdir}=await import('node:fs/promises');await mkdir(project);await copyFile('node_modules/gsap/dist/gsap.min.js',path.join(project,'gsap.min.js'));
+  const {mkdir}=await import('node:fs/promises');await phase('prepare-local-project',async()=>{await mkdir(project);await copyFile('node_modules/gsap/dist/gsap.min.js',path.join(project,'gsap.min.js'));});
   let authors=0,checks=0;let beforeHtml='',afterHtml='';
   const options={project,chapterId:'controlled-chapter',contextHash:'captured-svg-card-label-content-preservation',format:'9:16' as const,
     author:async()=>{authors++;return structuredClone(fixture.first) as HtmlDrawing;},
-    produce:async(drawing:HtmlDrawing)=>{checks++;const html=source(drawing);if(checks===1)beforeHtml=html;else afterHtml=html;await writeFile(path.join(project,'index.html'),html);await checkHtmlProject(project,{fullCheck:true});const file=path.join(project,'controlled-geometry.bin');await writeFile(file,'geometry-only, not video or semantic acceptance');return{file,analysis:{sourceHash:hashBytes(await readFile(file))}};}};
-  const result=await recoverLessonHtml(options);assert.equal(authors,1);assert.equal(checks,2);assert.deepEqual(await recoverLessonHtml(options),result);assert.equal(checks,2);
+    produce:async(drawing:HtmlDrawing)=>{checks++;const html=source(drawing);if(checks===1)beforeHtml=html;else afterHtml=html;await writeFile(path.join(project,'index.html'),html);await phase('real-html-check-'+checks,()=>checkHtmlProject(project,{fullCheck:true}));const file=path.join(project,'controlled-geometry.bin');await writeFile(file,'geometry-only, not video or semantic acceptance');return{file,analysis:{sourceHash:hashBytes(await readFile(file))}};}};
+  const result=await phase('two-attempt-recovery',()=>recoverLessonHtml(options));assert.equal(authors,1);assert.equal(checks,2);assert.deepEqual(await phase('completed-cache-reuse',()=>recoverLessonHtml(options)),result);assert.equal(checks,2);
   const state=JSON.parse(await readFile(path.join(project,'html-recovery.json'),'utf8')),after=state.completed.drawing as HtmlDrawing;
   assert.equal(state.attempts,2);assert.equal(state.failed.length,1);assert.ok(!state.native);assert.ok(after.serverCardLabels!.length>=1);assert.equal(drawingContentHash(after),drawingContentHash(fixture.first));
   const failed=state.failed[0].report,passed=JSON.parse(await readFile(path.join(project,'check-report.json'),'utf8'));
   assert.equal(failed.ok,false);assert.equal(passed.ok,true);assert.ok(failed.svgPaint.findings.some((f:any)=>f.selector==='#qj-author-risk_card'));assert.deepEqual(passed.svgPaint.findings,[]);assert.deepEqual(passed.drawingText.findings,[]);
   const raw=await readFile(path.join(project,failed.svgPaint.upstreamReport.path));assert.equal(hashBytes(raw),failed.svgPaint.upstreamReport.sha256);
   const beforeFile=path.join(project,'before.html'),afterFile=path.join(project,'after.html');await writeFile(beforeFile,beforeHtml);await writeFile(afterFile,afterHtml);
-  const browser=await installedBrowser(),observations:any[]=[];
+  const observations:any[]=[];let browser:any,closePromise:Promise<void>|undefined;
+  const closeOwned=()=>browser?(closePromise??=browser.close()):Promise.resolve();
+  const onAbort=()=>{console.log('SVG card-label test aborted; closing its owned browser');void closeOwned().catch(error=>console.log('SVG card-label abort cleanup rejected',String(error).slice(0,200)));};
+  t.signal.addEventListener('abort',onAbort,{once:true});
   try{
-    const pages=await Promise.all([browser.newPage(),browser.newPage()]);
-    for(const [i,page] of pages.entries()){await page.setRequestInterception(true);page.on('request',(request:any)=>void (/^(?:file:|data:)/.test(request.url())?request.continue():request.abort()).catch(()=>{}));await page.setViewport({width:720,height:1280});await page.goto(pathToFileURL(i?afterFile:beforeFile).href);await page.evaluate(()=>document.fonts.ready);await page.evaluate('globalThis.__name = (fn) => fn');}
+    browser=await phase('owned-motion-browser-launch',()=>installedBrowser(t.signal));throwIfJobCancelled(t.signal);
+    const pages=await phase('create-two-motion-pages',()=>Promise.all([browser.newPage(),browser.newPage()]));
+    for(const [i,page] of pages.entries())await phase('motion-page-'+i+'-load-fonts',async()=>{await page.setRequestInterception(true);page.on('request',(request:any)=>void (/^(?:file:|data:)/.test(request.url())?request.continue():request.abort()).catch(()=>{}));await page.setViewport({width:720,height:1280});await page.goto(pathToFileURL(i?afterFile:beforeFile).href);await page.evaluate(()=>document.fonts.ready);await page.evaluate('globalThis.__name = (fn) => fn');});
     const times=[0,.18,.3,.51,1.2,1.5,1.811667,4.23,10.8];
     for(const time of times){
-      const snapshots=await Promise.all(pages.map((page:any)=>page.evaluate((at:number)=>{
+      const snapshots=await phase('motion-sample-'+time,()=>Promise.all(pages.map((page:any)=>page.evaluate((at:number)=>{
         (window as any).__timelines.main.pause().seek(at,false);
         return Array.from(document.querySelectorAll<HTMLElement>('.node')).map(element=>{const style=getComputedStyle(element),range=document.createRange();range.selectNodeContents(element);const rect=range.getBoundingClientRect();return{id:element.dataset.drawingId,text:element.textContent,font:style.font,fontFamily:style.fontFamily,fontSize:parseFloat(style.fontSize),color:style.color,background:style.backgroundColor,transform:style.transform,transformOrigin:style.transformOrigin,opacity:style.opacity,glyphRect:{left:rect.left,top:rect.top,right:rect.right,bottom:rect.bottom}};});
-      },time)));
+      },time))));
       for(const node of snapshots[0]){
         const same=snapshots[1].find((n:any)=>n.id===node.id)!;assert.equal(same.transform,node.transform);assert.equal(same.opacity,node.opacity);assert.equal(same.font,node.font);assert.equal(same.background,node.background);
         const binding=after.serverCardLabels!.find(b=>b.cardId===node.id),label=binding?snapshots[1].find((n:any)=>n.id===binding.labelId)!:same;
@@ -98,7 +108,7 @@ test('real captured SVG paint failures use one remaining check with paired entry
         else if(node.text){for(const key of ['left','top','right','bottom'] as const)assert.ok(Math.abs(label.glyphRect[key]-node.glyphRect[key])<.01,`${node.id} ${time} ${key}`);}
       }
       observations.push({time,before:snapshots[0],after:snapshots[1]});
-      if([.51,1.811667,4.23].includes(time))for(const [i,page]of pages.entries())await page.screenshot({path:path.join(qa,(i?'after':'before')+'-'+String(time).replace('.','_')+'.png')});
+      if(diagnosticPng&&[.51,1.811667,4.23].includes(time))for(const [i,page]of pages.entries())await phase('diagnostic-png-'+i+'-'+time,()=>page.screenshot({path:path.join(qa,(i?'after':'before')+'-'+String(time).replace('.','_')+'.png')}));
     }
     const final=observations.at(-1).after;
     for(const observation of observations)for(const binding of after.serverCardLabels!){
@@ -107,10 +117,10 @@ test('real captured SVG paint failures use one remaining check with paired entry
       for(const key of ['left','right'] as const)assert.ok(Math.abs(current.glyphRect[key]-(cx+(rest.glyphRect[key]-cx)*values[0]+values[4]))<.02,`${binding.labelId} follows original card x origin at ${observation.time}`);
       for(const key of ['top','bottom'] as const)assert.ok(Math.abs(current.glyphRect[key]-(cy+(rest.glyphRect[key]-cy)*values[3]+values[5]))<.02,`${binding.labelId} follows original card y origin at ${observation.time}`);
     }
-  }finally{await browser.close();}
-  await writeFile(path.join(qa,'comparison.json'),JSON.stringify({beforeHtmlHash:hashBytes(beforeHtml),afterHtmlHash:hashBytes(afterHtml),originalDrawingHash:hashBytes(JSON.stringify(fixture.first)),binding:after.serverCardLabels,authors,checks,observations,cliPassed:passed.ok,svgFindings:passed.svgPaint.findings,textFindings:passed.drawingText.findings,semanticAcceptance:'unknown; no model/movie review or human icon acceptance was executed'},null,2));
+  }finally{try{await phase('owned-motion-browser-close',closeOwned);}finally{t.signal.removeEventListener('abort',onAbort);}}
+  await phase('write-comparison-evidence',()=>writeFile(path.join(qa,'comparison.json'),JSON.stringify({beforeHtmlHash:hashBytes(beforeHtml),afterHtmlHash:hashBytes(afterHtml),originalDrawingHash:hashBytes(JSON.stringify(fixture.first)),binding:after.serverCardLabels,authors,checks,observations,diagnosticPng,phases,cliPassed:passed.ok,svgFindings:passed.svgPaint.findings,textFindings:passed.drawingText.findings,semanticAcceptance:'unknown; no model/movie review or human icon acceptance was executed'},null,2)));
   console.log('Actual card-label geometry QA:',qa);
-});
+}));
 
 test('a fabricated evidence reference cannot consume the remaining attempt as an authorized server repair',async()=>{
   const project=await mkdtemp(path.join(tmpdir(),'qingjian-card-label-unbound-'));let authors=0,checks=0;
