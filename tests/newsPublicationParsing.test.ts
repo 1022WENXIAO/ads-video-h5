@@ -49,7 +49,6 @@ test('the article-header fallback rejects update-only, body events, clocks and a
     '<div class="related-news">'+byline(date)+'</div>',
     byline(date+'<em>2026-10-13 09:00:00</em>'),
     byline(date,''),
-    byline('<em>2026-10-14</em>'),
     '<div><h1>模型发布报道</h1><p><span>新闻记者</span>'+date+'</p></div>',
     ...['网站时间','系统时间','当前时间','Updated','更新','更新日期','修改时间','Current time','Site date'].flatMap(label=>['em','time'].map(tag=>'<header><h1>模型发布报道</h1><p><span>'+label+'</span><'+tag+'>2026-10-14 13:33:46</'+tag+'></p></header>')),
     '<header><h1>模型发布报道</h1><p><span>新闻记者</span><span>当前时间</span>'+date+'</p></header>',

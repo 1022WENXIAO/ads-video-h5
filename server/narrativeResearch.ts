@@ -4,6 +4,7 @@ import type { ResearchReference } from '../src/types';
 import type { ResearchResult } from './researchTypes';
 import { openWebBase, searchOpenWeb } from './openWebSearch';
 import { requestedModelNames } from './creativeRequest';
+import { newsSourceRejection } from './newsSourceUrls';
 
 export interface NewsSearchContext {
   readonly originalRequest: string;
@@ -63,7 +64,12 @@ export async function researchGaps(config: ModelConfig, topic: string, gaps: str
   if(base)try{
     const query=context?openNewsSearchQuery(topic,context):`${topic} ${gaps.join(' ')} 官方 原始资料`.slice(0,1800);
     const result=await searchOpenWeb(query,base);
-    return context?{...result,queries:result.queries.map(q=>({...q as object,newsContext:context}))}:result;
+    if(context){
+      const usable=result.references.filter(ref=>!newsSourceRejection(ref.url));
+      if(!usable.length)throw new Error('搜索仅返回首页、栏目、动态页或非HTML文件，继续查具体新闻正文。');
+      return {...result,references:usable,queries:result.queries.map(q=>({...q as object,newsContext:context,stage:'search-citations',candidateCount:result.references.length,usableCount:usable.length,excluded:result.references.filter(ref=>newsSourceRejection(ref.url)).map(ref=>({url:ref.url,reason:newsSourceRejection(ref.url)}))}))};
+    }
+    return result;
   }catch(error){fallback=error instanceof Error?error.message:'open-webSearch 不可用';}
   if (new URL(config.baseUrl).hostname !== 'ark.cn-beijing.volces.com') throw new Error('联网补充目前需要官方 Ark Responses 服务。');
   const retryGuidance=context?'上一轮检索没有返回可核验来源。调整检索策略：保留原始需求与版本，减少组合关键词，换可读的一手说明和独立报道。候选不满足原始日期或领域时重新查找相关事件，不把模型记忆当证据。\n':'上一轮检索没有返回可核验来源。调整检索策略：保留同一主题和版本，先查发布者的官方说明及基础定义，再查独立原始资料；减少组合关键词，不重复无结果的细分查询。不得扩大到其他产品或用模型记忆充当证据。\n';
@@ -92,8 +98,10 @@ export async function researchGaps(config: ModelConfig, topic: string, gaps: str
       references.push({ id: `ref-${references.length+1}`, title: String(citation.title || url.hostname).slice(0,180), url: url.href, retrievedAt: new Date().toISOString(), verification: 'search-cited', excerpt: Number.isInteger(citation.start_index)&&Number.isInteger(citation.end_index)?String(content.text).slice(Math.max(0,citation.start_index-350),citation.end_index+100).slice(0,600):`搜索引用：${String(citation.title || url.hostname)}。支持内容见研究摘要；此字段不是原网页引文。` });
     }
   }
-  if (!references.length) {failedQueries.push({provider:'ark',status:'failed',strategy:attempt?'broader-primary':'targeted',reason:'搜索结果没有可核查引用'});if(!attempt)continue;throw new Error('调整查询后联网结果仍没有可核查引用，不能据此增加事实性台词。');}
-  return { summary: (fallback?`open-webSearch 未成功，本次明确回退 Ark 联网检索：${fallback}\n`:'')+texts.join('\n').slice(0,purpose==='lesson'?18000:9000), references, usage: body.usage, queries: [...failedQueries,...(fallback?[{provider:'open-websearch',status:'failed',reason:fallback}]:[]),...calls.map((c:any)=>({provider:'ark',strategy:attempt?'broader-primary':'targeted',action:c.action,...(context?{newsContext:context}:{})}))] };
+  const excluded=context?references.filter(ref=>newsSourceRejection(ref.url)).map(ref=>({url:ref.url,reason:newsSourceRejection(ref.url)})):[];
+  const usable=context?references.filter(ref=>!newsSourceRejection(ref.url)):references;
+  if (!usable.length) {failedQueries.push({provider:'ark',status:'failed',strategy:attempt?'broader-primary':'targeted',reason:'搜索结果没有可核查引用或只返回首页、栏目及非HTML资料',excluded});if(!attempt)continue;throw new Error('调整查询后联网结果仍没有可用的具体文章，不能据此增加事实性台词。');}
+  return { summary: (fallback?`open-webSearch 未成功，本次明确回退 Ark 联网检索：${fallback}\n`:'')+texts.join('\n').slice(0,purpose==='lesson'?18000:9000), references:usable, usage: body.usage, queries: [...failedQueries,...(fallback?[{provider:'open-websearch',status:'failed',reason:fallback}]:[]),...calls.map((c:any)=>({provider:'ark',strategy:attempt?'broader-primary':'targeted',action:c.action,...(context?{newsContext:context,stage:'search-citations',candidateCount:references.length,usableCount:usable.length,excluded}:{})}))] };
   }
   throw new Error('联网研究未完成。');
 }

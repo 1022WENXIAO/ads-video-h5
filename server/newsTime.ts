@@ -1,4 +1,6 @@
 import type { HotTopicSignal, LessonReport } from '../src/types';
+import {researchDatePolicy} from './newsDatePolicy';
+import {newsPublisher} from './newsSourceUrls';
 
 export const NEWS_OBSERVATION_POLICY = '热榜 observedAt 是本次抓取时看到榜单的观察时间，不是首次上榜或事件发生时间；HN submittedAt 只是社区提交时间，不是原文发布或模型发布时刻。所有观察时间按 Asia/Shanghai（北京时间）展示。可以说“截至本次核验，榜单显示……”；若要断言某日某时首次、刚刚或登上热搜，须有已读正文直接证明该上榜时间，不能从采样时间倒推。';
 
@@ -222,6 +224,16 @@ export function createNewsPublicationAnnotation(report: LessonReport, requestedA
     const publishedDateBeijing = beijingTimestamp(time).slice(0, 10);
     return { referenceId: ref.id, publishedAt: ref.publishedAt!, publishedDateBeijing, cutoffUtc: new Date(requestedAt).toISOString(), windowHours: news.windowHours, label: `报道日期：${publishedDateBeijing}（北京时间）` };
   }
+  if(researchDatePolicy(news)==='flexible'){
+    for(const topic of news.topics||[]){
+      const evidence=topic.facts.flatMap(fact=>fact.evidence).flatMap(e=>{
+        const ref=report.references.find(r=>r.id===e.referenceId);
+        return ref&&used.has(ref.id)&&ref.verification==='news-page'&&ref.freshness!=='future'&&normalize(e.quote).length>=12&&normalize(ref.excerpt).includes(normalize(e.quote))?[ref]:[];
+      });
+      const unknown=evidence.find(ref=>ref.freshness==='undated'&&!ref.publishedAt);
+      if(unknown&&new Set(evidence.map(ref=>newsPublisher(ref.url))).size>=2)return {referenceId:unknown.id,publishedAt:'',publishedDateBeijing:'',dateStatus:'unknown',cutoffUtc:new Date(requestedAt).toISOString(),windowHours:news.windowHours,label:'报道日期：原文未注明'};
+    }
+  }
 }
 
 // The verified news parser treats date-only publications as Beijing midnight.
@@ -243,7 +255,9 @@ export function newsPublicationSourceFindings(report: LessonReport, requestedAt:
 const publicationEscape = (value: string) => value.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]!));
 export function newsPublicationNoteHtml(annotation: import('../src/types').NewsPublicationAnnotation): string {
   const time = newsPublicationTimestamp(annotation.publishedAt), cutoff = Date.parse(annotation.cutoffUtc);
-  if (!annotation.referenceId || !Number.isFinite(time) || !Number.isFinite(cutoff) || !(annotation.windowHours > 0) || time > cutoff || time < cutoff - annotation.windowHours * 3600000 || beijingTimestamp(time).slice(0, 10) !== annotation.publishedDateBeijing || annotation.label !== `报道日期：${annotation.publishedDateBeijing}（北京时间）`) throw new Error('新闻报道日期注释未绑定有效来源与原指令时间窗。');
+  const unknown=annotation.dateStatus==='unknown'&&annotation.publishedAt===''&&annotation.publishedDateBeijing===''&&annotation.label==='报道日期：原文未注明';
+  const dated=!annotation.dateStatus&&Number.isFinite(time)&&time<=cutoff&&time>=cutoff-annotation.windowHours*3600000&&beijingTimestamp(time).slice(0,10)===annotation.publishedDateBeijing&&annotation.label===`报道日期：${annotation.publishedDateBeijing}（北京时间）`;
+  if (!annotation.referenceId || !Number.isFinite(cutoff) || !(annotation.windowHours > 0) || !unknown&&!dated) throw new Error('新闻报道日期注释未绑定有效来源与原指令时间窗。');
   return `<p id="note" data-news-source-id="${publicationEscape(annotation.referenceId)}" data-news-published-at="${publicationEscape(annotation.publishedAt)}" data-news-cutoff="${publicationEscape(annotation.cutoffUtc)}">${publicationEscape(annotation.label)} · 画面示意</p>`;
 }
 export function newsPublicationNoteCss(portrait: boolean): string {

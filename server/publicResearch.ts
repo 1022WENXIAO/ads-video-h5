@@ -22,7 +22,8 @@ export function publicResearchUrl(value: string): string | undefined {
 }
 
 export interface PublicPage { url: string; text: string; contentType: string; }
-export type PublicReader = (url: string) => Promise<PublicPage>;
+export interface PublicReadOptions { signal?: AbortSignal; timeoutMs?: number; }
+export type PublicReader = (url: string, options?: PublicReadOptions) => Promise<PublicPage>;
 
 const pageLimit = 1500000;
 // HTTPS can return compressed bytes even without content negotiation. Keep
@@ -50,13 +51,13 @@ export function decodePublicPageBody(body: Buffer, contentType: string, contentE
 
 // Validate and pin every resolved connection, including redirects. No proxy,
 // cookies, TLS exceptions or access to private addresses for external sources.
-export async function readPublicPage(value: string, redirects = 0): Promise<PublicPage> {
+export async function readPublicPage(value: string, options: PublicReadOptions = {}, redirects = 0): Promise<PublicPage> {
   throwIfJobCancelled();
   const safe = publicResearchUrl(value);
   if (!safe || redirects > 3) throw new Error('研究资料 URL 必须是公开 HTTPS 页面。');
   return new Promise((resolve, reject) => {
     const req = request(safe, {
-      signal: currentJobSignal(),
+      signal: currentJobSignal() && options.signal ? AbortSignal.any([currentJobSignal()!, options.signal]) : options.signal || currentJobSignal(),
       headers: { Accept: 'text/html,application/xhtml+xml,application/json,text/plain', 'Accept-Encoding': 'gzip, deflate, br', 'User-Agent': 'Qingjian-Research/1.0' },
       lookup: (host, options, cb) => lookup(host, { all: true }, (error, addresses) => {
         if (error) return cb(error, '', 4);
@@ -67,7 +68,7 @@ export async function readPublicPage(value: string, redirects = 0): Promise<Publ
       }),
     }, res => {
       if (res.statusCode && res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
-        res.resume(); readPublicPage(new URL(res.headers.location, safe).href, redirects + 1).then(resolve, reject); return;
+        res.resume(); readPublicPage(new URL(res.headers.location, safe).href, options, redirects + 1).then(resolve, reject); return;
       }
       if (res.statusCode !== 200) { res.resume(); reject(new Error(`研究页面 HTTP ${res.statusCode}`)); return; }
       const contentType = String(res.headers['content-type'] || '');
@@ -80,7 +81,7 @@ export async function readPublicPage(value: string, redirects = 0): Promise<Publ
         catch (error) { reject(error); }
       });
     });
-    const timer = setTimeout(() => req.destroy(new Error('研究页面读取超时。')), 20000);
+    const timer = setTimeout(() => req.destroy(new Error('研究页面读取超时。')), options.timeoutMs ?? 20000);
     req.on('close', () => clearTimeout(timer)); req.on('error', reject); req.end();
   });
 }

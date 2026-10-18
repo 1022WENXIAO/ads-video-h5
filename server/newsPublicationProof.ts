@@ -7,7 +7,7 @@ import { newsPublicationFrameEvidence } from './newsPublicationReview';
 
 const hash = (value: unknown) => createHash('sha256').update(JSON.stringify(value)).digest('hex');
 const sha256 = (value: unknown): value is string => typeof value === 'string' && /^[a-f0-9]{64}$/.test(value);
-const annotationKeys = ['referenceId', 'publishedAt', 'publishedDateBeijing', 'cutoffUtc', 'windowHours', 'label'] as const;
+const annotationKeys = ['referenceId', 'publishedAt', 'publishedDateBeijing', 'cutoffUtc', 'windowHours', 'label', 'dateStatus'] as const;
 const sameAnnotation = (a: NewsPublicationAnnotation, b: NewsPublicationAnnotation) => annotationKeys.every(key => a[key] === b[key]);
 export type NewsPublicationCandidate = Omit<NewsPublicationProof, 'frameVerified' | 'frameEvidence' | 'renderedSha256'>;
 

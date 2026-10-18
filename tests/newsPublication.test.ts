@@ -58,6 +58,19 @@ test('missing date check routes only to first chapter visual repair without mask
 
 function drawing(format:Format='9:16'):HtmlDrawing { const y=format==='9:16'?260:190;return {title:'AI热点图解',nodes:[{id:'one',kind:'card',x:80,y,w:220,h:100,text:'原有业务',tone:'paper',fontSize:30,highlight:false},{id:'two',kind:'card',x:380,y,w:220,h:100,text:'AI工具',tone:'paper',fontSize:30,highlight:false},{id:'link',kind:'line',x:300,y:y+50,w:80,h:0,text:'',tone:'coral',fontSize:24,highlight:false}]}; }
 
+test('Chromium verifies the missing-date disclosure in portrait, landscape and square without inventing a date',{timeout:30000},async()=>{
+  const r=report();r.hotResearch!.datePolicy='flexible';
+  Object.assign(r.references[0],{publishedAt:undefined,dateEvidence:undefined,freshness:'undated'});
+  r.references.push({...r.references[0],id:'ref-2',url:'https://independent.example.net/article'});
+  r.hotResearch!.topics[0].facts[0].evidence.push({referenceId:'ref-2',quote});r.chapters[0].claims[0].referenceIds.push('ref-2');
+  const a=createNewsPublicationAnnotation(r,requestedAt)!;assert.equal(a.publishedAt,'');assert.equal(a.label,'报道日期：原文未注明');
+  const dir=await mkdtemp(path.join(tmpdir(),'qingjian-unknown-date-'));
+  try{
+    await copyFile(path.join(process.cwd(),'node_modules/gsap/dist/gsap.min.js'),path.join(dir,'gsap.min.js'));
+    for(const format of ['9:16','16:9','1:1'] as const){await writeFile(path.join(dir,'index.html'),drawingHtml(drawing(format),4,format,a));const checked=await inspectNewsPublicationHtml(dir,a,4,format);assert.equal(checked.layout.fontSize,24);assert.equal(checked.layout.minimumOpacity,1);}
+  }finally{await rm(dir,{recursive:true,force:true});}
+});
+
 test('real Chromium confirms custom and fallback dates in all formats and rejects hidden clipped collided or animated date text',{timeout:90000},async()=>{
   const dir=await mkdtemp(path.join(tmpdir(),'qingjian-date-layout-')),a=createNewsPublicationAnnotation(report(),requestedAt)!;
   try{

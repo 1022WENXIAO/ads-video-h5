@@ -108,6 +108,7 @@ function articleData(elements:Tree.Element[],title:string):Record<string,any>[] 
         const node=queue.shift();if(!node||typeof node!=='object')continue;
         const types=Array.isArray(node['@type'])?node['@type']:[node['@type']];
         if(types.some((v:unknown)=>typeof v==='string'&&/^(?:NewsArticle|Article|BlogPosting|ReportageNewsArticle|TechArticle)$/.test(v)))result.push(node);
+        else if(/^https?:\/\/ziyuan\.baidu\.com\/contexts\/cambrian\.jsonld$/.test(String(node['@context']))&&typeof node.title==='string'&&typeof node.pubDate==='string')result.push({...node,headline:node.title});
         for(const key of ['@graph','mainEntity']){if(Array.isArray(node[key]))queue.push(...node[key]);else if(node[key]&&typeof node[key]==='object')queue.push(node[key]);}
       }
     }catch{}
@@ -147,8 +148,9 @@ function headingPublication(elements:Tree.Element[]):{publishedAt?:string;dateEv
       const scope=nodes(parent);if(scope.filter(node=>node.tagName==='h1').length!==1||scope.some(node=>/modif|updat|copyright/i.test(attr(node,'class')+' '+attr(node,'id')+' '+attr(node,'itemprop'))||updateLabel(node)))continue;
       const dates=scope.filter(node=>['span','em','time'].includes(node.tagName)&&!titleNodes.has(node)&&!ignored(node)&&!ignoredParent(node)).flatMap(node=>{
         const value=attr(node,'datetime')||text(node),candidate=datePattern.exec(value)?.[0];
-        // A title or a plain calendar day is too ambiguous for this fallback.
-        if(!candidate||candidate!==value||!/[T\s]\d{1,2}:\d{2}/.test(candidate))return [];
+        // An attributed byline can supply only a calendar day. Preserve that
+        // precision; never manufacture hours or seconds for the source.
+        if(!candidate||candidate!==value)return [];
         const date=sourceDate(candidate),byline=node.parentNode;
         if(!date||!byline||!element(byline)||text(byline).length>220||nonPublicationByline(node))return [];
         const attributed=children(byline).some(sibling=>{
@@ -166,7 +168,13 @@ function headingPublication(elements:Tree.Element[]):{publishedAt?:string;dateEv
 
 function publication(elements:Tree.Element[],data:Record<string,any>[]):{publishedAt?:string;dateEvidence?:string}{
   const article=primaryArticle(elements),collection=collectionPage(elements);
-  const structured=data.flatMap(node=>{const date=sourceDate(String(node.datePublished||''));return date?[{date,evidence:`JSON-LD datePublished: ${node.datePublished}`}]:[];});
+  const structured=data.flatMap(node=>{
+    for(const key of ['datePublished','pubDate','publishDate','publicationDate']){
+      const date=sourceDate(String(node[key]||''));
+      if(date)return [{date,evidence:`JSON-LD ${key}: ${node[key]}`}];
+    }
+    return [];
+  });
   if(structured.length){const unique=new Set(structured.map(row=>row.date));return unique.size===1?{publishedAt:structured[0].date,dateEvidence:structured[0].evidence}:{};}
   // A summary such as Last Release belongs to an index, not to each of its
   // independent entries. Preserve the readable body, without a page-level date.
@@ -174,7 +182,7 @@ function publication(elements:Tree.Element[],data:Record<string,any>[]):{publish
   const metadata=[];
   for(const node of elements.filter(n=>n.tagName==='meta'&&n.parentNode&&element(n.parentNode)&&n.parentNode.tagName==='head')){
     const name=attr(node,'property')||attr(node,'name')||attr(node,'itemprop');
-    if(!/^(?:article:published_time|datePublished|pubdate|publishdate|publish_time|OriginalPublicationDate|DC.date.issued)$/i.test(name))continue;
+    if(!/^(?:article:published_time|datePublished|pubdate|publishdate|publish_time|publication_date|OriginalPublicationDate|DC.date.issued)$/i.test(name))continue;
     const value=attr(node,'content'),date=sourceDate(value);if(date)metadata.push({date,evidence:`meta ${name}: ${value}`});
   }
   if(metadata.length){const unique=new Set(metadata.map(row=>row.date));return unique.size===1?{publishedAt:metadata[0].date,dateEvidence:metadata[0].evidence}:{};}
@@ -187,7 +195,7 @@ function publication(elements:Tree.Element[],data:Record<string,any>[]):{publish
     let parent=node.parentNode,modified=/modif|updat|copyright/i.test(descriptor);
     while(parent&&element(parent)&&!['article','main','body'].includes(parent.tagName)){modified ||= /modif|updat|copyright/i.test(attr(parent,'class')+' '+attr(parent,'id')+' '+attr(parent,'itemprop'));parent=parent.parentNode;}
     if(modified||ignoredParent(node))continue;
-    const field=/(?:publish|publication|release).*(?:time|date)|datePublished|(?:article|post|news|detail)[-_](?:info|meta|date|time)|\bbyline\b/i.test(descriptor);
+    const field=/(?:publish|publication|release).*(?:time|date)|datePublished|(?:article|post|news|detail)[-_](?:body[-_])?(?:info|meta|date|time)|\bbyline\b/i.test(descriptor);
     if(!field&&node.tagName!=='time')continue;
     if(node.tagName==='time'&&nonPublicationByline(node))continue;
     const header=headers.some(parent=>contains(parent,node));

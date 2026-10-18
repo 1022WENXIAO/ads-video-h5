@@ -9,6 +9,8 @@ import { correctCommonNarrationSpelling } from './lessonCommonSpelling';
 import {lessonModelVersions,lessonModelVersionSpans} from './lessonModelVersions';
 import {correctSourceModelSpelling} from './lessonModelSpelling';
 import {scopedLessonRepairTargets} from './lessonRepairScope';
+import {hasUsableNewsDate,researchDatePolicy} from './newsDatePolicy';
+import {newsPublisher} from './newsSourceUrls';
 
 function durationNumber(value:string):number {
   if(value==='半')return .5;
@@ -70,6 +72,8 @@ export function assertLessonNewsSources(report:Pick<LessonReport,'hotResearch'|'
   if(!report.hotResearch)throw new Error('热点脚本缺少服务端已核验的热点研究记录，须先完成research_topic；不能由模型编造或复制替代真实研究。');
   const claimed=new Set(report.chapters.flatMap(chapter=>chapter.claims?.flatMap(claim=>claim.referenceIds)||[]));
   if(report.references.some(ref=>ref.verification==='news-page'&&ref.freshness==='fresh'&&claimed.has(ref.id)))return;
+  const used=report.references.filter(ref=>claimed.has(ref.id)&&ref.verification==='news-page'&&ref.freshness!=='future');
+  if(researchDatePolicy(report.hotResearch)==='flexible'&&hasUsableNewsDate(used,'flexible')&&new Set(used.map(ref=>newsPublisher(ref.url))).size>=2)return;
   const selected=report.references.slice(0,8).map(ref=>({id:ref.id,freshness:ref.freshness||'未核验日期',claimed:claimed.has(ref.id)}));
   const fresh=availableReferences.filter(ref=>ref.verification==='news-page'&&ref.freshness==='fresh').slice(0,4).map(ref=>({id:ref.id,title:ref.title.slice(0,60),publishedAt:ref.publishedAt||'未记录'}));
   throw new Error('热点脚本的事实声明未实际引用已读取的时效窗口内新稿。已选来源（数据）：'+JSON.stringify(selected)+'。本轮可用新稿候选（数据）：'+JSON.stringify(fresh)+'。请仅将有正文支持的核心事实绑定到对应新稿的claim.referenceIds及本章referenceIds；不能只给章节附加来源或添加无关新稿凑数，不能改写来源事实。');

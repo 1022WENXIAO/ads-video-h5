@@ -12,7 +12,7 @@ import {throwIfJobCancelled} from './jobExecution';
 const hash=(bytes:string|Buffer)=>createHash('sha256').update(bytes).digest('hex');
 // Keep this independent of the scene renderer: only actual news source
 // parsing/verification changes invalidate news checkpoints, never knowledge.
-const parserHash=hash(['./newsPage.ts','./hotSources.ts'].map(file=>readFileSync(new URL(file,import.meta.url),'utf8')).join('\n'));
+const parserHash=hash(['./newsPage.ts','./hotSources.ts','./newsDatePolicy.ts'].map(file=>readFileSync(new URL(file,import.meta.url),'utf8')).join('\n'));
 export const newsSourceParserHash=()=>parserHash;
 
 export async function preserveNewsSourceCheckpoint(work:string):Promise<{file:string;hash:string}>{
@@ -49,7 +49,7 @@ export async function revalidateNewsSources(previous:ResearchResult,report:Lesso
   const findings:string[]=[];
   try{
     if(!current.topics.length)throw new Error('没有已选新闻主题。');
-    validateHotBrief(current.topics,verified.references,current.signals);
+    validateHotBrief(current.topics,verified.references,current.signals,current.datePolicy);
     for(const id of used)if(!verified.references.some(ref=>ref.id===id))throw new Error(`已选来源${id}未能重新取得正文。`);
   }catch(error){findings.push(error instanceof Error?error.message:String(error));}
   return{research:next,valid:!findings.length,findings};

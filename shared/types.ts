@@ -100,6 +100,7 @@ export interface HotTopicSignal {
 }
 export interface HotResearchBrief {
   asOf: string; expiresAt: string; windowHours: number; signals: HotTopicSignal[];
+  datePolicy?: 'strict' | 'flexible';
   topics: Array<{ title: string; hook: string; angle: string; signalIds: string[];
     facts: Array<{ text: string; evidence: Array<{ referenceId: string; quote: string }> }>;
     visualPlan: string; uncertainties: string[] }>;
@@ -197,6 +198,7 @@ export interface NewsPublicationAnnotation {
   cutoffUtc: string;
   windowHours: number;
   label: string;
+  dateStatus?: 'unknown';
 }
 export interface NewsPublicationLayout {
   fontSize: number; x: number; y: number; width: number; height: number; sampledTimes: number[]; minimumOpacity: number;

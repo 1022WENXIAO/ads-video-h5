@@ -1,4 +1,16 @@
 import type { ResearchReference } from '../src/types';
+import { publicResearchUrl } from './publicResearch';
+
+/** Reject known non-documents before they consume the small body-read budget.
+ * Unknown URLs are left to the reader; this is not an allowlist of publishers. */
+export function newsSourceRejection(value:string):string|undefined {
+  const safe=publicResearchUrl(value);
+  if(!safe)return '非公开HTTPS文章地址';
+  const url=new URL(safe),host=url.hostname.toLowerCase(),path=url.pathname.toLowerCase();
+  if(/\.(?:pdf|mp4|mp3|jpg|png|zip)$/i.test(path))return '当前新闻正文读取器不支持该文件，请查同一公告的HTML报道';
+  if(/^(?:(?:www|cn|image|images)\.)?(?:bing|baidu)\.com$/.test(host)||/^(?:m|www)\.weibo\.(?:cn|com)$/.test(host))return '搜索或社交动态页，请查发布者文章';
+  if(path==='/'||/^\/(?:chn|cn|en|english|search|xxgksearch)(?:\/|\.html)?$/.test(path)||/^\/(?:news|press|releases)\/$/.test(path)||/\/web_app\/column\//.test(path))return '首页、栏目或检索页，请查具体文章';
+}
 
 const tracking = /^(?:utm_.+|fbclid|gclid|dclid|msclkid|igshid|mc_cid|mc_eid|campaign_id|nb_placement|nbt)$/i;
 
@@ -33,7 +45,9 @@ export function newsSourceCandidates(groups: ResearchReference[][], eligible: (r
     for (const group of groups) {
       const original = group[index];
       if (!original) continue;
-      const ref = { ...original, url: canonicalNewsUrl(original.url) }, key = newsSourceIdentity(ref.url), publisher = newsPublisher(ref.url);
+      let ref:ResearchReference;
+      try { ref={...original,url:canonicalNewsUrl(original.url)}; } catch { continue; }
+      const key = newsSourceIdentity(ref.url), publisher = newsPublisher(ref.url);
       if (seen.has(key)) continue;
       seen.add(key);
       if (!eligible(ref) || (counts.get(publisher) || 0) >= perPublisher) continue;

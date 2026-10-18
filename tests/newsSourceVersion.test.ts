@@ -21,7 +21,7 @@ function report(references:ResearchReference[]):LessonReport{
 }
 
 test('news parser stamp hashes the exact parsing and verification sources and is stable',async()=>{
-  const sources=await Promise.all(['newsPage.ts','hotSources.ts'].map(file=>readFile(new URL('../server/'+file,import.meta.url),'utf8')));
+  const sources=await Promise.all(['newsPage.ts','hotSources.ts','newsDatePolicy.ts'].map(file=>readFile(new URL('../server/'+file,import.meta.url),'utf8')));
   const expected=digest(sources.join('\n'));
   assert.match(newsSourceParserHash(),/^[a-f0-9]{64}$/);
   assert.equal(newsSourceParserHash(),expected);
