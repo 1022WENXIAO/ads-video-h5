@@ -4,7 +4,7 @@ import { readFile } from 'node:fs/promises';
 import type { AudioAnalysis, EditPlan, MediaItem, RenderReview, TranscriptSentence, WorkflowEvent } from '../shared/types';
 import { runEditorialWorkflow, selectScenes } from '../server/editorialWorkflow';
 import { completeSourceCapacity, durationSourceRecovery, sourceWitnessHasCompleteSpeech, visualRetentionSourceRecovery } from '../server/sourceAsrRecovery';
-import { extractVisualRetentionRequirements } from '../server/visualRetentionReview';
+import { extractVisualRetentionRequirements,visualRetentionOmittedPlanningWitnesses } from '../server/visualRetentionReview';
 import { ARK_BASE_URL, TEXT_MODEL_PRESETS } from '../shared/textModels';
 import { JobCancelledError } from '../server/jobExecution';
 
@@ -58,7 +58,7 @@ test('missing, ambiguous, unrelated, selected and untrusted witnesses never auth
 
 // Real old word grids/complete flags above; SDK decisions and a new recognition
 // response below are injected controls, not new ASR or a movie-quality claim.
-function harness(mode:'recovered'|'recovered-other-tail'|'second-unmet'|'still-incomplete'|'wrong-hash'|'auth'|'cancel'|'no-callback'='recovered',preserveSelection=false){
+function harness(mode:'omits-witness'|'recovered'|'recovered-other-tail'|'second-unmet'|'still-incomplete'|'wrong-hash'|'auth'|'cancel'|'no-callback'='recovered',preserveSelection=false){
   const sources=media(),old=structuredClone(sources),events:WorkflowEvent[]=[],plans:EditPlan[]=[],reviewInputs:RenderReview[]=[],counts={transcribe:0,recheck:0,select:0,write:0,render:0,inspect:0,verify:0};
   const critical=mode==='cancel'?new JobCancelledError():new Error('HTTP 401 unauthorized');let selected=first(sources);
   const fetch:typeof globalThis.fetch=async(_input,init)=>{
@@ -69,6 +69,7 @@ function harness(mode:'recovered'|'recovered-other-tail'|'second-unmet'|'still-i
         assert.equal(counts.recheck,1);assert.match(JSON.stringify(payload.messages),/source-a:independent:tail/);
         selected=[{sourceId:'source-a',sentenceIds:[sources[0].analysis!.sentences.find(sentence=>sentence.id==='source-a:independent:tail')!.id],reason:'新的实际完整原话与必留重复观察画面一并选入',purpose:'hook'},...[0,1,2,3].map(index=>({sourceId:'source-b',sentenceIds:[sources[1].analysis!.sentences[index].id],reason:'保留比较条件与证据界限的完整原话',purpose:'comparison' as const}))];
       }
+      if(mode==='omits-witness'&&counts.select===2)selected=[...first(sources).slice(0,1),...selected.slice(1)];
       args={scenes:selected};
     }else{assert.deepEqual(allowed,['write_narrative']);counts.write++;name='write_narrative';args=script(selectScenes(selected,sources));}
     return new Response(`data: ${JSON.stringify({id:'control',object:'chat.completion.chunk',created:1,model:config.modelId,choices:[{index:0,delta:{role:'assistant',tool_calls:[{index:0,id:'controlled-'+counts.select+'-'+counts.write,type:'function',function:{name,arguments:JSON.stringify(args)}}]},finish_reason:'tool_calls'}]})}\n\ndata: [DONE]\n\n`,{headers:{'Content-Type':'text/event-stream'}});
@@ -80,7 +81,7 @@ function harness(mode:'recovered'|'recovered-other-tail'|'second-unmet'|'still-i
       if(mode==='auth'||mode==='cancel')throw critical;
       const analysis=structuredClone(sources[0].analysis!);
       if(mode==='wrong-hash')analysis.sourceHash='f'.repeat(64);
-      if(['recovered','recovered-other-tail','second-unmet'].includes(mode)){
+      if(['recovered','recovered-other-tail','second-unmet','omits-witness'].includes(mode)){
         // Independent control response owns these words and its complete flag.
         const text='把观察和推测分开可以让表达更清楚也让后续核验有明确的方向';
         const sentence:TranscriptSentence={id:'source-a:independent:tail',text,start:10.47,end:16.67,complete:true,words:[...text].map((text,index,all)=>({text,start:10.47+6.2*index/all.length,end:10.47+6.2*(index+1)/all.length}))};
@@ -126,4 +127,31 @@ test('a genuinely incomplete later tail remains false when other complete speech
 });
 test('a second unmet review keeps its raw score and cannot grant a third render or another source recognition',async()=>{
   const h=harness('second-unmet'),result=await execute(h,h.run);assert.equal(result.review!.status,'needs-review');assert.equal(result.review!.score,72);assert.equal(h.counts.recheck,1);assert.equal(h.counts.render,2);assert.equal(h.counts.select,2);assert.equal(h.reviewInputs.length,2);
+});
+
+
+test('confirmed omitted source witness constrains a different replacement selection before another paid render',async()=>{
+  const h=harness('omits-witness'),result=await execute(h,h.run);
+  assert.equal(result.review!.status,'passed');assert.equal(h.counts.render,2);assert.equal(h.counts.select,3,'changed but still missing selection rejected before rendering');
+  assert.ok(h.events.some(e=>e.tool==='select_scenes'&&e.status==='failed'&&e.detail?.includes('必留原画面见证')));
+  assert.ok(h.plans[1].clips.some(c=>c.sourceId==='source-a'&&16.337>=c.start&&16.337<c.end));
+  assert.equal(h.reviewInputs[0].score,72);assert.equal(h.counts.recheck,1);
+});
+
+test('omission planning keeps raw verdicts immutable and rejects stale, foreign or uncertain witnesses',()=>{
+  const sources=media(),plan=previous(sources),review=failure(),before=structuredClone({sources,plan,review});
+  assert.deepEqual(visualRetentionOmittedPlanningWitnesses(review,fixture.prompt,plan,sources),[{sourceId:'source-a',sourceHash:sources[0].analysis!.sourceHash,time:16.337,purpose:'confirmed-omission'}]);
+  assert.deepEqual({sources,plan,review},before);
+  for(const mode of ['hash','duplicate','passed','uncertain','selected','wrong-quote','no-audio','wrong-owner']){
+    const x=structuredClone(before),check=x.review.semantic!.visualRetentionChecks![1];
+    if(mode==='hash')check.sourceEvidence!.sourceHash='f'.repeat(64);
+    if(mode==='duplicate')x.sources.push(structuredClone(x.sources[0]));
+    if(mode==='passed')x.review.status='passed';
+    if(mode==='uncertain'){check.status='unverified';delete check.sourceOmitted;}
+    if(mode==='selected')x.plan.clips[0].end=16.67;
+    if(mode==='wrong-quote')check.quote='different instruction';
+    if(mode==='no-audio')x.sources[0].hasAudio=false;
+    if(mode==='wrong-owner')x.sources[0].ownerId='foreign-owner';
+    assert.equal(visualRetentionOmittedPlanningWitnesses(x.review,fixture.prompt,x.plan,x.sources),undefined,mode);
+  }
 });

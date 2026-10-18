@@ -26,6 +26,7 @@ export interface LessonRepairPlan {
   scriptChapterIds:string[];
   visualChapterIds:string[];
   layoutChapterIds:string[];
+  captionChapterIds?:string[];
   scriptFindings:string[];
   visualFindings:Record<string,string[]>;
   unknownFindings:string[];
@@ -35,6 +36,9 @@ const mentions=(text:string,id:string)=>new RegExp(String.raw`(^|[^\w-])${escape
 const spoken=/(?:旁白|口播|台词|解说|原声|语音)/;
 const sourceConflict=(text:string)=>/(?:来源|原文|报道|事实|证据|claim)/i.test(text)&&/不一致|不符|矛盾|相反|错误|误导|不支持|未.*对齐/.test(text);
 const layoutDefect=(text:string)=>/遮挡|遮住|盖住|重叠|越界|截断|裁切|溢出|超出.*(?:边界|画面|安全区)|(?:字体|字号|文字|标签).*(?:过小|太小|不可读|无法辨认|难以辨认)|(?:孤字|单字)(?:换行|成行|占一行)/.test(text);
+const captionSeparatorDefect=(text:string)=>/字幕/.test(text)&&/空格|顿号|分隔|并列成分|标点/.test(text)
+  &&!sourceConflict(text)&&!sourceUnverified(text)&&!sourceClaimFault(text)
+  &&!/事实错误|数据错误|公式错误|错字|错读|漏字|漏读|缺字|缺少.*字|音轨|失真|音色|不同|不符|不一致|错误|遗漏|缺失/.test(text);
 const renderedSurface=(text:string)=>/画面|分镜|图解|示意图|标签|卡片|渲染|排版|连线|箭头/.test(text);
 const renderingDefect=(text:string)=>renderedSurface(text)&&/拼写错误|错写|误写|排版割裂|(?:连线|箭头).*(?:交叉|错乱|穿插)|(?:图解|图形|视觉)可读性(?:缺陷|问题)/.test(text);
 // Recognizing a drawn object concerns its depiction, not the wording of the
@@ -156,6 +160,7 @@ export function lessonRepairPlan(report:LessonReport,review:RenderReview):Lesson
   const narrationVisual=narrationReferencedVisualFindings(report,review,findings);
   for(const text of findings){
     const targets=findingChapterTargets(report,text),chapters=report.chapters.filter(chapter=>targets.includes(chapter.id));
+    if(captionSeparatorDefect(text)){result.captionChapterIds=[...new Set([...(result.captionChapterIds||[]),...targets])];continue;}
     const single={...review,semantic:{...review.semantic!,findings:[text]}};
     const hasSpoken=spoken.test(text),correct=hasSpoken&&narrationExplicitlyCorrect(text,chapters);
     // A literal spoken quote plus a source contradiction is a script issue,
@@ -179,10 +184,10 @@ export function lessonRepairPlan(report:LessonReport,review:RenderReview):Lesson
   }
   // A mixed visual/sound rejection cannot authorize preserving all audio.
   // Pure sound-only reviews still use the existing bounded sound route.
-  if(script.size||visual.size)for(const finding of sound){for(const id of finding.targets)script.add(id);result.scriptFindings.push(finding.text);}
+  if(script.size||visual.size||result.captionChapterIds?.length)for(const finding of sound){for(const id of finding.targets)script.add(id);result.scriptFindings.push(finding.text);}
   result.scriptChapterIds=ids.filter(id=>script.has(id));result.visualChapterIds=ids.filter(id=>visual.has(id));
   result.layoutChapterIds=result.visualChapterIds.filter(id=>!script.has(id)&&result.visualFindings[id].length>0&&result.visualFindings[id].every(layoutOnly));
-  result.kind=result.scriptChapterIds.length?'script':result.visualChapterIds.length?'visual':'none';return result;
+  result.kind=result.scriptChapterIds.length?'script':(result.visualChapterIds.length||result.captionChapterIds?.length)?'visual':'none';return result;
 }
 
 export function visualRepairTargets(report:LessonReport,review:RenderReview):string[]{

@@ -8,15 +8,15 @@ const quantity=new RegExp('(?:百分之)?'+number+'(?:[到至~–—-]'+number+'
 // Match only literal content. Decimal/model/clock punctuation is retained;
 // this is a boundary map, never a numeric or spelling equivalence rule.
 function literal(text:string){
-  let value='';const preferred=new Set<number>(),strong=new Set<number>(),at=new Map<number,number>([[0,0]]);
+  let value='';const preferred=new Set<number>(),strong=new Set<number>(),at=new Map<number,number>([[0,0]]),separators=new Map<number,string>();
   for(let i=0;i<text.length;){
     const char=String.fromCodePoint(text.codePointAt(i)!),next=i+char.length;
-    const numericComma=char===','&&/\d/.test(text[i-1]||'')&&/\d/.test(text[next]||'');
-    if(!numericComma&&/[，。！？；、,!?;]/u.test(char)){preferred.add(value.length);if(char!=='、')strong.add(value.length);}
+    const numericPunctuation=/[,:：]/u.test(char)&&/\d/.test(text[i-1]||'')&&/\d/.test(text[next]||'');
+    if(!numericPunctuation&&/[，。！？；：、,:!?;]/u.test(char)){preferred.add(value.length);if(char!=='、')strong.add(value.length);if(/[，、,]/u.test(char))separators.set(value.length,char);}
     else if(!/\s/u.test(char))value+=char;
     at.set(next,value.length);i=next;
   }
-  return{value,preferred,strong,at};
+  return{value,preferred,strong,at,separators};
 }
 
 /** Formatting only for a complete generated chapter whose actual working
@@ -77,4 +77,25 @@ export function generatedCaptionGroups(narration:string,analysis:AudioAnalysis,w
     }
   }
   return groups;
+}
+
+/** Add only internal list/clause separators present in the verified script.
+ * Literal ASR identity is required; quantities, words and timestamps never change. */
+export function restoreCaptionSeparators(narration:string,captions:string[]):string[]|undefined{
+  const script=literal(narration),heard=literal(captions.join(''));
+  if(!script.value||script.value!==heard.value)return;
+  let offset=0;
+  return captions.map(text=>{
+    const part=literal(text);let restored='';
+    for(let i=0;i<text.length;){
+      const char=String.fromCodePoint(text.codePointAt(i)!),end=i+char.length;
+      restored+=char;
+      const point=part.at.get(end)!;
+      if(!/[，、,]/u.test(text)&&point>0&&point<part.value.length&&part.at.get(i)!<point){
+        const separator=script.separators.get(offset+point);if(separator)restored+=separator;
+      }
+      i=end;
+    }
+    offset+=part.value.length;return restored;
+  });
 }

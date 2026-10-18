@@ -12,7 +12,7 @@ import { createToolTrace } from './toolTrace';
 import { throwIfJobCancelled } from './jobExecution';
 import { editFrameZoom, editProposalNarrativeFeedback, editSentenceBudgetHint } from './editProposal';
 import { editorialRepairCandidates, type EditorialRepairSelection } from './editorialRepairCandidates';
-import { extractVisualRetentionRequirements, parseVisualRetentionChecks, visualRetentionSelectionNeeded, visualRetentionUnverifiedPlanningWitnesses, type VisualRetentionPlanningWitness } from './visualRetentionReview';
+import { extractVisualRetentionRequirements, parseVisualRetentionChecks, visualRetentionSelectionNeeded, visualRetentionOmittedPlanningWitnesses, visualRetentionUnverifiedPlanningWitnesses, type VisualRetentionPlanningWitness } from './visualRetentionReview';
 import { durationSourceRecovery, SourceAsrRecoveryError, sourceAsrRecoveryReasons, sourceWitnessHasCompleteSpeech, visualRetentionSourceRecovery, type SourceAsrRecoveryReason } from './sourceAsrRecovery';
 
 type SceneSelection = {sourceId: string; sentenceIds: string[]; reason: string; purpose: SelectedScene['purpose']};
@@ -170,6 +170,7 @@ export async function runEditorialWorkflow(o: WorkflowOptions) {
     if(rejected)throw new Error('该完整选句组合已经编排失败，仅改理由或重复提交不能修复；请按具体时长缺口调整完整句组。'+rejected);
     if(rejectedRetentionSelections.has(selectionKey(selected)))throw new Error('该完整选句组合的实际成片未保留用户点名的原有画面表达；仅改理由或叙事不能修复，请选择包含该表达且保留完整原话的真实源片段。');
     if(unverifiedRetentionSelections.has(selectionKey(selected)))throw new Error('该选句组合的画面保留状态仍未验证；本次仅授权包含原选段外的已绑定源见证以消除不确定性，不能只改理由或重复原选段。');
+    if(planningWitnesses?.some(w=>w.purpose==='confirmed-omission'&&!selected.some(scene=>scene.sourceId===w.sourceId&&w.time>=scene.start&&w.time<scene.end)))throw new Error('返修选句仍未包含已绑定的必留原画面见证，必须选择覆盖对应sourceId与time的完整原句；不能仅换其它句子或理由。'+JSON.stringify(planningWitnesses));
     const unchecked=selected.filter(scene=>!verifiedScenes.has(sceneKey(scene)));if(unchecked.length)await o.verifySelection?.(unchecked);
     for(const scene of selected){verifiedScenes.add(sceneKey(scene));const visual=visuals.get(sceneKey(scene));if(visual)scene.visual=structuredClone(visual);}
     scenes=selected;script=undefined;manualArrange=false;invalidate();return scenes;
@@ -216,7 +217,7 @@ export async function runEditorialWorkflow(o: WorkflowOptions) {
       }else if(resolving||visualRetentionSelectionNeeded(review,o.prompt,plan)){
         if(preserve){retentionStopped=true;review.limitations.push(resolving?'画面保留状态仍未验证，但当前要求固定选段；保留原成片、原分和不确定性，不能擅自包含选段外见证或认定缺失。':'实际审查发现未保留用户点名的画面表达，但当前要求固定选段；保留原成片和问题，不能擅自重选。');}
         else if(renderCount<2){
-          planningWitnesses=resolving;
+          planningWitnesses=resolving||visualRetentionOmittedPlanningWitnesses(review,o.prompt,plan,o.sources);
           const checked=review,checkedPlan=plan,candidates=visualRetentionSourceRecovery(checked,o.prompt,plan,o.sources),rejectedKey=selectionKey(scenes);
           if(candidates.length){scenes=[];script=undefined;invalidate();}
           for(const sourceId of new Set(candidates.map(candidate=>candidate.sourceId))){
@@ -239,7 +240,7 @@ export async function runEditorialWorkflow(o: WorkflowOptions) {
   const complete=()=>Boolean(plan&&(!o.export||review&&(review.status==='passed'||renderCount>=2||retentionStopped)));
   const nextTool=()=>decision||(!analyzed?'transcribe_sources':!scenes.length?'select_scenes':scenes.some(s=>!s.visual)?'inspect_scenes':!script?'write_narrative':!plan?'arrange_timeline':o.export&&!rendered?'render_edit':o.export&&!review?'review_edit':review?.status==='needs-review'?'write_narrative':'done');
   const automatic=new Set(['transcribe_sources','inspect_scenes','arrange_timeline','render_edit','review_edit']);
-  const context=()=>({feedback,userRequest:o.prompt,sourceCatalog:o.sources.map(m=>({sourceId:m.id,name:m.name,duration:m.duration,sentences:m.analysis?.sentences.slice(0,30).map(s=>({id:s.id,start:s.start,end:s.end,text:s.text,complete:s.complete}))})),scenes,script,review,repairCandidates,priorParameters:{format:o.previous?.format,zoom:o.previous?.clips[0]?.zoom,fade:o.previous?.clips.find(c=>c.transition?.kind==='fade')?.transition?.duration}});
+  const context=()=>({feedback,userRequest:o.prompt,sourceCatalog:o.sources.map(m=>({sourceId:m.id,name:m.name,duration:m.duration,sentences:m.analysis?.sentences.slice(0,30).map(s=>({id:s.id,start:s.start,end:s.end,text:s.text,complete:s.complete}))})),scenes,script,review,repairCandidates,planningWitnesses,priorParameters:{format:o.previous?.format,zoom:o.previous?.clips[0]?.zoom,fade:o.previous?.clips.find(c=>c.transition?.kind==='fade')?.transition?.duration}});
   async function advance(){
     if(terminalSourceError)throw terminalSourceError;
     const results:unknown[]=[];let retries=0;

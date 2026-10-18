@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import type { LessonChapter, LessonReport, RenderReview } from '../src/types';
 import { authorDrawing, drawingHtml, validateDrawing, type HtmlDrawing } from '../server/narrativeScenes';
-import { visualRepairTargets,speechOnlyRepair,lessonVisualBrief } from '../server/visualRecovery';
+import { lessonRepairPlan,visualRepairTargets,speechOnlyRepair,lessonVisualBrief } from '../server/visualRecovery';
 import { validateLessonVisual } from '../server/lessonSpec';
 import { assertVisibleContent } from '../server/visibleContent';
 
@@ -67,4 +67,17 @@ test('a drawing retry keeps verified audience facts separate from rejected prior
   const config={id:'fixture',name:'fixture',kind:'text' as const,modelId:'fixture',provider:'ark',baseUrl:'https://example.invalid',apiKey:'fixture-only',enabled:true};
   const result=await authorDrawing(config,{id:chapter.id,title:chapter.title,line:chapter.narration,mode:'generated',visual:'html',visualBrief:JSON.stringify(brief),role:'argument',reason:chapter.reason,referenceIds:chapter.referenceIds},'16:9');
   assert.equal(requests,2,'existing bounded layout recovery fixes rejected visible copy');assert.deepEqual(result,drawing);assert.doesNotMatch(drawingHtml(result,8,'16:9'),/归属误导|不与其他卡片合并/);
+});
+
+
+test('mixed verified caption separators and scene wrapping target display repair without rerecording all chapters',()=>{
+  const report={chapters:[{id:'chapter-1'},{id:'chapter-2'},{id:'chapter-3'}],factReview:{score:95,needsRepair:false,findings:[]}} as LessonReport;
+  const findings=['chapter-2：红色文字「不同区域／对角」换行为孤字，单字成行，排版可读性差。','global：全片所有字幕未添加空格分隔并列成分，出现「保持安静干净容易到达」「可能是碗压力或疾病」，需添加分隔标点。'];
+  const review={status:'needs-review',checks:[{name:'成片语义审查',passed:false}],semantic:{findings}} as RenderReview;
+  const plan=lessonRepairPlan(report,review);
+  assert.equal(plan.kind,'visual');assert.deepEqual(plan.scriptChapterIds,[]);assert.deepEqual(plan.visualChapterIds,['chapter-2']);assert.deepEqual(plan.captionChapterIds,['chapter-1','chapter-2','chapter-3']);
+  for(const fault of ['字幕数字错误，需要标点分隔','字幕并列成分缺字，需要空格','字幕与来源不一致，需分隔','字幕缺少顿号，但旁白漏读疾病']){
+    const result=lessonRepairPlan(report,{...review,semantic:{...review.semantic!,findings:[fault]}});
+    assert.equal(result.captionChapterIds,undefined,'formatting cannot hide factual, source or spoken defects');
+  }
 });

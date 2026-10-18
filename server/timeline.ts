@@ -3,7 +3,7 @@ import { excludesBgm } from './intents';
 import { createHash } from 'node:crypto';
 import { validateLesson } from './lessonSpec';
 import { validateAvatarTracks } from './avatarAssets';
-import {generatedCaptionGroups} from './generatedCaptionGroups';
+import {generatedCaptionGroups,restoreCaptionSeparators} from './generatedCaptionGroups';
 
 export function timelineOffsets(plan: EditPlan): number[] {
   let position = 0;
@@ -85,6 +85,26 @@ export function captionsFromTranscript(plan: EditPlan, media: MediaItem[], style
     flush();
   });
   return captions;
+}
+
+/** A display projection for verified generated lesson speech. Raw analysis and
+ * the verbatim caption builder remain untouched for independent comparison. */
+export function formatGeneratedLessonCaptions(plan:EditPlan,media:MediaItem[]):TimelineText[]{
+  const captions=plan.captions||[],expected=captionsFromTranscript(plan,media),lesson=plan.lesson;
+  if(!lesson||JSON.stringify(captions)!==JSON.stringify(expected))return captions;
+  const fact=lesson.factReview;
+  if(!fact||!Number.isFinite(fact.score)||fact.score<80||fact.needsRepair!==false||!Array.isArray(fact.findings)||fact.findings.length)return captions;
+  const result=captions.map(c=>({...c})),offsets=timelineOffsets(plan);
+  plan.clips.forEach((clip,index)=>{
+    const chapters=lesson.chapters.filter(c=>c.mediaId===clip.sourceId&&c.id===clip.sceneId),chapter=chapters[0];
+    const source=media.find(m=>m.id===clip.sourceId),analysis=source?.analysis,g=source?.generation;
+    if(chapters.length!==1||!analysis||analysis.status!=='ready'||analysis.captionBoundarySource!=='matched-clauses'||analysis.sentences.some(s=>!s.complete)
+      ||g?.mode!=='generated'||g.workflowId!==lesson.workflowId||g.beatId!==chapter.id||g.lineHash!==createHash('sha256').update(chapter.narration).digest('hex'))return;
+    const rows=result.map((c,i)=>({c,i})).filter(({c})=>c.start>=offsets[index]-.03&&c.end<=offsets[index]+clip.end-clip.start+.03);
+    const restored=restoreCaptionSeparators(chapter.narration,rows.map(({c})=>c.text));
+    if(restored)rows.forEach(({c},i)=>{if(restored[i].length<=40)c.text=restored[i];});
+  });
+  return result;
 }
 
 export function validateTimeline(plan: EditPlan, media: MediaItem[]): EditPlan {

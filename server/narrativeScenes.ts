@@ -114,9 +114,9 @@ export function drawingHtml(d:HtmlDrawing,duration:number,format:Format='9:16',p
   const lines=paths('line'),products=paths('path');
   const nodes=d.nodes.filter(n=>n.kind!=='line'&&n.kind!=='path'&&!duplicateTitles.has(n.id)).map(n=>{const card=companionCards.get(n.id);
     // Balance only naturally wrapped prose, retaining every glyph and font.
-    // Short badges, deliberate breaks, numeric quantities and formulas keep
+    // Short slash-separated labels also qualify. Deliberate breaks, quantities and formulas keep
     // their existing line contract (including two-character action labels).
-    const balance=n.kind!=='circle'&&(n.text.match(/\p{Script=Han}/gu)||[]).length>=10&&/[，。；：！？,.!?;]/.test(n.text)&&!/[\r\n\d零〇一二两三四五六七八九十百千万亿=+×÷%％°℃℉μΩ]/u.test(n.text);
+    const balance=n.kind!=='circle'&&(((n.text.match(/\p{Script=Han}/gu)||[]).length>=10&&/[，。；：！？,.!?;]/.test(n.text))||((n.text.match(/\p{Script=Han}/gu)||[]).length>=6&&/[／/]/.test(n.text)))&&!/[\r\n\d零〇一二两三四五六七八九十百千万亿=+×÷%％°℃℉μΩ]/u.test(n.text);
     return `<div id="${domId(n.id)}" data-drawing-id="${n.id}" class="node ${n.kind}" ${numericDrawingText(n.text)?'data-qj-number="true"':''} style="left:${n.x}px;top:${n.y}px;width:${n.w}px;height:${n.h}px;font-size:${n.fontSize}px;background:${n.kind==='text'?'transparent':n.tone==='paper'?palette.paper:'#fffdfa'};color:${n.tone==='coral'?'#b43c27':n.tone==='blue'?'#28617d':palette.ink};border-color:${palette[n.tone]}${balance?';text-wrap:balance':''}${card?`;transform-origin:${card.x+card.w/2-n.x}px ${card.y+card.h/2-n.y}px`:''}">${escape(n.text)}</div>`;}).join('');
   const profile = {corporate:['power3.out',.45],premium:['sine.out',.65],playful:['back.out(1.15)',.5],energetic:['expo.out',.32]}[d.motion||'corporate'];
   const enterDuration=Math.min(Number(profile[1]),duration*.3);

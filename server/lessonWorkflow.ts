@@ -26,7 +26,7 @@ import { lessonElapsedEvidenceFindings, lessonSourceResearchFeedback } from './l
 import { alignLessonSpeech, compactSpeech, lessonSettings, lessonPacing, lessonPadding, lessonNarrationBudget, lessonScriptBudget, lessonScriptBudgetInstruction, assertLessonScriptBudget, validateLesson, spokenLessonText, lessonSpeechLexicon, correctLessonTranscript, lessonCaptionAnalysis, applyLessonChapterRepairs, lessonRepairTargets } from './lessonSpec';
 import { produceLessonScene, NEWS_ILLUSTRATIONS, lessonRendererHash } from './lessonScenes';
 import { loadEditingSkill, loadMotionDesignContext } from './skills';
-import { captionsFromTranscript } from './timeline';
+import { captionsFromTranscript,formatGeneratedLessonCaptions } from './timeline';
 import { createToolTrace, observeToolErrors, traceValue } from './toolTrace';
 import { generateAudio } from './providers';
 import { verifyLessonResearch, lessonResearchSummary } from './lessonResearch';
@@ -650,7 +650,7 @@ export async function runLessonWorkflow(o:Options){
   add('arrange_lesson_timeline',current?'编排新闻视频':'编排教学时间线','按教学顺序编排已渲染HTML、完整旁白、真实转写字幕、响度归一化与安静间隙中的短叠化。',Type.Object({}),async()=>{
     if(!report||report.chapters.some(c=>!c.mediaId||!c.duration))throw new Error('先生成全部教学分镜。');
     const base:EditPlan={lesson:structuredClone(report),format:report.format,targetSeconds:0,summary:`${report.title} · ${report.chapters.length}章，从直觉到应用`,clips:report.chapters.map((c,i)=>({sceneId:c.id,sourceId:c.mediaId!,start:0,end:c.duration!,purpose:i===0?'hook':i===report!.chapters.length-1?'conclusion':'argument',transition:i?{kind:'fade',duration:pacing.transitionSeconds}:{kind:'cut',duration:0}})),audio:{originalVolume:1,narrationVolume:0,bgmVolume:presentation.bgm ? .25 : 0,normalize:true}};
-    base.captions=captionsFromTranscript(base,o.media);plan=validatePlan(base,o.media);await o.persist(plan);phase='render';return {seconds:plan.targetSeconds,chapters:plan.clips.length,captions:plan.captions?.length,nextTool:'render_lesson'};
+    base.captions=captionsFromTranscript(base,o.media);base.captions=formatGeneratedLessonCaptions(base,o.media);plan=validatePlan(base,o.media);await o.persist(plan);phase='render';return {seconds:plan.targetSeconds,chapters:plan.clips.length,captions:plan.captions?.length,nextTool:'render_lesson'};
   });
   add('render_lesson',current?'渲染新闻成片':'渲染教学成片','输出当前最新方案，生成视频和实际渲染清单。',Type.Object({}),async()=>{if(!await requireGroundedCharts(report,plan?.lesson))return {feedback,nextTool:currentTool()};if(!plan)throw new Error('先编排教学时间线。');assertSourceRenderBudget();if(current&&research&&currentResearchExpired(research)&&!(datedMovieEvidence&&report&&canReuseNewsEvidence(report,o.prompt,requestedAt))){phase='research';throw new Error('热点研究超过30分钟，渲染前重新查证来源。');}let bgmFile:string|undefined;if(presentation.bgm){bgmFile=path.join(work,'urgent-bgm.wav');await trace.run('produce_background_music','制作紧张氛围配乐',{mood:presentation.mood,source:'original-synthesis'},async()=>{await writeUrgentBgm(bgmFile!);return {generated:true};});}rendered=await o.render(plan,bgmFile);renderedHash=hashBytes(await readFile(rendered.file));renders++;sourceRevalidation=undefined;reviewRetries=0;phase='review';return {artifactId:rendered.id,duration:plan.targetSeconds,nextTool:'review_lesson'};});
   add('review_lesson',current?'检查新闻成片与声音':'审查教学成片与声音','检查实际完整音频、各章抽帧、图解与旁白一致、字幕、概念递进、音色与音量。',Type.Object({}),async()=>{
@@ -717,11 +717,14 @@ export async function runLessonWorkflow(o:Options){
       else for(const id of targets)chapterVoiceRevisions[id]=(chapterVoiceRevisions[id]||0)+1;
       speech=new Map();phase='narration';return {rerecordChapters:targets,preservedScript:true,nextTool:'synthesize_narration'};
     }
-    if(repairPlan.kind==='visual'){
+    const formatted=plan&&formatGeneratedLessonCaptions(plan,o.media);
+    const captionChanged=Boolean(plan?.captions&&formatted&&JSON.stringify(formatted)!==JSON.stringify(plan.captions));
+    if(repairPlan.kind==='visual'&&(!repairPlan.captionChapterIds?.length||captionChanged)){
       speech=(await verifiedSpeech()).reused;
       for(const id of repairPlan.visualChapterIds)visualFeedback[id]=repairPlan.visualFindings[id].join('\n');
       Object.assign(layoutRepairProofs,createLessonLayoutRepairProofs(report,review,renderedHash,rendererHash));
-      phase='scenes';return {redrawChapters:repairPlan.visualChapterIds,preservedAudio:true,preservedScript:true,nextTool:'draw_lesson_scenes'};
+      if(captionChanged)await writeFile(path.join(work,'caption-separator-recovery.json'),JSON.stringify({sourceCandidateHash:renderedHash,sourceCaptionHash:hashBytes(JSON.stringify(plan!.captions)),captions:formatted,chapters:repairPlan.captionChapterIds,preservedRawAnalysis:true,preservedAudio:true}),{mode:0o600});
+      phase=repairPlan.visualChapterIds.length?'scenes':'timeline';return {redrawChapters:repairPlan.visualChapterIds,captionChapters:repairPlan.captionChapterIds,preservedAudio:true,preservedScript:true,nextTool:currentTool()};
     }
     // Production retries must not consume the one reserved post-render repair.
     // renders still caps this at one real repair and two rendered candidates.

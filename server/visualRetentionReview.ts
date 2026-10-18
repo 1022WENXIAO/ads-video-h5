@@ -149,3 +149,20 @@ export function visualRetentionUnverifiedPlanningWitnesses(review:RenderReview,p
     return witnesses;
   }catch{return;}
 }
+
+/** Bind confirmed omissions to the next selection as well as the last review.
+ * A different selection is not a repair if it still omits the same actual frame. */
+export function visualRetentionOmittedPlanningWitnesses(review:RenderReview,prompt:string,plan:EditPlan,sources:readonly MediaItem[]):VisualRetentionPlanningWitness[]|undefined{
+  if(!visualRetentionSelectionNeeded(review,prompt,plan))return;
+  const owners=new Set(sources.filter(s=>plan.clips.some(c=>c.sourceId===s.id)).flatMap(s=>s.ownerId?[s.ownerId]:[]));
+  if(owners.size>1)return;
+  const witnesses:VisualRetentionPlanningWitness[]=[];
+  for(const check of review.semantic!.visualRetentionChecks!){
+    if(check.status!=='unmet'||check.sourceOmitted!==true)continue;
+    const w=check.sourceEvidence;if(!w||!/^[a-f0-9]{64}$/.test(w.sourceHash||'')||!Number.isFinite(w.time)||w.time<0)return;
+    const matches=sources.filter(s=>s.id===w.sourceId),source=matches[0],a=source?.analysis;
+    if(matches.length!==1||source.kind!=='video'||source.hasAudio===false||a?.status!=='ready'||a.sourceHash!==w.sourceHash||!Number.isFinite(a.duration)||w.time>=a.duration||!Number.isFinite(source.duration)||w.time>=source.duration!||!plan.editorial?.scenes.some(s=>s.sourceId===source.id&&s.sourceHash===w.sourceHash)||plan.clips.some(c=>c.sourceId===source.id&&w.time>=c.start&&w.time<c.end))return;
+    witnesses.push({sourceId:w.sourceId,sourceHash:w.sourceHash!,time:w.time,purpose:'confirmed-omission'});
+  }
+  return witnesses.length?witnesses:undefined;
+}

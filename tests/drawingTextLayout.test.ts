@@ -118,3 +118,17 @@ test('controlled real glyph overlap uses the existing two-author HTML recovery w
     const failed=JSON.parse(await readFile(path.join(project,state.failed[0].evidence.directory,'check-report.json'),'utf8'));assert.equal(failed.ok,false);assert.ok(failed.layout.findings.some((f:any)=>['content_overlap','text_occluded'].includes(f.code)));
   });
 });
+
+
+test('short slash-separated labels balance actual browser lines without changing text, font or geometry',async()=>{
+  const drawing={title:'客厅分区示意',nodes:[{id:'zone',kind:'text',x:100,y:300,w:180,h:140,text:'不同区域／对角',tone:'coral',fontSize:32,highlight:false},{id:'water',kind:'text',x:350,y:300,w:200,h:70,text:'水碗',tone:'blue',fontSize:32,highlight:false},{id:'litter',kind:'text',x:350,y:600,w:200,h:70,text:'猫砂盆',tone:'ink',fontSize:32,highlight:false}]} as HtmlDrawing;
+  const html=drawingHtml(drawing,4);
+  assert.match(html.match(/<div id="qj-author-zone"[^>]*>/)![0],/text-wrap:balance/);
+  await withProject(html,async project=>{
+    const report=(await inspectDrawingTextLayout(project))!;
+    const visible=report.frames.flatMap(frame=>frame.nodes.filter(n=>n.selector==='#qj-author-zone'));
+    assert.ok(visible.length);assert.ok(visible.every(n=>n.lines.map(l=>l.text).join('')==='不同区域／对角'));
+    assert.ok(visible.every(n=>n.lines.at(-1)!.text.length>=2),'no final isolated 角');
+    assert.ok(visible.every(n=>n.font.includes('32px')));
+  });
+});

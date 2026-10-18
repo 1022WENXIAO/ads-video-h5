@@ -2,8 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {createHash} from 'node:crypto';
-import {captionsFromTranscript,timelineOffsets} from '../server/timeline';
-import {generatedCaptionGroups} from '../server/generatedCaptionGroups';
+import {captionsFromTranscript,timelineOffsets,formatGeneratedLessonCaptions} from '../server/timeline';
+import {generatedCaptionGroups,restoreCaptionSeparators} from '../server/generatedCaptionGroups';
 import type {AudioAnalysis,EditPlan,LessonReport,MediaItem,TimelineText} from '../src/types';
 
 const fixture=JSON.parse(readFileSync(new URL('./fixtures/p33-caption-compound-boundary.json',import.meta.url),'utf8'));
@@ -153,4 +153,40 @@ test('long indivisible runs preserve the existing 40-character hard limit and cl
   const old=structuredClone(plan);delete old.lesson!.factReview;
   assert.deepEqual(captionsFromTranscript(plan,media),captionsFromTranscript(old,media));
   assert.equal(captionsFromTranscript(plan,media).map(row=>row.text).join(''),'必须保留完整原话');
+});
+
+
+test('verified generated captions restore only source list separators without changing ASR or timing',()=>{
+  const narration='保持安静干净、容易到达。可能是碗、压力或疾病。';
+  const {plan,media}=setup(narration,controlled(narration));plan.captions=captionsFromTranscript(plan,media);
+  const original=structuredClone({plan,media}),formatted=formatGeneratedLessonCaptions(plan,media);
+  assert.ok(formatted.some(c=>c.text==='保持安静干净、容易到达'));
+  assert.ok(formatted.some(c=>c.text==='可能是碗、压力或疾病'));
+  assert.deepEqual(formatted.map(({text,...row})=>row),plan.captions.map(({text,...row})=>row));
+  assert.deepEqual(formatted.map(c=>c.text.replace(/[，、,]/gu,'')).join(''),plan.captions.map(c=>c.text).join(''));
+  assert.deepEqual({plan,media},original);
+  for(const change of [(p:EditPlan,m:MediaItem[])=>{m[0].generation!.lineHash='different';},(p:EditPlan,m:MediaItem[])=>{m[0].analysis!.sentences[0].complete=false;},(p:EditPlan)=>{p.lesson!.factReview!.needsRepair=true;},(p:EditPlan,m:MediaItem[])=>{m[0].generation!.mode='original' as any;},(p:EditPlan)=>{p.lesson!.chapters[0].narration+='新事实';},(p:EditPlan)=>{p.captions![0].text+='改字';}]){
+    const copy=structuredClone(original);change(copy.plan,copy.media);assert.deepEqual(formatGeneratedLessonCaptions(copy.plan,copy.media),copy.plan.captions);
+  }
+});
+
+test('separator display projection never equates clocks, numbers, missing words or repeats with a different script',()=>{
+  for(const [script,rows] of [['金额1,000美元，版本2.5。',['金额1,000美元版本2.5']],['11:49公布，仍待核验。',['11:40公布仍待核验']],['碗、压力或疾病。',['碗疾病']],['碗、压力。碗、压力。',['碗压力碗压力']]] as const){
+    const actual=restoreCaptionSeparators(script,[...rows]);
+    if(script.includes('11:49')||script.includes('疾病'))assert.equal(actual,undefined);
+    else if(script.includes('1,000'))assert.deepEqual(actual,rows,'numeric comma and decimal retained exactly, no duplicate separator');
+    else assert.deepEqual(actual,['碗、压力碗、压力']);
+  }
+});
+
+
+test('prose colons permit literal source-bound caption grouping while clock punctuation stays exact',()=>{
+  const narration='记住原则：砂盆放一角，水碗放另一处。若仍少喝，可能是碗、压力或疾病。';
+  const analysis=controlled(narration.replaceAll('：',''));
+  const {plan,media}=setup(narration,analysis);plan.captions=captionsFromTranscript(plan,media);
+  assert.ok(!plan.captions.some(c=>c.text==='砂'));checkCoverage(plan.captions,analysis.sentences.flatMap(s=>s.words));
+  const formatted=formatGeneratedLessonCaptions(plan,media);
+  assert.ok(formatted.some(c=>c.text.includes('碗、压力或疾病')));
+  for(const actual of ['11:40公布仍待核验','1149公布仍待核验','11：49公布仍待核验'])assert.equal(restoreCaptionSeparators('11:49公布，仍待核验。',[actual]),undefined);
+  assert.deepEqual(restoreCaptionSeparators('11:49公布，仍待核验。',['11:49公布仍待核验']),['11:49公布，仍待核验']);
 });
