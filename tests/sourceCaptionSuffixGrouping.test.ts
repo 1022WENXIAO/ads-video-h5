@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
 import {captionsFromTranscript} from '../server/timeline';
 import type {AudioAnalysis,EditPlan,MediaItem} from '../src/types';
 
@@ -60,4 +61,28 @@ test('numeric units, negation and the existing reading width and duration bounds
   assert.equal(run(long).at(-1)!.text,'的','do not widen a display block beyond the existing18-character soft bound');
   const slow=controlled('这个判断肯定是正确的',.4);assert.ok(slow.duration>3);
   assert.equal(run(slow).at(-1)!.text,'的','do not lengthen a display block beyond the existing3-second reading bound');
+});
+
+
+test('actual continuous original speech keeps 时 and terminal two-character words with their preceding phrase',()=>{
+  const fixture=JSON.parse(readFileSync(new URL('./fixtures/source-caption-continuous-suffix.json',import.meta.url),'utf8'));
+  const analysis=fixture.analysis as AudioAnalysis,before=structuredClone(analysis),rows=run(analysis,fixture.plan.clips);
+  assert.equal(analysis.sourceHash,'d08c3de9a8ad9be03eb542e3bfbdd3e7f7a97c9641459b0b6dfea1fd827099d1');
+  assert.deepEqual(fixture.originalCaptions.filter((c:any)=>c.text.length<=2).map((c:any)=>c.text),['时','一致','支持']);
+  assert.ok(!rows.some(c=>['时','支持'].includes(c.text)));
+  assert.deepEqual(rows.find(c=>c.text==='一致'),fixture.originalCaptions.find((c:any)=>c.text==='一致'),'a mid-clause short word retains its actual original grouping');
+  assert.equal(rows.map(c=>c.text).join(''),fixture.originalCaptions.map((c:any)=>c.text).join(''));
+  for(const row of rows){const covered=fixture.originalCaptions.filter((c:any)=>c.start>=row.start-.001&&c.end<=row.end+.001);assert.equal(row.text,covered.map((c:any)=>c.text).join(''));assert.equal(row.start,covered[0].start);assert.equal(row.end,covered.at(-1).end);}
+  assert.deepEqual(analysis,before,'source completeness and all actual word times stay unchanged');
+});
+
+
+test('short final words preserve independent replies, real pauses, incompleteness, quantities and reading bounds',()=>{
+  const make=(text='这个结论得到支持',step=.12)=>{const a=controlled(text,step);a.captionBreaks=[text.length-3,text.length-1];return a;};
+  for(const text of ['这个过程仍在继续','结论有待核验','请先安全暂停']){const rows=run(make(text));assert.equal(rows.length,1);assert.equal(rows[0].text,text);}
+  const incomplete=make();incomplete.sentences[0].complete=false;assert.equal(run(incomplete).at(-1)!.text,'支持');
+  const paused=make(),lastTwo=paused.sentences[0].words.slice(-2);for(const word of lastTwo){word.start+=.4;word.end+=.4;}paused.duration=paused.sentences[0].end=lastTwo.at(-1)!.end;assert.equal(run(paused).at(-1)!.text,'支持');
+  const replies=make(),sentence=replies.sentences[0],last=sentence.words.slice(-2);replies.sentences=[{...sentence,text:'这个结论得到',end:last[0].start,words:sentence.words.slice(0,-2)},{...sentence,id:'reply',text:'支持',start:last[0].start,words:last}];assert.equal(run(replies).at(-1)!.text,'支持');
+  for(const text of ['设备共有二十','这个说法不是','这次实际观察到的全部完整结果目前可以支持'])assert.equal(run(make(text)).at(-1)!.text,text.slice(-2));
+  assert.equal(run(make('这个结论得到支持',.5)).at(-1)!.text,'支持');
 });

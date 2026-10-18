@@ -58,11 +58,15 @@ export function captionsFromTranscript(plan: EditPlan, media: MediaItem[], style
       if (text){
         const caption={ start: +(offsets[index] + start - clip.start).toFixed(3), end: +(offsets[index] + end - clip.start).toFixed(3), text, style, animation:'none' as const },prior=captions.at(-1);
         const owner=prior&&sourceCaptionOwners.get(prior),sentence=firstWord&&wordOwners.get(firstWord);
-        // A provider's display break may leave a grammatical particle alone.
+        // A provider's display break may isolate a temporal particle or the
+        // final short word of a complete sentence. Only rejoin literal words
+        // within the original reading bounds and a continuous source span.
         // Join display blocks only inside one actual source sentence/clip and
         // across adjacent word owners sharing a time boundary. This preserves
         // every heard word/time and does not repair source completeness flags.
-        const mergeSourceSuffix=!plan.lesson&&/^[的地得了着过吗呢吧]$/.test(text)&&prior&&owner&&firstWord&&lastWord&&sentence
+        const terminalTokens=text.length===2&&/^\p{Script=Han}{2}$/u.test(text)&&!/[零〇一二两三四五六七八九十百千万亿不无没未非]/u.test(text)?[...new Intl.Segmenter('zh',{granularity:'word'}).segment(text)]:[];
+        const terminalWord=sentence?.complete&&lastWord===sentence.words.at(-1)&&terminalTokens.length===1&&terminalTokens[0].isWordLike;
+        const mergeSourceSuffix=!plan.lesson&&(/^[的地得了着过吗呢吧时]$/.test(text)||terminalWord)&&prior&&owner&&firstWord&&lastWord&&sentence
           &&owner.clip===index&&owner.sentence===sentence&&wordOwners.get(lastWord)===sentence
           &&wordIndices.get(firstWord)===wordIndices.get(owner.last)!+1
           &&Math.abs(firstWord.start-owner.last.end)<=.03
