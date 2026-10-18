@@ -59,6 +59,7 @@ function protocolFeedback(diagnostic:SemanticReviewProtocolDiagnostic,requiresNe
   return '上一轮成片评审的输出协议未通过，不是本地判定影片有错或替你决定needsRepair。安全字段诊断：'+JSON.stringify(diagnostic)+
     '。请仅依据上面同一份实际音频和抽帧重新评审，按具体字段纠正格式；原始评分及已经可读的处置仍保留，不要求沿用或提高旧分，不得删除真实缺陷来通过校验。回复内容必须是单个有效JSON对象，不含代码块或额外说明。完整核心字段：score为0到100的有限number；needsRepair为JSON boolean（true/false，不是字符串，不能省略）；findings为可读问题字符串或问题对象的array，没有真实缺陷才返回[]；suggestions为array。不得用分数推导或代填缺失的needsRepair。'+
     (requiresNewsPublication?'新闻另须newsPublication:{visible:boolean,chapterId:string,quote:string,frameTime:number}，只据本次真实抽帧填写；无法确认就如实visible=false，不从期望文案推定可见。':'')+
+    '本轮findings和suggestions仅输出字符串数组，不再输出问题对象或嵌套对象。每条真实缺陷把章节ID、实际时点、观察证据和修复要求合成一条完整字符串；保留已发现的真实问题，不能为修正格式改成空数组。score和needsRepair仍须显式返回实际数字及布尔值，不得因格式修正省略或推导。没有实际缺陷才可findings:[]。'+
     '若返回可选numericVisualChecks或visualRetentionChecks，须符合本次原有完整字段及真实章节/时间/要求绑定；未知保持未知，不编造证据。';
 }
 export class SemanticReviewProtocolError extends Error {

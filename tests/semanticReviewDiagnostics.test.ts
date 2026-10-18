@@ -44,6 +44,8 @@ test('specific missing/type feedback repairs only the protocol on the same media
     const feedback=requests[1].messages.at(-1).content;
     assert.match(feedback,/score.*needsRepair.*findings.*suggestions/);
     assert.ok(feedback.includes(item.field));assert.match(feedback,/JSON boolean/);assert.match(feedback,/不要求沿用或提高旧分/);
+    assert.match(feedback,/findings和suggestions仅输出字符串数组/);
+    assert.match(feedback,/保留已发现的真实问题，不能为修正格式改成空数组/);
     assert.doesNotMatch(feedback,/PRIVATE_|controlled-not-a-real-secret/);
     assert.equal(requests[1].max_tokens,8000);assert.deepEqual(requests[1].thinking,{type:'disabled'});
     assert.deepEqual(requests[1].response_format,{type:'json_object'});
