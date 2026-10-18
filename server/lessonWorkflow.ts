@@ -586,7 +586,11 @@ export async function runLessonWorkflow(o:Options){
           const {corrected,aligned}=checked,analysis=lessonCaptionAnalysis(chapter,corrected);chapter.speechMatch=aligned.similarity;chapter.cues=aligned.cues;speech.set(chapter.id,{file:adjusted,analysis});await writeFile(path.join(dir,'speech-analysis.json'),JSON.stringify(analysis,null,2),{mode:0o600});await saveProof(selectedRawAnalysis);verified=true;break;
         }catch(error){lastError=error;if(error instanceof NarrationAnalysisError)throw error;const quality=error instanceof NarrationVerificationError&&error.chapterId===chapter.id;if(attempt===1||!quality)throw error;
           const spoken=spokenLessonText(chapter.narration),pronunciation=pronunciationFor(chapter);const result=await trace.run('synthesize_chapter',`重录错字 · ${chapter.title}`,{chapterId:chapter.id,narration:spoken,correction:String(error),...(pronunciation.hints.length?{pronunciationHints:pronunciation.hints}:{})},()=>generateAudio(`使用@Audio1同一声音。${voiceStyle}${pronunciation.prompt?' '+pronunciation.prompt:''} 上次核验发现：${String(error).slice(0,300)}。必须完整准确地朗读下面的文字，日期按汉字读法，小数每一位数字清楚读出，不能增删。只朗读台词，不朗读核验意见。台词：${spoken}`,audioConfig,reference));await writeRawSpeech(chapter,file,result.bytes);await prepareChapterSpeech(chapter,file,preparedFile);
-          if(frozen.length){chapterTempo=+(await probeAudio(preparedFile)/allocatedSeconds).toFixed(5);if(chapterTempo<.8||chapterTempo>1.25)pendingTimingFailure([chapter.id],`本章重录后的变速${chapterTempo}不在0.8–1.25安全范围内。`,true);}
+          // A corrected take can be shorter or longer on the first run too.
+          // Keep its already allocated window while preserving other chapters;
+          // unsafe ratios still require scoped content repair and fresh ASR.
+          chapterTempo=+(await probeAudio(preparedFile)/allocatedSeconds).toFixed(5);
+          if(!Number.isFinite(chapterTempo)||chapterTempo<.8||chapterTempo>1.25)pendingTimingFailure([chapter.id],`本章重录后的变速${chapterTempo}不在0.8–1.25安全范围内。`,true);
           await adjustChapterSpeech(chapter,preparedFile,adjusted,chapterTempo);
         }
       }

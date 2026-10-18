@@ -262,6 +262,35 @@ test('accepted word retake survives ASR transport failure and resumes the same n
   }finally{globalThis.fetch=originalFetch;await rm(directory,{recursive:true,force:true});}
 });
 
+for(const retakeSeconds of [12.4,5])test(`first-pass retake of ${retakeSeconds}s preserves its allocated real speech window or rejects an unsafe ratio`,async()=>{
+  const directory=await mkdtemp(path.join(tmpdir(),'qingjian-first-retake-timing-')),originalFetch=globalThis.fetch;
+  try{
+    const newFile=path.join(directory,'new-take.mp3');await runFFmpeg(['-v','error','-y','-f','lavfi','-i',`sine=frequency=660:sample_rate=48000:duration=${retakeSeconds}`,'-ar','48000','-ac','1',newFile]);
+    const newBytes=await readFile(newFile),s=await seed(directory,'narration',lessonRendererHash()),{hashes}=await seedAudio(s,directory,true,newBytes),chapter=s.checkpoint.report.chapters[1];
+    // No speech-proof files exist: this exercises the initial all-pending
+    // production path, not resume with other frozen waveforms.
+    for(const c of s.checkpoint.report.chapters)await assert.rejects(readFile(path.join(s.work,c.id,'speech-proof.json')),{code:'ENOENT'});
+    const allocated=await probeAudio(path.join(s.work,'c1/speech.mp3'));let submissions=0,recognitions=0;
+    globalThis.fetch=async()=>{submissions++;return Response.json({code:0,audio:newBytes.toString('base64'),duration:retakeSeconds});};
+    const o={...s.o,stage:async(stage:string)=>{if(stage==='绘制公式、曲线与教学分镜'||retakeSeconds===5&&stage.startsWith('规划'))throw STOP;},analyze:async(_item:any,file:string)=>{
+      recognitions++;assert.equal(path.basename(path.dirname(file)),'c1');const bytes=await readFile(file),duration=await probeAudio(file);
+      return analysis(chapter,bytes,recognitions<=2?chapter.narration.replace('损失','损'):chapter.narration,duration);
+    }};
+    if(retakeSeconds===5){
+      await assert.rejects(runLessonWorkflow(o),error=>error instanceof Error&&error.message.includes(STOP.message));
+      const checkpoint=JSON.parse(await readFile(path.join(s.work,'checkpoint.json'),'utf8'));assert.equal(checkpoint.phase,'script');assert.match(checkpoint.repairRequirements,/c1/);assert.match(checkpoint.repairRequirements,/0\.8–1\.25/);
+      assert.equal(recognitions,2,'unsafe retiming never reaches a fabricated successful ASR');
+    }else{
+      await assert.rejects(runLessonWorkflow(o),error=>causedBy(error,STOP));assert.equal(recognitions,3);
+      const file=path.join(s.work,'c1/speech.mp3'),proof=JSON.parse(await readFile(path.join(s.work,'c1/speech-proof.json'),'utf8'));
+      assert(Math.abs(await probeAudio(file)-allocated)<.08,'a shorter corrected take retains the original allocated window');
+      assert(proof.tempo>=.8&&proof.tempo<1);assert.equal(proof.processedHash,hashBytes(await readFile(file)));
+      const saved=JSON.parse(await readFile(path.join(s.work,'c1/speech-analysis.json'),'utf8'));assert.equal(saved.sourceHash,proof.processedHash);assert.equal(saved.transcript,chapter.narration);
+    }
+    assert.equal(submissions,1);for(const id of ['c0','c2'])assert.equal(hashBytes(await readFile(path.join(s.work,id,'speech.mp3'))),hashes.get(id));
+  }finally{globalThis.fetch=originalFetch;await rm(directory,{recursive:true,force:true});}
+});
+
 test('accepted gap retake persists its key, source hints and actual bytes before a preparation interruption',async()=>{
   const directory=await mkdtemp(path.join(tmpdir(),'qingjian-confirmed-gap-retake-')),originalFetch=globalThis.fetch;
   try{
