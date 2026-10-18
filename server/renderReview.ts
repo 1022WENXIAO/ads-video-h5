@@ -12,7 +12,7 @@ import { excludesBgm } from './intents';
 import { inspectAudioLevels, inspectVoice, soundChecks, hasRejectedVoice, voiceReviewPolicy } from './audioQuality';
 import { newsFreshAtOriginalRequest } from './reviewResults';
 import { newsRenderAcceptance } from './lessonAcceptance';
-import { sampleVisualRetentionSources, pairedVisualRetentionMessages, VISUAL_RETENTION_FRAME_SCALE, type VisualRetentionSourceFrame } from './visualRetentionSources';
+import { sampleVisualRetentionSources, pairedVisualRetentionMessages, includedVisualRetentionTail, VISUAL_RETENTION_FRAME_SCALE, type VisualRetentionSourceFrame } from './visualRetentionSources';
 import { extractVisualRetentionRequirements, visualRetentionReviewInstruction, VisualRetentionReviewError } from './visualRetentionReview';
 import { requestSemanticReview, semanticReviewProtocolDiagnostics, semanticReviewDispositionAttempts, SEMANTIC_EVIDENCE_REVIEW_INSTRUCTION, SEMANTIC_SPATIAL_REVIEW_INSTRUCTION } from './semanticReview';
 import { reviewAudio } from './reviewAudio';
@@ -227,7 +227,15 @@ export async function reviewRender(file: string, plan: EditPlan, media: MediaIte
       const audition = await reviewAudio(file, path.join(temp, 'audio.mp3'), publish);
       const outputFrames: Array<{time:number;image:{ type: string; image_url?: { url: string }; text?: string }}> = [];
       const offsets=timelineOffsets(plan);
-      const sampling=reviewFrameSampling(plan,media),times=sampling.times;
+      const sampling=reviewFrameSampling(plan,media);
+      const tailTimes=visualRetentionRequirements.length&&plan.editorial?[...new Set(plan.clips.map(c=>c.sourceId))].slice(0,2).flatMap(id=>{
+        const matches=media.filter(m=>m.id===id&&m.kind==='video');
+        const paired=matches.length===1?includedVisualRetentionTail(plan,id,matches[0].duration!):undefined;
+        return paired?[paired.mappedOutputTime!]:[];
+      }):[];
+      // Ordinary clips have at most 18 existing samples. Preserve them all and
+      // add at most two selected source-tail observations, within the 32 cap.
+      const times=[...new Set([...sampling.times,...tailTimes])].sort((a,b)=>a-b);
       limitations.push(...sampling.limitations);
       for (const time of times) {
         const image = path.join(temp, `${time}.jpg`);

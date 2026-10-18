@@ -12,7 +12,7 @@ import {withModelSnapshot} from '../server/modelContext';
 import {reviewRender} from '../server/renderReview';
 import {planHash} from '../server/renderTimeline';
 import {extractVisualRetentionRequirements} from '../server/visualRetentionReview';
-import {mappedVisualRetentionSamples,pairedVisualRetentionMessages,sampleVisualRetentionSources} from '../server/visualRetentionSources';
+import {includedVisualRetentionTail,mappedVisualRetentionSamples,pairedVisualRetentionMessages,sampleVisualRetentionSources} from '../server/visualRetentionSources';
 import type {EditPlan,MediaItem} from '../shared/types';
 const hash=(b:Buffer)=>createHash('sha256').update(b).digest('hex');
 async function withFixture<T>(run:(p:{root:string;media:string;exports:string;temp:string;source:string;movie:string;item:MediaItem;plan:EditPlan})=>Promise<T>){
@@ -29,6 +29,33 @@ async function withFixture<T>(run:(p:{root:string;media:string;exports:string;te
 }
 async function pixels(file:string,out:string){await runFFmpeg(['-v','error','-y','-i',file,'-frames:v','1','-vf','scale=96:54',out]);return PNG.sync.read(await readFile(out)).data;}
 const difference=(a:Buffer,b:Buffer)=>{let sum=0,count=0;for(let i=0;i<a.length;i++)if(i%4!==3){sum+=Math.abs(a[i]-b[i]);count++;}return sum/count;};
+
+test('a selected tail witness receives its actual output clock; omission and mixed transitions stay unpaired',()=>{
+  const plan={clips:[{sourceId:'a',start:10.19,end:16.67},{sourceId:'b',start:.06,end:5.15}]} as EditPlan;
+  assert.deepEqual(includedVisualRetentionTail(plan,'a',16.67),{purpose:'mapped',sourceTime:16.337,mappedOutputTime:6.147,clipIndex:0});
+  const times=[.36,1.25,3.24,6.147,9.01];
+  const paired=mappedVisualRetentionSamples(plan,'a',16.67,times);
+  assert.equal(paired.samples.length,4);assert.deepEqual(paired.samples.at(-1),includedVisualRetentionTail(plan,'a',16.67));
+  assert.equal(mappedVisualRetentionSamples(plan,'a',16.67,times.filter(t=>t!==6.147)).samples.at(-1)!.purpose,'tail','a planned time never stands in for an actual sampled output');
+  assert.equal(includedVisualRetentionTail({...plan,clips:[{...plan.clips[0],end:15},plan.clips[1]]},'a',16.67),undefined);
+  assert.equal(includedVisualRetentionTail({...plan,clips:[plan.clips[0],{...plan.clips[1],transition:{kind:'fade',duration:.5}}]},'a',16.67),undefined);
+  assert.equal(includedVisualRetentionTail({...plan,clips:[{...plan.clips[0],end:16.35},plan.clips[1]]},'a',16.67),undefined,'a tail next to a cut cannot be claimed as an unmixed frame');
+});
+
+test('the selected source-tail pair is observed from real output pixels, without replacing any existing frame',{timeout:45000},async()=>{
+  await withFixture(async({temp,source,movie,item,plan})=>{
+    const next={...plan,targetSeconds:9.6,clips:[{sourceId:item.id,start:.9,end:10.5}]} as EditPlan;
+    await runFFmpeg(['-v','error','-y','-ss','0.9','-i',source,'-t','9.6','-an','-c:v','libx264','-threads','1','-crf','18','-pix_fmt','yuv420p',movie]);
+    const witness=includedVisualRetentionTail(next,item.id,item.duration!)!;assert.equal(witness.mappedOutputTime,9.39);
+    const times=[.5,2.64,5.28,witness.mappedOutputTime!],sampled=await sampleVisualRetentionSources(movie,next,[item],temp,times);
+    assert.equal(sampled.frames.length,4);const pair=sampled.frames.at(-1)!;assert.equal(pair.purpose,'mapped');assert.equal(pair.sourceTime,10.29);assert.equal(pair.mappedOutputTime,9.39);
+    const actual=path.join(temp,'selected-tail-output.jpg');await runFFmpeg(['-v','error','-y','-ss','9.39','-i',movie,'-frames:v','1','-vf','scale=960:960:force_original_aspect_ratio=decrease',actual]);
+    assert.ok(difference(await pixels(actual,path.join(temp,'tail-output.png')),await pixels(pair.image,path.join(temp,'tail-source.png')))<8);
+    const messages=pairedVisualRetentionMessages(times.map(time=>({time,image:{type:'image_url',image_url:{url:'actual-'+time}}})),sampled.frames.map(frame=>({frame,image:{type:'image_url',image_url:{url:frame.image}}})));
+    const i=messages.findIndex(m=>m.image_url?.url==='actual-9.39');assert.match(messages[i+1].text!,/sourceTime=10.29.*mappedOutputTime=9.39/);
+    assert.equal(messages.filter(m=>m.image_url?.url?.startsWith('actual-')).length,4);
+  });
+});
 
 test('actual moving FFmpeg source frames match the same output time, while the old different-time comparison does not',{timeout:45000},async()=>{
   await withFixture(async({temp,source,movie,item,plan})=>{const before=await readFile(source),times=[.5,2.64,5.28];const sampled=await sampleVisualRetentionSources(movie,plan,[item],temp,times);

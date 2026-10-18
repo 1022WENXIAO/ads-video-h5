@@ -12,6 +12,21 @@ export interface VisualRetentionSourceFrame { sourceId:string; sourceName:string
 export interface VisualRetentionSourceSamples { frames:VisualRetentionSourceFrame[]; selectedRanges:Array<{sourceId:string;start:number;end:number}>; truncated:boolean;uncoveredClips?:Array<{sourceId:string;clipIndex:number;reason:'source-budget'|'mapped-frame-budget'|'no-unmixed-review-frame'}> }
 type SourceSample=Pick<VisualRetentionSourceFrame,'sourceTime'|'purpose'|'mappedOutputTime'|'clipIndex'>;
 
+const tailTime=(duration:number)=>+Math.max(0,Math.min(duration-.02,duration*.98)).toFixed(3);
+/** Planning a real output sample is not visual acceptance. If the same source
+ * tail witness is selected, observe its output too, away from cuts/fades. */
+export function includedVisualRetentionTail(plan:EditPlan,sourceId:string,duration:number):SourceSample|undefined{
+  if(!Number.isFinite(duration)||duration<=.02)return;
+  const sourceTime=tailTime(duration),offsets=timelineOffsets(plan);
+  for(const [index,clip] of plan.clips.entries()){
+    if(clip.sourceId!==sourceId||!Number.isFinite(clip.start)||!Number.isFinite(clip.end)||clip.start<0||clip.end>duration+.001||sourceTime<clip.start||sourceTime>=clip.end)continue;
+    const time=+(offsets[index]+sourceTime-clip.start).toFixed(3),end=offsets[index]+clip.end-clip.start;
+    const stableStart=offsets[index]+(clip.transition?.kind==='fade'?clip.transition.duration:0),stableEnd=plan.clips[index+1]?.transition?.kind==='fade'?offsets[index+1]:end;
+    const active=plan.clips.filter((c,i)=>time>=offsets[i]&&time<offsets[i]+c.end-c.start);
+    if(Number.isFinite(time)&&time>stableStart+.04&&time<stableEnd-.04&&active.length===1)return {purpose:'mapped',sourceTime,mappedOutputTime:time,clipIndex:index};
+  }
+}
+
 /** Only actual, already sampled final-frame times can authorize a paired
  * source timestamp. A fade belongs to two sources and is not a clean pair. */
 export function mappedVisualRetentionSamples(plan:EditPlan,sourceId:string,duration:number,frameTimes:readonly number[]):{samples:SourceSample[];uncoveredClips:NonNullable<VisualRetentionSourceSamples['uncoveredClips']>}{
@@ -20,6 +35,8 @@ export function mappedVisualRetentionSamples(plan:EditPlan,sourceId:string,durat
   if(offsets.some(t=>!Number.isFinite(t))||plan.clips.some(c=>!Number.isFinite(c.start)||!Number.isFinite(c.end)||c.start<0||c.end<=c.start)||frameTimes.some(t=>t>=ends.at(-1)!))throw new Error('视觉保留同刻对照的实际选片范围或成片时间无效。');
   const uniqueClip=new Map<number,number>();
   for(const time of frameTimes){const active=plan.clips.flatMap((_,i)=>time>=offsets[i]&&time<ends[i]?[i]:[]);if(active.length===1)uniqueClip.set(time,active[0]);}
+  const included=includedVisualRetentionTail(plan,sourceId,duration);
+  const pairedTail=included&&frameTimes.includes(included.mappedOutputTime!)?included:undefined;
   const clips=plan.clips.flatMap((clip,index)=>clip.sourceId===sourceId?[{clip,index}]:[]),uncoveredClips:NonNullable<VisualRetentionSourceSamples['uncoveredClips']>=[];
   const eligible:Array<{index:number;times:number[]}>=[];
   for(const {clip,index}of clips){
@@ -27,15 +44,17 @@ export function mappedVisualRetentionSamples(plan:EditPlan,sourceId:string,durat
     const stableStart=offsets[index]+(clip.transition?.kind==='fade'?clip.transition.duration:0),stableEnd=plan.clips[index+1]?.transition?.kind==='fade'?offsets[index+1]:ends[index];
     // Final output is 30 fps. Seeking just before a cut can return its next
     // frame; one-frame clearance also excludes the edge of each mixed fade.
-    const times=frameTimes.filter(t=>uniqueClip.get(t)===index&&t>stableStart+.04&&t<stableEnd-.04).sort((a,b)=>Math.abs(a-(stableStart+stableEnd)/2)-Math.abs(b-(stableStart+stableEnd)/2)||a-b);
-    if(!times.length)uncoveredClips.push({sourceId,clipIndex:index,reason:'no-unmixed-review-frame'});
+    const times=frameTimes.filter(t=>t!==pairedTail?.mappedOutputTime&&uniqueClip.get(t)===index&&t>stableStart+.04&&t<stableEnd-.04).sort((a,b)=>Math.abs(a-(stableStart+stableEnd)/2)-Math.abs(b-(stableStart+stableEnd)/2)||a-b);
+    if(!times.length){if(pairedTail?.clipIndex!==index)uncoveredClips.push({sourceId,clipIndex:index,reason:'no-unmixed-review-frame'});}
     else if(eligible.length>=3)uncoveredClips.push({sourceId,clipIndex:index,reason:'mapped-frame-budget'});
     else eligible.push({index,times});
   }
   const chosen=eligible.map(c=>({index:c.index,time:c.times[0]}));
   while(chosen.length<3){const remaining=eligible.flatMap(c=>c.times.filter(time=>!chosen.some(p=>p.time===time)).map(time=>({index:c.index,time}))).sort((a,b)=>Math.min(...chosen.map(p=>Math.abs(b.time-p.time)))-Math.min(...chosen.map(p=>Math.abs(a.time-p.time)))||a.time-b.time);if(!remaining.length)break;chosen.push(remaining[0]);}
   const samples:SourceSample[]=chosen.sort((a,b)=>a.time-b.time).map(({index,time})=>({purpose:'mapped',clipIndex:index,mappedOutputTime:time,sourceTime:+(plan.clips[index].start+time-offsets[index]).toFixed(6)}));
-  samples.push({purpose:'tail',sourceTime:+Math.max(0,Math.min(duration-.02,duration*.98)).toFixed(3)});
+  // Only an actually sampled output time can turn the fourth source image into
+  // a pair. Otherwise it remains an unpaired source witness as before.
+  samples.push(pairedTail||{purpose:'tail',sourceTime:tailTime(duration)});
   return{samples,uncoveredClips};
 }
 
