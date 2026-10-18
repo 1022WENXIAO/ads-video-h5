@@ -1,6 +1,7 @@
 import express, { type ErrorRequestHandler, type Response } from 'express';
 import multer from 'multer';
 import { randomUUID } from 'node:crypto';
+import {createJsonStateWriter} from './jsonStateWriter';
 import { copyFile, mkdir, readFile, rename, rm, writeFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import path from 'node:path';
@@ -114,16 +115,7 @@ if (!state.sessions.some((session) => session.id === state.activeSessionId)) sta
 restoreInterruptedJobs(state.jobs, now());
 const jobRunner = createJobRunner();
 const evaluationJobModels = new Map<string, ModelSnapshot>();
-let saveTail = Promise.resolve();
-function persistState(): Promise<void> {
-  const snapshot = JSON.stringify(state, null, 2);
-  saveTail = saveTail.catch(() => undefined).then(async () => {
-    const temp = `${stateFile}.${randomUUID()}.tmp`;
-    await writeFile(temp, snapshot, { mode: 0o600 });
-    await rename(temp, stateFile);
-  });
-  return saveTail;
-}
+const persistState=createJsonStateWriter(stateFile,()=>state);
 function saveState(): Promise<void> { throwIfJobCancelled(); return persistState(); }
 await saveState();
 const owned = (item: { ownerId?: string }, ownerId: string) => item.ownerId === ownerId;

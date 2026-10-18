@@ -1,6 +1,7 @@
 import { createHash, randomUUID } from 'node:crypto';
+import {createJsonStateWriter} from './jsonStateWriter';
 import { createReadStream } from 'node:fs';
-import { copyFile, mkdir, readFile, readdir, rename, stat, writeFile } from 'node:fs/promises';
+import { copyFile, mkdir, readFile, readdir, stat } from 'node:fs/promises';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import type { Artifact, MediaItem, Shot } from '../src/types';
@@ -70,14 +71,10 @@ export function validateEvaluationCase(input: unknown, current?: EvaluationCase)
 export function createEvaluations(options: Options) {
   const directory = path.join(options.dataDir, 'evaluations'), fixturesDir = path.join(directory, 'fixtures'), file = path.join(directory, 'index.json');
   let cases = initialEvaluationCases(), fixtures: Array<EvaluationFixture & { shots: Shot[] }> = [], runs: EvaluationRun[] = [];
-  let mutation = Promise.resolve(), writes = Promise.resolve();
+  let mutation = Promise.resolve();
   const controllers = new Map<string, AbortController>();
   let reservation: string | undefined;
-  const persist = () => {
-    const text = JSON.stringify({ version: 1, cases, fixtures, runs });
-    writes = writes.catch(() => undefined).then(async () => { const temp = `${file}.${randomUUID()}.tmp`; await writeFile(temp, text, { mode: 0o600 }); await rename(temp, file); });
-    return writes;
-  };
+  const persist=createJsonStateWriter(file,()=>({version:1,cases,fixtures,runs}));
   const serialized = <T>(action: () => Promise<T>): Promise<T> => { const pending = mutation.then(action); mutation = pending.then(() => undefined, () => undefined); return pending; };
   const findRun = (id: string) => { const run = runs.find(r => r.id === id); if (!run) throw new EvaluationError('评测运行不存在。',404); return run; };
   const redact = (text: string, models: ModelSnapshot) => snapshotModels(models).reduce((s, m) => m?.apiKey ? s.replaceAll(m.apiKey, '[redacted]') : s, text).replace(/Bearer\s+[\w.+/=-]+/gi, 'Bearer [redacted]').slice(0,3000);
