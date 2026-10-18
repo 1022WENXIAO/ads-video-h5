@@ -17,6 +17,12 @@ function operationText(text:string):string {
 // production question ("can you make...") still is an executable request.
 export function wantsConversation(text:string):boolean {
   text=operationText(text);
+  const answerOnly=[...text.matchAll(/(?:只|仅|只需|仅需)(?:要)?(?:回答|答复)/g)].at(-1);
+  if(answerOnly){
+    const after=text.slice(answerOnly.index!+answerOnly[0].length);
+    const laterProduction=[...after.matchAll(/(?:直接|然后|最后|再)\s*(?:制作|生成|出片|渲染|导出)/g)].some(match=>!/(?:不要|不用|别|不|无需)[^，。；,;.!?！？]{0,8}$/.test(after.slice(Math.max(0,match.index!-14),match.index)));
+    if(!laterProduction)return true;
+  }
   if(/^(?:请问)?(?:你|轻剪|这个工具|这个Agent)?(?:能不能|能|可以|支持)(?:制作|生成|做)(?:教学|科普|资讯|新闻)?视频(?:吗)?[?？]?$/.test(text))return true;
   if(/(?:现在|最后|改为|改成|请)\s*(?:不用解释了[，,]?\s*)?直接(?:制作|生成|出片|渲染)/.test(text))return false;
   const quotedFailureQuestion = /^(?:请(?:你)?(?:解释|分析)(?:一下)?[，, ]*)?为什么[^，。；,;.!?！？]{0,70}(?:Agent|回复|脚本|方案)/i.test(text);

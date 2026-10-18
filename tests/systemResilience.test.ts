@@ -10,6 +10,8 @@ import {sceneAuthorConfig} from '../server/sceneAuthorFallback';
 import {runWithJobSignal,JobCancelledError} from '../server/jobExecution';
 import type {ModelConfig} from '../server/modelRegistry';
 import type {WorkflowEvent} from '../src/types';
+import {classify,wantsConversation,wantsCurrentResearchOnly} from '../server/intents';
+import {inferCreationRoute} from '../server/creativeRequest';
 
 const primary:ModelConfig={id:'primary',name:'Primary',provider:'ark',kind:'text',modelId:'doubao-seed-2-1-pro-260915',apiKey:'private-primary-fixture',baseUrl:'https://ark.cn-beijing.volces.com/api/v3',enabled:true};
 const backup:ModelConfig={...primary,id:'backup',name:'Backup',modelId:'deepseek-v4-pro-ga-260813',apiKey:'private-backup-fixture'};
@@ -19,6 +21,14 @@ function stream(tool?:{sections:string[];summary:string;sourceIds?:string[]}){
 }
 const body='这份官方说明介绍工具的实际用途、限制以及需要核对的版本。'.repeat(30);
 const sources:QuestionResearch={observedAt:new Date().toISOString(),references:[{id:'ref-1',url:'https://official.example.org/announcement',title:'官方说明',excerpt:body,retrievedAt:new Date().toISOString(),verification:'public-page'}],failures:[],queries:[]};
+
+test('answer-only requests reach conversation research instead of video creation or topic planning',()=>{
+  for(const prompt of ['请查一下阿里云 OSS 私有 Bucket 如何临时授权下载，只回答，给官方来源，不生成视频。','请搜索今天AI新闻，只回答，不制作视频。','只需回答最新消息，不要直接生成视频。']){
+    assert(wantsConversation(prompt));assert.equal(classify(prompt),'plan');assert.equal(wantsCurrentResearchOnly(prompt),false);
+    assert.equal(inferCreationRoute({prompt,history:[],sourceCount:0,hasPlan:false})?.mode,'conversation');
+  }
+  assert.equal(wantsConversation('先只回答制作流程，最后直接生成一个30秒科普视频。'),false);
+});
 
 test('read-only alternatives are frozen, de-duplicated, bounded and retain actual model provenance',async()=>{
   const attempts:any[]=[],called:string[]=[];
