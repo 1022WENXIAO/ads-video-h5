@@ -1,0 +1,4519 @@
+{
+  "provenance": {
+    "revision": "093e662ffdbf8d85ffc0a1185fa3250ed302842c",
+    "jobId": "215dc6e4-cb9e-4333-b4de-c1ca8433debb",
+    "chapterId": "chapter-2"
+  },
+  "attempts": [
+    {
+      "drawing": {
+        "title": "沥水架上分开晾干",
+        "nodes": [
+          {
+            "id": "rack",
+            "kind": "path",
+            "x": 70,
+            "y": 270,
+            "w": 580,
+            "h": 360,
+            "pathData": "M80 560 L660 560 M110 560 L110 625 M190 560 L190 625 M270 560 L270 625 M350 560 L350 625 M430 560 L430 625 M510 560 L510 625 M590 560 L590 625 M80 625 L660 625 M95 590 L645 590",
+            "tone": "blue",
+            "fontSize": 36,
+            "highlight": false,
+            "text": ""
+          },
+          {
+            "id": "body",
+            "kind": "path",
+            "x": 90,
+            "y": 330,
+            "w": 180,
+            "h": 205,
+            "pathData": "M105 365 L255 365 L238 525 L122 525 Z M115 365 L245 365 M132 532 L150 548 M210 532 L228 548",
+            "tone": "ink",
+            "fontSize": 36,
+            "highlight": true,
+            "text": ""
+          },
+          {
+            "id": "bodyLabel",
+            "kind": "card",
+            "x": 85,
+            "y": 565,
+            "w": 190,
+            "h": 76,
+            "text": "盒身倒扣",
+            "tone": "coral",
+            "fontSize": 38,
+            "highlight": true
+          },
+          {
+            "id": "lid",
+            "kind": "path",
+            "x": 315,
+            "y": 300,
+            "w": 100,
+            "h": 240,
+            "pathData": "M365 305 L405 320 L405 525 L365 525 L325 525 L325 320 Z M340 335 L390 335 M340 380 L390 380 M340 425 L390 425",
+            "tone": "ink",
+            "fontSize": 36,
+            "highlight": true,
+            "text": ""
+          },
+          {
+            "id": "lidLabel",
+            "kind": "card",
+            "x": 285,
+            "y": 565,
+            "w": 160,
+            "h": 76,
+            "text": "盒盖立着",
+            "tone": "coral",
+            "fontSize": 34,
+            "highlight": true
+          },
+          {
+            "id": "gasket",
+            "kind": "circle",
+            "x": 500,
+            "y": 360,
+            "w": 115,
+            "h": 115,
+            "text": "",
+            "tone": "coral",
+            "fontSize": 36,
+            "highlight": true
+          },
+          {
+            "id": "gasketInner",
+            "kind": "circle",
+            "x": 525,
+            "y": 385,
+            "w": 65,
+            "h": 65,
+            "text": "",
+            "tone": "paper",
+            "fontSize": 36,
+            "highlight": false
+          },
+          {
+            "id": "gasketLabel",
+            "kind": "card",
+            "x": 462,
+            "y": 565,
+            "w": 190,
+            "h": 76,
+            "text": "胶圈取下分开",
+            "tone": "coral",
+            "fontSize": 27,
+            "highlight": true
+          },
+          {
+            "id": "air1",
+            "kind": "path",
+            "x": 115,
+            "y": 300,
+            "w": 500,
+            "h": 40,
+            "pathData": "M120 315 C180 292 235 338 295 315 C355 292 410 338 470 315 C525 294 570 322 610 312",
+            "tone": "blue",
+            "fontSize": 36,
+            "highlight": false,
+            "text": ""
+          },
+          {
+            "id": "air2",
+            "kind": "path",
+            "x": 140,
+            "y": 650,
+            "w": 450,
+            "h": 36,
+            "pathData": "M150 667 C215 645 270 685 335 667 C400 648 455 685 575 665",
+            "tone": "blue",
+            "fontSize": 36,
+            "highlight": false,
+            "text": ""
+          },
+          {
+            "id": "principle",
+            "kind": "card",
+            "x": 65,
+            "y": 705,
+            "w": 590,
+            "h": 95,
+            "text": "自行排水，让空气干燥各表面",
+            "tone": "paper",
+            "fontSize": 42,
+            "highlight": false
+          },
+          {
+            "id": "checkIntro",
+            "kind": "text",
+            "x": 95,
+            "y": 835,
+            "w": 530,
+            "h": 56,
+            "text": "收纳前摸三处：",
+            "tone": "ink",
+            "fontSize": 24,
+            "highlight": false
+          },
+          {
+            "id": "check1",
+            "kind": "card",
+            "x": 60,
+            "y": 900,
+            "w": 185,
+            "h": 88,
+            "text": "内壁干爽",
+            "tone": "blue",
+            "fontSize": 38,
+            "highlight": true
+          },
+          {
+            "id": "check2",
+            "kind": "card",
+            "x": 268,
+            "y": 900,
+            "w": 185,
+            "h": 88,
+            "text": "底部干爽",
+            "tone": "blue",
+            "fontSize": 38,
+            "highlight": true
+          },
+          {
+            "id": "check3",
+            "kind": "card",
+            "x": 476,
+            "y": 900,
+            "w": 185,
+            "h": 88,
+            "text": "胶圈槽干爽",
+            "tone": "blue",
+            "fontSize": 32,
+            "highlight": true
+          },
+          {
+            "id": "c1",
+            "kind": "line",
+            "x": 245,
+            "y": 944,
+            "x2": 268,
+            "y2": 944,
+            "w": 23,
+            "h": 0,
+            "tone": "ink",
+            "fontSize": 36,
+            "highlight": false,
+            "text": ""
+          },
+          {
+            "id": "c2",
+            "kind": "line",
+            "x": 453,
+            "y": 944,
+            "x2": 476,
+            "y2": 944,
+            "w": 23,
+            "h": 0,
+            "tone": "ink",
+            "fontSize": 36,
+            "highlight": false,
+            "text": ""
+          }
+        ]
+      },
+      "html": "<!doctype html><html lang=\"zh-CN\"><head><meta charset=\"utf-8\"><style>@font-face{font-family:'PingFang SC';src:local('PingFang SC')}html,body{margin:0;width:720px;height:1280px;overflow:hidden;background:#fffdfa}#main{width:720px;height:1280px;position:relative;font-family:'PingFang SC',Arial,sans-serif;color:#252935}.scene-content{box-sizing:border-box;width:100%;height:100%;padding:64px 0;display:flex;flex-direction:column;align-items:center;gap:10px}#title{position:relative;z-index:2;font-size:60px;font-weight:800;width:640px;margin:0;text-align:center;line-height:1.2}.drawing-plane,svg{position:absolute;inset:0;width:720px;height:1280px}svg{overflow:visible}svg.products{z-index:2;pointer-events:none}.text,.circle{z-index:3!important}.node.text{padding:0}.node{position:absolute;z-index:1;box-sizing:border-box;padding:12px;display:flex;align-items:center;justify-content:center;text-align:center;line-height:1.3;font-weight:700;overflow-wrap:anywhere;white-space:pre-line}.node[data-qj-number]{white-space:nowrap;overflow-wrap:normal;word-break:normal}.node.text[data-qj-number]{padding:0}.card{border:3px solid;border-radius:20px}.circle{border:3px solid;border-radius:50%;padding:4px}.ambient{position:absolute;width:360px;height:360px;border-radius:50%;background:#fff0e9;opacity:.45;pointer-events:none}.ambient-a{left:-160px;top:60px}.ambient-b{right:-220px;bottom:180px;background:#e6f1f5}#note{font-size:20px;line-height:1.4;text-align:center;width:640px;left:40px;color:#252935;position:absolute;top:180px;margin:0;z-index:2}</style><script src=\"./gsap.min.js\"></script></head><body><section id=\"main\" data-composition-id=\"main\" data-width=\"720\" data-height=\"1280\" data-start=\"0\" data-duration=\"10.66\"><div id=\"ambient-a\" class=\"ambient ambient-a\" data-layout-ignore></div><div id=\"ambient-b\" class=\"ambient ambient-b\" data-layout-ignore></div><div class=\"scene-content\"><h1 id=\"title\">沥水架上分开晾干</h1></div><div class=\"drawing-plane\"><svg viewBox=\"0 0 720 1280\" aria-label=\"沥水架上分开晾干\"><path id=\"qj-author-c1\" data-drawing-id=\"c1\" d=\"M245 944 L268 944\" fill=\"none\" stroke=\"#252935\" stroke-width=\"5\" stroke-linecap=\"round\"/><path id=\"qj-author-c2\" data-drawing-id=\"c2\" d=\"M453 944 L476 944\" fill=\"none\" stroke=\"#252935\" stroke-width=\"5\" stroke-linecap=\"round\"/></svg><div id=\"qj-author-bodyLabel\" data-drawing-id=\"bodyLabel\" class=\"node card\"  style=\"left:85px;top:565px;width:190px;height:76px;font-size:38px;background:#fffdfa;color:#b43c27;border-color:#fb7353\">盒身倒扣</div><div id=\"qj-author-lidLabel\" data-drawing-id=\"lidLabel\" class=\"node card\"  style=\"left:285px;top:565px;width:160px;height:76px;font-size:34px;background:#fffdfa;color:#b43c27;border-color:#fb7353\">盒盖立着</div><div id=\"qj-author-gasket\" data-drawing-id=\"gasket\" class=\"node circle\"  style=\"left:500px;top:360px;width:115px;height:115px;font-size:36px;background:#fffdfa;color:#b43c27;border-color:#fb7353\"></div><div id=\"qj-author-gasketInner\" data-drawing-id=\"gasketInner\" class=\"node circle\"  style=\"left:525px;top:385px;width:65px;height:65px;font-size:36px;background:#fff0e9;color:#252935;border-color:#fff0e9\"></div><div id=\"qj-author-gasketLabel\" data-drawing-id=\"gasketLabel\" class=\"node card\"  style=\"left:462px;top:565px;width:190px;height:76px;font-size:27px;background:#fffdfa;color:#b43c27;border-color:#fb7353\">胶圈取下分开</div><div id=\"qj-author-principle\" data-drawing-id=\"principle\" class=\"node card\"  style=\"left:65px;top:705px;width:590px;height:95px;font-size:42px;background:#fff0e9;color:#252935;border-color:#fff0e9;text-wrap:balance\">自行排水，让空气干燥各表面</div><div id=\"qj-author-checkIntro\" data-drawing-id=\"checkIntro\" class=\"node text\"  style=\"left:95px;top:835px;width:530px;height:56px;font-size:24px;background:transparent;color:#252935;border-color:#252935\">收纳前摸三处：</div><div id=\"qj-author-check1\" data-drawing-id=\"check1\" class=\"node card\"  style=\"left:60px;top:900px;width:185px;height:88px;font-size:38px;background:#fffdfa;color:#28617d;border-color:#4c95b7\">内壁干爽</div><div id=\"qj-author-check2\" data-drawing-id=\"check2\" class=\"node card\"  style=\"left:268px;top:900px;width:185px;height:88px;font-size:38px;background:#fffdfa;color:#28617d;border-color:#4c95b7\">底部干爽</div><div id=\"qj-author-check3\" data-drawing-id=\"check3\" class=\"node card\"  style=\"left:476px;top:900px;width:185px;height:88px;font-size:32px;background:#fffdfa;color:#28617d;border-color:#4c95b7\">胶圈槽干爽</div><svg class=\"products\" viewBox=\"0 0 720 1280\" aria-label=\"示意产品\"><path id=\"qj-author-rack\" data-drawing-id=\"rack\" d=\"M80 560 L660 560 M110 560 L110 625 M190 560 L190 625 M270 560 L270 625 M350 560 L350 625 M430 560 L430 625 M510 560 L510 625 M590 560 L590 625 M80 625 L660 625 M95 590 L645 590\" fill=\"#fff0e9\" stroke=\"#4c95b7\" stroke-width=\"5\" stroke-linecap=\"round\"/><path id=\"qj-author-body\" data-drawing-id=\"body\" d=\"M105 365 L255 365 L238 525 L122 525 Z M115 365 L245 365 M132 532 L150 548 M210 532 L228 548\" fill=\"#fff0e9\" stroke=\"#252935\" stroke-width=\"5\" stroke-linecap=\"round\"/><path id=\"qj-author-lid\" data-drawing-id=\"lid\" d=\"M365 305 L405 320 L405 525 L365 525 L325 525 L325 320 Z M340 335 L390 335 M340 380 L390 380 M340 425 L390 425\" fill=\"#fff0e9\" stroke=\"#252935\" stroke-width=\"5\" stroke-linecap=\"round\"/><path id=\"qj-author-air1\" data-drawing-id=\"air1\" d=\"M120 315 C180 292 235 338 295 315 C355 292 410 338 470 315 C525 294 570 322 610 312\" fill=\"#fff0e9\" stroke=\"#4c95b7\" stroke-width=\"5\" stroke-linecap=\"round\"/><path id=\"qj-author-air2\" data-drawing-id=\"air2\" d=\"M150 667 C215 645 270 685 335 667 C400 648 455 685 575 665\" fill=\"#fff0e9\" stroke=\"#4c95b7\" stroke-width=\"5\" stroke-linecap=\"round\"/></svg></div><p id=\"note\">流程 / 画面为示意</p></section><script>window.QJMotion = Object.freeze({\n  textRise(tl, selector, at=0.2) { return tl.fromTo(selector,{y:90,opacity:0,filter:'blur(14px)'},{y:0,opacity:1,filter:'blur(0px)',duration:0.68,ease:'power3.out'},at); },\n  cardPop(tl, selector, at=0.35) { return tl.fromTo(selector,{scale:0.86,opacity:0,rotation:-3},{scale:1,opacity:1,rotation:0,duration:0.82,ease:'back.out(1.3)'},at); },\n  lineDraw(tl, selector, at=0.7) { return tl.fromTo(selector,{scaleX:0,transformOrigin:'left center'},{scaleX:1,duration:0.42,ease:'expo.out'},at); },\n  imageDrift(tl, selector, at=0.2, duration=4.8) { return tl.fromTo(selector,{scale:1.08,x:-24},{scale:1.17,x:24,duration,ease:'none'},at); },\n  splitWipe(tl, selector, at=0.18) { return tl.fromTo(selector,{clipPath:'inset(0 100% 0 0)'},{clipPath:'inset(0 0% 0 0)',duration:0.76,ease:'power4.out'},at); },\n  fadeOut(tl, selector, at, duration=0.3) { return tl.to(selector,{opacity:0,y:-18,duration,ease:'power2.in'},at); },\n  keywordPunch(tl, selector, at=.3) { return tl.fromTo(selector,{scale:.94,opacity:0},{scale:1,opacity:1,duration:.42,ease:'back.out(1.1)'},at); },\n  lowerThird(tl, selector, at=.4) { return tl.fromTo(selector,{x:-32,opacity:0},{x:0,opacity:1,duration:.5,ease:'power3.out'},at); },\n  chapterProgress(tl, selector, at=.4, duration=4.8) { return tl.fromTo(selector,{scaleX:0,transformOrigin:'left center'},{scaleX:1,duration,ease:'none'},at); },\n  compareReveal(tl, selector, at=.6) { return tl.fromTo(selector,{x:36,opacity:0},{x:0,opacity:1,duration:.62,ease:'expo.out',stagger:.18},at); },\n  drawStroke(tl, selector, at=.4, duration=.7) { gsap.utils.toArray(selector).forEach((node,i)=>{const length=node.getTotalLength();tl.set(node,{strokeDasharray:length,strokeDashoffset:length},0);tl.fromTo(node,{strokeDashoffset:length},{strokeDashoffset:0,duration,ease:'power2.out'},at+i*.12);});return tl; },\n  markerSweep(tl, selector, at=.5) { return tl.fromTo(selector,{scaleX:0,transformOrigin:'left center'},{scaleX:1,duration:.55,ease:'expo.out'},at); },\n  staggerReveal(tl, selector, at=.2, duration=.45, ease='power3.out') { const nodes=gsap.utils.toArray(selector);return tl.fromTo(nodes,{y:24,opacity:0},{y:0,opacity:1,duration,ease,stagger:nodes.length>1?Math.min(.08,.4/(nodes.length-1)):0},at); },\n  cardSettle(tl, selector, at=.2, duration=.5, ease='power3.out') { return tl.fromTo(selector,{y:20,scale:.97,opacity:0},{y:0,scale:1,opacity:1,duration,ease},at); },\n  focusPulse(tl, selector, at=1.4, duration=.6) { tl.to(selector,{scale:1.025,duration:duration/2,ease:'sine.out'},at);return tl.to(selector,{scale:1,duration:duration/2,ease:'sine.in',immediateRender:false},at+duration/2); },\n  ambientFloat(tl, selector, at=.2, duration=4, amplitude=8) { const count=Math.max(1,Math.ceil(duration/2));const segment=duration/count;for(let i=0;i<count;i++)tl.fromTo(selector,{y:i===0?0:(i%2?amplitude:-amplitude)},{y:i%2?-amplitude:amplitude,duration:segment,ease:'sine.inOut',immediateRender:i===0},at+i*segment);return tl; },\n  connectorFlow(tl, selector, at=.5, duration=.7) { gsap.utils.toArray(selector).forEach((node,i)=>{const length=node.getTotalLength();tl.fromTo(node,{strokeDasharray:length,strokeDashoffset:length,opacity:0},{strokeDashoffset:0,opacity:1,duration,ease:'power2.out'},at+i*.12);});return tl; },\n  barGrow(tl, selector, at=.4, duration=.8) { return tl.fromTo(selector,{scaleY:0,transformOrigin:'center bottom'},{scaleY:1,duration,ease:'power3.out'},at); },\n  radialBurst(tl, selector, at=1, radius=36) { const nodes=gsap.utils.toArray(selector);nodes.forEach((node,i)=>{const angle=i*2*Math.PI/nodes.length;tl.fromTo(node,{x:0,y:0,scale:.3,opacity:0},{x:Math.cos(angle)*radius,y:Math.sin(angle)*radius,scale:1,opacity:.65,duration:.35,ease:'expo.out'},at);tl.to(node,{opacity:0,scale:.7,duration:.35,ease:'sine.in',immediateRender:false},at+.35);});return tl; }\n\n});window.__timelines={};const tl=gsap.timeline({paused:true});tl.from('#title',{y:20,opacity:0,duration:.6,ease:'power3.out'},.1);tl.from('#note',{opacity:0,duration:.5,ease:'sine.out'},.25);QJMotion.connectorFlow(tl,'#qj-author-rack',0.55,0.45);QJMotion.connectorFlow(tl,'#qj-author-body',0.55,0.45);QJMotion.cardSettle(tl,'#qj-author-bodyLabel',0.180,0.45,'power3.out');QJMotion.connectorFlow(tl,'#qj-author-lid',0.55,0.45);QJMotion.cardSettle(tl,'#qj-author-lidLabel',0.224,0.45,'power3.out');QJMotion.cardSettle(tl,'#qj-author-gasket',0.269,0.45,'power3.out');QJMotion.cardSettle(tl,'#qj-author-gasketInner',0.313,0.45,'power3.out');QJMotion.cardSettle(tl,'#qj-author-gasketLabel',0.358,0.45,'power3.out');QJMotion.connectorFlow(tl,'#qj-author-air1',0.55,0.45);QJMotion.connectorFlow(tl,'#qj-author-air2',0.55,0.45);QJMotion.cardSettle(tl,'#qj-author-principle',0.402,0.45,'power3.out');QJMotion.cardSettle(tl,'#qj-author-checkIntro',0.447,0.45,'power3.out');QJMotion.cardSettle(tl,'#qj-author-check1',0.491,0.45,'power3.out');QJMotion.cardSettle(tl,'#qj-author-check2',0.536,0.45,'power3.out');QJMotion.cardSettle(tl,'#qj-author-check3',0.580,0.45,'power3.out');QJMotion.connectorFlow(tl,'#qj-author-c1',0.55,0.45);QJMotion.connectorFlow(tl,'#qj-author-c2',0.55,0.45);tl.to('#qj-author-bodyLabel',{backgroundColor:'#fff0e9',borderColor:'#fb7353',duration:0.350,ease:'sine.inOut'},1.520);QJMotion.focusPulse(tl,'#qj-author-bodyLabel',1.520,0.600);tl.to('#qj-author-lidLabel',{backgroundColor:'#fff0e9',borderColor:'#fb7353',duration:0.350,ease:'sine.inOut'},2.450);QJMotion.focusPulse(tl,'#qj-author-lidLabel',2.450,0.600);tl.to('#qj-author-gasketLabel',{backgroundColor:'#fff0e9',borderColor:'#fb7353',duration:0.350,ease:'sine.inOut'},3.320);QJMotion.focusPulse(tl,'#qj-author-gasketLabel',3.320,0.600);QJMotion.ambientFloat(tl,'#ambient-a',.1,10.56,6);QJMotion.ambientFloat(tl,'#ambient-b',.1,10.56,-4);window.__timelines.main=tl;document.fonts.ready.then(()=>{for(const node of document.querySelectorAll('[data-qj-number]')){const range=document.createRange();range.selectNodeContents(node);const style=getComputedStyle(node),box=node.getBoundingClientRect(),scale=node.offsetWidth?box.width/node.offsetWidth:1;const width=range.getBoundingClientRect().width/(scale||1),available=node.clientWidth-parseFloat(style.paddingLeft)-parseFloat(style.paddingRight);if(width>available+1)throw new Error('数字字形溢出：'+node.id+' '+node.textContent+' 实际'+width.toFixed(2)+'px>可用'+available.toFixed(2)+'px；保留数字与字号，加宽或重排。');}});</script></body></html>",
+      "report": {
+        "ok": false,
+        "strict": false,
+        "lint": {
+          "ok": true,
+          "errorCount": 0,
+          "warningCount": 1,
+          "infoCount": 0,
+          "findings": [
+            {
+              "code": "audio_file_without_element",
+              "severity": "warning",
+              "message": "Found audio file(s) in project (edge-speech.wav, paced-speech.wav, prepared-speech.wav, raw-speech.mp3, speech.mp3, tempo-speech.wav) but no <audio> element in any composition. The rendered video will be silent.",
+              "selector": "[data-composition-id]",
+              "dataAttributes": {},
+              "sourceFile": "index.html",
+              "bbox": {
+                "x": 0,
+                "y": 0,
+                "width": 0,
+                "height": 0
+              },
+              "time": 0,
+              "fixHint": "Add an <audio id=\"my-audio\" src=\"edge-speech.wav\" data-start=\"0\" data-duration=\"__DURATION__\" data-track-index=\"0\" data-volume=\"1\"></audio> element inside the composition root. Replace __DURATION__ with the audio length in seconds."
+            }
+          ],
+          "filesScanned": 1
+        },
+        "runtime": {
+          "ok": true,
+          "errorCount": 0,
+          "warningCount": 0,
+          "infoCount": 0,
+          "findings": []
+        },
+        "layout": {
+          "ok": true,
+          "errorCount": 0,
+          "warningCount": 0,
+          "infoCount": 0,
+          "findings": [],
+          "duration": 10.66,
+          "samples": [
+            0.592,
+            1.777,
+            2.961,
+            4.146,
+            5.33,
+            6.514,
+            7.699,
+            8.883,
+            10.068
+          ],
+          "transitionSamples": [],
+          "transitionSamplesDropped": 0,
+          "tolerance": 2,
+          "totalIssueCount": 0,
+          "truncated": false
+        },
+        "motion": {
+          "ok": true,
+          "errorCount": 0,
+          "warningCount": 0,
+          "infoCount": 0,
+          "findings": [],
+          "enabled": false,
+          "samples": 0
+        },
+        "contrast": {
+          "ok": false,
+          "errorCount": 12,
+          "warningCount": 0,
+          "infoCount": 0,
+          "findings": [
+            {
+              "code": "contrast_aa_failure",
+              "severity": "error",
+              "message": "Contrast is 2.79:1; WCAG AA requires 3:1.",
+              "text": "盒身倒扣",
+              "fg": "rgb(180,60,39)",
+              "bg": "rgb(251,149,183)",
+              "ratio": 2.79,
+              "requiredRatio": 3,
+              "suggestedColor": "rgb(171,57,37)",
+              "large": true,
+              "selector": "#qj-author-bodyLabel",
+              "dataAttributes": {
+                "data-drawing-id": "bodyLabel"
+              },
+              "sourceFile": "index.html",
+              "bbox": {
+                "x": 85,
+                "y": 565,
+                "width": 190,
+                "height": 76
+              },
+              "time": 2.961
+            },
+            {
+              "code": "contrast_aa_failure",
+              "severity": "error",
+              "message": "Contrast is 2.87:1; WCAG AA requires 3:1.",
+              "text": "盒盖立着",
+              "fg": "rgb(180,60,39)",
+              "bg": "rgb(252,153,183)",
+              "ratio": 2.87,
+              "requiredRatio": 3,
+              "suggestedColor": "rgb(175,58,38)",
+              "large": true,
+              "selector": "#qj-author-lidLabel",
+              "dataAttributes": {
+                "data-drawing-id": "lidLabel"
+              },
+              "sourceFile": "index.html",
+              "bbox": {
+                "x": 283.85601806640625,
+                "y": 564.4566040039062,
+                "width": 162.28799438476562,
+                "height": 77.0867919921875
+              },
+              "time": 2.961
+            },
+            {
+              "code": "contrast_aa_failure",
+              "severity": "error",
+              "message": "Contrast is 2.79:1; WCAG AA requires 3:1.",
+              "text": "胶圈取下分开",
+              "fg": "rgb(180,60,39)",
+              "bg": "rgb(251,149,183)",
+              "ratio": 2.79,
+              "requiredRatio": 3,
+              "suggestedColor": "rgb(171,57,37)",
+              "large": true,
+              "selector": "#qj-author-gasketLabel",
+              "dataAttributes": {
+                "data-drawing-id": "gasketLabel"
+              },
+              "sourceFile": "index.html",
+              "bbox": {
+                "x": 462,
+                "y": 565,
+                "width": 190,
+                "height": 76
+              },
+              "time": 2.961
+            },
+            {
+              "code": "contrast_aa_failure",
+              "severity": "error",
+              "message": "Contrast is 2.79:1; WCAG AA requires 3:1.",
+              "text": "盒身倒扣",
+              "fg": "rgb(180,60,39)",
+              "bg": "rgb(251,149,183)",
+              "ratio": 2.79,
+              "requiredRatio": 3,
+              "suggestedColor": "rgb(171,57,37)",
+              "large": true,
+              "selector": "#qj-author-bodyLabel",
+              "dataAttributes": {
+                "data-drawing-id": "bodyLabel"
+              },
+              "sourceFile": "index.html",
+              "bbox": {
+                "x": 85,
+                "y": 565,
+                "width": 190,
+                "height": 76
+              },
+              "time": 5.33
+            },
+            {
+              "code": "contrast_aa_failure",
+              "severity": "error",
+              "message": "Contrast is 2.79:1; WCAG AA requires 3:1.",
+              "text": "盒盖立着",
+              "fg": "rgb(180,60,39)",
+              "bg": "rgb(251,149,183)",
+              "ratio": 2.79,
+              "requiredRatio": 3,
+              "suggestedColor": "rgb(171,57,37)",
+              "large": true,
+              "selector": "#qj-author-lidLabel",
+              "dataAttributes": {
+                "data-drawing-id": "lidLabel"
+              },
+              "sourceFile": "index.html",
+              "bbox": {
+                "x": 285,
+                "y": 565,
+                "width": 160,
+                "height": 76
+              },
+              "time": 5.33
+            },
+            {
+              "code": "contrast_aa_failure",
+              "severity": "error",
+              "message": "Contrast is 2.79:1; WCAG AA requires 3:1.",
+              "text": "胶圈取下分开",
+              "fg": "rgb(180,60,39)",
+              "bg": "rgb(251,149,183)",
+              "ratio": 2.79,
+              "requiredRatio": 3,
+              "suggestedColor": "rgb(171,57,37)",
+              "large": true,
+              "selector": "#qj-author-gasketLabel",
+              "dataAttributes": {
+                "data-drawing-id": "gasketLabel"
+              },
+              "sourceFile": "index.html",
+              "bbox": {
+                "x": 462,
+                "y": 565,
+                "width": 190,
+                "height": 76
+              },
+              "time": 5.33
+            },
+            {
+              "code": "contrast_aa_failure",
+              "severity": "error",
+              "message": "Contrast is 2.79:1; WCAG AA requires 3:1.",
+              "text": "盒身倒扣",
+              "fg": "rgb(180,60,39)",
+              "bg": "rgb(251,149,183)",
+              "ratio": 2.79,
+              "requiredRatio": 3,
+              "suggestedColor": "rgb(171,57,37)",
+              "large": true,
+              "selector": "#qj-author-bodyLabel",
+              "dataAttributes": {
+                "data-drawing-id": "bodyLabel"
+              },
+              "sourceFile": "index.html",
+              "bbox": {
+                "x": 85,
+                "y": 565,
+                "width": 190,
+                "height": 76
+              },
+              "time": 7.699
+            },
+            {
+              "code": "contrast_aa_failure",
+              "severity": "error",
+              "message": "Contrast is 2.79:1; WCAG AA requires 3:1.",
+              "text": "盒盖立着",
+              "fg": "rgb(180,60,39)",
+              "bg": "rgb(251,149,183)",
+              "ratio": 2.79,
+              "requiredRatio": 3,
+              "suggestedColor": "rgb(171,57,37)",
+              "large": true,
+              "selector": "#qj-author-lidLabel",
+              "dataAttributes": {
+                "data-drawing-id": "lidLabel"
+              },
+              "sourceFile": "index.html",
+              "bbox": {
+                "x": 285,
+                "y": 565,
+                "width": 160,
+                "height": 76
+              },
+              "time": 7.699
+            },
+            {
+              "code": "contrast_aa_failure",
+              "severity": "error",
+              "message": "Contrast is 2.79:1; WCAG AA requires 3:1.",
+              "text": "胶圈取下分开",
+              "fg": "rgb(180,60,39)",
+              "bg": "rgb(251,149,183)",
+              "ratio": 2.79,
+              "requiredRatio": 3,
+              "suggestedColor": "rgb(171,57,37)",
+              "large": true,
+              "selector": "#qj-author-gasketLabel",
+              "dataAttributes": {
+                "data-drawing-id": "gasketLabel"
+              },
+              "sourceFile": "index.html",
+              "bbox": {
+                "x": 462,
+                "y": 565,
+                "width": 190,
+                "height": 76
+              },
+              "time": 7.699
+            },
+            {
+              "code": "contrast_aa_failure",
+              "severity": "error",
+              "message": "Contrast is 2.79:1; WCAG AA requires 3:1.",
+              "text": "盒身倒扣",
+              "fg": "rgb(180,60,39)",
+              "bg": "rgb(251,149,183)",
+              "ratio": 2.79,
+              "requiredRatio": 3,
+              "suggestedColor": "rgb(171,57,37)",
+              "large": true,
+              "selector": "#qj-author-bodyLabel",
+              "dataAttributes": {
+                "data-drawing-id": "bodyLabel"
+              },
+              "sourceFile": "index.html",
+              "bbox": {
+                "x": 85,
+                "y": 565,
+                "width": 190,
+                "height": 76
+              },
+              "time": 10.068
+            },
+            {
+              "code": "contrast_aa_failure",
+              "severity": "error",
+              "message": "Contrast is 2.79:1; WCAG AA requires 3:1.",
+              "text": "盒盖立着",
+              "fg": "rgb(180,60,39)",
+              "bg": "rgb(251,149,183)",
+              "ratio": 2.79,
+              "requiredRatio": 3,
+              "suggestedColor": "rgb(171,57,37)",
+              "large": true,
+              "selector": "#qj-author-lidLabel",
+              "dataAttributes": {
+                "data-drawing-id": "lidLabel"
+              },
+              "sourceFile": "index.html",
+              "bbox": {
+                "x": 285,
+                "y": 565,
+                "width": 160,
+                "height": 76
+              },
+              "time": 10.068
+            },
+            {
+              "code": "contrast_aa_failure",
+              "severity": "error",
+              "message": "Contrast is 2.79:1; WCAG AA requires 3:1.",
+              "text": "胶圈取下分开",
+              "fg": "rgb(180,60,39)",
+              "bg": "rgb(251,149,183)",
+              "ratio": 2.79,
+              "requiredRatio": 3,
+              "suggestedColor": "rgb(171,57,37)",
+              "large": true,
+              "selector": "#qj-author-gasketLabel",
+              "dataAttributes": {
+                "data-drawing-id": "gasketLabel"
+              },
+              "sourceFile": "index.html",
+              "bbox": {
+                "x": 462,
+                "y": 565,
+                "width": 190,
+                "height": 76
+              },
+              "time": 10.068
+            }
+          ],
+          "enabled": true,
+          "samples": [
+            0.592,
+            2.961,
+            5.33,
+            7.699,
+            10.068
+          ],
+          "checked": 49,
+          "passed": 37
+        },
+        "hdr": {
+          "autoPromotion": null,
+          "inspection": "available"
+        },
+        "snapshots": {
+          "enabled": false,
+          "files": [],
+          "times": [],
+          "findingFiles": []
+        },
+        "_meta": {
+          "version": "0.8.78",
+          "latestVersion": "0.8.170",
+          "updateAvailable": true
+        }
+      }
+    },
+    {
+      "drawing": {
+        "title": "沥水架上分开晾干",
+        "nodes": [
+          {
+            "id": "rack",
+            "kind": "path",
+            "x": 70,
+            "y": 270,
+            "w": 580,
+            "h": 360,
+            "pathData": "M80 560 L660 560 M110 560 L110 625 M190 560 L190 625 M270 560 L270 625 M350 560 L350 625 M430 560 L430 625 M510 560 L510 625 M590 560 L590 625 M80 625 L660 625 M95 590 L645 590",
+            "tone": "blue",
+            "fontSize": 36,
+            "highlight": false,
+            "text": ""
+          },
+          {
+            "id": "body",
+            "kind": "path",
+            "x": 90,
+            "y": 330,
+            "w": 180,
+            "h": 205,
+            "pathData": "M105 365 L255 365 L238 525 L122 525 Z M115 365 L245 365 M132 532 L150 548 M210 532 L228 548",
+            "tone": "ink",
+            "fontSize": 36,
+            "highlight": true,
+            "text": ""
+          },
+          {
+            "id": "bodyLabel",
+            "kind": "card",
+            "x": 78,
+            "y": 565,
+            "w": 204,
+            "h": 76,
+            "text": "盒身倒扣",
+            "tone": "paper",
+            "fontSize": 38,
+            "highlight": true
+          },
+          {
+            "id": "lid",
+            "kind": "path",
+            "x": 315,
+            "y": 300,
+            "w": 100,
+            "h": 240,
+            "pathData": "M365 305 L405 320 L405 525 L365 525 L325 525 L325 320 Z M340 335 L390 335 M340 380 L390 380 M340 425 L390 425",
+            "tone": "ink",
+            "fontSize": 36,
+            "highlight": true,
+            "text": ""
+          },
+          {
+            "id": "lidLabel",
+            "kind": "card",
+            "x": 276,
+            "y": 565,
+            "w": 178,
+            "h": 76,
+            "text": "盒盖立着",
+            "tone": "paper",
+            "fontSize": 34,
+            "highlight": true
+          },
+          {
+            "id": "gasket",
+            "kind": "circle",
+            "x": 500,
+            "y": 360,
+            "w": 115,
+            "h": 115,
+            "text": "",
+            "tone": "coral",
+            "fontSize": 36,
+            "highlight": true
+          },
+          {
+            "id": "gasketInner",
+            "kind": "circle",
+            "x": 525,
+            "y": 385,
+            "w": 65,
+            "h": 65,
+            "text": "",
+            "tone": "paper",
+            "fontSize": 36,
+            "highlight": false
+          },
+          {
+            "id": "gasketLabel",
+            "kind": "card",
+            "x": 452,
+            "y": 565,
+            "w": 210,
+            "h": 76,
+            "text": "胶圈取下分开",
+            "tone": "paper",
+            "fontSize": 27,
+            "highlight": true
+          },
+          {
+            "id": "air1",
+            "kind": "path",
+            "x": 115,
+            "y": 300,
+            "w": 500,
+            "h": 40,
+            "pathData": "M120 315 C180 292 235 338 295 315 C355 292 410 338 470 315 C525 294 570 322 610 312",
+            "tone": "blue",
+            "fontSize": 36,
+            "highlight": false,
+            "text": ""
+          },
+          {
+            "id": "air2",
+            "kind": "path",
+            "x": 140,
+            "y": 650,
+            "w": 450,
+            "h": 36,
+            "pathData": "M150 667 C215 645 270 685 335 667 C400 648 455 685 575 665",
+            "tone": "blue",
+            "fontSize": 36,
+            "highlight": false,
+            "text": ""
+          },
+          {
+            "id": "principle",
+            "kind": "card",
+            "x": 65,
+            "y": 705,
+            "w": 590,
+            "h": 95,
+            "text": "自行排水，让空气干燥各表面",
+            "tone": "paper",
+            "fontSize": 42,
+            "highlight": false
+          },
+          {
+            "id": "checkIntro",
+            "kind": "text",
+            "x": 95,
+            "y": 835,
+            "w": 530,
+            "h": 56,
+            "text": "收纳前摸三处：",
+            "tone": "ink",
+            "fontSize": 24,
+            "highlight": false
+          },
+          {
+            "id": "check1",
+            "kind": "card",
+            "x": 60,
+            "y": 900,
+            "w": 185,
+            "h": 88,
+            "text": "内壁干爽",
+            "tone": "blue",
+            "fontSize": 38,
+            "highlight": true
+          },
+          {
+            "id": "check2",
+            "kind": "card",
+            "x": 268,
+            "y": 900,
+            "w": 185,
+            "h": 88,
+            "text": "底部干爽",
+            "tone": "blue",
+            "fontSize": 38,
+            "highlight": true
+          },
+          {
+            "id": "check3",
+            "kind": "card",
+            "x": 476,
+            "y": 900,
+            "w": 185,
+            "h": 88,
+            "text": "胶圈槽干爽",
+            "tone": "blue",
+            "fontSize": 32,
+            "highlight": true
+          },
+          {
+            "id": "c1",
+            "kind": "line",
+            "x": 245,
+            "y": 944,
+            "w": 23,
+            "h": 0,
+            "pathData": "M245 944 L268 944",
+            "tone": "ink",
+            "fontSize": 36,
+            "highlight": false,
+            "text": ""
+          },
+          {
+            "id": "c2",
+            "kind": "line",
+            "x": 453,
+            "y": 944,
+            "w": 23,
+            "h": 0,
+            "pathData": "M453 944 L476 944",
+            "tone": "ink",
+            "fontSize": 36,
+            "highlight": false,
+            "text": ""
+          }
+        ]
+      },
+      "html": "<!doctype html><html lang=\"zh-CN\"><head><meta charset=\"utf-8\"><style>@font-face{font-family:'PingFang SC';src:local('PingFang SC')}html,body{margin:0;width:720px;height:1280px;overflow:hidden;background:#fffdfa}#main{width:720px;height:1280px;position:relative;font-family:'PingFang SC',Arial,sans-serif;color:#252935}.scene-content{box-sizing:border-box;width:100%;height:100%;padding:64px 0;display:flex;flex-direction:column;align-items:center;gap:10px}#title{position:relative;z-index:2;font-size:60px;font-weight:800;width:640px;margin:0;text-align:center;line-height:1.2}.drawing-plane,svg{position:absolute;inset:0;width:720px;height:1280px}svg{overflow:visible}svg.products{z-index:2;pointer-events:none}.text,.circle{z-index:3!important}.node.text{padding:0}.node{position:absolute;z-index:1;box-sizing:border-box;padding:12px;display:flex;align-items:center;justify-content:center;text-align:center;line-height:1.3;font-weight:700;overflow-wrap:anywhere;white-space:pre-line}.node[data-qj-number]{white-space:nowrap;overflow-wrap:normal;word-break:normal}.node.text[data-qj-number]{padding:0}.card{border:3px solid;border-radius:20px}.circle{border:3px solid;border-radius:50%;padding:4px}.ambient{position:absolute;width:360px;height:360px;border-radius:50%;background:#fff0e9;opacity:.45;pointer-events:none}.ambient-a{left:-160px;top:60px}.ambient-b{right:-220px;bottom:180px;background:#e6f1f5}#note{font-size:20px;line-height:1.4;text-align:center;width:640px;left:40px;color:#252935;position:absolute;top:180px;margin:0;z-index:2}</style><script src=\"./gsap.min.js\"></script></head><body><section id=\"main\" data-composition-id=\"main\" data-width=\"720\" data-height=\"1280\" data-start=\"0\" data-duration=\"10.66\"><div id=\"ambient-a\" class=\"ambient ambient-a\" data-layout-ignore></div><div id=\"ambient-b\" class=\"ambient ambient-b\" data-layout-ignore></div><div class=\"scene-content\"><h1 id=\"title\">沥水架上分开晾干</h1></div><div class=\"drawing-plane\"><svg viewBox=\"0 0 720 1280\" aria-label=\"沥水架上分开晾干\"><path id=\"qj-author-c1\" data-drawing-id=\"c1\" d=\"M245 944 L268 944\" fill=\"none\" stroke=\"#252935\" stroke-width=\"5\" stroke-linecap=\"round\"/><path id=\"qj-author-c2\" data-drawing-id=\"c2\" d=\"M453 944 L476 944\" fill=\"none\" stroke=\"#252935\" stroke-width=\"5\" stroke-linecap=\"round\"/></svg><div id=\"qj-author-bodyLabel\" data-drawing-id=\"bodyLabel\" class=\"node card\"  style=\"left:78px;top:565px;width:204px;height:76px;font-size:38px;background:#fff0e9;color:#252935;border-color:#fff0e9\">盒身倒扣</div><div id=\"qj-author-lidLabel\" data-drawing-id=\"lidLabel\" class=\"node card\"  style=\"left:276px;top:565px;width:178px;height:76px;font-size:34px;background:#fff0e9;color:#252935;border-color:#fff0e9\">盒盖立着</div><div id=\"qj-author-gasket\" data-drawing-id=\"gasket\" class=\"node circle\"  style=\"left:500px;top:360px;width:115px;height:115px;font-size:36px;background:#fffdfa;color:#b43c27;border-color:#fb7353\"></div><div id=\"qj-author-gasketInner\" data-drawing-id=\"gasketInner\" class=\"node circle\"  style=\"left:525px;top:385px;width:65px;height:65px;font-size:36px;background:#fff0e9;color:#252935;border-color:#fff0e9\"></div><div id=\"qj-author-gasketLabel\" data-drawing-id=\"gasketLabel\" class=\"node card\"  style=\"left:452px;top:565px;width:210px;height:76px;font-size:27px;background:#fff0e9;color:#252935;border-color:#fff0e9\">胶圈取下分开</div><div id=\"qj-author-principle\" data-drawing-id=\"principle\" class=\"node card\"  style=\"left:65px;top:705px;width:590px;height:95px;font-size:42px;background:#fff0e9;color:#252935;border-color:#fff0e9;text-wrap:balance\">自行排水，让空气干燥各表面</div><div id=\"qj-author-checkIntro\" data-drawing-id=\"checkIntro\" class=\"node text\"  style=\"left:95px;top:835px;width:530px;height:56px;font-size:24px;background:transparent;color:#252935;border-color:#252935\">收纳前摸三处：</div><div id=\"qj-author-check1\" data-drawing-id=\"check1\" class=\"node card\"  style=\"left:60px;top:900px;width:185px;height:88px;font-size:38px;background:#fffdfa;color:#28617d;border-color:#4c95b7\">内壁干爽</div><div id=\"qj-author-check2\" data-drawing-id=\"check2\" class=\"node card\"  style=\"left:268px;top:900px;width:185px;height:88px;font-size:38px;background:#fffdfa;color:#28617d;border-color:#4c95b7\">底部干爽</div><div id=\"qj-author-check3\" data-drawing-id=\"check3\" class=\"node card\"  style=\"left:476px;top:900px;width:185px;height:88px;font-size:32px;background:#fffdfa;color:#28617d;border-color:#4c95b7\">胶圈槽干爽</div><svg class=\"products\" viewBox=\"0 0 720 1280\" aria-label=\"示意产品\"><path id=\"qj-author-rack\" data-drawing-id=\"rack\" d=\"M80 560 L660 560 M110 560 L110 625 M190 560 L190 625 M270 560 L270 625 M350 560 L350 625 M430 560 L430 625 M510 560 L510 625 M590 560 L590 625 M80 625 L660 625 M95 590 L645 590\" fill=\"#fff0e9\" stroke=\"#4c95b7\" stroke-width=\"5\" stroke-linecap=\"round\"/><path id=\"qj-author-body\" data-drawing-id=\"body\" d=\"M105 365 L255 365 L238 525 L122 525 Z M115 365 L245 365 M132 532 L150 548 M210 532 L228 548\" fill=\"#fff0e9\" stroke=\"#252935\" stroke-width=\"5\" stroke-linecap=\"round\"/><path id=\"qj-author-lid\" data-drawing-id=\"lid\" d=\"M365 305 L405 320 L405 525 L365 525 L325 525 L325 320 Z M340 335 L390 335 M340 380 L390 380 M340 425 L390 425\" fill=\"#fff0e9\" stroke=\"#252935\" stroke-width=\"5\" stroke-linecap=\"round\"/><path id=\"qj-author-air1\" data-drawing-id=\"air1\" d=\"M120 315 C180 292 235 338 295 315 C355 292 410 338 470 315 C525 294 570 322 610 312\" fill=\"#fff0e9\" stroke=\"#4c95b7\" stroke-width=\"5\" stroke-linecap=\"round\"/><path id=\"qj-author-air2\" data-drawing-id=\"air2\" d=\"M150 667 C215 645 270 685 335 667 C400 648 455 685 575 665\" fill=\"#fff0e9\" stroke=\"#4c95b7\" stroke-width=\"5\" stroke-linecap=\"round\"/></svg></div><p id=\"note\">流程 / 画面为示意</p></section><script>window.QJMotion = Object.freeze({\n  textRise(tl, selector, at=0.2) { return tl.fromTo(selector,{y:90,opacity:0,filter:'blur(14px)'},{y:0,opacity:1,filter:'blur(0px)',duration:0.68,ease:'power3.out'},at); },\n  cardPop(tl, selector, at=0.35) { return tl.fromTo(selector,{scale:0.86,opacity:0,rotation:-3},{scale:1,opacity:1,rotation:0,duration:0.82,ease:'back.out(1.3)'},at); },\n  lineDraw(tl, selector, at=0.7) { return tl.fromTo(selector,{scaleX:0,transformOrigin:'left center'},{scaleX:1,duration:0.42,ease:'expo.out'},at); },\n  imageDrift(tl, selector, at=0.2, duration=4.8) { return tl.fromTo(selector,{scale:1.08,x:-24},{scale:1.17,x:24,duration,ease:'none'},at); },\n  splitWipe(tl, selector, at=0.18) { return tl.fromTo(selector,{clipPath:'inset(0 100% 0 0)'},{clipPath:'inset(0 0% 0 0)',duration:0.76,ease:'power4.out'},at); },\n  fadeOut(tl, selector, at, duration=0.3) { return tl.to(selector,{opacity:0,y:-18,duration,ease:'power2.in'},at); },\n  keywordPunch(tl, selector, at=.3) { return tl.fromTo(selector,{scale:.94,opacity:0},{scale:1,opacity:1,duration:.42,ease:'back.out(1.1)'},at); },\n  lowerThird(tl, selector, at=.4) { return tl.fromTo(selector,{x:-32,opacity:0},{x:0,opacity:1,duration:.5,ease:'power3.out'},at); },\n  chapterProgress(tl, selector, at=.4, duration=4.8) { return tl.fromTo(selector,{scaleX:0,transformOrigin:'left center'},{scaleX:1,duration,ease:'none'},at); },\n  compareReveal(tl, selector, at=.6) { return tl.fromTo(selector,{x:36,opacity:0},{x:0,opacity:1,duration:.62,ease:'expo.out',stagger:.18},at); },\n  drawStroke(tl, selector, at=.4, duration=.7) { gsap.utils.toArray(selector).forEach((node,i)=>{const length=node.getTotalLength();tl.set(node,{strokeDasharray:length,strokeDashoffset:length},0);tl.fromTo(node,{strokeDashoffset:length},{strokeDashoffset:0,duration,ease:'power2.out'},at+i*.12);});return tl; },\n  markerSweep(tl, selector, at=.5) { return tl.fromTo(selector,{scaleX:0,transformOrigin:'left center'},{scaleX:1,duration:.55,ease:'expo.out'},at); },\n  staggerReveal(tl, selector, at=.2, duration=.45, ease='power3.out') { const nodes=gsap.utils.toArray(selector);return tl.fromTo(nodes,{y:24,opacity:0},{y:0,opacity:1,duration,ease,stagger:nodes.length>1?Math.min(.08,.4/(nodes.length-1)):0},at); },\n  cardSettle(tl, selector, at=.2, duration=.5, ease='power3.out') { return tl.fromTo(selector,{y:20,scale:.97,opacity:0},{y:0,scale:1,opacity:1,duration,ease},at); },\n  focusPulse(tl, selector, at=1.4, duration=.6) { tl.to(selector,{scale:1.025,duration:duration/2,ease:'sine.out'},at);return tl.to(selector,{scale:1,duration:duration/2,ease:'sine.in',immediateRender:false},at+duration/2); },\n  ambientFloat(tl, selector, at=.2, duration=4, amplitude=8) { const count=Math.max(1,Math.ceil(duration/2));const segment=duration/count;for(let i=0;i<count;i++)tl.fromTo(selector,{y:i===0?0:(i%2?amplitude:-amplitude)},{y:i%2?-amplitude:amplitude,duration:segment,ease:'sine.inOut',immediateRender:i===0},at+i*segment);return tl; },\n  connectorFlow(tl, selector, at=.5, duration=.7) { gsap.utils.toArray(selector).forEach((node,i)=>{const length=node.getTotalLength();tl.fromTo(node,{strokeDasharray:length,strokeDashoffset:length,opacity:0},{strokeDashoffset:0,opacity:1,duration,ease:'power2.out'},at+i*.12);});return tl; },\n  barGrow(tl, selector, at=.4, duration=.8) { return tl.fromTo(selector,{scaleY:0,transformOrigin:'center bottom'},{scaleY:1,duration,ease:'power3.out'},at); },\n  radialBurst(tl, selector, at=1, radius=36) { const nodes=gsap.utils.toArray(selector);nodes.forEach((node,i)=>{const angle=i*2*Math.PI/nodes.length;tl.fromTo(node,{x:0,y:0,scale:.3,opacity:0},{x:Math.cos(angle)*radius,y:Math.sin(angle)*radius,scale:1,opacity:.65,duration:.35,ease:'expo.out'},at);tl.to(node,{opacity:0,scale:.7,duration:.35,ease:'sine.in',immediateRender:false},at+.35);});return tl; }\n\n});window.__timelines={};const tl=gsap.timeline({paused:true});tl.from('#title',{y:20,opacity:0,duration:.6,ease:'power3.out'},.1);tl.from('#note',{opacity:0,duration:.5,ease:'sine.out'},.25);QJMotion.connectorFlow(tl,'#qj-author-rack',0.55,0.45);QJMotion.connectorFlow(tl,'#qj-author-body',0.55,0.45);QJMotion.cardSettle(tl,'#qj-author-bodyLabel',0.180,0.45,'power3.out');QJMotion.connectorFlow(tl,'#qj-author-lid',0.55,0.45);QJMotion.cardSettle(tl,'#qj-author-lidLabel',0.224,0.45,'power3.out');QJMotion.cardSettle(tl,'#qj-author-gasket',0.269,0.45,'power3.out');QJMotion.cardSettle(tl,'#qj-author-gasketInner',0.313,0.45,'power3.out');QJMotion.cardSettle(tl,'#qj-author-gasketLabel',0.358,0.45,'power3.out');QJMotion.connectorFlow(tl,'#qj-author-air1',0.55,0.45);QJMotion.connectorFlow(tl,'#qj-author-air2',0.55,0.45);QJMotion.cardSettle(tl,'#qj-author-principle',0.402,0.45,'power3.out');QJMotion.cardSettle(tl,'#qj-author-checkIntro',0.447,0.45,'power3.out');QJMotion.cardSettle(tl,'#qj-author-check1',0.491,0.45,'power3.out');QJMotion.cardSettle(tl,'#qj-author-check2',0.536,0.45,'power3.out');QJMotion.cardSettle(tl,'#qj-author-check3',0.580,0.45,'power3.out');QJMotion.connectorFlow(tl,'#qj-author-c1',0.55,0.45);QJMotion.connectorFlow(tl,'#qj-author-c2',0.55,0.45);tl.to('#qj-author-bodyLabel',{backgroundColor:'#fff0e9',borderColor:'#fb7353',duration:0.350,ease:'sine.inOut'},1.520);QJMotion.focusPulse(tl,'#qj-author-bodyLabel',1.520,0.600);tl.to('#qj-author-lidLabel',{backgroundColor:'#fff0e9',borderColor:'#fb7353',duration:0.350,ease:'sine.inOut'},2.450);QJMotion.focusPulse(tl,'#qj-author-lidLabel',2.450,0.600);tl.to('#qj-author-gasketLabel',{backgroundColor:'#fff0e9',borderColor:'#fb7353',duration:0.350,ease:'sine.inOut'},3.320);QJMotion.focusPulse(tl,'#qj-author-gasketLabel',3.320,0.600);QJMotion.ambientFloat(tl,'#ambient-a',.1,10.56,6);QJMotion.ambientFloat(tl,'#ambient-b',.1,10.56,-4);window.__timelines.main=tl;document.fonts.ready.then(()=>{for(const node of document.querySelectorAll('[data-qj-number]')){const range=document.createRange();range.selectNodeContents(node);const style=getComputedStyle(node),box=node.getBoundingClientRect(),scale=node.offsetWidth?box.width/node.offsetWidth:1;const width=range.getBoundingClientRect().width/(scale||1),available=node.clientWidth-parseFloat(style.paddingLeft)-parseFloat(style.paddingRight);if(width>available+1)throw new Error('数字字形溢出：'+node.id+' '+node.textContent+' 实际'+width.toFixed(2)+'px>可用'+available.toFixed(2)+'px；保留数字与字号，加宽或重排。');}});</script></body></html>",
+      "report": {
+        "ok": false,
+        "strict": false,
+        "lint": {
+          "ok": true,
+          "errorCount": 0,
+          "warningCount": 1,
+          "infoCount": 0,
+          "findings": [
+            {
+              "code": "audio_file_without_element",
+              "severity": "warning",
+              "message": "Found audio file(s) in project (edge-speech.wav, paced-speech.wav, prepared-speech.wav, raw-speech.mp3, speech.mp3, tempo-speech.wav) but no <audio> element in any composition. The rendered video will be silent.",
+              "selector": "[data-composition-id]",
+              "dataAttributes": {},
+              "sourceFile": "index.html",
+              "bbox": {
+                "x": 0,
+                "y": 0,
+                "width": 0,
+                "height": 0
+              },
+              "time": 0,
+              "fixHint": "Add an <audio id=\"my-audio\" src=\"edge-speech.wav\" data-start=\"0\" data-duration=\"__DURATION__\" data-track-index=\"0\" data-volume=\"1\"></audio> element inside the composition root. Replace __DURATION__ with the audio length in seconds."
+            }
+          ],
+          "filesScanned": 1
+        },
+        "runtime": {
+          "ok": true,
+          "errorCount": 0,
+          "warningCount": 0,
+          "infoCount": 0,
+          "findings": []
+        },
+        "layout": {
+          "ok": false,
+          "errorCount": 3,
+          "warningCount": 0,
+          "infoCount": 0,
+          "findings": [
+            {
+              "code": "text_occluded",
+              "severity": "error",
+              "time": 1.776667,
+              "selector": "#qj-author-bodyLabel",
+              "containerSelector": "#qj-author-rack",
+              "text": "盒身倒扣",
+              "coveredFraction": 0.189736,
+              "message": "Actual SVG fill/stroke is painted above loaded-font text ink. Move the graphic and label into separate readable zones.",
+              "affectedGlyphs": [
+                {
+                  "char": "盒",
+                  "utf16Start": 0,
+                  "utf16End": 1,
+                  "coveredInkSamples": 49,
+                  "totalInkSamples": 179,
+                  "coveredFraction": 0.273743,
+                  "paths": [
+                    "#qj-author-rack"
+                  ],
+                  "rect": {
+                    "left": 102.14559936523438,
+                    "top": 579.7589111328125,
+                    "right": 141.0727996826172,
+                    "bottom": 624.83251953125,
+                    "width": 38.92720031738281,
+                    "height": 45.0736083984375
+                  }
+                },
+                {
+                  "char": "倒",
+                  "utf16Start": 2,
+                  "utf16End": 3,
+                  "coveredInkSamples": 40,
+                  "totalInkSamples": 173,
+                  "coveredFraction": 0.231214,
+                  "paths": [
+                    "#qj-author-rack"
+                  ],
+                  "rect": {
+                    "left": 180,
+                    "top": 579.7589111328125,
+                    "right": 218.9272003173828,
+                    "bottom": 624.83251953125,
+                    "width": 38.92720031738281,
+                    "height": 45.0736083984375
+                  }
+                }
+              ],
+              "rect": {
+                "left": 102.14559936523438,
+                "top": 579.7589111328125,
+                "right": 257.8544006347656,
+                "bottom": 624.83251953125,
+                "width": 155.70880126953125,
+                "height": 45.0736083984375
+              },
+              "source": "server-svg-paint",
+              "htmlHash": "d19e06b88435745fa5691566203bb880f7c20ecff6f6ef7f38de298f304f1c33",
+              "evidence": {
+                "path": "svg-paint-evidence/d19e06b88435745fa5691566203bb880f7c20ecff6f6ef7f38de298f304f1c33/f2f0312a4f2902c80f955d29e8f078609176b44519b2b28d2f42177452520051-8194f416-1482-4f82-8ca5-4b03a0d0b015/server-svg-paint-report.json",
+                "sha256": "06a5b9e9d6725d0eecef6076a54a56eff35256707adacc52a95e467c7c3e8128"
+              }
+            },
+            {
+              "code": "text_occluded",
+              "severity": "error",
+              "time": 1.776667,
+              "selector": "#qj-author-lidLabel",
+              "containerSelector": "#qj-author-rack",
+              "text": "盒盖立着",
+              "coveredFraction": 0.201754,
+              "message": "Actual SVG fill/stroke is painted above loaded-font text ink. Move the graphic and label into separate readable zones.",
+              "affectedGlyphs": [
+                {
+                  "char": "盖",
+                  "utf16Start": 1,
+                  "utf16End": 2,
+                  "coveredInkSamples": 46,
+                  "totalInkSamples": 124,
+                  "coveredFraction": 0.370968,
+                  "paths": [
+                    "#qj-author-rack"
+                  ],
+                  "rect": {
+                    "left": 331,
+                    "top": 582.90625,
+                    "right": 365,
+                    "bottom": 622.90625,
+                    "width": 34,
+                    "height": 40
+                  }
+                },
+                {
+                  "char": "着",
+                  "utf16Start": 3,
+                  "utf16End": 4,
+                  "coveredInkSamples": 24,
+                  "totalInkSamples": 131,
+                  "coveredFraction": 0.183206,
+                  "paths": [
+                    "#qj-author-rack"
+                  ],
+                  "rect": {
+                    "left": 399,
+                    "top": 582.90625,
+                    "right": 433,
+                    "bottom": 622.90625,
+                    "width": 34,
+                    "height": 40
+                  }
+                }
+              ],
+              "rect": {
+                "left": 297,
+                "top": 582.90625,
+                "right": 433,
+                "bottom": 622.90625,
+                "width": 136,
+                "height": 40
+              },
+              "source": "server-svg-paint",
+              "htmlHash": "d19e06b88435745fa5691566203bb880f7c20ecff6f6ef7f38de298f304f1c33",
+              "evidence": {
+                "path": "svg-paint-evidence/d19e06b88435745fa5691566203bb880f7c20ecff6f6ef7f38de298f304f1c33/f2f0312a4f2902c80f955d29e8f078609176b44519b2b28d2f42177452520051-8194f416-1482-4f82-8ca5-4b03a0d0b015/server-svg-paint-report.json",
+                "sha256": "06a5b9e9d6725d0eecef6076a54a56eff35256707adacc52a95e467c7c3e8128"
+              }
+            },
+            {
+              "code": "text_occluded",
+              "severity": "error",
+              "time": 1.776667,
+              "selector": "#qj-author-gasketLabel",
+              "containerSelector": "#qj-author-rack",
+              "text": "胶圈取下分开",
+              "coveredFraction": 0.169374,
+              "message": "Actual SVG fill/stroke is painted above loaded-font text ink. Move the graphic and label into separate readable zones.",
+              "affectedGlyphs": [
+                {
+                  "char": "圈",
+                  "utf16Start": 1,
+                  "utf16End": 2,
+                  "coveredInkSamples": 30,
+                  "totalInkSamples": 99,
+                  "coveredFraction": 0.30303,
+                  "paths": [
+                    "#qj-author-rack"
+                  ],
+                  "rect": {
+                    "left": 503,
+                    "top": 587.453125,
+                    "right": 530,
+                    "bottom": 618.453125,
+                    "width": 27,
+                    "height": 31
+                  }
+                },
+                {
+                  "char": "分",
+                  "utf16Start": 4,
+                  "utf16End": 5,
+                  "coveredInkSamples": 18,
+                  "totalInkSamples": 57,
+                  "coveredFraction": 0.315789,
+                  "paths": [
+                    "#qj-author-rack"
+                  ],
+                  "rect": {
+                    "left": 584,
+                    "top": 587.453125,
+                    "right": 611,
+                    "bottom": 618.453125,
+                    "width": 27,
+                    "height": 31
+                  }
+                },
+                {
+                  "char": "开",
+                  "utf16Start": 5,
+                  "utf16End": 6,
+                  "coveredInkSamples": 11,
+                  "totalInkSamples": 66,
+                  "coveredFraction": 0.166667,
+                  "paths": [
+                    "#qj-author-rack"
+                  ],
+                  "rect": {
+                    "left": 611,
+                    "top": 587.453125,
+                    "right": 638,
+                    "bottom": 618.453125,
+                    "width": 27,
+                    "height": 31
+                  }
+                }
+              ],
+              "rect": {
+                "left": 476,
+                "top": 587.453125,
+                "right": 638,
+                "bottom": 618.453125,
+                "width": 162,
+                "height": 31
+              },
+              "source": "server-svg-paint",
+              "htmlHash": "d19e06b88435745fa5691566203bb880f7c20ecff6f6ef7f38de298f304f1c33",
+              "evidence": {
+                "path": "svg-paint-evidence/d19e06b88435745fa5691566203bb880f7c20ecff6f6ef7f38de298f304f1c33/f2f0312a4f2902c80f955d29e8f078609176b44519b2b28d2f42177452520051-8194f416-1482-4f82-8ca5-4b03a0d0b015/server-svg-paint-report.json",
+                "sha256": "06a5b9e9d6725d0eecef6076a54a56eff35256707adacc52a95e467c7c3e8128"
+              }
+            }
+          ],
+          "duration": 10.66,
+          "samples": [
+            0.592,
+            1.777,
+            2.961,
+            4.146,
+            5.33,
+            6.514,
+            7.699,
+            8.883,
+            10.068
+          ],
+          "transitionSamples": [],
+          "transitionSamplesDropped": 0,
+          "tolerance": 2,
+          "totalIssueCount": 0,
+          "truncated": false
+        },
+        "motion": {
+          "ok": true,
+          "errorCount": 0,
+          "warningCount": 0,
+          "infoCount": 0,
+          "findings": [],
+          "enabled": false,
+          "samples": 0
+        },
+        "contrast": {
+          "ok": true,
+          "errorCount": 0,
+          "warningCount": 0,
+          "infoCount": 0,
+          "findings": [],
+          "enabled": true,
+          "samples": [
+            0.592,
+            2.961,
+            5.33,
+            7.699,
+            10.068
+          ],
+          "checked": 49,
+          "passed": 49
+        },
+        "hdr": {
+          "autoPromotion": null,
+          "inspection": "available"
+        },
+        "snapshots": {
+          "enabled": false,
+          "files": [],
+          "times": [],
+          "findingFiles": []
+        },
+        "_meta": {
+          "version": "0.8.78",
+          "latestVersion": "0.8.170",
+          "updateAvailable": true
+        },
+        "svgPaint": {
+          "source": "server-svg-paint",
+          "version": 1,
+          "htmlHash": "d19e06b88435745fa5691566203bb880f7c20ecff6f6ef7f38de298f304f1c33",
+          "samples": [
+            0.592222,
+            1.776667,
+            2.961111,
+            4.145556,
+            5.33,
+            6.514444,
+            7.698889,
+            8.883333,
+            10.067778
+          ],
+          "findings": [
+            {
+              "code": "text_occluded",
+              "severity": "error",
+              "time": 1.776667,
+              "selector": "#qj-author-bodyLabel",
+              "containerSelector": "#qj-author-rack",
+              "text": "盒身倒扣",
+              "coveredFraction": 0.189736,
+              "message": "Actual SVG fill/stroke is painted above loaded-font text ink. Move the graphic and label into separate readable zones.",
+              "affectedGlyphs": [
+                {
+                  "char": "盒",
+                  "utf16Start": 0,
+                  "utf16End": 1,
+                  "coveredInkSamples": 49,
+                  "totalInkSamples": 179,
+                  "coveredFraction": 0.273743,
+                  "paths": [
+                    "#qj-author-rack"
+                  ],
+                  "rect": {
+                    "left": 102.14559936523438,
+                    "top": 579.7589111328125,
+                    "right": 141.0727996826172,
+                    "bottom": 624.83251953125,
+                    "width": 38.92720031738281,
+                    "height": 45.0736083984375
+                  }
+                },
+                {
+                  "char": "倒",
+                  "utf16Start": 2,
+                  "utf16End": 3,
+                  "coveredInkSamples": 40,
+                  "totalInkSamples": 173,
+                  "coveredFraction": 0.231214,
+                  "paths": [
+                    "#qj-author-rack"
+                  ],
+                  "rect": {
+                    "left": 180,
+                    "top": 579.7589111328125,
+                    "right": 218.9272003173828,
+                    "bottom": 624.83251953125,
+                    "width": 38.92720031738281,
+                    "height": 45.0736083984375
+                  }
+                }
+              ],
+              "rect": {
+                "left": 102.14559936523438,
+                "top": 579.7589111328125,
+                "right": 257.8544006347656,
+                "bottom": 624.83251953125,
+                "width": 155.70880126953125,
+                "height": 45.0736083984375
+              }
+            },
+            {
+              "code": "text_occluded",
+              "severity": "error",
+              "time": 1.776667,
+              "selector": "#qj-author-lidLabel",
+              "containerSelector": "#qj-author-rack",
+              "text": "盒盖立着",
+              "coveredFraction": 0.201754,
+              "message": "Actual SVG fill/stroke is painted above loaded-font text ink. Move the graphic and label into separate readable zones.",
+              "affectedGlyphs": [
+                {
+                  "char": "盖",
+                  "utf16Start": 1,
+                  "utf16End": 2,
+                  "coveredInkSamples": 46,
+                  "totalInkSamples": 124,
+                  "coveredFraction": 0.370968,
+                  "paths": [
+                    "#qj-author-rack"
+                  ],
+                  "rect": {
+                    "left": 331,
+                    "top": 582.90625,
+                    "right": 365,
+                    "bottom": 622.90625,
+                    "width": 34,
+                    "height": 40
+                  }
+                },
+                {
+                  "char": "着",
+                  "utf16Start": 3,
+                  "utf16End": 4,
+                  "coveredInkSamples": 24,
+                  "totalInkSamples": 131,
+                  "coveredFraction": 0.183206,
+                  "paths": [
+                    "#qj-author-rack"
+                  ],
+                  "rect": {
+                    "left": 399,
+                    "top": 582.90625,
+                    "right": 433,
+                    "bottom": 622.90625,
+                    "width": 34,
+                    "height": 40
+                  }
+                }
+              ],
+              "rect": {
+                "left": 297,
+                "top": 582.90625,
+                "right": 433,
+                "bottom": 622.90625,
+                "width": 136,
+                "height": 40
+              }
+            },
+            {
+              "code": "text_occluded",
+              "severity": "error",
+              "time": 1.776667,
+              "selector": "#qj-author-gasketLabel",
+              "containerSelector": "#qj-author-rack",
+              "text": "胶圈取下分开",
+              "coveredFraction": 0.169374,
+              "message": "Actual SVG fill/stroke is painted above loaded-font text ink. Move the graphic and label into separate readable zones.",
+              "affectedGlyphs": [
+                {
+                  "char": "圈",
+                  "utf16Start": 1,
+                  "utf16End": 2,
+                  "coveredInkSamples": 30,
+                  "totalInkSamples": 99,
+                  "coveredFraction": 0.30303,
+                  "paths": [
+                    "#qj-author-rack"
+                  ],
+                  "rect": {
+                    "left": 503,
+                    "top": 587.453125,
+                    "right": 530,
+                    "bottom": 618.453125,
+                    "width": 27,
+                    "height": 31
+                  }
+                },
+                {
+                  "char": "分",
+                  "utf16Start": 4,
+                  "utf16End": 5,
+                  "coveredInkSamples": 18,
+                  "totalInkSamples": 57,
+                  "coveredFraction": 0.315789,
+                  "paths": [
+                    "#qj-author-rack"
+                  ],
+                  "rect": {
+                    "left": 584,
+                    "top": 587.453125,
+                    "right": 611,
+                    "bottom": 618.453125,
+                    "width": 27,
+                    "height": 31
+                  }
+                },
+                {
+                  "char": "开",
+                  "utf16Start": 5,
+                  "utf16End": 6,
+                  "coveredInkSamples": 11,
+                  "totalInkSamples": 66,
+                  "coveredFraction": 0.166667,
+                  "paths": [
+                    "#qj-author-rack"
+                  ],
+                  "rect": {
+                    "left": 611,
+                    "top": 587.453125,
+                    "right": 638,
+                    "bottom": 618.453125,
+                    "width": 27,
+                    "height": 31
+                  }
+                }
+              ],
+              "rect": {
+                "left": 476,
+                "top": 587.453125,
+                "right": 638,
+                "bottom": 618.453125,
+                "width": 162,
+                "height": 31
+              }
+            },
+            {
+              "code": "text_occluded",
+              "severity": "error",
+              "time": 2.961111,
+              "selector": "#qj-author-bodyLabel",
+              "containerSelector": "#qj-author-rack",
+              "text": "盒身倒扣",
+              "coveredFraction": 0.241058,
+              "message": "Actual SVG fill/stroke is painted above loaded-font text ink. Move the graphic and label into separate readable zones.",
+              "affectedGlyphs": [
+                {
+                  "char": "盒",
+                  "utf16Start": 0,
+                  "utf16End": 1,
+                  "coveredInkSamples": 50,
+                  "totalInkSamples": 179,
+                  "coveredFraction": 0.27933,
+                  "paths": [
+                    "#qj-author-rack"
+                  ],
+                  "rect": {
+                    "left": 104,
+                    "top": 580.3125,
+                    "right": 142,
+                    "bottom": 624.3125,
+                    "width": 38,
+                    "height": 44
+                  }
+                },
+                {
+                  "char": "身",
+                  "utf16Start": 1,
+                  "utf16End": 2,
+                  "coveredInkSamples": 28,
+                  "totalInkSamples": 159,
+                  "coveredFraction": 0.176101,
+                  "paths": [
+                    "#qj-author-rack"
+                  ],
+                  "rect": {
+                    "left": 142,
+                    "top": 580.3125,
+                    "right": 180,
+                    "bottom": 624.3125,
+                    "width": 38,
+                    "height": 44
+                  }
+                },
+                {
+                  "char": "倒",
+                  "utf16Start": 2,
+                  "utf16End": 3,
+                  "coveredInkSamples": 49,
+                  "totalInkSamples": 173,
+                  "coveredFraction": 0.283237,
+                  "paths": [
+                    "#qj-author-rack"
+                  ],
+                  "rect": {
+                    "left": 180,
+                    "top": 580.3125,
+                    "right": 218,
+                    "bottom": 624.3125,
+                    "width": 38,
+                    "height": 44
+                  }
+                },
+                {
+                  "char": "扣",
+                  "utf16Start": 3,
+                  "utf16End": 4,
+                  "coveredInkSamples": 28,
+                  "totalInkSamples": 132,
+                  "coveredFraction": 0.212121,
+                  "paths": [
+                    "#qj-author-rack"
+                  ],
+                  "rect": {
+                    "left": 218,
+                    "top": 580.3125,
+                    "right": 256,
+                    "bottom": 624.3125,
+                    "width": 38,
+                    "height": 44
+                  }
+                }
+              ],
+              "rect": {
+                "left": 104,
+                "top": 580.3125,
+                "right": 256,
+                "bottom": 624.3125,
+                "width": 152,
+                "height": 44
+              }
+            },
+            {
+              "code": "text_occluded",
+              "severity": "error",
+              "time": 2.961111,
+              "selector": "#qj-author-lidLabel",
+              "containerSelector": "#qj-author-rack",
+              "text": "盒盖立着",
+              "coveredFraction": 0.201754,
+              "message": "Actual SVG fill/stroke is painted above loaded-font text ink. Move the graphic and label into separate readable zones.",
+              "affectedGlyphs": [
+                {
+                  "char": "盖",
+                  "utf16Start": 1,
+                  "utf16End": 2,
+                  "coveredInkSamples": 46,
+                  "totalInkSamples": 124,
+                  "coveredFraction": 0.370968,
+                  "paths": [
+                    "#qj-author-rack"
+                  ],
+                  "rect": {
+                    "left": 330.61920166015625,
+                    "top": 582.6812133789062,
+                    "right": 365,
+                    "bottom": 623.1292114257812,
+                    "width": 34.38079833984375,
+                    "height": 40.447998046875
+                  }
+                },
+                {
+                  "char": "着",
+                  "utf16Start": 3,
+                  "utf16End": 4,
+                  "coveredInkSamples": 24,
+                  "totalInkSamples": 131,
+                  "coveredFraction": 0.183206,
+                  "paths": [
+                    "#qj-author-rack"
+                  ],
+                  "rect": {
+                    "left": 399.38079833984375,
+                    "top": 582.6812133789062,
+                    "right": 433.7615966796875,
+                    "bottom": 623.1292114257812,
+                    "width": 34.38079833984375,
+                    "height": 40.447998046875
+                  }
+                }
+              ],
+              "rect": {
+                "left": 296.2384033203125,
+                "top": 582.6812133789062,
+                "right": 433.7615966796875,
+                "bottom": 623.1292114257812,
+                "width": 137.523193359375,
+                "height": 40.447998046875
+              }
+            },
+            {
+              "code": "text_occluded",
+              "severity": "error",
+              "time": 2.961111,
+              "selector": "#qj-author-gasketLabel",
+              "containerSelector": "#qj-author-rack",
+              "text": "胶圈取下分开",
+              "coveredFraction": 0.169374,
+              "message": "Actual SVG fill/stroke is painted above loaded-font text ink. Move the graphic and label into separate readable zones.",
+              "affectedGlyphs": [
+                {
+                  "char": "圈",
+                  "utf16Start": 1,
+                  "utf16End": 2,
+                  "coveredInkSamples": 30,
+                  "totalInkSamples": 99,
+                  "coveredFraction": 0.30303,
+                  "paths": [
+                    "#qj-author-rack"
+                  ],
+                  "rect": {
+                    "left": 503,
+                    "top": 587.453125,
+                    "right": 530,
+                    "bottom": 618.453125,
+                    "width": 27,
+                    "height": 31
+                  }
+                },
+                {
+                  "char": "分",
+                  "utf16Start": 4,
+                  "utf16End": 5,
+                  "coveredInkSamples": 18,
+                  "totalInkSamples": 57,
+                  "coveredFraction": 0.315789,
+                  "paths": [
+                    "#qj-author-rack"
+                  ],
+                  "rect": {
+                    "left": 584,
+                    "top": 587.453125,
+                    "right": 611,
+                    "bottom": 618.453125,
+                    "width": 27,
+                    "height": 31
+                  }
+                },
+                {
+                  "char": "开",
+                  "utf16Start": 5,
+                  "utf16End": 6,
+                  "coveredInkSamples": 11,
+                  "totalInkSamples": 66,
+                  "coveredFraction": 0.166667,
+                  "paths": [
+                    "#qj-author-rack"
+                  ],
+                  "rect": {
+                    "left": 611,
+                    "top": 587.453125,
+                    "right": 638,
+                    "bottom": 618.453125,
+                    "width": 27,
+                    "height": 31
+                  }
+                }
+              ],
+              "rect": {
+                "left": 476,
+                "top": 587.453125,
+                "right": 638,
+                "bottom": 618.453125,
+                "width": 162,
+                "height": 31
+              }
+            },
+            {
+              "code": "text_occluded",
+              "severity": "error",
+              "time": 4.145556,
+              "selector": "#qj-author-bodyLabel",
+              "containerSelector": "#qj-author-rack",
+              "text": "盒身倒扣",
+              "coveredFraction": 0.241058,
+              "message": "Actual SVG fill/stroke is painted above loaded-font text ink. Move the graphic and label into separate readable zones.",
+              "affectedGlyphs": [
+                {
+                  "char": "盒",
+                  "utf16Start": 0,
+                  "utf16End": 1,
+                  "coveredInkSamples": 50,
+                  "totalInkSamples": 179,
+                  "coveredFraction": 0.27933,
+                  "paths": [
+                    "#qj-author-rack"
+                  ],
+                  "rect": {
+                    "left": 104,
+                    "top": 580.3125,
+                    "right": 142,
+                    "bottom": 624.3125,
+                    "width": 38,
+                    "height": 44
+                  }
+                },
+                {
+                  "char": "身",
+                  "utf16Start": 1,
+                  "utf16End": 2,
+                  "coveredInkSamples": 28,
+                  "totalInkSamples": 159,
+                  "coveredFraction": 0.176101,
+                  "paths": [
+                    "#qj-author-rack"
+                  ],
+                  "rect": {
+                    "left": 142,
+                    "top": 580.3125,
+                    "right": 180,
+                    "bottom": 624.3125,
+                    "width": 38,
+                    "height": 44
+                  }
+                },
+                {
+                  "char": "倒",
+                  "utf16Start": 2,
+                  "utf16End": 3,
+                  "coveredInkSamples": 49,
+                  "totalInkSamples": 173,
+                  "coveredFraction": 0.283237,
+                  "paths": [
+                    "#qj-author-rack"
+                  ],
+                  "rect": {
+                    "left": 180,
+                    "top": 580.3125,
+                    "right": 218,
+                    "bottom": 624.3125,
+                    "width": 38,
+                    "height": 44
+                  }
+                },
+                {
+                  "char": "扣",
+                  "utf16Start": 3,
+                  "utf16End": 4,
+                  "coveredInkSamples": 28,
+                  "totalInkSamples": 132,
+                  "coveredFraction": 0.212121,
+                  "paths": [
+                    "#qj-author-rack"
+                  ],
+                  "rect": {
+                    "left": 218,
+                    "top": 580.3125,
+                    "right": 256,
+                    "bottom": 624.3125,
+                    "width": 38,
+                    "height": 44
+                  }
+                }
+              ],
+              "rect": {
+                "left": 104,
+                "top": 580.3125,
+                "right": 256,
+                "bottom": 624.3125,
+                "width": 152,
+                "height": 44
+              }
+            },
+            {
+              "code": "text_occluded",
+              "severity": "error",
+              "time": 4.145556,
+              "selector": "#qj-author-lidLabel",
+              "containerSelector": "#qj-author-rack",
+              "text": "盒盖立着",
+              "coveredFraction": 0.201754,
+              "message": "Actual SVG fill/stroke is painted above loaded-font text ink. Move the graphic and label into separate readable zones.",
+              "affectedGlyphs": [
+                {
+                  "char": "盖",
+                  "utf16Start": 1,
+                  "utf16End": 2,
+                  "coveredInkSamples": 46,
+                  "totalInkSamples": 124,
+                  "coveredFraction": 0.370968,
+                  "paths": [
+                    "#qj-author-rack"
+                  ],
+                  "rect": {
+                    "left": 331,
+                    "top": 582.90625,
+                    "right": 365,
+                    "bottom": 622.90625,
+                    "width": 34,
+                    "height": 40
+                  }
+                },
+                {
+                  "char": "着",
+                  "utf16Start": 3,
+                  "utf16End": 4,
+                  "coveredInkSamples": 24,
+                  "totalInkSamples": 131,
+                  "coveredFraction": 0.183206,
+                  "paths": [
+                    "#qj-author-rack"
+                  ],
+                  "rect": {
+                    "left": 399,
+                    "top": 582.90625,
+                    "right": 433,
+                    "bottom": 622.90625,
+                    "width": 34,
+                    "height": 40
+                  }
+                }
+              ],
+              "rect": {
+                "left": 297,
+                "top": 582.90625,
+                "right": 433,
+                "bottom": 622.90625,
+                "width": 136,
+                "height": 40
+              }
+            },
+            {
+              "code": "text_occluded",
+              "severity": "error",
+              "time": 4.145556,
+              "selector": "#qj-author-gasketLabel",
+              "containerSelector": "#qj-author-rack",
+              "text": "胶圈取下分开",
+              "coveredFraction": 0.169374,
+              "message": "Actual SVG fill/stroke is painted above loaded-font text ink. Move the graphic and label into separate readable zones.",
+              "affectedGlyphs": [
+                {
+                  "char": "圈",
+                  "utf16Start": 1,
+                  "utf16End": 2,
+                  "coveredInkSamples": 30,
+                  "totalInkSamples": 99,
+                  "coveredFraction": 0.30303,
+                  "paths": [
+                    "#qj-author-rack"
+                  ],
+                  "rect": {
+                    "left": 503,
+                    "top": 587.453125,
+                    "right": 530,
+                    "bottom": 618.453125,
+                    "width": 27,
+                    "height": 31
+                  }
+                },
+                {
+                  "char": "分",
+                  "utf16Start": 4,
+                  "utf16End": 5,
+                  "coveredInkSamples": 18,
+                  "totalInkSamples": 57,
+                  "coveredFraction": 0.315789,
+                  "paths": [
+                    "#qj-author-rack"
+                  ],
+                  "rect": {
+                    "left": 584,
+                    "top": 587.453125,
+                    "right": 611,
+                    "bottom": 618.453125,
+                    "width": 27,
+                    "height": 31
+                  }
+                },
+                {
+                  "char": "开",
+                  "utf16Start": 5,
+                  "utf16End": 6,
+                  "coveredInkSamples": 11,
+                  "totalInkSamples": 66,
+                  "coveredFraction": 0.166667,
+                  "paths": [
+                    "#qj-author-rack"
+                  ],
+                  "rect": {
+                    "left": 611,
+                    "top": 587.453125,
+                    "right": 638,
+                    "bottom": 618.453125,
+                    "width": 27,
+                    "height": 31
+                  }
+                }
+              ],
+              "rect": {
+                "left": 476,
+                "top": 587.453125,
+                "right": 638,
+                "bottom": 618.453125,
+                "width": 162,
+                "height": 31
+              }
+            },
+            {
+              "code": "text_occluded",
+              "severity": "error",
+              "time": 5.33,
+              "selector": "#qj-author-bodyLabel",
+              "containerSelector": "#qj-author-rack",
+              "text": "盒身倒扣",
+              "coveredFraction": 0.241058,
+              "message": "Actual SVG fill/stroke is painted above loaded-font text ink. Move the graphic and label into separate readable zones.",
+              "affectedGlyphs": [
+                {
+                  "char": "盒",
+                  "utf16Start": 0,
+                  "utf16End": 1,
+                  "coveredInkSamples": 50,
+                  "totalInkSamples": 179,
+                  "coveredFraction": 0.27933,
+                  "paths": [
+                    "#qj-author-rack"
+                  ],
+                  "rect": {
+                    "left": 104,
+                    "top": 580.3125,
+                    "right": 142,
+                    "bottom": 624.3125,
+                    "width": 38,
+                    "height": 44
+                  }
+                },
+                {
+                  "char": "身",
+                  "utf16Start": 1,
+                  "utf16End": 2,
+                  "coveredInkSamples": 28,
+                  "totalInkSamples": 159,
+                  "coveredFraction": 0.176101,
+                  "paths": [
+                    "#qj-author-rack"
+                  ],
+                  "rect": {
+                    "left": 142,
+                    "top": 580.3125,
+                    "right": 180,
+                    "bottom": 624.3125,
+                    "width": 38,
+                    "height": 44
+                  }
+                },
+                {
+                  "char": "倒",
+                  "utf16Start": 2,
+                  "utf16End": 3,
+                  "coveredInkSamples": 49,
+                  "totalInkSamples": 173,
+                  "coveredFraction": 0.283237,
+                  "paths": [
+                    "#qj-author-rack"
+                  ],
+                  "rect": {
+                    "left": 180,
+                    "top": 580.3125,
+                    "right": 218,
+                    "bottom": 624.3125,
+                    "width": 38,
+                    "height": 44
+                  }
+                },
+                {
+                  "char": "扣",
+                  "utf16Start": 3,
+                  "utf16End": 4,
+                  "coveredInkSamples": 28,
+                  "totalInkSamples": 132,
+                  "coveredFraction": 0.212121,
+                  "paths": [
+                    "#qj-author-rack"
+                  ],
+                  "rect": {
+                    "left": 218,
+                    "top": 580.3125,
+                    "right": 256,
+                    "bottom": 624.3125,
+                    "width": 38,
+                    "height": 44
+                  }
+                }
+              ],
+              "rect": {
+                "left": 104,
+                "top": 580.3125,
+                "right": 256,
+                "bottom": 624.3125,
+                "width": 152,
+                "height": 44
+              }
+            },
+            {
+              "code": "text_occluded",
+              "severity": "error",
+              "time": 5.33,
+              "selector": "#qj-author-lidLabel",
+              "containerSelector": "#qj-author-rack",
+              "text": "盒盖立着",
+              "coveredFraction": 0.201754,
+              "message": "Actual SVG fill/stroke is painted above loaded-font text ink. Move the graphic and label into separate readable zones.",
+              "affectedGlyphs": [
+                {
+                  "char": "盖",
+                  "utf16Start": 1,
+                  "utf16End": 2,
+                  "coveredInkSamples": 46,
+                  "totalInkSamples": 124,
+                  "coveredFraction": 0.370968,
+                  "paths": [
+                    "#qj-author-rack"
+                  ],
+                  "rect": {
+                    "left": 331,
+                    "top": 582.90625,
+                    "right": 365,
+                    "bottom": 622.90625,
+                    "width": 34,
+                    "height": 40
+                  }
+                },
+                {
+                  "char": "着",
+                  "utf16Start": 3,
+                  "utf16End": 4,
+                  "coveredInkSamples": 24,
+                  "totalInkSamples": 131,
+                  "coveredFraction": 0.183206,
+                  "paths": [
+                    "#qj-author-rack"
+                  ],
+                  "rect": {
+                    "left": 399,
+                    "top": 582.90625,
+                    "right": 433,
+                    "bottom": 622.90625,
+                    "width": 34,
+                    "height": 40
+                  }
+                }
+              ],
+              "rect": {
+                "left": 297,
+                "top": 582.90625,
+                "right": 433,
+                "bottom": 622.90625,
+                "width": 136,
+                "height": 40
+              }
+            },
+            {
+              "code": "text_occluded",
+              "severity": "error",
+              "time": 5.33,
+              "selector": "#qj-author-gasketLabel",
+              "containerSelector": "#qj-author-rack",
+              "text": "胶圈取下分开",
+              "coveredFraction": 0.169374,
+              "message": "Actual SVG fill/stroke is painted above loaded-font text ink. Move the graphic and label into separate readable zones.",
+              "affectedGlyphs": [
+                {
+                  "char": "圈",
+                  "utf16Start": 1,
+                  "utf16End": 2,
+                  "coveredInkSamples": 30,
+                  "totalInkSamples": 99,
+                  "coveredFraction": 0.30303,
+                  "paths": [
+                    "#qj-author-rack"
+                  ],
+                  "rect": {
+                    "left": 503,
+                    "top": 587.453125,
+                    "right": 530,
+                    "bottom": 618.453125,
+                    "width": 27,
+                    "height": 31
+                  }
+                },
+                {
+                  "char": "分",
+                  "utf16Start": 4,
+                  "utf16End": 5,
+                  "coveredInkSamples": 18,
+                  "totalInkSamples": 57,
+                  "coveredFraction": 0.315789,
+                  "paths": [
+                    "#qj-author-rack"
+                  ],
+                  "rect": {
+                    "left": 584,
+                    "top": 587.453125,
+                    "right": 611,
+                    "bottom": 618.453125,
+                    "width": 27,
+                    "height": 31
+                  }
+                },
+                {
+                  "char": "开",
+                  "utf16Start": 5,
+                  "utf16End": 6,
+                  "coveredInkSamples": 11,
+                  "totalInkSamples": 66,
+                  "coveredFraction": 0.166667,
+                  "paths": [
+                    "#qj-author-rack"
+                  ],
+                  "rect": {
+                    "left": 611,
+                    "top": 587.453125,
+                    "right": 638,
+                    "bottom": 618.453125,
+                    "width": 27,
+                    "height": 31
+                  }
+                }
+              ],
+              "rect": {
+                "left": 476,
+                "top": 587.453125,
+                "right": 638,
+                "bottom": 618.453125,
+                "width": 162,
+                "height": 31
+              }
+            },
+            {
+              "code": "text_occluded",
+              "severity": "error",
+              "time": 6.514444,
+              "selector": "#qj-author-bodyLabel",
+              "containerSelector": "#qj-author-rack",
+              "text": "盒身倒扣",
+              "coveredFraction": 0.241058,
+              "message": "Actual SVG fill/stroke is painted above loaded-font text ink. Move the graphic and label into separate readable zones.",
+              "affectedGlyphs": [
+                {
+                  "char": "盒",
+                  "utf16Start": 0,
+                  "utf16End": 1,
+                  "coveredInkSamples": 50,
+                  "totalInkSamples": 179,
+                  "coveredFraction": 0.27933,
+                  "paths": [
+                    "#qj-author-rack"
+                  ],
+                  "rect": {
+                    "left": 104,
+                    "top": 580.3125,
+                    "right": 142,
+                    "bottom": 624.3125,
+                    "width": 38,
+                    "height": 44
+                  }
+                },
+                {
+                  "char": "身",
+                  "utf16Start": 1,
+                  "utf16End": 2,
+                  "coveredInkSamples": 28,
+                  "totalInkSamples": 159,
+                  "coveredFraction": 0.176101,
+                  "paths": [
+                    "#qj-author-rack"
+                  ],
+                  "rect": {
+                    "left": 142,
+                    "top": 580.3125,
+                    "right": 180,
+                    "bottom": 624.3125,
+                    "width": 38,
+                    "height": 44
+                  }
+                },
+                {
+                  "char": "倒",
+                  "utf16Start": 2,
+                  "utf16End": 3,
+                  "coveredInkSamples": 49,
+                  "totalInkSamples": 173,
+                  "coveredFraction": 0.283237,
+                  "paths": [
+                    "#qj-author-rack"
+                  ],
+                  "rect": {
+                    "left": 180,
+                    "top": 580.3125,
+                    "right": 218,
+                    "bottom": 624.3125,
+                    "width": 38,
+                    "height": 44
+                  }
+                },
+                {
+                  "char": "扣",
+                  "utf16Start": 3,
+                  "utf16End": 4,
+                  "coveredInkSamples": 28,
+                  "totalInkSamples": 132,
+                  "coveredFraction": 0.212121,
+                  "paths": [
+                    "#qj-author-rack"
+                  ],
+                  "rect": {
+                    "left": 218,
+                    "top": 580.3125,
+                    "right": 256,
+                    "bottom": 624.3125,
+                    "width": 38,
+                    "height": 44
+                  }
+                }
+              ],
+              "rect": {
+                "left": 104,
+                "top": 580.3125,
+                "right": 256,
+                "bottom": 624.3125,
+                "width": 152,
+                "height": 44
+              }
+            },
+            {
+              "code": "text_occluded",
+              "severity": "error",
+              "time": 6.514444,
+              "selector": "#qj-author-lidLabel",
+              "containerSelector": "#qj-author-rack",
+              "text": "盒盖立着",
+              "coveredFraction": 0.201754,
+              "message": "Actual SVG fill/stroke is painted above loaded-font text ink. Move the graphic and label into separate readable zones.",
+              "affectedGlyphs": [
+                {
+                  "char": "盖",
+                  "utf16Start": 1,
+                  "utf16End": 2,
+                  "coveredInkSamples": 46,
+                  "totalInkSamples": 124,
+                  "coveredFraction": 0.370968,
+                  "paths": [
+                    "#qj-author-rack"
+                  ],
+                  "rect": {
+                    "left": 331,
+                    "top": 582.90625,
+                    "right": 365,
+                    "bottom": 622.90625,
+                    "width": 34,
+                    "height": 40
+                  }
+                },
+                {
+                  "char": "着",
+                  "utf16Start": 3,
+                  "utf16End": 4,
+                  "coveredInkSamples": 24,
+                  "totalInkSamples": 131,
+                  "coveredFraction": 0.183206,
+                  "paths": [
+                    "#qj-author-rack"
+                  ],
+                  "rect": {
+                    "left": 399,
+                    "top": 582.90625,
+                    "right": 433,
+                    "bottom": 622.90625,
+                    "width": 34,
+                    "height": 40
+                  }
+                }
+              ],
+              "rect": {
+                "left": 297,
+                "top": 582.90625,
+                "right": 433,
+                "bottom": 622.90625,
+                "width": 136,
+                "height": 40
+              }
+            },
+            {
+              "code": "text_occluded",
+              "severity": "error",
+              "time": 6.514444,
+              "selector": "#qj-author-gasketLabel",
+              "containerSelector": "#qj-author-rack",
+              "text": "胶圈取下分开",
+              "coveredFraction": 0.169374,
+              "message": "Actual SVG fill/stroke is painted above loaded-font text ink. Move the graphic and label into separate readable zones.",
+              "affectedGlyphs": [
+                {
+                  "char": "圈",
+                  "utf16Start": 1,
+                  "utf16End": 2,
+                  "coveredInkSamples": 30,
+                  "totalInkSamples": 99,
+                  "coveredFraction": 0.30303,
+                  "paths": [
+                    "#qj-author-rack"
+                  ],
+                  "rect": {
+                    "left": 503,
+                    "top": 587.453125,
+                    "right": 530,
+                    "bottom": 618.453125,
+                    "width": 27,
+                    "height": 31
+                  }
+                },
+                {
+                  "char": "分",
+                  "utf16Start": 4,
+                  "utf16End": 5,
+                  "coveredInkSamples": 18,
+                  "totalInkSamples": 57,
+                  "coveredFraction": 0.315789,
+                  "paths": [
+                    "#qj-author-rack"
+                  ],
+                  "rect": {
+                    "left": 584,
+                    "top": 587.453125,
+                    "right": 611,
+                    "bottom": 618.453125,
+                    "width": 27,
+                    "height": 31
+                  }
+                },
+                {
+                  "char": "开",
+                  "utf16Start": 5,
+                  "utf16End": 6,
+                  "coveredInkSamples": 11,
+                  "totalInkSamples": 66,
+                  "coveredFraction": 0.166667,
+                  "paths": [
+                    "#qj-author-rack"
+                  ],
+                  "rect": {
+                    "left": 611,
+                    "top": 587.453125,
+                    "right": 638,
+                    "bottom": 618.453125,
+                    "width": 27,
+                    "height": 31
+                  }
+                }
+              ],
+              "rect": {
+                "left": 476,
+                "top": 587.453125,
+                "right": 638,
+                "bottom": 618.453125,
+                "width": 162,
+                "height": 31
+              }
+            },
+            {
+              "code": "text_occluded",
+              "severity": "error",
+              "time": 7.698889,
+              "selector": "#qj-author-bodyLabel",
+              "containerSelector": "#qj-author-rack",
+              "text": "盒身倒扣",
+              "coveredFraction": 0.241058,
+              "message": "Actual SVG fill/stroke is painted above loaded-font text ink. Move the graphic and label into separate readable zones.",
+              "affectedGlyphs": [
+                {
+                  "char": "盒",
+                  "utf16Start": 0,
+                  "utf16End": 1,
+                  "coveredInkSamples": 50,
+                  "totalInkSamples": 179,
+                  "coveredFraction": 0.27933,
+                  "paths": [
+                    "#qj-author-rack"
+                  ],
+                  "rect": {
+                    "left": 104,
+                    "top": 580.3125,
+                    "right": 142,
+                    "bottom": 624.3125,
+                    "width": 38,
+                    "height": 44
+                  }
+                },
+                {
+                  "char": "身",
+                  "utf16Start": 1,
+                  "utf16End": 2,
+                  "coveredInkSamples": 28,
+                  "totalInkSamples": 159,
+                  "coveredFraction": 0.176101,
+                  "paths": [
+                    "#qj-author-rack"
+                  ],
+                  "rect": {
+                    "left": 142,
+                    "top": 580.3125,
+                    "right": 180,
+                    "bottom": 624.3125,
+                    "width": 38,
+                    "height": 44
+                  }
+                },
+                {
+                  "char": "倒",
+                  "utf16Start": 2,
+                  "utf16End": 3,
+                  "coveredInkSamples": 49,
+                  "totalInkSamples": 173,
+                  "coveredFraction": 0.283237,
+                  "paths": [
+                    "#qj-author-rack"
+                  ],
+                  "rect": {
+                    "left": 180,
+                    "top": 580.3125,
+                    "right": 218,
+                    "bottom": 624.3125,
+                    "width": 38,
+                    "height": 44
+                  }
+                },
+                {
+                  "char": "扣",
+                  "utf16Start": 3,
+                  "utf16End": 4,
+                  "coveredInkSamples": 28,
+                  "totalInkSamples": 132,
+                  "coveredFraction": 0.212121,
+                  "paths": [
+                    "#qj-author-rack"
+                  ],
+                  "rect": {
+                    "left": 218,
+                    "top": 580.3125,
+                    "right": 256,
+                    "bottom": 624.3125,
+                    "width": 38,
+                    "height": 44
+                  }
+                }
+              ],
+              "rect": {
+                "left": 104,
+                "top": 580.3125,
+                "right": 256,
+                "bottom": 624.3125,
+                "width": 152,
+                "height": 44
+              }
+            },
+            {
+              "code": "text_occluded",
+              "severity": "error",
+              "time": 7.698889,
+              "selector": "#qj-author-lidLabel",
+              "containerSelector": "#qj-author-rack",
+              "text": "盒盖立着",
+              "coveredFraction": 0.201754,
+              "message": "Actual SVG fill/stroke is painted above loaded-font text ink. Move the graphic and label into separate readable zones.",
+              "affectedGlyphs": [
+                {
+                  "char": "盖",
+                  "utf16Start": 1,
+                  "utf16End": 2,
+                  "coveredInkSamples": 46,
+                  "totalInkSamples": 124,
+                  "coveredFraction": 0.370968,
+                  "paths": [
+                    "#qj-author-rack"
+                  ],
+                  "rect": {
+                    "left": 331,
+                    "top": 582.90625,
+                    "right": 365,
+                    "bottom": 622.90625,
+                    "width": 34,
+                    "height": 40
+                  }
+                },
+                {
+                  "char": "着",
+                  "utf16Start": 3,
+                  "utf16End": 4,
+                  "coveredInkSamples": 24,
+                  "totalInkSamples": 131,
+                  "coveredFraction": 0.183206,
+                  "paths": [
+                    "#qj-author-rack"
+                  ],
+                  "rect": {
+                    "left": 399,
+                    "top": 582.90625,
+                    "right": 433,
+                    "bottom": 622.90625,
+                    "width": 34,
+                    "height": 40
+                  }
+                }
+              ],
+              "rect": {
+                "left": 297,
+                "top": 582.90625,
+                "right": 433,
+                "bottom": 622.90625,
+                "width": 136,
+                "height": 40
+              }
+            },
+            {
+              "code": "text_occluded",
+              "severity": "error",
+              "time": 7.698889,
+              "selector": "#qj-author-gasketLabel",
+              "containerSelector": "#qj-author-rack",
+              "text": "胶圈取下分开",
+              "coveredFraction": 0.169374,
+              "message": "Actual SVG fill/stroke is painted above loaded-font text ink. Move the graphic and label into separate readable zones.",
+              "affectedGlyphs": [
+                {
+                  "char": "圈",
+                  "utf16Start": 1,
+                  "utf16End": 2,
+                  "coveredInkSamples": 30,
+                  "totalInkSamples": 99,
+                  "coveredFraction": 0.30303,
+                  "paths": [
+                    "#qj-author-rack"
+                  ],
+                  "rect": {
+                    "left": 503,
+                    "top": 587.453125,
+                    "right": 530,
+                    "bottom": 618.453125,
+                    "width": 27,
+                    "height": 31
+                  }
+                },
+                {
+                  "char": "分",
+                  "utf16Start": 4,
+                  "utf16End": 5,
+                  "coveredInkSamples": 18,
+                  "totalInkSamples": 57,
+                  "coveredFraction": 0.315789,
+                  "paths": [
+                    "#qj-author-rack"
+                  ],
+                  "rect": {
+                    "left": 584,
+                    "top": 587.453125,
+                    "right": 611,
+                    "bottom": 618.453125,
+                    "width": 27,
+                    "height": 31
+                  }
+                },
+                {
+                  "char": "开",
+                  "utf16Start": 5,
+                  "utf16End": 6,
+                  "coveredInkSamples": 11,
+                  "totalInkSamples": 66,
+                  "coveredFraction": 0.166667,
+                  "paths": [
+                    "#qj-author-rack"
+                  ],
+                  "rect": {
+                    "left": 611,
+                    "top": 587.453125,
+                    "right": 638,
+                    "bottom": 618.453125,
+                    "width": 27,
+                    "height": 31
+                  }
+                }
+              ],
+              "rect": {
+                "left": 476,
+                "top": 587.453125,
+                "right": 638,
+                "bottom": 618.453125,
+                "width": 162,
+                "height": 31
+              }
+            },
+            {
+              "code": "text_occluded",
+              "severity": "error",
+              "time": 8.883333,
+              "selector": "#qj-author-bodyLabel",
+              "containerSelector": "#qj-author-rack",
+              "text": "盒身倒扣",
+              "coveredFraction": 0.241058,
+              "message": "Actual SVG fill/stroke is painted above loaded-font text ink. Move the graphic and label into separate readable zones.",
+              "affectedGlyphs": [
+                {
+                  "char": "盒",
+                  "utf16Start": 0,
+                  "utf16End": 1,
+                  "coveredInkSamples": 50,
+                  "totalInkSamples": 179,
+                  "coveredFraction": 0.27933,
+                  "paths": [
+                    "#qj-author-rack"
+                  ],
+                  "rect": {
+                    "left": 104,
+                    "top": 580.3125,
+                    "right": 142,
+                    "bottom": 624.3125,
+                    "width": 38,
+                    "height": 44
+                  }
+                },
+                {
+                  "char": "身",
+                  "utf16Start": 1,
+                  "utf16End": 2,
+                  "coveredInkSamples": 28,
+                  "totalInkSamples": 159,
+                  "coveredFraction": 0.176101,
+                  "paths": [
+                    "#qj-author-rack"
+                  ],
+                  "rect": {
+                    "left": 142,
+                    "top": 580.3125,
+                    "right": 180,
+                    "bottom": 624.3125,
+                    "width": 38,
+                    "height": 44
+                  }
+                },
+                {
+                  "char": "倒",
+                  "utf16Start": 2,
+                  "utf16End": 3,
+                  "coveredInkSamples": 49,
+                  "totalInkSamples": 173,
+                  "coveredFraction": 0.283237,
+                  "paths": [
+                    "#qj-author-rack"
+                  ],
+                  "rect": {
+                    "left": 180,
+                    "top": 580.3125,
+                    "right": 218,
+                    "bottom": 624.3125,
+                    "width": 38,
+                    "height": 44
+                  }
+                },
+                {
+                  "char": "扣",
+                  "utf16Start": 3,
+                  "utf16End": 4,
+                  "coveredInkSamples": 28,
+                  "totalInkSamples": 132,
+                  "coveredFraction": 0.212121,
+                  "paths": [
+                    "#qj-author-rack"
+                  ],
+                  "rect": {
+                    "left": 218,
+                    "top": 580.3125,
+                    "right": 256,
+                    "bottom": 624.3125,
+                    "width": 38,
+                    "height": 44
+                  }
+                }
+              ],
+              "rect": {
+                "left": 104,
+                "top": 580.3125,
+                "right": 256,
+                "bottom": 624.3125,
+                "width": 152,
+                "height": 44
+              }
+            },
+            {
+              "code": "text_occluded",
+              "severity": "error",
+              "time": 8.883333,
+              "selector": "#qj-author-lidLabel",
+              "containerSelector": "#qj-author-rack",
+              "text": "盒盖立着",
+              "coveredFraction": 0.201754,
+              "message": "Actual SVG fill/stroke is painted above loaded-font text ink. Move the graphic and label into separate readable zones.",
+              "affectedGlyphs": [
+                {
+                  "char": "盖",
+                  "utf16Start": 1,
+                  "utf16End": 2,
+                  "coveredInkSamples": 46,
+                  "totalInkSamples": 124,
+                  "coveredFraction": 0.370968,
+                  "paths": [
+                    "#qj-author-rack"
+                  ],
+                  "rect": {
+                    "left": 331,
+                    "top": 582.90625,
+                    "right": 365,
+                    "bottom": 622.90625,
+                    "width": 34,
+                    "height": 40
+                  }
+                },
+                {
+                  "char": "着",
+                  "utf16Start": 3,
+                  "utf16End": 4,
+                  "coveredInkSamples": 24,
+                  "totalInkSamples": 131,
+                  "coveredFraction": 0.183206,
+                  "paths": [
+                    "#qj-author-rack"
+                  ],
+                  "rect": {
+                    "left": 399,
+                    "top": 582.90625,
+                    "right": 433,
+                    "bottom": 622.90625,
+                    "width": 34,
+                    "height": 40
+                  }
+                }
+              ],
+              "rect": {
+                "left": 297,
+                "top": 582.90625,
+                "right": 433,
+                "bottom": 622.90625,
+                "width": 136,
+                "height": 40
+              }
+            },
+            {
+              "code": "text_occluded",
+              "severity": "error",
+              "time": 8.883333,
+              "selector": "#qj-author-gasketLabel",
+              "containerSelector": "#qj-author-rack",
+              "text": "胶圈取下分开",
+              "coveredFraction": 0.169374,
+              "message": "Actual SVG fill/stroke is painted above loaded-font text ink. Move the graphic and label into separate readable zones.",
+              "affectedGlyphs": [
+                {
+                  "char": "圈",
+                  "utf16Start": 1,
+                  "utf16End": 2,
+                  "coveredInkSamples": 30,
+                  "totalInkSamples": 99,
+                  "coveredFraction": 0.30303,
+                  "paths": [
+                    "#qj-author-rack"
+                  ],
+                  "rect": {
+                    "left": 503,
+                    "top": 587.453125,
+                    "right": 530,
+                    "bottom": 618.453125,
+                    "width": 27,
+                    "height": 31
+                  }
+                },
+                {
+                  "char": "分",
+                  "utf16Start": 4,
+                  "utf16End": 5,
+                  "coveredInkSamples": 18,
+                  "totalInkSamples": 57,
+                  "coveredFraction": 0.315789,
+                  "paths": [
+                    "#qj-author-rack"
+                  ],
+                  "rect": {
+                    "left": 584,
+                    "top": 587.453125,
+                    "right": 611,
+                    "bottom": 618.453125,
+                    "width": 27,
+                    "height": 31
+                  }
+                },
+                {
+                  "char": "开",
+                  "utf16Start": 5,
+                  "utf16End": 6,
+                  "coveredInkSamples": 11,
+                  "totalInkSamples": 66,
+                  "coveredFraction": 0.166667,
+                  "paths": [
+                    "#qj-author-rack"
+                  ],
+                  "rect": {
+                    "left": 611,
+                    "top": 587.453125,
+                    "right": 638,
+                    "bottom": 618.453125,
+                    "width": 27,
+                    "height": 31
+                  }
+                }
+              ],
+              "rect": {
+                "left": 476,
+                "top": 587.453125,
+                "right": 638,
+                "bottom": 618.453125,
+                "width": 162,
+                "height": 31
+              }
+            },
+            {
+              "code": "text_occluded",
+              "severity": "error",
+              "time": 10.067778,
+              "selector": "#qj-author-bodyLabel",
+              "containerSelector": "#qj-author-rack",
+              "text": "盒身倒扣",
+              "coveredFraction": 0.241058,
+              "message": "Actual SVG fill/stroke is painted above loaded-font text ink. Move the graphic and label into separate readable zones.",
+              "affectedGlyphs": [
+                {
+                  "char": "盒",
+                  "utf16Start": 0,
+                  "utf16End": 1,
+                  "coveredInkSamples": 50,
+                  "totalInkSamples": 179,
+                  "coveredFraction": 0.27933,
+                  "paths": [
+                    "#qj-author-rack"
+                  ],
+                  "rect": {
+                    "left": 104,
+                    "top": 580.3125,
+                    "right": 142,
+                    "bottom": 624.3125,
+                    "width": 38,
+                    "height": 44
+                  }
+                },
+                {
+                  "char": "身",
+                  "utf16Start": 1,
+                  "utf16End": 2,
+                  "coveredInkSamples": 28,
+                  "totalInkSamples": 159,
+                  "coveredFraction": 0.176101,
+                  "paths": [
+                    "#qj-author-rack"
+                  ],
+                  "rect": {
+                    "left": 142,
+                    "top": 580.3125,
+                    "right": 180,
+                    "bottom": 624.3125,
+                    "width": 38,
+                    "height": 44
+                  }
+                },
+                {
+                  "char": "倒",
+                  "utf16Start": 2,
+                  "utf16End": 3,
+                  "coveredInkSamples": 49,
+                  "totalInkSamples": 173,
+                  "coveredFraction": 0.283237,
+                  "paths": [
+                    "#qj-author-rack"
+                  ],
+                  "rect": {
+                    "left": 180,
+                    "top": 580.3125,
+                    "right": 218,
+                    "bottom": 624.3125,
+                    "width": 38,
+                    "height": 44
+                  }
+                },
+                {
+                  "char": "扣",
+                  "utf16Start": 3,
+                  "utf16End": 4,
+                  "coveredInkSamples": 28,
+                  "totalInkSamples": 132,
+                  "coveredFraction": 0.212121,
+                  "paths": [
+                    "#qj-author-rack"
+                  ],
+                  "rect": {
+                    "left": 218,
+                    "top": 580.3125,
+                    "right": 256,
+                    "bottom": 624.3125,
+                    "width": 38,
+                    "height": 44
+                  }
+                }
+              ],
+              "rect": {
+                "left": 104,
+                "top": 580.3125,
+                "right": 256,
+                "bottom": 624.3125,
+                "width": 152,
+                "height": 44
+              }
+            },
+            {
+              "code": "text_occluded",
+              "severity": "error",
+              "time": 10.067778,
+              "selector": "#qj-author-lidLabel",
+              "containerSelector": "#qj-author-rack",
+              "text": "盒盖立着",
+              "coveredFraction": 0.201754,
+              "message": "Actual SVG fill/stroke is painted above loaded-font text ink. Move the graphic and label into separate readable zones.",
+              "affectedGlyphs": [
+                {
+                  "char": "盖",
+                  "utf16Start": 1,
+                  "utf16End": 2,
+                  "coveredInkSamples": 46,
+                  "totalInkSamples": 124,
+                  "coveredFraction": 0.370968,
+                  "paths": [
+                    "#qj-author-rack"
+                  ],
+                  "rect": {
+                    "left": 331,
+                    "top": 582.90625,
+                    "right": 365,
+                    "bottom": 622.90625,
+                    "width": 34,
+                    "height": 40
+                  }
+                },
+                {
+                  "char": "着",
+                  "utf16Start": 3,
+                  "utf16End": 4,
+                  "coveredInkSamples": 24,
+                  "totalInkSamples": 131,
+                  "coveredFraction": 0.183206,
+                  "paths": [
+                    "#qj-author-rack"
+                  ],
+                  "rect": {
+                    "left": 399,
+                    "top": 582.90625,
+                    "right": 433,
+                    "bottom": 622.90625,
+                    "width": 34,
+                    "height": 40
+                  }
+                }
+              ],
+              "rect": {
+                "left": 297,
+                "top": 582.90625,
+                "right": 433,
+                "bottom": 622.90625,
+                "width": 136,
+                "height": 40
+              }
+            },
+            {
+              "code": "text_occluded",
+              "severity": "error",
+              "time": 10.067778,
+              "selector": "#qj-author-gasketLabel",
+              "containerSelector": "#qj-author-rack",
+              "text": "胶圈取下分开",
+              "coveredFraction": 0.169374,
+              "message": "Actual SVG fill/stroke is painted above loaded-font text ink. Move the graphic and label into separate readable zones.",
+              "affectedGlyphs": [
+                {
+                  "char": "圈",
+                  "utf16Start": 1,
+                  "utf16End": 2,
+                  "coveredInkSamples": 30,
+                  "totalInkSamples": 99,
+                  "coveredFraction": 0.30303,
+                  "paths": [
+                    "#qj-author-rack"
+                  ],
+                  "rect": {
+                    "left": 503,
+                    "top": 587.453125,
+                    "right": 530,
+                    "bottom": 618.453125,
+                    "width": 27,
+                    "height": 31
+                  }
+                },
+                {
+                  "char": "分",
+                  "utf16Start": 4,
+                  "utf16End": 5,
+                  "coveredInkSamples": 18,
+                  "totalInkSamples": 57,
+                  "coveredFraction": 0.315789,
+                  "paths": [
+                    "#qj-author-rack"
+                  ],
+                  "rect": {
+                    "left": 584,
+                    "top": 587.453125,
+                    "right": 611,
+                    "bottom": 618.453125,
+                    "width": 27,
+                    "height": 31
+                  }
+                },
+                {
+                  "char": "开",
+                  "utf16Start": 5,
+                  "utf16End": 6,
+                  "coveredInkSamples": 11,
+                  "totalInkSamples": 66,
+                  "coveredFraction": 0.166667,
+                  "paths": [
+                    "#qj-author-rack"
+                  ],
+                  "rect": {
+                    "left": 611,
+                    "top": 587.453125,
+                    "right": 638,
+                    "bottom": 618.453125,
+                    "width": 27,
+                    "height": 31
+                  }
+                }
+              ],
+              "rect": {
+                "left": 476,
+                "top": 587.453125,
+                "right": 638,
+                "bottom": 618.453125,
+                "width": 162,
+                "height": 31
+              }
+            }
+          ],
+          "upstreamReport": {
+            "path": "svg-paint-evidence/d19e06b88435745fa5691566203bb880f7c20ecff6f6ef7f38de298f304f1c33/f2f0312a4f2902c80f955d29e8f078609176b44519b2b28d2f42177452520051-8194f416-1482-4f82-8ca5-4b03a0d0b015/check-hyperframes-report.json",
+            "sha256": "f2f0312a4f2902c80f955d29e8f078609176b44519b2b28d2f42177452520051"
+          },
+          "upstreamStdout": {
+            "path": "svg-paint-evidence/d19e06b88435745fa5691566203bb880f7c20ecff6f6ef7f38de298f304f1c33/f2f0312a4f2902c80f955d29e8f078609176b44519b2b28d2f42177452520051-8194f416-1482-4f82-8ca5-4b03a0d0b015/check-hyperframes-stdout.txt",
+            "sha256": "869aef6e9fb43b0ddd4c2fbbabf2ee5d7bd85ddba6d4b68f800ca87a42f4ca09"
+          },
+          "report": {
+            "path": "svg-paint-evidence/d19e06b88435745fa5691566203bb880f7c20ecff6f6ef7f38de298f304f1c33/f2f0312a4f2902c80f955d29e8f078609176b44519b2b28d2f42177452520051-8194f416-1482-4f82-8ca5-4b03a0d0b015/server-svg-paint-report.json",
+            "sha256": "06a5b9e9d6725d0eecef6076a54a56eff35256707adacc52a95e467c7c3e8128"
+          }
+        },
+        "drawingText": {
+          "source": "server-drawing-text",
+          "version": 1,
+          "htmlHash": "d19e06b88435745fa5691566203bb880f7c20ecff6f6ef7f38de298f304f1c33",
+          "samples": [
+            0.592222,
+            1.776667,
+            2.961111,
+            4.145556,
+            5.33,
+            6.514444,
+            7.698889,
+            8.883333,
+            10.067778
+          ],
+          "frames": [
+            {
+              "time": 0.592222,
+              "nodes": [
+                {
+                  "selector": "#qj-author-bodyLabel",
+                  "text": "盒身倒扣",
+                  "font": "normal 700 38px \"PingFang SC\", Arial, sans-serif",
+                  "lines": [
+                    {
+                      "text": "盒身倒扣",
+                      "rect": {
+                        "left": 104,
+                        "top": 580.3134765625,
+                        "right": 256,
+                        "bottom": 624.3134765625,
+                        "width": 152,
+                        "height": 44
+                      }
+                    }
+                  ]
+                },
+                {
+                  "selector": "#qj-author-lidLabel",
+                  "text": "盒盖立着",
+                  "font": "normal 700 34px \"PingFang SC\", Arial, sans-serif",
+                  "lines": [
+                    {
+                      "text": "盒盖立着",
+                      "rect": {
+                        "left": 297,
+                        "top": 582.9280395507812,
+                        "right": 433,
+                        "bottom": 622.9280395507812,
+                        "width": 136,
+                        "height": 40
+                      }
+                    }
+                  ]
+                },
+                {
+                  "selector": "#qj-author-gasketLabel",
+                  "text": "胶圈取下分开",
+                  "font": "normal 700 27px \"PingFang SC\", Arial, sans-serif",
+                  "lines": [
+                    {
+                      "text": "胶圈取下分开",
+                      "rect": {
+                        "left": 476.1296081542969,
+                        "top": 588.5352783203125,
+                        "right": 637.870361328125,
+                        "bottom": 619.4857177734375,
+                        "width": 161.74075317382812,
+                        "height": 30.950439453125
+                      }
+                    }
+                  ]
+                },
+                {
+                  "selector": "#qj-author-principle",
+                  "text": "自行排水，让空气干燥各表面",
+                  "font": "normal 700 42px \"PingFang SC\", Arial, sans-serif",
+                  "lines": [
+                    {
+                      "text": "自行排水，让空气干燥各表面",
+                      "rect": {
+                        "left": 87.90090942382812,
+                        "top": 729.5078125,
+                        "right": 632.09912109375,
+                        "bottom": 778.3460693359375,
+                        "width": 544.1982116699219,
+                        "height": 48.8382568359375
+                      }
+                    }
+                  ]
+                },
+                {
+                  "selector": "#qj-author-checkIntro",
+                  "text": "收纳前摸三处：",
+                  "font": "normal 700 24px \"PingFang SC\", Arial, sans-serif",
+                  "lines": [
+                    {
+                      "text": "收纳前摸三处：",
+                      "rect": {
+                        "left": 276.5292053222656,
+                        "top": 852.7066040039062,
+                        "right": 443.4707946777344,
+                        "bottom": 880.5302124023438,
+                        "width": 166.94158935546875,
+                        "height": 27.8236083984375
+                      }
+                    }
+                  ]
+                },
+                {
+                  "selector": "#qj-author-check1",
+                  "text": "内壁干爽",
+                  "font": "normal 700 38px \"PingFang SC\", Arial, sans-serif",
+                  "lines": [
+                    {
+                      "text": "内壁干爽",
+                      "rect": {
+                        "left": 77.32080078125,
+                        "top": 928.7593994140625,
+                        "right": 227.67919921875,
+                        "bottom": 972.2841796875,
+                        "width": 150.3583984375,
+                        "height": 43.5247802734375
+                      }
+                    }
+                  ]
+                }
+              ],
+              "findings": []
+            },
+            {
+              "time": 1.776667,
+              "nodes": [
+                {
+                  "selector": "#qj-author-bodyLabel",
+                  "text": "盒身倒扣",
+                  "font": "normal 700 38px \"PingFang SC\", Arial, sans-serif",
+                  "lines": [
+                    {
+                      "text": "盒身倒扣",
+                      "rect": {
+                        "left": 102.14559936523438,
+                        "top": 579.7589111328125,
+                        "right": 257.8544006347656,
+                        "bottom": 624.83251953125,
+                        "width": 155.70880126953125,
+                        "height": 45.0736083984375
+                      }
+                    }
+                  ]
+                },
+                {
+                  "selector": "#qj-author-lidLabel",
+                  "text": "盒盖立着",
+                  "font": "normal 700 34px \"PingFang SC\", Arial, sans-serif",
+                  "lines": [
+                    {
+                      "text": "盒盖立着",
+                      "rect": {
+                        "left": 297,
+                        "top": 582.90625,
+                        "right": 433,
+                        "bottom": 622.90625,
+                        "width": 136,
+                        "height": 40
+                      }
+                    }
+                  ]
+                },
+                {
+                  "selector": "#qj-author-gasketLabel",
+                  "text": "胶圈取下分开",
+                  "font": "normal 700 27px \"PingFang SC\", Arial, sans-serif",
+                  "lines": [
+                    {
+                      "text": "胶圈取下分开",
+                      "rect": {
+                        "left": 476,
+                        "top": 587.453125,
+                        "right": 638,
+                        "bottom": 618.453125,
+                        "width": 162,
+                        "height": 31
+                      }
+                    }
+                  ]
+                },
+                {
+                  "selector": "#qj-author-principle",
+                  "text": "自行排水，让空气干燥各表面",
+                  "font": "normal 700 42px \"PingFang SC\", Arial, sans-serif",
+                  "lines": [
+                    {
+                      "text": "自行排水，让空气干燥各表面",
+                      "rect": {
+                        "left": 87,
+                        "top": 727.203125,
+                        "right": 633,
+                        "bottom": 776.203125,
+                        "width": 546,
+                        "height": 49
+                      }
+                    }
+                  ]
+                },
+                {
+                  "selector": "#qj-author-checkIntro",
+                  "text": "收纳前摸三处：",
+                  "font": "normal 700 24px \"PingFang SC\", Arial, sans-serif",
+                  "lines": [
+                    {
+                      "text": "收纳前摸三处：",
+                      "rect": {
+                        "left": 276,
+                        "top": 848.40625,
+                        "right": 444,
+                        "bottom": 876.40625,
+                        "width": 168,
+                        "height": 28
+                      }
+                    }
+                  ]
+                },
+                {
+                  "selector": "#qj-author-check1",
+                  "text": "内壁干爽",
+                  "font": "normal 700 38px \"PingFang SC\", Arial, sans-serif",
+                  "lines": [
+                    {
+                      "text": "内壁干爽",
+                      "rect": {
+                        "left": 76.5,
+                        "top": 921.296875,
+                        "right": 228.5,
+                        "bottom": 965.296875,
+                        "width": 152,
+                        "height": 44
+                      }
+                    }
+                  ]
+                },
+                {
+                  "selector": "#qj-author-check2",
+                  "text": "底部干爽",
+                  "font": "normal 700 38px \"PingFang SC\", Arial, sans-serif",
+                  "lines": [
+                    {
+                      "text": "底部干爽",
+                      "rect": {
+                        "left": 284.5,
+                        "top": 921.296875,
+                        "right": 436.5,
+                        "bottom": 965.296875,
+                        "width": 152,
+                        "height": 44
+                      }
+                    }
+                  ]
+                },
+                {
+                  "selector": "#qj-author-check3",
+                  "text": "胶圈槽干爽",
+                  "font": "normal 700 32px \"PingFang SC\", Arial, sans-serif",
+                  "lines": [
+                    {
+                      "text": "胶圈槽干",
+                      "rect": {
+                        "left": 504.5,
+                        "top": 903.40625,
+                        "right": 632.5,
+                        "bottom": 941.40625,
+                        "width": 128,
+                        "height": 38
+                      }
+                    },
+                    {
+                      "text": "爽",
+                      "rect": {
+                        "left": 552.5,
+                        "top": 945,
+                        "right": 584.5,
+                        "bottom": 983,
+                        "width": 32,
+                        "height": 38
+                      }
+                    }
+                  ]
+                }
+              ],
+              "findings": []
+            },
+            {
+              "time": 2.961111,
+              "nodes": [
+                {
+                  "selector": "#qj-author-bodyLabel",
+                  "text": "盒身倒扣",
+                  "font": "normal 700 38px \"PingFang SC\", Arial, sans-serif",
+                  "lines": [
+                    {
+                      "text": "盒身倒扣",
+                      "rect": {
+                        "left": 104,
+                        "top": 580.3125,
+                        "right": 256,
+                        "bottom": 624.3125,
+                        "width": 152,
+                        "height": 44
+                      }
+                    }
+                  ]
+                },
+                {
+                  "selector": "#qj-author-lidLabel",
+                  "text": "盒盖立着",
+                  "font": "normal 700 34px \"PingFang SC\", Arial, sans-serif",
+                  "lines": [
+                    {
+                      "text": "盒盖立着",
+                      "rect": {
+                        "left": 296.2384033203125,
+                        "top": 582.6812133789062,
+                        "right": 433.7615966796875,
+                        "bottom": 623.1292114257812,
+                        "width": 137.523193359375,
+                        "height": 40.447998046875
+                      }
+                    }
+                  ]
+                },
+                {
+                  "selector": "#qj-author-gasketLabel",
+                  "text": "胶圈取下分开",
+                  "font": "normal 700 27px \"PingFang SC\", Arial, sans-serif",
+                  "lines": [
+                    {
+                      "text": "胶圈取下分开",
+                      "rect": {
+                        "left": 476,
+                        "top": 587.453125,
+                        "right": 638,
+                        "bottom": 618.453125,
+                        "width": 162,
+                        "height": 31
+                      }
+                    }
+                  ]
+                },
+                {
+                  "selector": "#qj-author-principle",
+                  "text": "自行排水，让空气干燥各表面",
+                  "font": "normal 700 42px \"PingFang SC\", Arial, sans-serif",
+                  "lines": [
+                    {
+                      "text": "自行排水，让空气干燥各表面",
+                      "rect": {
+                        "left": 87,
+                        "top": 727.203125,
+                        "right": 633,
+                        "bottom": 776.203125,
+                        "width": 546,
+                        "height": 49
+                      }
+                    }
+                  ]
+                },
+                {
+                  "selector": "#qj-author-checkIntro",
+                  "text": "收纳前摸三处：",
+                  "font": "normal 700 24px \"PingFang SC\", Arial, sans-serif",
+                  "lines": [
+                    {
+                      "text": "收纳前摸三处：",
+                      "rect": {
+                        "left": 276,
+                        "top": 848.40625,
+                        "right": 444,
+                        "bottom": 876.40625,
+                        "width": 168,
+                        "height": 28
+                      }
+                    }
+                  ]
+                },
+                {
+                  "selector": "#qj-author-check1",
+                  "text": "内壁干爽",
+                  "font": "normal 700 38px \"PingFang SC\", Arial, sans-serif",
+                  "lines": [
+                    {
+                      "text": "内壁干爽",
+                      "rect": {
+                        "left": 76.5,
+                        "top": 921.296875,
+                        "right": 228.5,
+                        "bottom": 965.296875,
+                        "width": 152,
+                        "height": 44
+                      }
+                    }
+                  ]
+                },
+                {
+                  "selector": "#qj-author-check2",
+                  "text": "底部干爽",
+                  "font": "normal 700 38px \"PingFang SC\", Arial, sans-serif",
+                  "lines": [
+                    {
+                      "text": "底部干爽",
+                      "rect": {
+                        "left": 284.5,
+                        "top": 921.296875,
+                        "right": 436.5,
+                        "bottom": 965.296875,
+                        "width": 152,
+                        "height": 44
+                      }
+                    }
+                  ]
+                },
+                {
+                  "selector": "#qj-author-check3",
+                  "text": "胶圈槽干爽",
+                  "font": "normal 700 32px \"PingFang SC\", Arial, sans-serif",
+                  "lines": [
+                    {
+                      "text": "胶圈槽干",
+                      "rect": {
+                        "left": 504.5,
+                        "top": 903.40625,
+                        "right": 632.5,
+                        "bottom": 941.40625,
+                        "width": 128,
+                        "height": 38
+                      }
+                    },
+                    {
+                      "text": "爽",
+                      "rect": {
+                        "left": 552.5,
+                        "top": 945,
+                        "right": 584.5,
+                        "bottom": 983,
+                        "width": 32,
+                        "height": 38
+                      }
+                    }
+                  ]
+                }
+              ],
+              "findings": []
+            },
+            {
+              "time": 4.145556,
+              "nodes": [
+                {
+                  "selector": "#qj-author-bodyLabel",
+                  "text": "盒身倒扣",
+                  "font": "normal 700 38px \"PingFang SC\", Arial, sans-serif",
+                  "lines": [
+                    {
+                      "text": "盒身倒扣",
+                      "rect": {
+                        "left": 104,
+                        "top": 580.3125,
+                        "right": 256,
+                        "bottom": 624.3125,
+                        "width": 152,
+                        "height": 44
+                      }
+                    }
+                  ]
+                },
+                {
+                  "selector": "#qj-author-lidLabel",
+                  "text": "盒盖立着",
+                  "font": "normal 700 34px \"PingFang SC\", Arial, sans-serif",
+                  "lines": [
+                    {
+                      "text": "盒盖立着",
+                      "rect": {
+                        "left": 297,
+                        "top": 582.90625,
+                        "right": 433,
+                        "bottom": 622.90625,
+                        "width": 136,
+                        "height": 40
+                      }
+                    }
+                  ]
+                },
+                {
+                  "selector": "#qj-author-gasketLabel",
+                  "text": "胶圈取下分开",
+                  "font": "normal 700 27px \"PingFang SC\", Arial, sans-serif",
+                  "lines": [
+                    {
+                      "text": "胶圈取下分开",
+                      "rect": {
+                        "left": 476,
+                        "top": 587.453125,
+                        "right": 638,
+                        "bottom": 618.453125,
+                        "width": 162,
+                        "height": 31
+                      }
+                    }
+                  ]
+                },
+                {
+                  "selector": "#qj-author-principle",
+                  "text": "自行排水，让空气干燥各表面",
+                  "font": "normal 700 42px \"PingFang SC\", Arial, sans-serif",
+                  "lines": [
+                    {
+                      "text": "自行排水，让空气干燥各表面",
+                      "rect": {
+                        "left": 87,
+                        "top": 727.203125,
+                        "right": 633,
+                        "bottom": 776.203125,
+                        "width": 546,
+                        "height": 49
+                      }
+                    }
+                  ]
+                },
+                {
+                  "selector": "#qj-author-checkIntro",
+                  "text": "收纳前摸三处：",
+                  "font": "normal 700 24px \"PingFang SC\", Arial, sans-serif",
+                  "lines": [
+                    {
+                      "text": "收纳前摸三处：",
+                      "rect": {
+                        "left": 276,
+                        "top": 848.40625,
+                        "right": 444,
+                        "bottom": 876.40625,
+                        "width": 168,
+                        "height": 28
+                      }
+                    }
+                  ]
+                },
+                {
+                  "selector": "#qj-author-check1",
+                  "text": "内壁干爽",
+                  "font": "normal 700 38px \"PingFang SC\", Arial, sans-serif",
+                  "lines": [
+                    {
+                      "text": "内壁干爽",
+                      "rect": {
+                        "left": 76.5,
+                        "top": 921.296875,
+                        "right": 228.5,
+                        "bottom": 965.296875,
+                        "width": 152,
+                        "height": 44
+                      }
+                    }
+                  ]
+                },
+                {
+                  "selector": "#qj-author-check2",
+                  "text": "底部干爽",
+                  "font": "normal 700 38px \"PingFang SC\", Arial, sans-serif",
+                  "lines": [
+                    {
+                      "text": "底部干爽",
+                      "rect": {
+                        "left": 284.5,
+                        "top": 921.296875,
+                        "right": 436.5,
+                        "bottom": 965.296875,
+                        "width": 152,
+                        "height": 44
+                      }
+                    }
+                  ]
+                },
+                {
+                  "selector": "#qj-author-check3",
+                  "text": "胶圈槽干爽",
+                  "font": "normal 700 32px \"PingFang SC\", Arial, sans-serif",
+                  "lines": [
+                    {
+                      "text": "胶圈槽干",
+                      "rect": {
+                        "left": 504.5,
+                        "top": 903.40625,
+                        "right": 632.5,
+                        "bottom": 941.40625,
+                        "width": 128,
+                        "height": 38
+                      }
+                    },
+                    {
+                      "text": "爽",
+                      "rect": {
+                        "left": 552.5,
+                        "top": 945,
+                        "right": 584.5,
+                        "bottom": 983,
+                        "width": 32,
+                        "height": 38
+                      }
+                    }
+                  ]
+                }
+              ],
+              "findings": []
+            },
+            {
+              "time": 5.33,
+              "nodes": [
+                {
+                  "selector": "#qj-author-bodyLabel",
+                  "text": "盒身倒扣",
+                  "font": "normal 700 38px \"PingFang SC\", Arial, sans-serif",
+                  "lines": [
+                    {
+                      "text": "盒身倒扣",
+                      "rect": {
+                        "left": 104,
+                        "top": 580.3125,
+                        "right": 256,
+                        "bottom": 624.3125,
+                        "width": 152,
+                        "height": 44
+                      }
+                    }
+                  ]
+                },
+                {
+                  "selector": "#qj-author-lidLabel",
+                  "text": "盒盖立着",
+                  "font": "normal 700 34px \"PingFang SC\", Arial, sans-serif",
+                  "lines": [
+                    {
+                      "text": "盒盖立着",
+                      "rect": {
+                        "left": 297,
+                        "top": 582.90625,
+                        "right": 433,
+                        "bottom": 622.90625,
+                        "width": 136,
+                        "height": 40
+                      }
+                    }
+                  ]
+                },
+                {
+                  "selector": "#qj-author-gasketLabel",
+                  "text": "胶圈取下分开",
+                  "font": "normal 700 27px \"PingFang SC\", Arial, sans-serif",
+                  "lines": [
+                    {
+                      "text": "胶圈取下分开",
+                      "rect": {
+                        "left": 476,
+                        "top": 587.453125,
+                        "right": 638,
+                        "bottom": 618.453125,
+                        "width": 162,
+                        "height": 31
+                      }
+                    }
+                  ]
+                },
+                {
+                  "selector": "#qj-author-principle",
+                  "text": "自行排水，让空气干燥各表面",
+                  "font": "normal 700 42px \"PingFang SC\", Arial, sans-serif",
+                  "lines": [
+                    {
+                      "text": "自行排水，让空气干燥各表面",
+                      "rect": {
+                        "left": 87,
+                        "top": 727.203125,
+                        "right": 633,
+                        "bottom": 776.203125,
+                        "width": 546,
+                        "height": 49
+                      }
+                    }
+                  ]
+                },
+                {
+                  "selector": "#qj-author-checkIntro",
+                  "text": "收纳前摸三处：",
+                  "font": "normal 700 24px \"PingFang SC\", Arial, sans-serif",
+                  "lines": [
+                    {
+                      "text": "收纳前摸三处：",
+                      "rect": {
+                        "left": 276,
+                        "top": 848.40625,
+                        "right": 444,
+                        "bottom": 876.40625,
+                        "width": 168,
+                        "height": 28
+                      }
+                    }
+                  ]
+                },
+                {
+                  "selector": "#qj-author-check1",
+                  "text": "内壁干爽",
+                  "font": "normal 700 38px \"PingFang SC\", Arial, sans-serif",
+                  "lines": [
+                    {
+                      "text": "内壁干爽",
+                      "rect": {
+                        "left": 76.5,
+                        "top": 921.296875,
+                        "right": 228.5,
+                        "bottom": 965.296875,
+                        "width": 152,
+                        "height": 44
+                      }
+                    }
+                  ]
+                },
+                {
+                  "selector": "#qj-author-check2",
+                  "text": "底部干爽",
+                  "font": "normal 700 38px \"PingFang SC\", Arial, sans-serif",
+                  "lines": [
+                    {
+                      "text": "底部干爽",
+                      "rect": {
+                        "left": 284.5,
+                        "top": 921.296875,
+                        "right": 436.5,
+                        "bottom": 965.296875,
+                        "width": 152,
+                        "height": 44
+                      }
+                    }
+                  ]
+                },
+                {
+                  "selector": "#qj-author-check3",
+                  "text": "胶圈槽干爽",
+                  "font": "normal 700 32px \"PingFang SC\", Arial, sans-serif",
+                  "lines": [
+                    {
+                      "text": "胶圈槽干",
+                      "rect": {
+                        "left": 504.5,
+                        "top": 903.40625,
+                        "right": 632.5,
+                        "bottom": 941.40625,
+                        "width": 128,
+                        "height": 38
+                      }
+                    },
+                    {
+                      "text": "爽",
+                      "rect": {
+                        "left": 552.5,
+                        "top": 945,
+                        "right": 584.5,
+                        "bottom": 983,
+                        "width": 32,
+                        "height": 38
+                      }
+                    }
+                  ]
+                }
+              ],
+              "findings": []
+            },
+            {
+              "time": 6.514444,
+              "nodes": [
+                {
+                  "selector": "#qj-author-bodyLabel",
+                  "text": "盒身倒扣",
+                  "font": "normal 700 38px \"PingFang SC\", Arial, sans-serif",
+                  "lines": [
+                    {
+                      "text": "盒身倒扣",
+                      "rect": {
+                        "left": 104,
+                        "top": 580.3125,
+                        "right": 256,
+                        "bottom": 624.3125,
+                        "width": 152,
+                        "height": 44
+                      }
+                    }
+                  ]
+                },
+                {
+                  "selector": "#qj-author-lidLabel",
+                  "text": "盒盖立着",
+                  "font": "normal 700 34px \"PingFang SC\", Arial, sans-serif",
+                  "lines": [
+                    {
+                      "text": "盒盖立着",
+                      "rect": {
+                        "left": 297,
+                        "top": 582.90625,
+                        "right": 433,
+                        "bottom": 622.90625,
+                        "width": 136,
+                        "height": 40
+                      }
+                    }
+                  ]
+                },
+                {
+                  "selector": "#qj-author-gasketLabel",
+                  "text": "胶圈取下分开",
+                  "font": "normal 700 27px \"PingFang SC\", Arial, sans-serif",
+                  "lines": [
+                    {
+                      "text": "胶圈取下分开",
+                      "rect": {
+                        "left": 476,
+                        "top": 587.453125,
+                        "right": 638,
+                        "bottom": 618.453125,
+                        "width": 162,
+                        "height": 31
+                      }
+                    }
+                  ]
+                },
+                {
+                  "selector": "#qj-author-principle",
+                  "text": "自行排水，让空气干燥各表面",
+                  "font": "normal 700 42px \"PingFang SC\", Arial, sans-serif",
+                  "lines": [
+                    {
+                      "text": "自行排水，让空气干燥各表面",
+                      "rect": {
+                        "left": 87,
+                        "top": 727.203125,
+                        "right": 633,
+                        "bottom": 776.203125,
+                        "width": 546,
+                        "height": 49
+                      }
+                    }
+                  ]
+                },
+                {
+                  "selector": "#qj-author-checkIntro",
+                  "text": "收纳前摸三处：",
+                  "font": "normal 700 24px \"PingFang SC\", Arial, sans-serif",
+                  "lines": [
+                    {
+                      "text": "收纳前摸三处：",
+                      "rect": {
+                        "left": 276,
+                        "top": 848.40625,
+                        "right": 444,
+                        "bottom": 876.40625,
+                        "width": 168,
+                        "height": 28
+                      }
+                    }
+                  ]
+                },
+                {
+                  "selector": "#qj-author-check1",
+                  "text": "内壁干爽",
+                  "font": "normal 700 38px \"PingFang SC\", Arial, sans-serif",
+                  "lines": [
+                    {
+                      "text": "内壁干爽",
+                      "rect": {
+                        "left": 76.5,
+                        "top": 921.296875,
+                        "right": 228.5,
+                        "bottom": 965.296875,
+                        "width": 152,
+                        "height": 44
+                      }
+                    }
+                  ]
+                },
+                {
+                  "selector": "#qj-author-check2",
+                  "text": "底部干爽",
+                  "font": "normal 700 38px \"PingFang SC\", Arial, sans-serif",
+                  "lines": [
+                    {
+                      "text": "底部干爽",
+                      "rect": {
+                        "left": 284.5,
+                        "top": 921.296875,
+                        "right": 436.5,
+                        "bottom": 965.296875,
+                        "width": 152,
+                        "height": 44
+                      }
+                    }
+                  ]
+                },
+                {
+                  "selector": "#qj-author-check3",
+                  "text": "胶圈槽干爽",
+                  "font": "normal 700 32px \"PingFang SC\", Arial, sans-serif",
+                  "lines": [
+                    {
+                      "text": "胶圈槽干",
+                      "rect": {
+                        "left": 504.5,
+                        "top": 903.40625,
+                        "right": 632.5,
+                        "bottom": 941.40625,
+                        "width": 128,
+                        "height": 38
+                      }
+                    },
+                    {
+                      "text": "爽",
+                      "rect": {
+                        "left": 552.5,
+                        "top": 945,
+                        "right": 584.5,
+                        "bottom": 983,
+                        "width": 32,
+                        "height": 38
+                      }
+                    }
+                  ]
+                }
+              ],
+              "findings": []
+            },
+            {
+              "time": 7.698889,
+              "nodes": [
+                {
+                  "selector": "#qj-author-bodyLabel",
+                  "text": "盒身倒扣",
+                  "font": "normal 700 38px \"PingFang SC\", Arial, sans-serif",
+                  "lines": [
+                    {
+                      "text": "盒身倒扣",
+                      "rect": {
+                        "left": 104,
+                        "top": 580.3125,
+                        "right": 256,
+                        "bottom": 624.3125,
+                        "width": 152,
+                        "height": 44
+                      }
+                    }
+                  ]
+                },
+                {
+                  "selector": "#qj-author-lidLabel",
+                  "text": "盒盖立着",
+                  "font": "normal 700 34px \"PingFang SC\", Arial, sans-serif",
+                  "lines": [
+                    {
+                      "text": "盒盖立着",
+                      "rect": {
+                        "left": 297,
+                        "top": 582.90625,
+                        "right": 433,
+                        "bottom": 622.90625,
+                        "width": 136,
+                        "height": 40
+                      }
+                    }
+                  ]
+                },
+                {
+                  "selector": "#qj-author-gasketLabel",
+                  "text": "胶圈取下分开",
+                  "font": "normal 700 27px \"PingFang SC\", Arial, sans-serif",
+                  "lines": [
+                    {
+                      "text": "胶圈取下分开",
+                      "rect": {
+                        "left": 476,
+                        "top": 587.453125,
+                        "right": 638,
+                        "bottom": 618.453125,
+                        "width": 162,
+                        "height": 31
+                      }
+                    }
+                  ]
+                },
+                {
+                  "selector": "#qj-author-principle",
+                  "text": "自行排水，让空气干燥各表面",
+                  "font": "normal 700 42px \"PingFang SC\", Arial, sans-serif",
+                  "lines": [
+                    {
+                      "text": "自行排水，让空气干燥各表面",
+                      "rect": {
+                        "left": 87,
+                        "top": 727.203125,
+                        "right": 633,
+                        "bottom": 776.203125,
+                        "width": 546,
+                        "height": 49
+                      }
+                    }
+                  ]
+                },
+                {
+                  "selector": "#qj-author-checkIntro",
+                  "text": "收纳前摸三处：",
+                  "font": "normal 700 24px \"PingFang SC\", Arial, sans-serif",
+                  "lines": [
+                    {
+                      "text": "收纳前摸三处：",
+                      "rect": {
+                        "left": 276,
+                        "top": 848.40625,
+                        "right": 444,
+                        "bottom": 876.40625,
+                        "width": 168,
+                        "height": 28
+                      }
+                    }
+                  ]
+                },
+                {
+                  "selector": "#qj-author-check1",
+                  "text": "内壁干爽",
+                  "font": "normal 700 38px \"PingFang SC\", Arial, sans-serif",
+                  "lines": [
+                    {
+                      "text": "内壁干爽",
+                      "rect": {
+                        "left": 76.5,
+                        "top": 921.296875,
+                        "right": 228.5,
+                        "bottom": 965.296875,
+                        "width": 152,
+                        "height": 44
+                      }
+                    }
+                  ]
+                },
+                {
+                  "selector": "#qj-author-check2",
+                  "text": "底部干爽",
+                  "font": "normal 700 38px \"PingFang SC\", Arial, sans-serif",
+                  "lines": [
+                    {
+                      "text": "底部干爽",
+                      "rect": {
+                        "left": 284.5,
+                        "top": 921.296875,
+                        "right": 436.5,
+                        "bottom": 965.296875,
+                        "width": 152,
+                        "height": 44
+                      }
+                    }
+                  ]
+                },
+                {
+                  "selector": "#qj-author-check3",
+                  "text": "胶圈槽干爽",
+                  "font": "normal 700 32px \"PingFang SC\", Arial, sans-serif",
+                  "lines": [
+                    {
+                      "text": "胶圈槽干",
+                      "rect": {
+                        "left": 504.5,
+                        "top": 903.40625,
+                        "right": 632.5,
+                        "bottom": 941.40625,
+                        "width": 128,
+                        "height": 38
+                      }
+                    },
+                    {
+                      "text": "爽",
+                      "rect": {
+                        "left": 552.5,
+                        "top": 945,
+                        "right": 584.5,
+                        "bottom": 983,
+                        "width": 32,
+                        "height": 38
+                      }
+                    }
+                  ]
+                }
+              ],
+              "findings": []
+            },
+            {
+              "time": 8.883333,
+              "nodes": [
+                {
+                  "selector": "#qj-author-bodyLabel",
+                  "text": "盒身倒扣",
+                  "font": "normal 700 38px \"PingFang SC\", Arial, sans-serif",
+                  "lines": [
+                    {
+                      "text": "盒身倒扣",
+                      "rect": {
+                        "left": 104,
+                        "top": 580.3125,
+                        "right": 256,
+                        "bottom": 624.3125,
+                        "width": 152,
+                        "height": 44
+                      }
+                    }
+                  ]
+                },
+                {
+                  "selector": "#qj-author-lidLabel",
+                  "text": "盒盖立着",
+                  "font": "normal 700 34px \"PingFang SC\", Arial, sans-serif",
+                  "lines": [
+                    {
+                      "text": "盒盖立着",
+                      "rect": {
+                        "left": 297,
+                        "top": 582.90625,
+                        "right": 433,
+                        "bottom": 622.90625,
+                        "width": 136,
+                        "height": 40
+                      }
+                    }
+                  ]
+                },
+                {
+                  "selector": "#qj-author-gasketLabel",
+                  "text": "胶圈取下分开",
+                  "font": "normal 700 27px \"PingFang SC\", Arial, sans-serif",
+                  "lines": [
+                    {
+                      "text": "胶圈取下分开",
+                      "rect": {
+                        "left": 476,
+                        "top": 587.453125,
+                        "right": 638,
+                        "bottom": 618.453125,
+                        "width": 162,
+                        "height": 31
+                      }
+                    }
+                  ]
+                },
+                {
+                  "selector": "#qj-author-principle",
+                  "text": "自行排水，让空气干燥各表面",
+                  "font": "normal 700 42px \"PingFang SC\", Arial, sans-serif",
+                  "lines": [
+                    {
+                      "text": "自行排水，让空气干燥各表面",
+                      "rect": {
+                        "left": 87,
+                        "top": 727.203125,
+                        "right": 633,
+                        "bottom": 776.203125,
+                        "width": 546,
+                        "height": 49
+                      }
+                    }
+                  ]
+                },
+                {
+                  "selector": "#qj-author-checkIntro",
+                  "text": "收纳前摸三处：",
+                  "font": "normal 700 24px \"PingFang SC\", Arial, sans-serif",
+                  "lines": [
+                    {
+                      "text": "收纳前摸三处：",
+                      "rect": {
+                        "left": 276,
+                        "top": 848.40625,
+                        "right": 444,
+                        "bottom": 876.40625,
+                        "width": 168,
+                        "height": 28
+                      }
+                    }
+                  ]
+                },
+                {
+                  "selector": "#qj-author-check1",
+                  "text": "内壁干爽",
+                  "font": "normal 700 38px \"PingFang SC\", Arial, sans-serif",
+                  "lines": [
+                    {
+                      "text": "内壁干爽",
+                      "rect": {
+                        "left": 76.5,
+                        "top": 921.296875,
+                        "right": 228.5,
+                        "bottom": 965.296875,
+                        "width": 152,
+                        "height": 44
+                      }
+                    }
+                  ]
+                },
+                {
+                  "selector": "#qj-author-check2",
+                  "text": "底部干爽",
+                  "font": "normal 700 38px \"PingFang SC\", Arial, sans-serif",
+                  "lines": [
+                    {
+                      "text": "底部干爽",
+                      "rect": {
+                        "left": 284.5,
+                        "top": 921.296875,
+                        "right": 436.5,
+                        "bottom": 965.296875,
+                        "width": 152,
+                        "height": 44
+                      }
+                    }
+                  ]
+                },
+                {
+                  "selector": "#qj-author-check3",
+                  "text": "胶圈槽干爽",
+                  "font": "normal 700 32px \"PingFang SC\", Arial, sans-serif",
+                  "lines": [
+                    {
+                      "text": "胶圈槽干",
+                      "rect": {
+                        "left": 504.5,
+                        "top": 903.40625,
+                        "right": 632.5,
+                        "bottom": 941.40625,
+                        "width": 128,
+                        "height": 38
+                      }
+                    },
+                    {
+                      "text": "爽",
+                      "rect": {
+                        "left": 552.5,
+                        "top": 945,
+                        "right": 584.5,
+                        "bottom": 983,
+                        "width": 32,
+                        "height": 38
+                      }
+                    }
+                  ]
+                }
+              ],
+              "findings": []
+            },
+            {
+              "time": 10.067778,
+              "nodes": [
+                {
+                  "selector": "#qj-author-bodyLabel",
+                  "text": "盒身倒扣",
+                  "font": "normal 700 38px \"PingFang SC\", Arial, sans-serif",
+                  "lines": [
+                    {
+                      "text": "盒身倒扣",
+                      "rect": {
+                        "left": 104,
+                        "top": 580.3125,
+                        "right": 256,
+                        "bottom": 624.3125,
+                        "width": 152,
+                        "height": 44
+                      }
+                    }
+                  ]
+                },
+                {
+                  "selector": "#qj-author-lidLabel",
+                  "text": "盒盖立着",
+                  "font": "normal 700 34px \"PingFang SC\", Arial, sans-serif",
+                  "lines": [
+                    {
+                      "text": "盒盖立着",
+                      "rect": {
+                        "left": 297,
+                        "top": 582.90625,
+                        "right": 433,
+                        "bottom": 622.90625,
+                        "width": 136,
+                        "height": 40
+                      }
+                    }
+                  ]
+                },
+                {
+                  "selector": "#qj-author-gasketLabel",
+                  "text": "胶圈取下分开",
+                  "font": "normal 700 27px \"PingFang SC\", Arial, sans-serif",
+                  "lines": [
+                    {
+                      "text": "胶圈取下分开",
+                      "rect": {
+                        "left": 476,
+                        "top": 587.453125,
+                        "right": 638,
+                        "bottom": 618.453125,
+                        "width": 162,
+                        "height": 31
+                      }
+                    }
+                  ]
+                },
+                {
+                  "selector": "#qj-author-principle",
+                  "text": "自行排水，让空气干燥各表面",
+                  "font": "normal 700 42px \"PingFang SC\", Arial, sans-serif",
+                  "lines": [
+                    {
+                      "text": "自行排水，让空气干燥各表面",
+                      "rect": {
+                        "left": 87,
+                        "top": 727.203125,
+                        "right": 633,
+                        "bottom": 776.203125,
+                        "width": 546,
+                        "height": 49
+                      }
+                    }
+                  ]
+                },
+                {
+                  "selector": "#qj-author-checkIntro",
+                  "text": "收纳前摸三处：",
+                  "font": "normal 700 24px \"PingFang SC\", Arial, sans-serif",
+                  "lines": [
+                    {
+                      "text": "收纳前摸三处：",
+                      "rect": {
+                        "left": 276,
+                        "top": 848.40625,
+                        "right": 444,
+                        "bottom": 876.40625,
+                        "width": 168,
+                        "height": 28
+                      }
+                    }
+                  ]
+                },
+                {
+                  "selector": "#qj-author-check1",
+                  "text": "内壁干爽",
+                  "font": "normal 700 38px \"PingFang SC\", Arial, sans-serif",
+                  "lines": [
+                    {
+                      "text": "内壁干爽",
+                      "rect": {
+                        "left": 76.5,
+                        "top": 921.296875,
+                        "right": 228.5,
+                        "bottom": 965.296875,
+                        "width": 152,
+                        "height": 44
+                      }
+                    }
+                  ]
+                },
+                {
+                  "selector": "#qj-author-check2",
+                  "text": "底部干爽",
+                  "font": "normal 700 38px \"PingFang SC\", Arial, sans-serif",
+                  "lines": [
+                    {
+                      "text": "底部干爽",
+                      "rect": {
+                        "left": 284.5,
+                        "top": 921.296875,
+                        "right": 436.5,
+                        "bottom": 965.296875,
+                        "width": 152,
+                        "height": 44
+                      }
+                    }
+                  ]
+                },
+                {
+                  "selector": "#qj-author-check3",
+                  "text": "胶圈槽干爽",
+                  "font": "normal 700 32px \"PingFang SC\", Arial, sans-serif",
+                  "lines": [
+                    {
+                      "text": "胶圈槽干",
+                      "rect": {
+                        "left": 504.5,
+                        "top": 903.40625,
+                        "right": 632.5,
+                        "bottom": 941.40625,
+                        "width": 128,
+                        "height": 38
+                      }
+                    },
+                    {
+                      "text": "爽",
+                      "rect": {
+                        "left": 552.5,
+                        "top": 945,
+                        "right": 584.5,
+                        "bottom": 983,
+                        "width": 32,
+                        "height": 38
+                      }
+                    }
+                  ]
+                }
+              ],
+              "findings": []
+            }
+          ],
+          "fonts": [
+            {
+              "selector": "#qj-author-bodyLabel",
+              "fonts": [
+                {
+                  "familyName": "Noto Sans CJK SC",
+                  "isCustomFont": false,
+                  "glyphCount": 4
+                }
+              ]
+            },
+            {
+              "selector": "#qj-author-lidLabel",
+              "fonts": [
+                {
+                  "familyName": "Noto Sans CJK SC",
+                  "isCustomFont": false,
+                  "glyphCount": 4
+                }
+              ]
+            },
+            {
+              "selector": "#qj-author-gasket",
+              "fonts": []
+            },
+            {
+              "selector": "#qj-author-gasketInner",
+              "fonts": []
+            },
+            {
+              "selector": "#qj-author-gasketLabel",
+              "fonts": [
+                {
+                  "familyName": "Noto Sans CJK SC",
+                  "isCustomFont": false,
+                  "glyphCount": 6
+                }
+              ]
+            },
+            {
+              "selector": "#qj-author-principle",
+              "fonts": [
+                {
+                  "familyName": "Noto Sans CJK SC",
+                  "isCustomFont": false,
+                  "glyphCount": 13
+                }
+              ]
+            },
+            {
+              "selector": "#qj-author-checkIntro",
+              "fonts": [
+                {
+                  "familyName": "Noto Sans CJK SC",
+                  "isCustomFont": false,
+                  "glyphCount": 7
+                }
+              ]
+            },
+            {
+              "selector": "#qj-author-check1",
+              "fonts": [
+                {
+                  "familyName": "Noto Sans CJK SC",
+                  "isCustomFont": false,
+                  "glyphCount": 4
+                }
+              ]
+            },
+            {
+              "selector": "#qj-author-check2",
+              "fonts": [
+                {
+                  "familyName": "Noto Sans CJK SC",
+                  "isCustomFont": false,
+                  "glyphCount": 4
+                }
+              ]
+            },
+            {
+              "selector": "#qj-author-check3",
+              "fonts": [
+                {
+                  "familyName": "Noto Sans CJK SC",
+                  "isCustomFont": false,
+                  "glyphCount": 5
+                }
+              ]
+            }
+          ],
+          "findings": [],
+          "upstreamReport": {
+            "path": "drawing-text-evidence/d19e06b88435745fa5691566203bb880f7c20ecff6f6ef7f38de298f304f1c33/44013106-9cfa-431f-a652-fc399fd5203b/check-hyperframes-report.json",
+            "sha256": "f2f0312a4f2902c80f955d29e8f078609176b44519b2b28d2f42177452520051"
+          },
+          "upstreamStdout": {
+            "path": "drawing-text-evidence/d19e06b88435745fa5691566203bb880f7c20ecff6f6ef7f38de298f304f1c33/44013106-9cfa-431f-a652-fc399fd5203b/check-hyperframes-stdout.txt",
+            "sha256": "869aef6e9fb43b0ddd4c2fbbabf2ee5d7bd85ddba6d4b68f800ca87a42f4ca09"
+          },
+          "htmlSnapshot": {
+            "path": "drawing-text-evidence/d19e06b88435745fa5691566203bb880f7c20ecff6f6ef7f38de298f304f1c33/44013106-9cfa-431f-a652-fc399fd5203b/index.html",
+            "sha256": "d19e06b88435745fa5691566203bb880f7c20ecff6f6ef7f38de298f304f1c33"
+          },
+          "report": {
+            "path": "drawing-text-evidence/d19e06b88435745fa5691566203bb880f7c20ecff6f6ef7f38de298f304f1c33/44013106-9cfa-431f-a652-fc399fd5203b/server-drawing-text-report.json",
+            "sha256": "9c248313ab0ccfafda611029f6391a774c3db9764d99f7621c49b77fec0be09f"
+          }
+        }
+      }
+    }
+  ]
+}

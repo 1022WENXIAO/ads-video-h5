@@ -10,6 +10,7 @@ import { currentJobSignal, throwIfJobCancelled } from './jobExecution';
 import { liftCardLabels, reflowCardDetails } from './drawingCardLayout';
 import {AuthoredDrawingGeometryError} from './drawingGeometry';
 import {proposeIndependentTextLayout} from './drawingIndependentTextLayout';
+import {resolvedContrastRecovery} from './lessonContrastRecovery';
 
 type EvidenceFile = {path:string;sha256:string};
 type LayoutIssue = { code: string; severity?: string; selector?: string; containerSelector?: string; source?:string;htmlHash?:string;text?:string;time?:number;coveredFraction?:number;evidence?:EvidenceFile };
@@ -139,7 +140,7 @@ async function verifiedIndependentTextProposal(project:string,drawing:HtmlDrawin
 
 interface SceneResult { file: string; analysis: { sourceHash: string }; }
 interface AttemptEvidence { directory: string; manifestHash: string; geometry: boolean; kind?:'authored-proposal'; }
-type NativeRecoveryReason = 'geometry' | 'static-sweep' | 'authored-geometry';
+type NativeRecoveryReason = 'geometry' | 'static-sweep' | 'authored-geometry' | 'resolved-contrast';
 interface NativeState { status: 'running' | 'failed' | 'cancelled' | 'completed'; claimHash: string; terminalHash?: string; evidence?: AttemptEvidence; reason?: NativeRecoveryReason; }
 interface HtmlState<R> {
   version: 1; contextHash: string; attempts: number;
@@ -154,7 +155,7 @@ function parseHtmlState<R>(stored:string):HtmlState<R>{
   try { saved=JSON.parse(stored); } catch (error) { throw new Error('HTML局部恢复状态JSON损坏，保留原文件并停止。', {cause:error}); }
   if (!saved || saved.version !== 1 || typeof saved.contextHash !== 'string' || !saved.contextHash || !Number.isInteger(saved.attempts) || saved.attempts < 0 || saved.attempts > 2 || !Array.isArray(saved.failed) || saved.failed.length > saved.attempts || saved.failed.some(failure => !failure || !/^[a-f0-9]{64}$/.test(failure.hash) || typeof failure.feedback !== 'string') || saved.blocked !== undefined && typeof saved.blocked !== 'boolean') throw new Error('HTML局部恢复状态版本或内容无效，保留原文件并停止。');
   if(saved.failed.some(f=>f.evidence?.kind!==undefined&&f.evidence.kind!=='authored-proposal'))throw new Error('HTML恢复证据类型无效，保留原文件并停止。');
-  if(saved.native&&(!['running','failed','cancelled','completed'].includes(saved.native.status)||!/^[a-f0-9]{64}$/.test(saved.native.claimHash)||saved.native.terminalHash!==undefined&&!/^[a-f0-9]{64}$/.test(saved.native.terminalHash)||saved.native.reason!==undefined&&!['geometry','static-sweep','authored-geometry'].includes(saved.native.reason)||saved.attempts!==2||saved.failed.length!==2))throw new Error('HTML原生恢复状态无效，保留原文件并停止。');
+  if(saved.native&&(!['running','failed','cancelled','completed'].includes(saved.native.status)||!/^[a-f0-9]{64}$/.test(saved.native.claimHash)||saved.native.terminalHash!==undefined&&!/^[a-f0-9]{64}$/.test(saved.native.terminalHash)||saved.native.reason!==undefined&&!['geometry','static-sweep','authored-geometry','resolved-contrast'].includes(saved.native.reason)||saved.attempts!==2||saved.failed.length!==2))throw new Error('HTML原生恢复状态无效，保留原文件并停止。');
   return saved;
 }
 export class LessonHtmlLayoutError extends Error { code = 'HTML_LAYOUT_EXHAUSTED'; }
@@ -164,7 +165,7 @@ const geometryCodes=new Set(['content_overlap','text_occluded','text_overflow','
 const nativeGeometryCodes=new Set([...geometryCodes,'text_box_overflow']);
 const reportNames=['check-report.json','lint-report.json','inspect-report.json'] as const;
 const proposalNames=['draft.json','server-validation.json','raw-proposal.json'] as const;
-const recoveryReason=(reasons:NativeRecoveryReason[]):NativeRecoveryReason=>reasons.includes('static-sweep')?'static-sweep':reasons.includes('authored-geometry')?'authored-geometry':'geometry';
+const recoveryReason=(reasons:NativeRecoveryReason[]):NativeRecoveryReason=>reasons.includes('resolved-contrast')?'resolved-contrast':reasons.includes('static-sweep')?'static-sweep':reasons.includes('authored-geometry')?'authored-geometry':'geometry';
 const reportIssues=(report:LayoutReport):LayoutIssue[]=>[...(report.issues||report.findings||[]),...['layout','lint','runtime','motion','contrast'].flatMap(key=>(report as any)[key]?.findings||[])].filter(issue=>!issue.severity||issue.severity==='error');
 
 // This is eligibility to render a different native scene, never permission to
@@ -279,6 +280,24 @@ async function verifyAttemptEvidence(project:string,evidence:AttemptEvidence|und
   return nativeEvidenceReason(artifacts);
 }
 
+async function verifyNativeSequence<R>(project:string,failures:HtmlState<R>['failed'],contextHash:string,format:Format):Promise<NativeRecoveryReason[]|undefined>{
+  const reasons=await Promise.all(failures.map(f=>verifyAttemptEvidence(project,f.evidence,contextHash,format,f.hash)));
+  if(reasons.every((reason):reason is NativeRecoveryReason=>Boolean(reason)))return reasons;
+  if(failures.length!==2||reasons[0]!==undefined||reasons[1]!=='geometry'||failures.some(f=>!f.drawing||!f.evidence||f.evidence.kind))return;
+  const artifacts:Map<string,Buffer>[]=[];
+  for(const failure of failures){
+    const evidence=failure.evidence!,directory=path.join(project,evidence.directory),manifestBytes=await readFile(path.join(directory,'manifest.json'));
+    if(hashBytes(manifestBytes)!==evidence.manifestHash)throw new Error('HTML对比度恢复manifest SHA不一致。');
+    const manifest=JSON.parse(manifestBytes.toString()),files=new Map<string,Buffer>();
+    for(const [name,sha] of Object.entries(manifest.files)){
+      if(!artifactNames.includes(name as any))throw new Error('HTML对比度恢复含未知文件。');
+      const bytes=await readFile(path.join(directory,name));if(hashBytes(bytes)!==sha)throw new Error('HTML对比度恢复实际文件SHA不一致。');files.set(name,bytes);
+    }
+    artifacts.push(files);
+  }
+  return resolvedContrastRecovery(artifacts[0],artifacts[1],failures.map(f=>f.drawing!),format)?['resolved-contrast','geometry']:undefined;
+}
+
 /** Two actual layout attempts per unchanged chapter, across calls/restarts.
  * This never synthesizes speech or changes a verified lesson script. */
 export async function recoverLessonHtml<R extends SceneResult>(options: {
@@ -341,8 +360,8 @@ export async function recoverLessonHtml<R extends SceneResult>(options: {
     if(!state.native||hashBytes(nativeClaim)!==state.native.claimHash)throw new LessonHtmlLayoutError(options.chapterId+'：原生恢复已启动但状态缺失或倒退，不能重试。');
     const claim=JSON.parse(nativeClaim.toString());
     if(claim.version!==1||claim.contextHash!==options.contextHash||JSON.stringify(claim.evidence)!==JSON.stringify(state.failed.map(f=>f.evidence?.manifestHash)))throw new Error('HTML原生恢复启动证据内容不一致，保留原文件并停止。');
-    const reasons:NativeRecoveryReason[]=[];
-    for(const failure of state.failed){const reason=await verifyAttemptEvidence(options.project,failure.evidence,options.contextHash,options.format,failure.hash);if(!reason)throw new Error('HTML原生恢复缺少已保存的真实布局失败，保留原文件并停止。');reasons.push(reason);}
+    const reasons=await verifyNativeSequence(options.project,state.failed,options.contextHash,options.format);
+    if(!reasons)throw new Error('HTML原生恢复缺少已保存的真实布局失败，保留原文件并停止。');
     const reason=recoveryReason(reasons);
     if(claim.reason!==state.native.reason||claim.reason!==undefined&&claim.reason!==reason||claim.reason===undefined&&reason!=='geometry')throw new Error('HTML原生恢复启动原因与实际证据不一致，保留原文件并停止。');
     if(state.native.status!=='running'){
@@ -396,8 +415,8 @@ export async function recoverLessonHtml<R extends SceneResult>(options: {
     }
   }
   if(options.nativeFallback&&state.attempts===2&&state.failed.length===2){
-    const reasons:NativeRecoveryReason[]=[];
-    for(const failure of state.failed){const reason=await verifyAttemptEvidence(options.project,failure.evidence,options.contextHash,options.format,failure.hash);if(!reason)throw exhausted();reasons.push(reason);}
+    const reasons=await verifyNativeSequence(options.project,state.failed,options.contextHash,options.format);
+    if(!reasons)throw exhausted();
     const reason=recoveryReason(reasons);
     throwIfJobCancelled();
     await mkdir(nativeDirectory,{recursive:true,mode:0o700});
