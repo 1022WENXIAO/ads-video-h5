@@ -193,6 +193,17 @@ export async function getDefaultTextModelId(): Promise<string | null> {
   return (await loadRegistry()).defaultTextModelId;
 }
 
+/** Capture alternatives once, before a job starts; running jobs never follow
+ * later registry edits or obtain a newly configured credential. */
+export async function getTextFallbackConfigs(primary:ModelConfig|null):Promise<ModelConfig[]>{
+  if(!primary||new URL(primary.baseUrl).hostname!=='ark.cn-beijing.volces.com')return [];
+  const data=await loadRegistry(),token=await getAdminToken();
+  return data.models.filter(model=>model.kind==='text'&&model.enabled&&model.id!==primary.id&&model.baseUrl.replace(/\/$/,'')===primary.baseUrl.replace(/\/$/,'')&&modelKey(model,data)).slice(0,2).map(model=>{
+    const {apiKeyCiphertext:_key,apiKeySourceId:_source,...fields}=model;
+    return {...fields,apiKey:decrypt(modelKey(model,data)!,token)};
+  });
+}
+
 export async function setDefaultTextModelId(id: string | null): Promise<void> {
   await mutate((data) => {
     if (id !== null && !data.models.some((model) => model.id === id && model.kind === 'text' && model.enabled && modelKey(model, data))) {

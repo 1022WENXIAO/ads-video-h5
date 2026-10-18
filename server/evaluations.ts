@@ -10,7 +10,7 @@ import { executionDiagnostics } from './toolTrace';
 import { evaluationCaseHash, evaluationSummary, scoreEvaluation } from './evaluationScoring';
 import { probeVideo, detectShots, runFFmpeg } from './core';
 import { runWithJobSignal } from './jobExecution';
-import type { ModelSnapshot } from './modelContext';
+import { snapshotModels, type ModelSnapshot } from './modelContext';
 import { MAX_MEDIA_UPLOAD_BYTES } from '../src/uploadLimits';
 import { planHash } from './renderTimeline';
 import { inspectEvaluationStreamDuration } from './evaluationMediaGate';
@@ -80,7 +80,7 @@ export function createEvaluations(options: Options) {
   };
   const serialized = <T>(action: () => Promise<T>): Promise<T> => { const pending = mutation.then(action); mutation = pending.then(() => undefined, () => undefined); return pending; };
   const findRun = (id: string) => { const run = runs.find(r => r.id === id); if (!run) throw new EvaluationError('评测运行不存在。',404); return run; };
-  const redact = (text: string, models: ModelSnapshot) => Object.values(models).reduce((s, m) => m?.apiKey ? s.replaceAll(m.apiKey, '[redacted]') : s, text).replace(/Bearer\s+[\w.+/=-]+/gi, 'Bearer [redacted]').slice(0,3000);
+  const redact = (text: string, models: ModelSnapshot) => snapshotModels(models).reduce((s, m) => m?.apiKey ? s.replaceAll(m.apiKey, '[redacted]') : s, text).replace(/Bearer\s+[\w.+/=-]+/gi, 'Bearer [redacted]').slice(0,3000);
 
   async function execute(run: EvaluationRun, models: ModelSnapshot, controller: AbortController) {
     for (const result of run.results) {
@@ -192,7 +192,7 @@ export function createEvaluations(options: Options) {
         const inputs = test.fixtureIds.map(id => { const { shots: _shots, ...f } = fixtures.find(f => f.id === id)!; return f; });
         return { id: randomUUID(), case: structuredClone(test), caseHash: evaluationCaseHash(test, inputs), fixtures: inputs, repeat: i + 1, status: 'queued', jobIds: [] };
       }));
-      const run: EvaluationRun = { id: randomUUID(), name: body.name?.trim() || `能力评测 ${new Date().toLocaleDateString('zh-CN')}`, status: 'running', createdAt: new Date().toISOString(), maxCaseSeconds, ...(generated ? { releaseId: generated.releaseId, releaseAttempt: generated.releaseAttempt } : {}), snapshot: { ...options.implementation, rubricVersion: EVALUATION_RUBRIC_VERSION, models: Object.values(models).filter(m => m !== null).map(m => ({ id: m.id, name: m.name, modelId: m.modelId, kind: m.kind, provider: m.provider })) }, results };
+      const run: EvaluationRun = { id: randomUUID(), name: body.name?.trim() || `能力评测 ${new Date().toLocaleDateString('zh-CN')}`, status: 'running', createdAt: new Date().toISOString(), maxCaseSeconds, ...(generated ? { releaseId: generated.releaseId, releaseAttempt: generated.releaseAttempt } : {}), snapshot: { ...options.implementation, rubricVersion: EVALUATION_RUBRIC_VERSION, models: snapshotModels(models).map(m => ({ id: m.id, name: m.name, modelId: m.modelId, kind: m.kind, provider: m.provider })) }, results };
       runs.push(run); const controller = new AbortController(); controllers.set(run.id, controller);
       try { await persist(); }
       catch (error) { runs.splice(runs.indexOf(run),1); controllers.delete(run.id); throw error; }

@@ -21,6 +21,12 @@ export function publicResearchUrl(value: string): string | undefined {
   } catch { return; }
 }
 
+/** A search engine may return an old HTTP spelling. Upgrade it before any
+ * connection; the original host, public-address checks and TLS stay required. */
+export function publicArticleUrl(value:string):string|undefined{
+  try{const url=new URL(value);if(url.protocol==='http:'&&!url.port)url.protocol='https:';return publicResearchUrl(url.href);}catch{return;}
+}
+
 export interface PublicPage { url: string; text: string; contentType: string; }
 export interface PublicReadOptions { signal?: AbortSignal; timeoutMs?: number; }
 export type PublicReader = (url: string, options?: PublicReadOptions) => Promise<PublicPage>;
@@ -68,7 +74,8 @@ export async function readPublicPage(value: string, options: PublicReadOptions =
       }),
     }, res => {
       if (res.statusCode && res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
-        res.resume(); readPublicPage(new URL(res.headers.location, safe).href, options, redirects + 1).then(resolve, reject); return;
+        const next=publicArticleUrl(new URL(res.headers.location,safe).href);
+        res.resume(); if(!next){reject(new Error('研究页面跳转不是公开 HTTPS 地址。'));return;}readPublicPage(next, options, redirects + 1).then(resolve, reject); return;
       }
       if (res.statusCode !== 200) { res.resume(); reject(new Error(`研究页面 HTTP ${res.statusCode}`)); return; }
       const contentType = String(res.headers['content-type'] || '');

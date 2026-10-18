@@ -13,6 +13,7 @@ import { mergeResearch, researchGaps } from './narrativeResearch';
 import { hashBytes, authorDrawing, type HtmlDrawing } from './narrativeScenes';
 import { audioLevelOnlyRepair, captionFormattingOnlyRepair, lessonRepairPlan, speechOnlyRepair, lessonVisualBrief } from './visualRecovery';
 import { recoverLessonHtml } from './lessonHtmlRecovery';
+import {sceneAuthorConfig} from './sceneAuthorFallback';
 import { nativeLessonFallbackAllowed } from './lessonHtmlFallbackPolicy';
 import { createLessonLayoutRepairProofs, canUseLessonLayoutRepairProof, type LessonLayoutRepairProof } from './lessonLayoutRepair';
 import { sourcePronunciationHints, sourcePronunciationPrompt } from './lessonPronunciation';
@@ -624,10 +625,11 @@ export async function runLessonWorkflow(o:Options){
         const contextHash=hashBytes(JSON.stringify({version:1,rendererHash,prompt:o.prompt,title:chapter.title,narration:chapter.narration,visual:chapter.visual,reason:chapter.reason,cues:chapter.cues,feedback:visualFeedback[chapter.id],audioHash:hashBytes(await readFile(source.file)),analysis:source.analysis,format:report!.format,references:report!.references,asOf:report!.hotResearch?.asOf,publicationAnnotation:annotation}));
         const verifiedLayoutRepair=canUseLessonLayoutRepairProof(report!,chapter,visualFeedback[chapter.id],layoutRepairProofs[chapter.id],rendererHash);
         return recoverLessonHtml({project:dir,chapterId:chapter.id,contextHash,format:report!.format,produce,nativeFallback:nativeLessonFallbackAllowed(o.prompt,chapter,visualFeedback[chapter.id],{verifiedLayoutRepair})?()=>trace.run('render_native_html',`采用内置图解 · ${chapter.title}`,{chapterId:chapter.id,rendererKind:'native',reason:verifiedLayoutRepair?'reviewed-layout-repair-after-two-authored-failures':'two-authored-layout-failures',preservedScript:true,preservedNarration:true},()=>produce()):undefined,author:async(layoutFeedback)=>{
-          const key=hashBytes(JSON.stringify({rendererHash,prompt:o.prompt,narration:chapter.narration,visual:chapter.visual,reason:chapter.reason,feedback:visualFeedback[chapter.id],layoutFeedback,publicationAnnotation:annotation}));
+          const authorConfig=sceneAuthorConfig(o.config,layoutFeedback);
+          const key=hashBytes(JSON.stringify({rendererHash,authorModel:authorConfig.modelId,prompt:o.prompt,narration:chapter.narration,visual:chapter.visual,reason:chapter.reason,feedback:visualFeedback[chapter.id],layoutFeedback,publicationAnnotation:annotation}));
           try{const cache=JSON.parse(await readFile(path.join(dir,'drawing-cache.json'),'utf8'));if(cache.key===key)return cache.drawing as HtmlDrawing;}catch{}
-          const drawing=await trace.run('author_lesson_visual','设计与旁白对应的实际图解',{chapterId:chapter.id,format:report!.format,narration:chapter.narration,visual:chapter.visual,feedback:visualFeedback[chapter.id],layoutFeedback},()=>
-            (o.authorVisual||authorDrawing)(o.config,{id:chapter.id,title:chapter.title,line:chapter.narration,role:chapter.role==='hook'?'hook':chapter.role==='recap'?'conclusion':'argument',mode:'generated',visual:'html',reason:chapter.reason,referenceIds:chapter.referenceIds,visualBrief:JSON.stringify(lessonVisualBrief(report!,chapter,o.prompt,visualFeedback[chapter.id],layoutFeedback,annotation))},report!.format));
+          const drawing=await trace.run('author_lesson_visual',authorConfig.id===o.config.id?'设计与旁白对应的实际图解':'使用备用模型重绘图解',{chapterId:chapter.id,modelId:authorConfig.modelId,backupFor:authorConfig.id===o.config.id?undefined:o.config.modelId,format:report!.format,narration:chapter.narration,visual:chapter.visual,feedback:visualFeedback[chapter.id],layoutFeedback},()=>
+            (o.authorVisual||authorDrawing)(authorConfig,{id:chapter.id,title:chapter.title,line:chapter.narration,role:chapter.role==='hook'?'hook':chapter.role==='recap'?'conclusion':'argument',mode:'generated',visual:'html',reason:chapter.reason,referenceIds:chapter.referenceIds,visualBrief:JSON.stringify(lessonVisualBrief(report!,chapter,o.prompt,visualFeedback[chapter.id],layoutFeedback,annotation))},report!.format));
           await writeFile(path.join(dir,'drawing-cache.json'),JSON.stringify({key,drawing}),{mode:0o600});return drawing;
         }});
       });

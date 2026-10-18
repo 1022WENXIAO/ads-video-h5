@@ -1,5 +1,5 @@
 import { jobFetch } from './jobExecution';
-import { publicResearchUrl } from './publicResearch';
+import { publicResearchUrl,publicArticleUrl } from './publicResearch';
 import type { ResearchResult } from './researchTypes';
 
 const supported = new Set(['bing','baidu','csdn','duckduckgo','exa','brave','juejin','startpage','sogou','hackernews']);
@@ -24,7 +24,7 @@ export function decodeOpenWebSearch(body: any, query: string, now = new Date().t
   const seen = new Set<string>();
   const references: ResearchResult['references'] = [];
   for (const row of body.data.results.slice(0, 16)) {
-    const url = typeof row?.url === 'string' && publicResearchUrl(row.url);
+    const url = typeof row?.url === 'string' && publicArticleUrl(row.url);
     if (!url || !usableSearchArticle(url) || seen.has(url) || typeof row.title !== 'string' || !row.title.trim()) continue;
     seen.add(url);
     references.push({ id: `ref-${references.length+1}`, title: row.title.slice(0,180), url, retrievedAt: now, verification: 'search-cited', excerpt: `搜索摘要（不是网页正文）：${String(row.description || '').slice(0,1800)}` });
@@ -35,7 +35,7 @@ export function decodeOpenWebSearch(body: any, query: string, now = new Date().t
 }
 export async function searchOpenWeb(query: string, base = openWebBase()!, engines = openWebEngines()): Promise<ResearchResult> {
   if (!base || query.length > 1800) throw new Error('open-webSearch 服务未配置或查询过长。');
-  const response = await jobFetch(openWebBase(base)!+'/search', { method:'POST', headers:{'Content-Type':'application/json'}, redirect:'error', signal:AbortSignal.timeout(45000), body:JSON.stringify({query,limit:10,engines,searchMode:'request'}) });
+  const response = await jobFetch(openWebBase(base)!+'/search', { method:'POST', headers:{'Content-Type':'application/json'}, redirect:'error', signal:AbortSignal.timeout(15000), body:JSON.stringify({query,limit:10,engines,searchMode:'request'}) });
   if (!response.ok) { await response.body?.cancel(); throw new Error(`open-webSearch 搜索 HTTP ${response.status}。`); }
   return decodeOpenWebSearch(await response.json(), query);
 }

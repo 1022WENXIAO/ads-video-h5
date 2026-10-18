@@ -47,8 +47,12 @@ export function primaryPageText(html:string):{title:string;excerpt:string}|undef
   const title=plain(/<title[^>]*>([\s\S]*?)<\/title>/i.exec(html)?.[1]||'');
   if(!title||/just a moment|access denied|captcha|security check|attention required|checking your browser/i.test(title))return;
   const abstract=/<blockquote[^>]*class=["'][^"']*abstract[^"']*["'][^>]*>([\s\S]*?)<\/blockquote>/i.exec(html)?.[1]||/<div[^>]*id=["']abstract["'][^>]*>([\s\S]*?)<\/div>/i.exec(html)?.[1];
-  const article=/<article\b[^>]*>([\s\S]*?)<\/article>/i.exec(html)?.[1]||/<main\b[^>]*>([\s\S]*?)<\/main>/i.exec(html)?.[1]||html;
-  const text=plain(article.replace(/<(?:nav|header|footer|aside)\b[\s\S]*?<\/(?:nav|header|footer|aside)>/gi,' '));if(text.length<100)return;
+  // Some documentation puts a short footer <article> after the real <main>.
+  // Strip inert/chrome markup first, then prefer the substantial content scope
+  // rather than whichever article tag appears first (including in scripts).
+  const clean=html.replace(/<(script|style|nav|header|footer|aside)\b[\s\S]*?<\/\1>/gi,' ');
+  const candidates=[...clean.matchAll(/<(article|main)\b[^>]*>([\s\S]*?)<\/\1>/gi)].map(match=>plain(match[2]));
+  const text=candidates.sort((a,b)=>b.length-a.length)[0]||plain(clean);if(text.length<100)return;
   return {title:title.slice(0,180),excerpt:(abstract?plain(abstract)+'\n页面日期/元数据：'+text.slice(0,2200):text.slice(0,4200)).slice(0,4200)};
 }
 async function readPrimary(url:string):Promise<{title:string;excerpt:string}|undefined>{
