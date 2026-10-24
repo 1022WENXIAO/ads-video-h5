@@ -880,8 +880,9 @@ app.post('/api/media', upload.array('files', 6), async (request, response) => {
   if (!files.length) return response.status(400).json({ error: '请选择视频、图片或音频文件。' });
   const moved: string[] = [];
   const stored: string[] = [];
+  const items: MediaItem[] = [];
+  let staged = false;
   try {
-    const items: MediaItem[] = [];
     for (const file of files) {
       let mimeType = await uploadMediaType(file.path, file.mimetype); let duration: number | undefined; let hasAudio: boolean | undefined; let kind: MediaItem['kind'];
       if (mimeType.startsWith('image/')) { const detected = detectImage(await readFile(file.path)); if (!detected) throw new Error('图片格式仅支持 PNG、JPEG 或 WebP。'); mimeType = detected; }
@@ -908,12 +909,24 @@ app.post('/api/media', upload.array('files', 6), async (request, response) => {
       }
       items.push({ id: file.filename, ownerId: user.id, name: shortName(file.originalname), mimeType, kind, ...(duration ? { duration } : {}), ...(hasAudio !== undefined ? { hasAudio } : {}), ...(shots ? { shots } : {}), url: `/api/media/${file.filename}`, createdAt: now(), origin: 'upload' });
     }
-    state.media.push(...items); await saveState(); response.json({ ...await publicState(user), uploadedMediaIds: items.map(item => item.id) });
+    state.media.push(...items);
+    staged = true;
+    await saveState();
   } catch (error) {
+    if (staged) {
+      const uploadedIds = new Set(items.map(item => item.id));
+      state.media = state.media.filter(item => !uploadedIds.has(item.id));
+      // A concurrent save may already have captured the tentative records.
+      // Queue the rollback snapshot, preserving the original storage error.
+      await persistState().catch(() => undefined);
+    }
     await Promise.all([...files.map((file) => file.path), ...moved].map((file) => rm(file, { force: true })));
     if (oss) await Promise.allSettled(stored.map((id) => id.startsWith('shots/') ? oss.remove(user.id, 'shots', id.slice(6)) : oss.remove(user.id, 'media', id)));
     response.status(400).json({ error: error instanceof Error ? error.message : '素材解析或存储失败。' });
+    return;
   }
+  // Response-building errors after commit must not delete persisted media.
+  response.json({ ...await publicState(user), uploadedMediaIds: items.map(item => item.id) });
 });
 app.post('/api/media/:id/analyze', async (request, response) => {
   const user = userOf(request); const item = state.media.find((m) => m.id === request.params.id && owned(m, user.id));

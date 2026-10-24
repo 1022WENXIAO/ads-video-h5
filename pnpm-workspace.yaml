@@ -1,6 +1,8 @@
 packages:
   - apps/admin
   - apps/miniprogram
+overrides:
+  'body-parser@>=2.0.0 <2.4.0': 2.4.0
 allowBuilds:
   '@google/genai': false
   esbuild: true
