@@ -27,7 +27,7 @@ test('failed upload persistence removes its tentative records and files, and a r
   const result = await accepted.json() as any;
   assert.equal(result.uploadedMediaIds.length, 1);
   assert.equal(result.media.length, before.media.length + 1);
-  const saved = await fixture.request(cookie, '/api/settings', { language: 'zh-CN' });
+  const saved = await fixture.request(cookie, '/api/settings', { language: 'zh-CN' }, 'PATCH');
   assert.equal(saved.status, 200); await saved.arrayBuffer();
   const persisted = JSON.parse(await readFile(filename, 'utf8'));
   assert.equal(persisted.media.length, before.media.length + 1);
