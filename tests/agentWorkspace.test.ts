@@ -365,11 +365,62 @@ test('Ant-Browser adapter uses the documented API key and profile envelope', asy
   await ant.createProfile('QJ_owner', '测试实例');
   assert.deepEqual(requests.at(-1).body, {
     profile: { profileName: '测试实例' },
-    launchCode: 'QJ_owner',
+    launchCode: 'QJ_OWNER',
     autoLaunch: false,
   });
   await ant.execute({ operation: 'status', profile: 'QJ_owner', args: {} });
-  assert.deepEqual(requests.at(-1).body.selector, { code: 'QJ_owner', matchMode: 'unique' });
+  assert.deepEqual(requests.at(-1).body.selector, { code: 'QJ_OWNER', matchMode: 'unique' });
   await Promise.all(Array.from({length:3},()=>ant.execute({operation:'status',profile:'QJ_owner',args:{}})));
   assert.equal(peak,1,'Ant commands from multiple agents must remain ordered');
+});
+
+test('native uppercase launch codes survive startup and reload without losing ownership or a legacy selection', async (t) => {
+  const selectors: string[] = [];
+  let nativeCode = '';
+  const server = createServer(async (request, response) => {
+    let raw = '';
+    for await (const part of request) raw += part;
+    const input = raw ? JSON.parse(raw) : undefined;
+    assert.equal(request.headers['x-ant-api-key'], 'ant-canonical-fixture');
+    response.setHeader('Content-Type', 'application/json');
+    if (request.url === '/api/profiles' && request.method === 'POST') {
+      nativeCode = input.launchCode.toUpperCase();
+      response.end(JSON.stringify({ ok: true, launchCode: nativeCode }));
+    } else if (request.url === '/api/profiles') {
+      response.end(JSON.stringify({ ok: true, items: nativeCode ? [{ profileId: 'native', profileName: '实例', launchCode: nativeCode, running: true }] : [] }));
+    } else {
+      selectors.push(input.selector.code);
+      response.end(JSON.stringify({ ok: true, running: true, ready: true }));
+    }
+  });
+  server.listen(0, '127.0.0.1');
+  await once(server, 'listening');
+  const previous = { url: process.env.ANT_BROWSER_API_URL, key: process.env.ANT_BROWSER_API_KEY };
+  process.env.ANT_BROWSER_API_URL = `http://127.0.0.1:${(server.address() as any).port}`;
+  process.env.ANT_BROWSER_API_KEY = 'ant-canonical-fixture';
+  t.after(() => {
+    if (previous.url === undefined) delete process.env.ANT_BROWSER_API_URL; else process.env.ANT_BROWSER_API_URL = previous.url;
+    if (previous.key === undefined) delete process.env.ANT_BROWSER_API_KEY; else process.env.ANT_BROWSER_API_KEY = previous.key;
+    server.closeAllConnections(); server.close();
+  });
+  const directory = await temporary(t), store = createExtensions(directory);
+  await store.load();
+  const { code } = await store.assignBrowserProfile('owner');
+  assert.equal(code, code.toUpperCase());
+  assert.equal(nativeCode, code);
+  assert.equal((await store.browserCall('owner', 'profiles') as any).profiles[0].code, code);
+  // Model a selection written by the first integration before native startup.
+  const filename = path.join(directory, 'extensions.json');
+  const saved = JSON.parse(await readFile(filename, 'utf8'));
+  const legacy = code.toLowerCase();
+  saved.owners.owner.browserProfiles = [legacy];
+  await writeFile(filename, JSON.stringify(saved));
+  const restored = createExtensions(directory); await restored.load();
+  assert.equal((await restored.browserCall('owner', 'profiles') as any).profiles[0].code, legacy);
+  assert.equal(restored.validate('owner', { ...defaultAgentCapabilities(), browserProfile: legacy }).browserProfile, legacy);
+  await restored.browserCall('owner', 'status', legacy);
+  assert.deepEqual(selectors, [nativeCode]);
+  assert.equal((await restored.browserCall('other', 'profiles') as any).profiles.length, 0);
+  await assert.rejects(restored.browserCall('other', 'stop', nativeCode), /不属于当前账号/);
+  assert.equal(selectors.length, 1, 'another owner never reaches the native control API');
 });

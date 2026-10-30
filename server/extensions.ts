@@ -154,7 +154,8 @@ export function createExtensions(dataDir: string) {
     args: Record<string, string> = {},
   ) {
     if (!browser) throw new ExtensionError('服务器尚未配置 Ant-Browser Launch API。', 503);
-    if (operation !== 'profiles' && !owner(id).browserProfiles.includes(profile))
+    const ownedProfiles = owner(id).browserProfiles;
+    if (operation !== 'profiles' && !ownedProfiles.some(code=>code.toUpperCase()===profile.toUpperCase()))
       throw new ExtensionError('浏览器实例不存在或不属于当前账号。', 404);
     try {
       const result = await browser.execute({ operation, profile, args });
@@ -166,9 +167,12 @@ export function createExtensions(dataDir: string) {
       };
       if (operation === 'profiles')
         return {
-          profiles: (result as any).profiles.filter((item: any) =>
-            owner(id).browserProfiles.includes(item.code),
-          ),
+          profiles: (result as any).profiles.flatMap((item: any) => {
+            const storedCode=ownedProfiles.find(code=>code.toUpperCase()===String(item.code).toUpperCase());
+            // Preserve an older saved selection while Ant returns its canonical
+            // uppercase identity; ownership is still checked before every call.
+            return storedCode ? [{...item,code:storedCode}] : [];
+          }),
         };
       return result;
     } catch (error) {
@@ -341,7 +345,7 @@ export function createExtensions(dataDir: string) {
       if (owner(id).browserProfiles.length >= 4)
         throw new ExtensionError('每个账号最多保存 4 个浏览器实例。');
       const code =
-        'QJ_' + createHash('sha256').update(id).digest('hex').slice(0, 12) + '_' + randomUUID().slice(0, 8);
+        ('QJ_' + createHash('sha256').update(id).digest('hex').slice(0, 12) + '_' + randomUUID().slice(0, 8)).toUpperCase();
       try {
         await browser.createProfile(code, name?.trim().slice(0, 60) || '轻剪浏览器');
       } catch (error) {

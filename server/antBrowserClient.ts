@@ -46,7 +46,7 @@ export function createAntBrowserClient(baseUrl: string, apiKey?: string) {
       const limit = Math.max(1, Math.min(8, Number(process.env.ANT_BROWSER_MAX_RUNNING || 1) || 1));
       const list = await api('/api/profiles');
       const running = (list.items || list.profiles || []).filter(
-        (item: any) => item.running && (item.launchCode || item.code) !== profile,
+        (item: any) => item.running && String(item.launchCode || item.code).toUpperCase() !== profile,
       );
       if (running.length >= limit) throw new Error('服务器的浏览器实例已达到运行上限，请先停止不用的实例。');
       const result = await api('/api/runtime/session', {
@@ -74,12 +74,15 @@ export function createAntBrowserClient(baseUrl: string, apiKey?: string) {
       return { ok: true };
     },
     async createProfile(code: string, name: string) {
-      return api('/api/profiles', { profile: { profileName: name }, launchCode: code, autoLaunch: false });
+      return api('/api/profiles', { profile: { profileName: name }, launchCode: code.toUpperCase(), autoLaunch: false });
     },
     async execute(command: BrowserCommand) {
       const pending = tail.then(async () => {
         throwIfJobCancelled();
-        const { operation, profile, args } = command;
+        const { operation, args } = command;
+        // Native Ant canonicalizes launch codes when an instance starts. Use
+        // the same identity for connection reuse, selectors and capacity checks.
+        const profile = command.profile.trim().toUpperCase();
         if (operation === 'profiles') {
           const result = await api('/api/profiles');
           const items = result.items || result.profiles;
