@@ -1,0 +1,516 @@
+{
+  "provenance": {
+    "revision": "d139e0d425008949465a78e1151ed082fd677aab",
+    "jobId": "d65ceb8e-349d-4792-a85a-fee697172e78",
+    "chapter": "ch-2",
+    "htmlSha256": "3262e8e2e0b04932871ac7a9fc4b93b98618240a1f83676138b641f6f6fefe88",
+    "sourceHistory": "html-recovery-history/cd614a290bc3662426e4012b907e86cfce49766884a3e002410b1dd3f234cdaf/c2e307b8ea9dbc5e0f276fb66e62565855e04e7c081dcc54c99242279fbeabd2.json"
+  },
+  "drawing": {
+    "title": "背景不是当天才发生",
+    "nodes": [
+      {
+        "id": "timeline-track",
+        "kind": "line",
+        "x": 100,
+        "y": 390,
+        "w": 520,
+        "h": 0,
+        "text": "",
+        "tone": "ink",
+        "fontSize": 36,
+        "highlight": false
+      },
+      {
+        "id": "dot-mar",
+        "kind": "circle",
+        "x": 92,
+        "y": 382,
+        "w": 16,
+        "h": 16,
+        "text": "",
+        "tone": "coral",
+        "fontSize": 36,
+        "highlight": true
+      },
+      {
+        "id": "dot-oct12",
+        "kind": "circle",
+        "x": 462,
+        "y": 382,
+        "w": 16,
+        "h": 16,
+        "text": "",
+        "tone": "coral",
+        "fontSize": 36,
+        "highlight": true
+      },
+      {
+        "id": "dot-oct13",
+        "kind": "circle",
+        "x": 612,
+        "y": 382,
+        "w": 16,
+        "h": 16,
+        "text": "",
+        "tone": "blue",
+        "fontSize": 36,
+        "highlight": true
+      },
+      {
+        "id": "income-card",
+        "kind": "card",
+        "x": 54,
+        "y": 430,
+        "w": 200,
+        "h": 190,
+        "text": "",
+        "tone": "paper",
+        "fontSize": 34,
+        "highlight": false
+      },
+      {
+        "id": "income-title",
+        "kind": "text",
+        "x": 74,
+        "y": 455,
+        "w": 160,
+        "h": 56,
+        "text": "3月以来",
+        "tone": "ink",
+        "fontSize": 24,
+        "highlight": false
+      },
+      {
+        "id": "income-detail",
+        "kind": "text",
+        "x": 74,
+        "y": 505,
+        "w": 160,
+        "h": 88,
+        "text": "经营收入同比持续下降",
+        "tone": "ink",
+        "fontSize": 24,
+        "highlight": true
+      },
+      {
+        "id": "income-source",
+        "kind": "text",
+        "x": 74,
+        "y": 585,
+        "w": 160,
+        "h": 87,
+        "text": "卫健局转述医院统计",
+        "tone": "blue",
+        "fontSize": 24,
+        "highlight": false
+      },
+      {
+        "id": "agreement-card",
+        "kind": "card",
+        "x": 292,
+        "y": 430,
+        "w": 170,
+        "h": 190,
+        "text": "",
+        "tone": "paper",
+        "fontSize": 34,
+        "highlight": false
+      },
+      {
+        "id": "agreement-date",
+        "kind": "text",
+        "x": 312,
+        "y": 455,
+        "w": 130,
+        "h": 56,
+        "text": "10月12日",
+        "tone": "ink",
+        "fontSize": 24,
+        "highlight": true
+      },
+      {
+        "id": "agreement-detail",
+        "kind": "text",
+        "x": 312,
+        "y": 505,
+        "w": 130,
+        "h": 88,
+        "text": "医保协议解除",
+        "tone": "ink",
+        "fontSize": 24,
+        "highlight": true
+      },
+      {
+        "id": "agreement-result",
+        "kind": "text",
+        "x": 312,
+        "y": 575,
+        "w": 130,
+        "h": 87,
+        "text": "之后费用不结算",
+        "tone": "coral",
+        "fontSize": 24,
+        "highlight": false
+      },
+      {
+        "id": "notice-card",
+        "kind": "card",
+        "x": 500,
+        "y": 430,
+        "w": 166,
+        "h": 190,
+        "text": "",
+        "tone": "paper",
+        "fontSize": 34,
+        "highlight": false
+      },
+      {
+        "id": "notice-date",
+        "kind": "text",
+        "x": 520,
+        "y": 455,
+        "w": 126,
+        "h": 56,
+        "text": "10月13日",
+        "tone": "ink",
+        "fontSize": 24,
+        "highlight": true
+      },
+      {
+        "id": "notice-detail",
+        "kind": "text",
+        "x": 520,
+        "y": 505,
+        "w": 126,
+        "h": 87,
+        "text": "医保局网站公告",
+        "tone": "ink",
+        "fontSize": 24,
+        "highlight": true
+      },
+      {
+        "id": "notice-source",
+        "kind": "text",
+        "x": 520,
+        "y": 585,
+        "w": 126,
+        "h": 87,
+        "text": "中山市医保局",
+        "tone": "blue",
+        "fontSize": 24,
+        "highlight": false
+      },
+      {
+        "id": "context-card",
+        "kind": "card",
+        "x": 70,
+        "y": 700,
+        "w": 580,
+        "h": 150,
+        "text": "",
+        "tone": "paper",
+        "fontSize": 34,
+        "highlight": false
+      },
+      {
+        "id": "context-main",
+        "kind": "text",
+        "x": 96,
+        "y": 735,
+        "w": 528,
+        "h": 56,
+        "text": "两项都是停诊前已出现的背景压力",
+        "tone": "ink",
+        "fontSize": 24,
+        "highlight": true
+      },
+      {
+        "id": "context-limit",
+        "kind": "text",
+        "x": 96,
+        "y": 795,
+        "w": 528,
+        "h": 56,
+        "text": "现有材料不支持归为唯一原因",
+        "tone": "coral",
+        "fontSize": 24,
+        "highlight": false
+      },
+      {
+        "id": "report-date-card",
+        "kind": "card",
+        "x": 160,
+        "y": 900,
+        "w": 400,
+        "h": 76,
+        "text": "卫健局回应报道日期：10月30日",
+        "tone": "blue",
+        "fontSize": 26,
+        "highlight": false
+      }
+    ]
+  },
+  "originalHtml": "<!doctype html><html lang=\"zh-CN\"><head><meta charset=\"utf-8\"><style>@font-face{font-family:'PingFang SC';src:local('PingFang SC')}html,body{margin:0;width:720px;height:1280px;overflow:hidden;background:#fffdfa}#main{width:720px;height:1280px;position:relative;font-family:'PingFang SC',Arial,sans-serif;color:#252935}.scene-content{box-sizing:border-box;width:100%;height:100%;padding:64px 0;display:flex;flex-direction:column;align-items:center;gap:10px}#title{position:relative;z-index:2;font-size:60px;font-weight:800;width:640px;margin:0;text-align:center;line-height:1.2}.drawing-plane,svg{position:absolute;inset:0;width:720px;height:1280px}svg{overflow:visible}svg.products{z-index:2;pointer-events:none}.text,.circle{z-index:3!important}.node.text{padding:0}.node{position:absolute;z-index:1;box-sizing:border-box;padding:12px;display:flex;align-items:center;justify-content:center;text-align:center;line-height:1.3;font-weight:700;overflow-wrap:anywhere;white-space:pre-line}.node[data-qj-number]{white-space:nowrap;overflow-wrap:normal;word-break:normal}.node.text[data-qj-number]{padding:0}.card{border:3px solid;border-radius:20px}.circle{border:3px solid;border-radius:50%;padding:4px}.ambient{position:absolute;width:360px;height:360px;border-radius:50%;background:#fff0e9;opacity:.45;pointer-events:none}.ambient-a{left:-160px;top:60px}.ambient-b{right:-220px;bottom:180px;background:#e6f1f5}#note{font-size:20px;line-height:1.4;text-align:center;width:640px;left:40px;color:#252935;position:absolute;top:180px;margin:0;z-index:2}</style><script src=\"./gsap.min.js\"></script></head><body><section id=\"main\" data-composition-id=\"main\" data-width=\"720\" data-height=\"1280\" data-start=\"0\" data-duration=\"9.52\"><div id=\"ambient-a\" class=\"ambient ambient-a\" data-layout-ignore></div><div id=\"ambient-b\" class=\"ambient ambient-b\" data-layout-ignore></div><div class=\"scene-content\"><h1 id=\"title\">背景不是当天才发生</h1></div><div class=\"drawing-plane\"><svg viewBox=\"0 0 720 1280\" aria-label=\"背景不是当天才发生\"><path id=\"qj-author-timeline-track\" data-drawing-id=\"timeline-track\" d=\"M100 390 L620 390\" fill=\"none\" stroke=\"#252935\" stroke-width=\"5\" stroke-linecap=\"round\"/></svg><div id=\"qj-author-dot-mar\" data-drawing-id=\"dot-mar\" class=\"node circle\"  style=\"left:92px;top:382px;width:16px;height:16px;font-size:36px;background:#fffdfa;color:#b43c27;border-color:#fb7353\"></div><div id=\"qj-author-dot-oct12\" data-drawing-id=\"dot-oct12\" class=\"node circle\"  style=\"left:462px;top:382px;width:16px;height:16px;font-size:36px;background:#fffdfa;color:#b43c27;border-color:#fb7353\"></div><div id=\"qj-author-dot-oct13\" data-drawing-id=\"dot-oct13\" class=\"node circle\"  style=\"left:612px;top:382px;width:16px;height:16px;font-size:36px;background:#fffdfa;color:#28617d;border-color:#4c95b7\"></div><div id=\"qj-author-income-card\" data-drawing-id=\"income-card\" class=\"node card\"  style=\"left:54px;top:430px;width:200px;height:190px;font-size:34px;background:#fff0e9;color:#252935;border-color:#fff0e9\"></div><div id=\"qj-author-income-title\" data-drawing-id=\"income-title\" class=\"node text\"  style=\"left:74px;top:455px;width:160px;height:56px;font-size:24px;background:transparent;color:#252935;border-color:#252935\">3月以来</div><div id=\"qj-author-income-detail\" data-drawing-id=\"income-detail\" class=\"node text\"  style=\"left:74px;top:505px;width:160px;height:88px;font-size:24px;background:transparent;color:#252935;border-color:#252935\">经营收入同比持续下降</div><div id=\"qj-author-income-source\" data-drawing-id=\"income-source\" class=\"node text\"  style=\"left:74px;top:585px;width:160px;height:87px;font-size:24px;background:transparent;color:#28617d;border-color:#4c95b7\">卫健局转述医院统计</div><div id=\"qj-author-agreement-card\" data-drawing-id=\"agreement-card\" class=\"node card\"  style=\"left:292px;top:430px;width:170px;height:190px;font-size:34px;background:#fff0e9;color:#252935;border-color:#fff0e9\"></div><div id=\"qj-author-agreement-date\" data-drawing-id=\"agreement-date\" class=\"node text\"  style=\"left:312px;top:455px;width:130px;height:56px;font-size:24px;background:transparent;color:#252935;border-color:#252935\">10月12日</div><div id=\"qj-author-agreement-detail\" data-drawing-id=\"agreement-detail\" class=\"node text\"  style=\"left:312px;top:505px;width:130px;height:88px;font-size:24px;background:transparent;color:#252935;border-color:#252935\">医保协议解除</div><div id=\"qj-author-agreement-result\" data-drawing-id=\"agreement-result\" class=\"node text\"  style=\"left:312px;top:575px;width:130px;height:87px;font-size:24px;background:transparent;color:#b43c27;border-color:#fb7353\">之后费用不结算</div><div id=\"qj-author-notice-card\" data-drawing-id=\"notice-card\" class=\"node card\"  style=\"left:500px;top:430px;width:166px;height:190px;font-size:34px;background:#fff0e9;color:#252935;border-color:#fff0e9\"></div><div id=\"qj-author-notice-date\" data-drawing-id=\"notice-date\" class=\"node text\"  style=\"left:520px;top:455px;width:126px;height:56px;font-size:24px;background:transparent;color:#252935;border-color:#252935\">10月13日</div><div id=\"qj-author-notice-detail\" data-drawing-id=\"notice-detail\" class=\"node text\"  style=\"left:520px;top:505px;width:126px;height:87px;font-size:24px;background:transparent;color:#252935;border-color:#252935\">医保局网站公告</div><div id=\"qj-author-notice-source\" data-drawing-id=\"notice-source\" class=\"node text\"  style=\"left:520px;top:585px;width:126px;height:87px;font-size:24px;background:transparent;color:#28617d;border-color:#4c95b7\">中山市医保局</div><div id=\"qj-author-context-card\" data-drawing-id=\"context-card\" class=\"node card\"  style=\"left:70px;top:700px;width:580px;height:150px;font-size:34px;background:#fff0e9;color:#252935;border-color:#fff0e9\"></div><div id=\"qj-author-context-main\" data-drawing-id=\"context-main\" class=\"node text\"  style=\"left:96px;top:735px;width:528px;height:56px;font-size:24px;background:transparent;color:#252935;border-color:#252935\">两项都是停诊前已出现的背景压力</div><div id=\"qj-author-context-limit\" data-drawing-id=\"context-limit\" class=\"node text\"  style=\"left:96px;top:795px;width:528px;height:56px;font-size:24px;background:transparent;color:#b43c27;border-color:#fb7353\">现有材料不支持归为唯一原因</div><div id=\"qj-author-report-date-card\" data-drawing-id=\"report-date-card\" class=\"node card\"  style=\"left:160px;top:900px;width:400px;height:76px;font-size:26px;background:#fffdfa;color:#28617d;border-color:#4c95b7\">卫健局回应报道日期：10月30日</div><svg class=\"products\" viewBox=\"0 0 720 1280\" aria-label=\"示意产品\"></svg></div><p id=\"note\">流程 / 画面为示意</p></section><script>window.QJMotion = Object.freeze({\n  textRise(tl, selector, at=0.2) { return tl.fromTo(selector,{y:90,opacity:0,filter:'blur(14px)'},{y:0,opacity:1,filter:'blur(0px)',duration:0.68,ease:'power3.out'},at); },\n  cardPop(tl, selector, at=0.35) { return tl.fromTo(selector,{scale:0.86,opacity:0,rotation:-3},{scale:1,opacity:1,rotation:0,duration:0.82,ease:'back.out(1.3)'},at); },\n  lineDraw(tl, selector, at=0.7) { return tl.fromTo(selector,{scaleX:0,transformOrigin:'left center'},{scaleX:1,duration:0.42,ease:'expo.out'},at); },\n  imageDrift(tl, selector, at=0.2, duration=4.8) { return tl.fromTo(selector,{scale:1.08,x:-24},{scale:1.17,x:24,duration,ease:'none'},at); },\n  splitWipe(tl, selector, at=0.18) { return tl.fromTo(selector,{clipPath:'inset(0 100% 0 0)'},{clipPath:'inset(0 0% 0 0)',duration:0.76,ease:'power4.out'},at); },\n  fadeOut(tl, selector, at, duration=0.3) { return tl.to(selector,{opacity:0,y:-18,duration,ease:'power2.in'},at); },\n  keywordPunch(tl, selector, at=.3) { return tl.fromTo(selector,{scale:.94,opacity:0},{scale:1,opacity:1,duration:.42,ease:'back.out(1.1)'},at); },\n  lowerThird(tl, selector, at=.4) { return tl.fromTo(selector,{x:-32,opacity:0},{x:0,opacity:1,duration:.5,ease:'power3.out'},at); },\n  chapterProgress(tl, selector, at=.4, duration=4.8) { return tl.fromTo(selector,{scaleX:0,transformOrigin:'left center'},{scaleX:1,duration,ease:'none'},at); },\n  compareReveal(tl, selector, at=.6) { return tl.fromTo(selector,{x:36,opacity:0},{x:0,opacity:1,duration:.62,ease:'expo.out',stagger:.18},at); },\n  drawStroke(tl, selector, at=.4, duration=.7) { gsap.utils.toArray(selector).forEach((node,i)=>{const length=node.getTotalLength();tl.set(node,{strokeDasharray:length,strokeDashoffset:length},0);tl.fromTo(node,{strokeDashoffset:length},{strokeDashoffset:0,duration,ease:'power2.out'},at+i*.12);});return tl; },\n  markerSweep(tl, selector, at=.5) { return tl.fromTo(selector,{scaleX:0,transformOrigin:'left center'},{scaleX:1,duration:.55,ease:'expo.out'},at); },\n  staggerReveal(tl, selector, at=.2, duration=.45, ease='power3.out') { const nodes=gsap.utils.toArray(selector);return tl.fromTo(nodes,{y:24,opacity:0},{y:0,opacity:1,duration,ease,stagger:nodes.length>1?Math.min(.08,.4/(nodes.length-1)):0},at); },\n  cardSettle(tl, selector, at=.2, duration=.5, ease='power3.out') { return tl.fromTo(selector,{y:20,scale:.97,opacity:0},{y:0,scale:1,opacity:1,duration,ease},at); },\n  focusPulse(tl, selector, at=1.4, duration=.6) { tl.to(selector,{scale:1.025,duration:duration/2,ease:'sine.out'},at);return tl.to(selector,{scale:1,duration:duration/2,ease:'sine.in',immediateRender:false},at+duration/2); },\n  ambientFloat(tl, selector, at=.2, duration=4, amplitude=8) { const count=Math.max(1,Math.ceil(duration/2));const segment=duration/count;for(let i=0;i<count;i++)tl.fromTo(selector,{y:i===0?0:(i%2?amplitude:-amplitude)},{y:i%2?-amplitude:amplitude,duration:segment,ease:'sine.inOut',immediateRender:i===0},at+i*segment);return tl; },\n  connectorFlow(tl, selector, at=.5, duration=.7) { gsap.utils.toArray(selector).forEach((node,i)=>{const length=node.getTotalLength();tl.fromTo(node,{strokeDasharray:length,strokeDashoffset:length,opacity:0},{strokeDashoffset:0,opacity:1,duration,ease:'power2.out'},at+i*.12);});return tl; },\n  barGrow(tl, selector, at=.4, duration=.8) { return tl.fromTo(selector,{scaleY:0,transformOrigin:'center bottom'},{scaleY:1,duration,ease:'power3.out'},at); },\n  radialBurst(tl, selector, at=1, radius=36) { const nodes=gsap.utils.toArray(selector);nodes.forEach((node,i)=>{const angle=i*2*Math.PI/nodes.length;tl.fromTo(node,{x:0,y:0,scale:.3,opacity:0},{x:Math.cos(angle)*radius,y:Math.sin(angle)*radius,scale:1,opacity:.65,duration:.35,ease:'expo.out'},at);tl.to(node,{opacity:0,scale:.7,duration:.35,ease:'sine.in',immediateRender:false},at+.35);});return tl; }\n\n});window.__timelines={};const tl=gsap.timeline({paused:true});tl.from('#title',{y:20,opacity:0,duration:.6,ease:'power3.out'},.1);tl.from('#note',{opacity:0,duration:.5,ease:'sine.out'},.25);QJMotion.connectorFlow(tl,'#qj-author-timeline-track',0.55,0.45);QJMotion.cardSettle(tl,'#qj-author-dot-mar',0.180,0.45,'power3.out');QJMotion.cardSettle(tl,'#qj-author-dot-oct12',0.202,0.45,'power3.out');QJMotion.cardSettle(tl,'#qj-author-dot-oct13',0.224,0.45,'power3.out');QJMotion.cardSettle(tl,'#qj-author-income-card',0.247,0.45,'power3.out');QJMotion.cardSettle(tl,'#qj-author-income-title',0.269,0.45,'power3.out');QJMotion.cardSettle(tl,'#qj-author-income-detail',0.291,0.45,'power3.out');QJMotion.cardSettle(tl,'#qj-author-income-source',0.313,0.45,'power3.out');QJMotion.cardSettle(tl,'#qj-author-agreement-card',0.336,0.45,'power3.out');QJMotion.cardSettle(tl,'#qj-author-agreement-date',0.358,0.45,'power3.out');QJMotion.cardSettle(tl,'#qj-author-agreement-detail',0.380,0.45,'power3.out');QJMotion.cardSettle(tl,'#qj-author-agreement-result',0.402,0.45,'power3.out');QJMotion.cardSettle(tl,'#qj-author-notice-card',0.424,0.45,'power3.out');QJMotion.cardSettle(tl,'#qj-author-notice-date',0.447,0.45,'power3.out');QJMotion.cardSettle(tl,'#qj-author-notice-detail',0.469,0.45,'power3.out');QJMotion.cardSettle(tl,'#qj-author-notice-source',0.491,0.45,'power3.out');QJMotion.cardSettle(tl,'#qj-author-context-card',0.513,0.45,'power3.out');QJMotion.cardSettle(tl,'#qj-author-context-main',0.536,0.45,'power3.out');QJMotion.cardSettle(tl,'#qj-author-context-limit',0.558,0.45,'power3.out');QJMotion.cardSettle(tl,'#qj-author-report-date-card',0.580,0.45,'power3.out');tl.to('#qj-author-agreement-date',{backgroundColor:'#fff0e9',borderColor:'#fb7353',duration:0.350,ease:'sine.inOut'},3.090);QJMotion.focusPulse(tl,'#qj-author-agreement-date',3.090,0.600);tl.to('#qj-author-notice-date',{backgroundColor:'#fff0e9',borderColor:'#fb7353',duration:0.350,ease:'sine.inOut'},1.140);QJMotion.focusPulse(tl,'#qj-author-notice-date',1.140,0.600);QJMotion.ambientFloat(tl,'#ambient-a',.1,9.42,6);QJMotion.ambientFloat(tl,'#ambient-b',.1,9.42,-4);window.__timelines.main=tl;document.fonts.ready.then(()=>{for(const node of document.querySelectorAll('[data-qj-number]')){const range=document.createRange();range.selectNodeContents(node);const style=getComputedStyle(node),box=node.getBoundingClientRect(),scale=node.offsetWidth?box.width/node.offsetWidth:1;const width=range.getBoundingClientRect().width/(scale||1),available=node.clientWidth-parseFloat(style.paddingLeft)-parseFloat(style.paddingRight);if(width>available+1)throw new Error('数字字形溢出：'+node.id+' '+node.textContent+' 实际'+width.toFixed(2)+'px>可用'+available.toFixed(2)+'px；保留数字与字号，加宽或重排。');}});</script></body></html>",
+  "capturedDateTextEvidence": {
+    "sha256": "37123ed2620855c48993ddc6fe1a3196cf6a37e93d467c4859673d72053697c8",
+    "frames": [
+      {
+        "time": 1.586667,
+        "node": {
+          "selector": "#qj-author-report-date-card",
+          "text": "卫健局回应报道日期：10月30日",
+          "font": "normal 700 26px \"PingFang SC\", Arial, sans-serif",
+          "lines": [
+            {
+              "text": "卫健局回应报道日期：10月30",
+              "rect": {
+                "left": 180.8125,
+                "top": 905.203125,
+                "right": 539.1875,
+                "bottom": 935.203125,
+                "width": 358.375,
+                "height": 30
+              }
+            },
+            {
+              "text": "日",
+              "rect": {
+                "left": 347,
+                "top": 939,
+                "right": 373,
+                "bottom": 969,
+                "width": 26,
+                "height": 30
+              }
+            }
+          ]
+        }
+      },
+      {
+        "time": 2.644444,
+        "node": {
+          "selector": "#qj-author-report-date-card",
+          "text": "卫健局回应报道日期：10月30日",
+          "font": "normal 700 26px \"PingFang SC\", Arial, sans-serif",
+          "lines": [
+            {
+              "text": "卫健局回应报道日期：10月30",
+              "rect": {
+                "left": 180.8125,
+                "top": 905.203125,
+                "right": 539.1875,
+                "bottom": 935.203125,
+                "width": 358.375,
+                "height": 30
+              }
+            },
+            {
+              "text": "日",
+              "rect": {
+                "left": 347,
+                "top": 939,
+                "right": 373,
+                "bottom": 969,
+                "width": 26,
+                "height": 30
+              }
+            }
+          ]
+        }
+      },
+      {
+        "time": 3.702222,
+        "node": {
+          "selector": "#qj-author-report-date-card",
+          "text": "卫健局回应报道日期：10月30日",
+          "font": "normal 700 26px \"PingFang SC\", Arial, sans-serif",
+          "lines": [
+            {
+              "text": "卫健局回应报道日期：10月30",
+              "rect": {
+                "left": 180.8125,
+                "top": 905.203125,
+                "right": 539.1875,
+                "bottom": 935.203125,
+                "width": 358.375,
+                "height": 30
+              }
+            },
+            {
+              "text": "日",
+              "rect": {
+                "left": 347,
+                "top": 939,
+                "right": 373,
+                "bottom": 969,
+                "width": 26,
+                "height": 30
+              }
+            }
+          ]
+        }
+      },
+      {
+        "time": 4.76,
+        "node": {
+          "selector": "#qj-author-report-date-card",
+          "text": "卫健局回应报道日期：10月30日",
+          "font": "normal 700 26px \"PingFang SC\", Arial, sans-serif",
+          "lines": [
+            {
+              "text": "卫健局回应报道日期：10月30",
+              "rect": {
+                "left": 180.8125,
+                "top": 905.203125,
+                "right": 539.1875,
+                "bottom": 935.203125,
+                "width": 358.375,
+                "height": 30
+              }
+            },
+            {
+              "text": "日",
+              "rect": {
+                "left": 347,
+                "top": 939,
+                "right": 373,
+                "bottom": 969,
+                "width": 26,
+                "height": 30
+              }
+            }
+          ]
+        }
+      },
+      {
+        "time": 5.817778,
+        "node": {
+          "selector": "#qj-author-report-date-card",
+          "text": "卫健局回应报道日期：10月30日",
+          "font": "normal 700 26px \"PingFang SC\", Arial, sans-serif",
+          "lines": [
+            {
+              "text": "卫健局回应报道日期：10月30",
+              "rect": {
+                "left": 180.8125,
+                "top": 905.203125,
+                "right": 539.1875,
+                "bottom": 935.203125,
+                "width": 358.375,
+                "height": 30
+              }
+            },
+            {
+              "text": "日",
+              "rect": {
+                "left": 347,
+                "top": 939,
+                "right": 373,
+                "bottom": 969,
+                "width": 26,
+                "height": 30
+              }
+            }
+          ]
+        }
+      },
+      {
+        "time": 6.875556,
+        "node": {
+          "selector": "#qj-author-report-date-card",
+          "text": "卫健局回应报道日期：10月30日",
+          "font": "normal 700 26px \"PingFang SC\", Arial, sans-serif",
+          "lines": [
+            {
+              "text": "卫健局回应报道日期：10月30",
+              "rect": {
+                "left": 180.8125,
+                "top": 905.203125,
+                "right": 539.1875,
+                "bottom": 935.203125,
+                "width": 358.375,
+                "height": 30
+              }
+            },
+            {
+              "text": "日",
+              "rect": {
+                "left": 347,
+                "top": 939,
+                "right": 373,
+                "bottom": 969,
+                "width": 26,
+                "height": 30
+              }
+            }
+          ]
+        }
+      },
+      {
+        "time": 7.933333,
+        "node": {
+          "selector": "#qj-author-report-date-card",
+          "text": "卫健局回应报道日期：10月30日",
+          "font": "normal 700 26px \"PingFang SC\", Arial, sans-serif",
+          "lines": [
+            {
+              "text": "卫健局回应报道日期：10月30",
+              "rect": {
+                "left": 180.8125,
+                "top": 905.203125,
+                "right": 539.1875,
+                "bottom": 935.203125,
+                "width": 358.375,
+                "height": 30
+              }
+            },
+            {
+              "text": "日",
+              "rect": {
+                "left": 347,
+                "top": 939,
+                "right": 373,
+                "bottom": 969,
+                "width": 26,
+                "height": 30
+              }
+            }
+          ]
+        }
+      },
+      {
+        "time": 8.991111,
+        "node": {
+          "selector": "#qj-author-report-date-card",
+          "text": "卫健局回应报道日期：10月30日",
+          "font": "normal 700 26px \"PingFang SC\", Arial, sans-serif",
+          "lines": [
+            {
+              "text": "卫健局回应报道日期：10月30",
+              "rect": {
+                "left": 180.8125,
+                "top": 905.203125,
+                "right": 539.1875,
+                "bottom": 935.203125,
+                "width": 358.375,
+                "height": 30
+              }
+            },
+            {
+              "text": "日",
+              "rect": {
+                "left": 347,
+                "top": 939,
+                "right": 373,
+                "bottom": 969,
+                "width": 26,
+                "height": 30
+              }
+            }
+          ]
+        }
+      }
+    ]
+  }
+}
