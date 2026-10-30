@@ -102,4 +102,30 @@ export function reflowCardDetails(drawing:HtmlDrawing,issues:Issue[],format:Form
   return next;
 }
 
-export const CARD_LAYOUT_RENDERER_SIGNATURE=[box,overlap,lines,textHeight,associated,drawingDomId,issueNodes,liftCardLabels,reflowCardDetails].map(fn=>fn.toString()).join('\n');
+/** Propose edge-adjacent rows for two independent opaque caption cards. Only
+ * the upper card moves; words, fonts, paths, sizes and animation order stay
+ * unchanged. The remaining complete browser check decides actual readability. */
+export function stackIndependentCards(drawing:HtmlDrawing,issues:Issue[],format:Format):HtmlDrawing|undefined {
+  if(!issues.length||issues.some(i=>!['content_overlap','text_occluded'].includes(i.code)))return;
+  let pair:Node[]|undefined;
+  const bound=new Set((drawing.serverCardLabels||[]).flatMap(v=>[v.cardId,v.labelId]));
+  for(const issue of issues){
+    const current=issueNodes(drawing,issue);
+    if(!current||current.some(n=>n.kind!=='card'||!n.text.trim()||n.highlight||bound.has(n.id)))return;
+    if(pair&&current.some(n=>!pair!.some(p=>p.id===n.id)))return;
+    pair=current;
+  }
+  if(!pair||pair[0].id===pair[1].id||!overlap(pair[0],pair[1]))return;
+  const [upper,lower]=[...pair].sort((a,b)=>a.y-b.y);
+  if(upper.x!==lower.x||upper.w!==lower.w||upper.y===lower.y)return;
+  const candidate={...upper,y:lower.y-upper.h};
+  const width=format==='16:9'?1280:720,height=format==='9:16'?1280:720;
+  if(candidate.y>upper.y||candidate.x<40||candidate.x+candidate.w>width-40||candidate.y<(height>width?220:160)||lower.y+lower.h>(height>width?1010:height-170))return;
+  // Embedded or connected diagram entities require an authored redraw. These
+  // are conservative proposal boxes; SVG/font/contrast checks remain required.
+  if(drawing.nodes.some(n=>!pair!.some(p=>p.id===n.id)&&(overlap(upper,n)||overlap(lower,n)||overlap(candidate,n))))return;
+  const next=structuredClone(drawing);next.nodes.find(n=>n.id===upper.id)!.y=candidate.y;
+  return next;
+}
+
+export const CARD_LAYOUT_RENDERER_SIGNATURE=[box,overlap,lines,textHeight,associated,drawingDomId,issueNodes,liftCardLabels,reflowCardDetails,stackIndependentCards].map(fn=>fn.toString()).join('\n');

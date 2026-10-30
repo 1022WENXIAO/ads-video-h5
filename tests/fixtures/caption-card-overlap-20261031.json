@@ -1,0 +1,1542 @@
+{
+  "provenance": {
+    "revision": "71bb6ad9bec1eb8a058088b558418da6215e7497",
+    "jobId": "26d82920-4035-4cb8-ae74-7211d46bed59",
+    "chapterId": "chapter-2",
+    "contextHash": "f7a93c27710cf6c308ce69826d67a61947cbb13c48a3db1a7e0e9ed7cfff7233",
+    "manifestSha256": "af8a9d9087c7ef2406fd4e89ed0f0f2ce95c8950fab1cb122ea8611ed92abb0e",
+    "originalHtmlSha256": "46f57b94014829a96e8005df93808905d02bc702f83dd3ccb4b0251fc22b86bc"
+  },
+  "drawing": {
+    "title": "两步降低耗电",
+    "motion": "corporate",
+    "nodes": [
+      {
+        "id": "panel",
+        "kind": "card",
+        "x": 220,
+        "y": 230,
+        "w": 280,
+        "h": 640,
+        "text": "",
+        "tone": "paper",
+        "fontSize": 36,
+        "highlight": false
+      },
+      {
+        "id": "notch",
+        "kind": "path",
+        "x": 310,
+        "y": 248,
+        "w": 100,
+        "h": 18,
+        "pathData": "M310 248 H410 Q418 248 418 256 Q418 264 410 264 H310 Q302 264 302 256 Q302 248 310 248 Z",
+        "fontSize": 36,
+        "text": "",
+        "tone": "ink",
+        "highlight": false
+      },
+      {
+        "id": "battery",
+        "kind": "path",
+        "x": 438,
+        "y": 253,
+        "w": 42,
+        "h": 20,
+        "pathData": "M438 255 H470 V271 H438 Z M470 260 H476 Q480 260 480 264 Q480 268 476 268 H470 M442 258 V268 H461 V258 Z",
+        "fontSize": 36,
+        "text": "",
+        "tone": "coral",
+        "highlight": false
+      },
+      {
+        "id": "step1-label",
+        "kind": "text",
+        "x": 244,
+        "y": 306,
+        "w": 232,
+        "h": 56,
+        "text": "① 下拉快捷设置",
+        "tone": "ink",
+        "fontSize": 24,
+        "highlight": true
+      },
+      {
+        "id": "pull-arrow",
+        "kind": "path",
+        "x": 345,
+        "y": 292,
+        "w": 30,
+        "h": 92,
+        "pathData": "M360 292 V368 M345 352 L360 374 L375 352",
+        "fontSize": 36,
+        "text": "",
+        "tone": "coral",
+        "highlight": true
+      },
+      {
+        "id": "brightness-card",
+        "kind": "card",
+        "x": 246,
+        "y": 398,
+        "w": 228,
+        "h": 118,
+        "text": "",
+        "tone": "paper",
+        "fontSize": 36,
+        "highlight": false
+      },
+      {
+        "id": "sun-icon",
+        "kind": "circle",
+        "x": 268,
+        "y": 426,
+        "w": 42,
+        "h": 42,
+        "text": "",
+        "tone": "coral",
+        "fontSize": 36,
+        "highlight": false
+      },
+      {
+        "id": "brightness-track",
+        "kind": "path",
+        "x": 326,
+        "y": 438,
+        "w": 124,
+        "h": 18,
+        "pathData": "M326 447 H450",
+        "fontSize": 36,
+        "text": "",
+        "tone": "ink",
+        "highlight": false
+      },
+      {
+        "id": "brightness-knob",
+        "kind": "circle",
+        "x": 340,
+        "y": 438,
+        "w": 30,
+        "h": 30,
+        "text": "",
+        "tone": "coral",
+        "fontSize": 36,
+        "highlight": true
+      },
+      {
+        "id": "brightness-label",
+        "kind": "text",
+        "x": 326,
+        "y": 474,
+        "w": 124,
+        "h": 56,
+        "text": "亮度调低",
+        "tone": "ink",
+        "fontSize": 24,
+        "highlight": true
+      },
+      {
+        "id": "connector1",
+        "kind": "path",
+        "x": 360,
+        "y": 516,
+        "w": 30,
+        "h": 54,
+        "pathData": "M360 516 V552 M345 536 L360 558 L375 536",
+        "fontSize": 36,
+        "text": "",
+        "tone": "coral",
+        "highlight": false
+      },
+      {
+        "id": "location-card",
+        "kind": "card",
+        "x": 246,
+        "y": 566,
+        "w": 228,
+        "h": 126,
+        "text": "",
+        "tone": "paper",
+        "fontSize": 36,
+        "highlight": false
+      },
+      {
+        "id": "location-pin",
+        "kind": "path",
+        "x": 278,
+        "y": 592,
+        "w": 40,
+        "h": 54,
+        "pathData": "M298 592 C285 592 276 602 276 614 C276 632 298 646 298 646 C298 646 320 632 320 614 C320 602 311 592 298 592 Z M290 614 A8 8 0 1 1 306 614 A8 8 0 1 1 290 614",
+        "fontSize": 36,
+        "text": "",
+        "tone": "coral",
+        "highlight": true
+      },
+      {
+        "id": "location-waves",
+        "kind": "path",
+        "x": 260,
+        "y": 582,
+        "w": 76,
+        "h": 74,
+        "pathData": "M270 612 A28 28 0 0 1 326 612 M260 602 A44 44 0 0 1 336 602",
+        "fontSize": 36,
+        "text": "",
+        "tone": "blue",
+        "highlight": false
+      },
+      {
+        "id": "location-label",
+        "kind": "text",
+        "x": 330,
+        "y": 604,
+        "w": 124,
+        "h": 62,
+        "text": "暂关定位",
+        "tone": "ink",
+        "fontSize": 25,
+        "highlight": true
+      },
+      {
+        "id": "connector2",
+        "kind": "path",
+        "x": 360,
+        "y": 692,
+        "w": 30,
+        "h": 54,
+        "pathData": "M360 692 V728 M345 712 L360 734 L375 712",
+        "fontSize": 36,
+        "text": "",
+        "tone": "coral",
+        "highlight": false
+      },
+      {
+        "id": "result-card",
+        "kind": "card",
+        "x": 246,
+        "y": 742,
+        "w": 228,
+        "h": 94,
+        "text": "定位请求减少",
+        "tone": "blue",
+        "fontSize": 30,
+        "highlight": true
+      },
+      {
+        "id": "bottom-caption",
+        "kind": "card",
+        "x": 70,
+        "y": 910,
+        "w": 580,
+        "h": 82,
+        "text": "不用导航、打车或查附近时，需要再开启",
+        "tone": "paper",
+        "fontSize": 30,
+        "highlight": false
+      },
+      {
+        "id": "note",
+        "kind": "card",
+        "x": 70,
+        "y": 952,
+        "w": 580,
+        "h": 58,
+        "text": "省电效果因手机和使用环境不同；示意界面",
+        "tone": "paper",
+        "fontSize": 26,
+        "highlight": false
+      },
+      {
+        "id": "phone-side-glow",
+        "kind": "path",
+        "x": 188,
+        "y": 250,
+        "w": 22,
+        "h": 600,
+        "pathData": "M202 250 Q188 300 198 550 Q204 730 198 850",
+        "fontSize": 36,
+        "text": "",
+        "tone": "blue",
+        "highlight": false
+      }
+    ]
+  },
+  "report": {
+    "ok": false,
+    "strict": false,
+    "lint": {
+      "ok": true,
+      "errorCount": 0,
+      "warningCount": 1,
+      "infoCount": 0,
+      "findings": [
+        {
+          "code": "audio_file_without_element",
+          "severity": "warning",
+          "message": "Found audio file(s) in project (edge-speech.wav, paced-speech.wav, prepared-speech.wav, raw-speech.mp3, speech.mp3, tempo-speech.wav) but no <audio> element in any composition. The rendered video will be silent.",
+          "selector": "[data-composition-id]",
+          "dataAttributes": {},
+          "sourceFile": "index.html",
+          "bbox": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "time": 0,
+          "fixHint": "Add an <audio id=\"my-audio\" src=\"edge-speech.wav\" data-start=\"0\" data-duration=\"__DURATION__\" data-track-index=\"0\" data-volume=\"1\"></audio> element inside the composition root. Replace __DURATION__ with the audio length in seconds."
+        }
+      ],
+      "filesScanned": 1
+    },
+    "runtime": {
+      "ok": true,
+      "errorCount": 0,
+      "warningCount": 0,
+      "infoCount": 0,
+      "findings": []
+    },
+    "layout": {
+      "ok": false,
+      "errorCount": 1,
+      "warningCount": 0,
+      "infoCount": 0,
+      "findings": [
+        {
+          "code": "text_occluded",
+          "severity": "error",
+          "time": 1.777,
+          "selector": "#qj-author-bottom-caption",
+          "message": "Text is hidden beneath an opaque element.",
+          "rect": {
+            "left": 90,
+            "top": 932.5,
+            "right": 630,
+            "bottom": 968.5,
+            "width": 540,
+            "height": 36
+          },
+          "containerSelector": "#qj-author-note",
+          "text": "不用导航、打车或查附近时，需要再开启",
+          "fixHint": "Give the text its own zone, raise its stacking order above the covering element, or mark intentional layering with data-layout-allow-occlusion.",
+          "coveredFraction": 0.33,
+          "dataAttributes": {
+            "data-drawing-id": "bottom-caption"
+          },
+          "sourceFile": "index.html",
+          "bbox": {
+            "x": 90,
+            "y": 932.5,
+            "width": 540,
+            "height": 36
+          },
+          "firstSeen": 1.777,
+          "lastSeen": 10.068,
+          "occurrences": 8,
+          "heldMs": 0
+        }
+      ],
+      "duration": 10.66,
+      "samples": [
+        0.592,
+        1.777,
+        2.961,
+        4.146,
+        5.33,
+        6.514,
+        7.699,
+        8.883,
+        10.068
+      ],
+      "transitionSamples": [],
+      "transitionSamplesDropped": 0,
+      "tolerance": 2,
+      "totalIssueCount": 1,
+      "truncated": false
+    },
+    "motion": {
+      "ok": true,
+      "errorCount": 0,
+      "warningCount": 0,
+      "infoCount": 0,
+      "findings": [],
+      "enabled": false,
+      "samples": 0
+    },
+    "contrast": {
+      "ok": true,
+      "errorCount": 0,
+      "warningCount": 0,
+      "infoCount": 0,
+      "findings": [],
+      "enabled": true,
+      "samples": [
+        0.592,
+        2.961,
+        5.33,
+        7.699,
+        10.068
+      ],
+      "checked": 39,
+      "passed": 39
+    },
+    "hdr": {
+      "autoPromotion": null,
+      "inspection": "available"
+    },
+    "snapshots": {
+      "enabled": false,
+      "files": [],
+      "times": [],
+      "findingFiles": []
+    },
+    "_meta": {
+      "version": "0.8.78",
+      "latestVersion": "0.8.222",
+      "updateAvailable": true
+    },
+    "svgPaint": {
+      "source": "server-svg-paint",
+      "version": 1,
+      "htmlHash": "46f57b94014829a96e8005df93808905d02bc702f83dd3ccb4b0251fc22b86bc",
+      "samples": [
+        0.592222,
+        1.776667,
+        2.961111,
+        4.145556,
+        5.33,
+        6.514444,
+        7.698889,
+        8.883333,
+        10.067778
+      ],
+      "findings": [],
+      "upstreamReport": {
+        "path": "svg-paint-evidence/46f57b94014829a96e8005df93808905d02bc702f83dd3ccb4b0251fc22b86bc/31c671f2341409fcddb7347f5629d088bf6eca8dc5549542154c9369439fa7e6-7485526a-6a20-47d0-86d5-fb6abc8d86bb/check-hyperframes-report.json",
+        "sha256": "31c671f2341409fcddb7347f5629d088bf6eca8dc5549542154c9369439fa7e6"
+      },
+      "upstreamStdout": {
+        "path": "svg-paint-evidence/46f57b94014829a96e8005df93808905d02bc702f83dd3ccb4b0251fc22b86bc/31c671f2341409fcddb7347f5629d088bf6eca8dc5549542154c9369439fa7e6-7485526a-6a20-47d0-86d5-fb6abc8d86bb/check-hyperframes-stdout.txt",
+        "sha256": "1015834ddf6e0498893bafa475cf215e93cc6b8bf6f438d6e33c9a96b3de22c5"
+      },
+      "report": {
+        "path": "svg-paint-evidence/46f57b94014829a96e8005df93808905d02bc702f83dd3ccb4b0251fc22b86bc/31c671f2341409fcddb7347f5629d088bf6eca8dc5549542154c9369439fa7e6-7485526a-6a20-47d0-86d5-fb6abc8d86bb/server-svg-paint-report.json",
+        "sha256": "fa0f4f1c0b28796b668ab039a3a43de9478de4981f1936fff35a9fe99dcb3455"
+      }
+    },
+    "drawingText": {
+      "source": "server-drawing-text",
+      "version": 1,
+      "htmlHash": "46f57b94014829a96e8005df93808905d02bc702f83dd3ccb4b0251fc22b86bc",
+      "samples": [
+        0.592222,
+        1.776667,
+        2.961111,
+        4.145556,
+        5.33,
+        6.514444,
+        7.698889,
+        8.883333,
+        10.067778
+      ],
+      "frames": [
+        {
+          "time": 0.592222,
+          "nodes": [
+            {
+              "selector": "#qj-author-step1-label",
+              "text": "① 下拉快捷设置",
+              "font": "normal 700 24px \"PingFang SC\", Arial, sans-serif",
+              "lines": [
+                {
+                  "text": "①下拉快捷设置",
+                  "rect": {
+                    "left": 271.5149230957031,
+                    "top": 319.0621337890625,
+                    "right": 448.48504638671875,
+                    "bottom": 347.75653076171875,
+                    "width": 176.97012329101562,
+                    "height": 28.69439697265625
+                  }
+                }
+              ]
+            },
+            {
+              "selector": "#qj-author-brightness-label",
+              "text": "亮度调低",
+              "font": "normal 700 24px \"PingFang SC\", Arial, sans-serif",
+              "lines": [
+                {
+                  "text": "亮度调低",
+                  "rect": {
+                    "left": 340.11041259765625,
+                    "top": 488.9989318847656,
+                    "right": 435.88958740234375,
+                    "bottom": 516.9345092773438,
+                    "width": 95.7791748046875,
+                    "height": 27.935577392578125
+                  }
+                }
+              ]
+            },
+            {
+              "selector": "#qj-author-location-label",
+              "text": "暂关定位",
+              "font": "normal 700 25px \"PingFang SC\", Arial, sans-serif",
+              "lines": [
+                {
+                  "text": "暂关定位",
+                  "rect": {
+                    "left": 342.375,
+                    "top": 624.8380737304688,
+                    "right": 441.625,
+                    "bottom": 653.6205444335938,
+                    "width": 99.25,
+                    "height": 28.782470703125
+                  }
+                }
+              ]
+            },
+            {
+              "selector": "#qj-author-result-card",
+              "text": "定位请求减少",
+              "font": "normal 700 30px \"PingFang SC\", Arial, sans-serif",
+              "lines": [
+                {
+                  "text": "定位请求减少",
+                  "rect": {
+                    "left": 271.08001708984375,
+                    "top": 779.7015991210938,
+                    "right": 448.9200134277344,
+                    "bottom": 814.2816162109375,
+                    "width": 177.83999633789062,
+                    "height": 34.58001708984375
+                  }
+                }
+              ]
+            }
+          ],
+          "findings": []
+        },
+        {
+          "time": 1.776667,
+          "nodes": [
+            {
+              "selector": "#qj-author-step1-label",
+              "text": "① 下拉快捷设置",
+              "font": "normal 700 24px \"PingFang SC\", Arial, sans-serif",
+              "lines": [
+                {
+                  "text": "①下拉快捷设置",
+                  "rect": {
+                    "left": 273.65625,
+                    "top": 319.40625,
+                    "right": 446.34375,
+                    "bottom": 347.40625,
+                    "width": 172.6875,
+                    "height": 28
+                  }
+                }
+              ]
+            },
+            {
+              "selector": "#qj-author-brightness-label",
+              "text": "亮度调低",
+              "font": "normal 700 24px \"PingFang SC\", Arial, sans-serif",
+              "lines": [
+                {
+                  "text": "亮度调低",
+                  "rect": {
+                    "left": 340,
+                    "top": 487.40625,
+                    "right": 436,
+                    "bottom": 515.40625,
+                    "width": 96,
+                    "height": 28
+                  }
+                }
+              ]
+            },
+            {
+              "selector": "#qj-author-location-label",
+              "text": "暂关定位",
+              "font": "normal 700 25px \"PingFang SC\", Arial, sans-serif",
+              "lines": [
+                {
+                  "text": "暂关定位",
+                  "rect": {
+                    "left": 342,
+                    "top": 619.75,
+                    "right": 442,
+                    "bottom": 648.75,
+                    "width": 100,
+                    "height": 29
+                  }
+                }
+              ]
+            },
+            {
+              "selector": "#qj-author-result-card",
+              "text": "定位请求减少",
+              "font": "normal 700 30px \"PingFang SC\", Arial, sans-serif",
+              "lines": [
+                {
+                  "text": "定位请求减少",
+                  "rect": {
+                    "left": 270,
+                    "top": 771.5,
+                    "right": 450,
+                    "bottom": 806.5,
+                    "width": 180,
+                    "height": 35
+                  }
+                }
+              ]
+            },
+            {
+              "selector": "#qj-author-bottom-caption",
+              "text": "不用导航、打车或查附近时，需要再开启",
+              "font": "normal 700 30px \"PingFang SC\", Arial, sans-serif",
+              "lines": [
+                {
+                  "text": "不用导航、打车或查附近时，需要再开启",
+                  "rect": {
+                    "left": 90,
+                    "top": 933.5,
+                    "right": 630,
+                    "bottom": 968.5,
+                    "width": 540,
+                    "height": 35
+                  }
+                }
+              ]
+            },
+            {
+              "selector": "#qj-author-note",
+              "text": "省电效果因手机和使用环境不同；示意界面",
+              "font": "normal 700 26px \"PingFang SC\", Arial, sans-serif",
+              "lines": [
+                {
+                  "text": "省电效果因手机和使用环境不同；示意界面",
+                  "rect": {
+                    "left": 113,
+                    "top": 965.109375,
+                    "right": 607,
+                    "bottom": 995.109375,
+                    "width": 494,
+                    "height": 30
+                  }
+                }
+              ]
+            }
+          ],
+          "findings": []
+        },
+        {
+          "time": 2.961111,
+          "nodes": [
+            {
+              "selector": "#qj-author-step1-label",
+              "text": "① 下拉快捷设置",
+              "font": "normal 700 24px \"PingFang SC\", Arial, sans-serif",
+              "lines": [
+                {
+                  "text": "①下拉快捷设置",
+                  "rect": {
+                    "left": 273.65625,
+                    "top": 319.40625,
+                    "right": 446.34375,
+                    "bottom": 347.40625,
+                    "width": 172.6875,
+                    "height": 28
+                  }
+                }
+              ]
+            },
+            {
+              "selector": "#qj-author-brightness-label",
+              "text": "亮度调低",
+              "font": "normal 700 24px \"PingFang SC\", Arial, sans-serif",
+              "lines": [
+                {
+                  "text": "亮度调低",
+                  "rect": {
+                    "left": 340,
+                    "top": 487.40625,
+                    "right": 436,
+                    "bottom": 515.40625,
+                    "width": 96,
+                    "height": 28
+                  }
+                }
+              ]
+            },
+            {
+              "selector": "#qj-author-location-label",
+              "text": "暂关定位",
+              "font": "normal 700 25px \"PingFang SC\", Arial, sans-serif",
+              "lines": [
+                {
+                  "text": "暂关定位",
+                  "rect": {
+                    "left": 342,
+                    "top": 619.75,
+                    "right": 442,
+                    "bottom": 648.75,
+                    "width": 100,
+                    "height": 29
+                  }
+                }
+              ]
+            },
+            {
+              "selector": "#qj-author-result-card",
+              "text": "定位请求减少",
+              "font": "normal 700 30px \"PingFang SC\", Arial, sans-serif",
+              "lines": [
+                {
+                  "text": "定位请求减少",
+                  "rect": {
+                    "left": 270,
+                    "top": 771.5,
+                    "right": 450,
+                    "bottom": 806.5,
+                    "width": 180,
+                    "height": 35
+                  }
+                }
+              ]
+            },
+            {
+              "selector": "#qj-author-bottom-caption",
+              "text": "不用导航、打车或查附近时，需要再开启",
+              "font": "normal 700 30px \"PingFang SC\", Arial, sans-serif",
+              "lines": [
+                {
+                  "text": "不用导航、打车或查附近时，需要再开启",
+                  "rect": {
+                    "left": 90,
+                    "top": 933.5,
+                    "right": 630,
+                    "bottom": 968.5,
+                    "width": 540,
+                    "height": 35
+                  }
+                }
+              ]
+            },
+            {
+              "selector": "#qj-author-note",
+              "text": "省电效果因手机和使用环境不同；示意界面",
+              "font": "normal 700 26px \"PingFang SC\", Arial, sans-serif",
+              "lines": [
+                {
+                  "text": "省电效果因手机和使用环境不同；示意界面",
+                  "rect": {
+                    "left": 113,
+                    "top": 965.109375,
+                    "right": 607,
+                    "bottom": 995.109375,
+                    "width": 494,
+                    "height": 30
+                  }
+                }
+              ]
+            }
+          ],
+          "findings": []
+        },
+        {
+          "time": 4.145556,
+          "nodes": [
+            {
+              "selector": "#qj-author-step1-label",
+              "text": "① 下拉快捷设置",
+              "font": "normal 700 24px \"PingFang SC\", Arial, sans-serif",
+              "lines": [
+                {
+                  "text": "①下拉快捷设置",
+                  "rect": {
+                    "left": 273.65625,
+                    "top": 319.40625,
+                    "right": 446.34375,
+                    "bottom": 347.40625,
+                    "width": 172.6875,
+                    "height": 28
+                  }
+                }
+              ]
+            },
+            {
+              "selector": "#qj-author-brightness-label",
+              "text": "亮度调低",
+              "font": "normal 700 24px \"PingFang SC\", Arial, sans-serif",
+              "lines": [
+                {
+                  "text": "亮度调低",
+                  "rect": {
+                    "left": 340,
+                    "top": 487.40625,
+                    "right": 436,
+                    "bottom": 515.40625,
+                    "width": 96,
+                    "height": 28
+                  }
+                }
+              ]
+            },
+            {
+              "selector": "#qj-author-location-label",
+              "text": "暂关定位",
+              "font": "normal 700 25px \"PingFang SC\", Arial, sans-serif",
+              "lines": [
+                {
+                  "text": "暂关定位",
+                  "rect": {
+                    "left": 342,
+                    "top": 619.75,
+                    "right": 442,
+                    "bottom": 648.75,
+                    "width": 100,
+                    "height": 29
+                  }
+                }
+              ]
+            },
+            {
+              "selector": "#qj-author-result-card",
+              "text": "定位请求减少",
+              "font": "normal 700 30px \"PingFang SC\", Arial, sans-serif",
+              "lines": [
+                {
+                  "text": "定位请求减少",
+                  "rect": {
+                    "left": 270,
+                    "top": 771.5,
+                    "right": 450,
+                    "bottom": 806.5,
+                    "width": 180,
+                    "height": 35
+                  }
+                }
+              ]
+            },
+            {
+              "selector": "#qj-author-bottom-caption",
+              "text": "不用导航、打车或查附近时，需要再开启",
+              "font": "normal 700 30px \"PingFang SC\", Arial, sans-serif",
+              "lines": [
+                {
+                  "text": "不用导航、打车或查附近时，需要再开启",
+                  "rect": {
+                    "left": 90,
+                    "top": 933.5,
+                    "right": 630,
+                    "bottom": 968.5,
+                    "width": 540,
+                    "height": 35
+                  }
+                }
+              ]
+            },
+            {
+              "selector": "#qj-author-note",
+              "text": "省电效果因手机和使用环境不同；示意界面",
+              "font": "normal 700 26px \"PingFang SC\", Arial, sans-serif",
+              "lines": [
+                {
+                  "text": "省电效果因手机和使用环境不同；示意界面",
+                  "rect": {
+                    "left": 113,
+                    "top": 965.109375,
+                    "right": 607,
+                    "bottom": 995.109375,
+                    "width": 494,
+                    "height": 30
+                  }
+                }
+              ]
+            }
+          ],
+          "findings": []
+        },
+        {
+          "time": 5.33,
+          "nodes": [
+            {
+              "selector": "#qj-author-step1-label",
+              "text": "① 下拉快捷设置",
+              "font": "normal 700 24px \"PingFang SC\", Arial, sans-serif",
+              "lines": [
+                {
+                  "text": "①下拉快捷设置",
+                  "rect": {
+                    "left": 273.65625,
+                    "top": 319.40625,
+                    "right": 446.34375,
+                    "bottom": 347.40625,
+                    "width": 172.6875,
+                    "height": 28
+                  }
+                }
+              ]
+            },
+            {
+              "selector": "#qj-author-brightness-label",
+              "text": "亮度调低",
+              "font": "normal 700 24px \"PingFang SC\", Arial, sans-serif",
+              "lines": [
+                {
+                  "text": "亮度调低",
+                  "rect": {
+                    "left": 340,
+                    "top": 487.40625,
+                    "right": 436,
+                    "bottom": 515.40625,
+                    "width": 96,
+                    "height": 28
+                  }
+                }
+              ]
+            },
+            {
+              "selector": "#qj-author-location-label",
+              "text": "暂关定位",
+              "font": "normal 700 25px \"PingFang SC\", Arial, sans-serif",
+              "lines": [
+                {
+                  "text": "暂关定位",
+                  "rect": {
+                    "left": 342,
+                    "top": 619.75,
+                    "right": 442,
+                    "bottom": 648.75,
+                    "width": 100,
+                    "height": 29
+                  }
+                }
+              ]
+            },
+            {
+              "selector": "#qj-author-result-card",
+              "text": "定位请求减少",
+              "font": "normal 700 30px \"PingFang SC\", Arial, sans-serif",
+              "lines": [
+                {
+                  "text": "定位请求减少",
+                  "rect": {
+                    "left": 270,
+                    "top": 771.5,
+                    "right": 450,
+                    "bottom": 806.5,
+                    "width": 180,
+                    "height": 35
+                  }
+                }
+              ]
+            },
+            {
+              "selector": "#qj-author-bottom-caption",
+              "text": "不用导航、打车或查附近时，需要再开启",
+              "font": "normal 700 30px \"PingFang SC\", Arial, sans-serif",
+              "lines": [
+                {
+                  "text": "不用导航、打车或查附近时，需要再开启",
+                  "rect": {
+                    "left": 90,
+                    "top": 933.5,
+                    "right": 630,
+                    "bottom": 968.5,
+                    "width": 540,
+                    "height": 35
+                  }
+                }
+              ]
+            },
+            {
+              "selector": "#qj-author-note",
+              "text": "省电效果因手机和使用环境不同；示意界面",
+              "font": "normal 700 26px \"PingFang SC\", Arial, sans-serif",
+              "lines": [
+                {
+                  "text": "省电效果因手机和使用环境不同；示意界面",
+                  "rect": {
+                    "left": 113,
+                    "top": 965.109375,
+                    "right": 607,
+                    "bottom": 995.109375,
+                    "width": 494,
+                    "height": 30
+                  }
+                }
+              ]
+            }
+          ],
+          "findings": []
+        },
+        {
+          "time": 6.514444,
+          "nodes": [
+            {
+              "selector": "#qj-author-step1-label",
+              "text": "① 下拉快捷设置",
+              "font": "normal 700 24px \"PingFang SC\", Arial, sans-serif",
+              "lines": [
+                {
+                  "text": "①下拉快捷设置",
+                  "rect": {
+                    "left": 273.65625,
+                    "top": 319.40625,
+                    "right": 446.34375,
+                    "bottom": 347.40625,
+                    "width": 172.6875,
+                    "height": 28
+                  }
+                }
+              ]
+            },
+            {
+              "selector": "#qj-author-brightness-label",
+              "text": "亮度调低",
+              "font": "normal 700 24px \"PingFang SC\", Arial, sans-serif",
+              "lines": [
+                {
+                  "text": "亮度调低",
+                  "rect": {
+                    "left": 340,
+                    "top": 487.40625,
+                    "right": 436,
+                    "bottom": 515.40625,
+                    "width": 96,
+                    "height": 28
+                  }
+                }
+              ]
+            },
+            {
+              "selector": "#qj-author-location-label",
+              "text": "暂关定位",
+              "font": "normal 700 25px \"PingFang SC\", Arial, sans-serif",
+              "lines": [
+                {
+                  "text": "暂关定位",
+                  "rect": {
+                    "left": 342,
+                    "top": 619.75,
+                    "right": 442,
+                    "bottom": 648.75,
+                    "width": 100,
+                    "height": 29
+                  }
+                }
+              ]
+            },
+            {
+              "selector": "#qj-author-result-card",
+              "text": "定位请求减少",
+              "font": "normal 700 30px \"PingFang SC\", Arial, sans-serif",
+              "lines": [
+                {
+                  "text": "定位请求减少",
+                  "rect": {
+                    "left": 270,
+                    "top": 771.5,
+                    "right": 450,
+                    "bottom": 806.5,
+                    "width": 180,
+                    "height": 35
+                  }
+                }
+              ]
+            },
+            {
+              "selector": "#qj-author-bottom-caption",
+              "text": "不用导航、打车或查附近时，需要再开启",
+              "font": "normal 700 30px \"PingFang SC\", Arial, sans-serif",
+              "lines": [
+                {
+                  "text": "不用导航、打车或查附近时，需要再开启",
+                  "rect": {
+                    "left": 90,
+                    "top": 933.5,
+                    "right": 630,
+                    "bottom": 968.5,
+                    "width": 540,
+                    "height": 35
+                  }
+                }
+              ]
+            },
+            {
+              "selector": "#qj-author-note",
+              "text": "省电效果因手机和使用环境不同；示意界面",
+              "font": "normal 700 26px \"PingFang SC\", Arial, sans-serif",
+              "lines": [
+                {
+                  "text": "省电效果因手机和使用环境不同；示意界面",
+                  "rect": {
+                    "left": 113,
+                    "top": 965.109375,
+                    "right": 607,
+                    "bottom": 995.109375,
+                    "width": 494,
+                    "height": 30
+                  }
+                }
+              ]
+            }
+          ],
+          "findings": []
+        },
+        {
+          "time": 7.698889,
+          "nodes": [
+            {
+              "selector": "#qj-author-step1-label",
+              "text": "① 下拉快捷设置",
+              "font": "normal 700 24px \"PingFang SC\", Arial, sans-serif",
+              "lines": [
+                {
+                  "text": "①下拉快捷设置",
+                  "rect": {
+                    "left": 273.65625,
+                    "top": 319.40625,
+                    "right": 446.34375,
+                    "bottom": 347.40625,
+                    "width": 172.6875,
+                    "height": 28
+                  }
+                }
+              ]
+            },
+            {
+              "selector": "#qj-author-brightness-label",
+              "text": "亮度调低",
+              "font": "normal 700 24px \"PingFang SC\", Arial, sans-serif",
+              "lines": [
+                {
+                  "text": "亮度调低",
+                  "rect": {
+                    "left": 340,
+                    "top": 487.40625,
+                    "right": 436,
+                    "bottom": 515.40625,
+                    "width": 96,
+                    "height": 28
+                  }
+                }
+              ]
+            },
+            {
+              "selector": "#qj-author-location-label",
+              "text": "暂关定位",
+              "font": "normal 700 25px \"PingFang SC\", Arial, sans-serif",
+              "lines": [
+                {
+                  "text": "暂关定位",
+                  "rect": {
+                    "left": 342,
+                    "top": 619.75,
+                    "right": 442,
+                    "bottom": 648.75,
+                    "width": 100,
+                    "height": 29
+                  }
+                }
+              ]
+            },
+            {
+              "selector": "#qj-author-result-card",
+              "text": "定位请求减少",
+              "font": "normal 700 30px \"PingFang SC\", Arial, sans-serif",
+              "lines": [
+                {
+                  "text": "定位请求减少",
+                  "rect": {
+                    "left": 270,
+                    "top": 771.5,
+                    "right": 450,
+                    "bottom": 806.5,
+                    "width": 180,
+                    "height": 35
+                  }
+                }
+              ]
+            },
+            {
+              "selector": "#qj-author-bottom-caption",
+              "text": "不用导航、打车或查附近时，需要再开启",
+              "font": "normal 700 30px \"PingFang SC\", Arial, sans-serif",
+              "lines": [
+                {
+                  "text": "不用导航、打车或查附近时，需要再开启",
+                  "rect": {
+                    "left": 90,
+                    "top": 933.5,
+                    "right": 630,
+                    "bottom": 968.5,
+                    "width": 540,
+                    "height": 35
+                  }
+                }
+              ]
+            },
+            {
+              "selector": "#qj-author-note",
+              "text": "省电效果因手机和使用环境不同；示意界面",
+              "font": "normal 700 26px \"PingFang SC\", Arial, sans-serif",
+              "lines": [
+                {
+                  "text": "省电效果因手机和使用环境不同；示意界面",
+                  "rect": {
+                    "left": 113,
+                    "top": 965.109375,
+                    "right": 607,
+                    "bottom": 995.109375,
+                    "width": 494,
+                    "height": 30
+                  }
+                }
+              ]
+            }
+          ],
+          "findings": []
+        },
+        {
+          "time": 8.883333,
+          "nodes": [
+            {
+              "selector": "#qj-author-step1-label",
+              "text": "① 下拉快捷设置",
+              "font": "normal 700 24px \"PingFang SC\", Arial, sans-serif",
+              "lines": [
+                {
+                  "text": "①下拉快捷设置",
+                  "rect": {
+                    "left": 273.65625,
+                    "top": 319.40625,
+                    "right": 446.34375,
+                    "bottom": 347.40625,
+                    "width": 172.6875,
+                    "height": 28
+                  }
+                }
+              ]
+            },
+            {
+              "selector": "#qj-author-brightness-label",
+              "text": "亮度调低",
+              "font": "normal 700 24px \"PingFang SC\", Arial, sans-serif",
+              "lines": [
+                {
+                  "text": "亮度调低",
+                  "rect": {
+                    "left": 340,
+                    "top": 487.40625,
+                    "right": 436,
+                    "bottom": 515.40625,
+                    "width": 96,
+                    "height": 28
+                  }
+                }
+              ]
+            },
+            {
+              "selector": "#qj-author-location-label",
+              "text": "暂关定位",
+              "font": "normal 700 25px \"PingFang SC\", Arial, sans-serif",
+              "lines": [
+                {
+                  "text": "暂关定位",
+                  "rect": {
+                    "left": 342,
+                    "top": 619.75,
+                    "right": 442,
+                    "bottom": 648.75,
+                    "width": 100,
+                    "height": 29
+                  }
+                }
+              ]
+            },
+            {
+              "selector": "#qj-author-result-card",
+              "text": "定位请求减少",
+              "font": "normal 700 30px \"PingFang SC\", Arial, sans-serif",
+              "lines": [
+                {
+                  "text": "定位请求减少",
+                  "rect": {
+                    "left": 270,
+                    "top": 771.5,
+                    "right": 450,
+                    "bottom": 806.5,
+                    "width": 180,
+                    "height": 35
+                  }
+                }
+              ]
+            },
+            {
+              "selector": "#qj-author-bottom-caption",
+              "text": "不用导航、打车或查附近时，需要再开启",
+              "font": "normal 700 30px \"PingFang SC\", Arial, sans-serif",
+              "lines": [
+                {
+                  "text": "不用导航、打车或查附近时，需要再开启",
+                  "rect": {
+                    "left": 90,
+                    "top": 933.5,
+                    "right": 630,
+                    "bottom": 968.5,
+                    "width": 540,
+                    "height": 35
+                  }
+                }
+              ]
+            },
+            {
+              "selector": "#qj-author-note",
+              "text": "省电效果因手机和使用环境不同；示意界面",
+              "font": "normal 700 26px \"PingFang SC\", Arial, sans-serif",
+              "lines": [
+                {
+                  "text": "省电效果因手机和使用环境不同；示意界面",
+                  "rect": {
+                    "left": 113,
+                    "top": 965.109375,
+                    "right": 607,
+                    "bottom": 995.109375,
+                    "width": 494,
+                    "height": 30
+                  }
+                }
+              ]
+            }
+          ],
+          "findings": []
+        },
+        {
+          "time": 10.067778,
+          "nodes": [
+            {
+              "selector": "#qj-author-step1-label",
+              "text": "① 下拉快捷设置",
+              "font": "normal 700 24px \"PingFang SC\", Arial, sans-serif",
+              "lines": [
+                {
+                  "text": "①下拉快捷设置",
+                  "rect": {
+                    "left": 273.65625,
+                    "top": 319.40625,
+                    "right": 446.34375,
+                    "bottom": 347.40625,
+                    "width": 172.6875,
+                    "height": 28
+                  }
+                }
+              ]
+            },
+            {
+              "selector": "#qj-author-brightness-label",
+              "text": "亮度调低",
+              "font": "normal 700 24px \"PingFang SC\", Arial, sans-serif",
+              "lines": [
+                {
+                  "text": "亮度调低",
+                  "rect": {
+                    "left": 340,
+                    "top": 487.40625,
+                    "right": 436,
+                    "bottom": 515.40625,
+                    "width": 96,
+                    "height": 28
+                  }
+                }
+              ]
+            },
+            {
+              "selector": "#qj-author-location-label",
+              "text": "暂关定位",
+              "font": "normal 700 25px \"PingFang SC\", Arial, sans-serif",
+              "lines": [
+                {
+                  "text": "暂关定位",
+                  "rect": {
+                    "left": 342,
+                    "top": 619.75,
+                    "right": 442,
+                    "bottom": 648.75,
+                    "width": 100,
+                    "height": 29
+                  }
+                }
+              ]
+            },
+            {
+              "selector": "#qj-author-result-card",
+              "text": "定位请求减少",
+              "font": "normal 700 30px \"PingFang SC\", Arial, sans-serif",
+              "lines": [
+                {
+                  "text": "定位请求减少",
+                  "rect": {
+                    "left": 270,
+                    "top": 771.5,
+                    "right": 450,
+                    "bottom": 806.5,
+                    "width": 180,
+                    "height": 35
+                  }
+                }
+              ]
+            },
+            {
+              "selector": "#qj-author-bottom-caption",
+              "text": "不用导航、打车或查附近时，需要再开启",
+              "font": "normal 700 30px \"PingFang SC\", Arial, sans-serif",
+              "lines": [
+                {
+                  "text": "不用导航、打车或查附近时，需要再开启",
+                  "rect": {
+                    "left": 90,
+                    "top": 933.5,
+                    "right": 630,
+                    "bottom": 968.5,
+                    "width": 540,
+                    "height": 35
+                  }
+                }
+              ]
+            },
+            {
+              "selector": "#qj-author-note",
+              "text": "省电效果因手机和使用环境不同；示意界面",
+              "font": "normal 700 26px \"PingFang SC\", Arial, sans-serif",
+              "lines": [
+                {
+                  "text": "省电效果因手机和使用环境不同；示意界面",
+                  "rect": {
+                    "left": 113,
+                    "top": 965.109375,
+                    "right": 607,
+                    "bottom": 995.109375,
+                    "width": 494,
+                    "height": 30
+                  }
+                }
+              ]
+            }
+          ],
+          "findings": []
+        }
+      ],
+      "fonts": [
+        {
+          "selector": "#qj-author-panel",
+          "fonts": []
+        },
+        {
+          "selector": "#qj-author-step1-label",
+          "fonts": [
+            {
+              "familyName": "Noto Sans CJK SC",
+              "isCustomFont": false,
+              "glyphCount": 6
+            },
+            {
+              "familyName": "DejaVu Sans",
+              "isCustomFont": false,
+              "glyphCount": 2
+            }
+          ]
+        },
+        {
+          "selector": "#qj-author-brightness-card",
+          "fonts": []
+        },
+        {
+          "selector": "#qj-author-sun-icon",
+          "fonts": []
+        },
+        {
+          "selector": "#qj-author-brightness-knob",
+          "fonts": []
+        },
+        {
+          "selector": "#qj-author-brightness-label",
+          "fonts": [
+            {
+              "familyName": "Noto Sans CJK SC",
+              "isCustomFont": false,
+              "glyphCount": 4
+            }
+          ]
+        },
+        {
+          "selector": "#qj-author-location-card",
+          "fonts": []
+        },
+        {
+          "selector": "#qj-author-location-label",
+          "fonts": [
+            {
+              "familyName": "Noto Sans CJK SC",
+              "isCustomFont": false,
+              "glyphCount": 4
+            }
+          ]
+        },
+        {
+          "selector": "#qj-author-result-card",
+          "fonts": [
+            {
+              "familyName": "Noto Sans CJK SC",
+              "isCustomFont": false,
+              "glyphCount": 6
+            }
+          ]
+        },
+        {
+          "selector": "#qj-author-bottom-caption",
+          "fonts": [
+            {
+              "familyName": "Noto Sans CJK SC",
+              "isCustomFont": false,
+              "glyphCount": 18
+            }
+          ]
+        },
+        {
+          "selector": "#qj-author-note",
+          "fonts": [
+            {
+              "familyName": "Noto Sans CJK SC",
+              "isCustomFont": false,
+              "glyphCount": 19
+            }
+          ]
+        }
+      ],
+      "findings": [],
+      "upstreamReport": {
+        "path": "drawing-text-evidence/46f57b94014829a96e8005df93808905d02bc702f83dd3ccb4b0251fc22b86bc/8b19de57-a57a-45fa-b879-7ef4ea8df0f0/check-hyperframes-report.json",
+        "sha256": "31c671f2341409fcddb7347f5629d088bf6eca8dc5549542154c9369439fa7e6"
+      },
+      "upstreamStdout": {
+        "path": "drawing-text-evidence/46f57b94014829a96e8005df93808905d02bc702f83dd3ccb4b0251fc22b86bc/8b19de57-a57a-45fa-b879-7ef4ea8df0f0/check-hyperframes-stdout.txt",
+        "sha256": "1015834ddf6e0498893bafa475cf215e93cc6b8bf6f438d6e33c9a96b3de22c5"
+      },
+      "htmlSnapshot": {
+        "path": "drawing-text-evidence/46f57b94014829a96e8005df93808905d02bc702f83dd3ccb4b0251fc22b86bc/8b19de57-a57a-45fa-b879-7ef4ea8df0f0/index.html",
+        "sha256": "46f57b94014829a96e8005df93808905d02bc702f83dd3ccb4b0251fc22b86bc"
+      },
+      "report": {
+        "path": "drawing-text-evidence/46f57b94014829a96e8005df93808905d02bc702f83dd3ccb4b0251fc22b86bc/8b19de57-a57a-45fa-b879-7ef4ea8df0f0/server-drawing-text-report.json",
+        "sha256": "5f2d3fb6bdc835906dc456c513f7fb8f332d013da5f50bb13ee434311fd4883c"
+      }
+    }
+  },
+  "originalHtml": "<!doctype html><html lang=\"zh-CN\"><head><meta charset=\"utf-8\"><style>@font-face{font-family:'PingFang SC';src:local('PingFang SC')}html,body{margin:0;width:720px;height:1280px;overflow:hidden;background:#fffdfa}#main{width:720px;height:1280px;position:relative;font-family:'PingFang SC',Arial,sans-serif;color:#252935}.scene-content{box-sizing:border-box;width:100%;height:100%;padding:64px 0;display:flex;flex-direction:column;align-items:center;gap:10px}#title{position:relative;z-index:2;font-size:60px;font-weight:800;width:640px;margin:0;text-align:center;line-height:1.2}.drawing-plane,svg{position:absolute;inset:0;width:720px;height:1280px}svg{overflow:visible}svg.products{z-index:2;pointer-events:none}.text,.circle{z-index:3!important}.node.text{padding:0}.node{position:absolute;z-index:1;box-sizing:border-box;padding:12px;display:flex;align-items:center;justify-content:center;text-align:center;line-height:1.3;font-weight:700;overflow-wrap:anywhere;white-space:pre-line}.node[data-qj-number]{white-space:nowrap;overflow-wrap:normal;word-break:normal}.node.text[data-qj-number]{padding:0}.card{border:3px solid;border-radius:20px}.circle{border:3px solid;border-radius:50%;padding:4px}.ambient{position:absolute;width:360px;height:360px;border-radius:50%;background:#fff0e9;opacity:.45;pointer-events:none}.ambient-a{left:-160px;top:60px}.ambient-b{right:-220px;bottom:180px;background:#e6f1f5}#note{font-size:20px;line-height:1.4;text-align:center;width:640px;left:40px;color:#252935;position:absolute;top:180px;margin:0;z-index:2}</style><script src=\"./gsap.min.js\"></script></head><body><section id=\"main\" data-composition-id=\"main\" data-width=\"720\" data-height=\"1280\" data-start=\"0\" data-duration=\"10.66\"><div id=\"ambient-a\" class=\"ambient ambient-a\" data-layout-ignore></div><div id=\"ambient-b\" class=\"ambient ambient-b\" data-layout-ignore></div><div class=\"scene-content\"><h1 id=\"title\">两步降低耗电</h1></div><div class=\"drawing-plane\"><svg viewBox=\"0 0 720 1280\" aria-label=\"两步降低耗电\"></svg><div id=\"qj-author-panel\" data-drawing-id=\"panel\" class=\"node card\"  style=\"left:220px;top:230px;width:280px;height:640px;font-size:36px;background:#fff0e9;color:#252935;border-color:#fff0e9\"></div><div id=\"qj-author-step1-label\" data-drawing-id=\"step1-label\" class=\"node text\"  style=\"left:244px;top:306px;width:232px;height:56px;font-size:24px;background:transparent;color:#252935;border-color:#252935\">① 下拉快捷设置</div><div id=\"qj-author-brightness-card\" data-drawing-id=\"brightness-card\" class=\"node card\"  style=\"left:246px;top:398px;width:228px;height:118px;font-size:36px;background:#fff0e9;color:#252935;border-color:#fff0e9\"></div><div id=\"qj-author-sun-icon\" data-drawing-id=\"sun-icon\" class=\"node circle\"  style=\"left:268px;top:426px;width:42px;height:42px;font-size:36px;background:#fffdfa;color:#b43c27;border-color:#fb7353\"></div><div id=\"qj-author-brightness-knob\" data-drawing-id=\"brightness-knob\" class=\"node circle\"  style=\"left:340px;top:438px;width:30px;height:30px;font-size:36px;background:#fffdfa;color:#b43c27;border-color:#fb7353\"></div><div id=\"qj-author-brightness-label\" data-drawing-id=\"brightness-label\" class=\"node text\"  style=\"left:326px;top:474px;width:124px;height:56px;font-size:24px;background:transparent;color:#252935;border-color:#252935\">亮度调低</div><div id=\"qj-author-location-card\" data-drawing-id=\"location-card\" class=\"node card\"  style=\"left:246px;top:566px;width:228px;height:126px;font-size:36px;background:#fff0e9;color:#252935;border-color:#fff0e9\"></div><div id=\"qj-author-location-label\" data-drawing-id=\"location-label\" class=\"node text\"  style=\"left:330px;top:604px;width:124px;height:62px;font-size:25px;background:transparent;color:#252935;border-color:#252935\">暂关定位</div><div id=\"qj-author-result-card\" data-drawing-id=\"result-card\" class=\"node card\"  style=\"left:246px;top:742px;width:228px;height:94px;font-size:30px;background:#fffdfa;color:#28617d;border-color:#4c95b7\">定位请求减少</div><div id=\"qj-author-bottom-caption\" data-drawing-id=\"bottom-caption\" class=\"node card\"  style=\"left:70px;top:910px;width:580px;height:82px;font-size:30px;background:#fff0e9;color:#252935;border-color:#fff0e9;text-wrap:balance\">不用导航、打车或查附近时，需要再开启</div><div id=\"qj-author-note\" data-drawing-id=\"note\" class=\"node card\"  style=\"left:70px;top:952px;width:580px;height:58px;font-size:26px;background:#fff0e9;color:#252935;border-color:#fff0e9;text-wrap:balance\">省电效果因手机和使用环境不同；示意界面</div><svg class=\"products\" viewBox=\"0 0 720 1280\" aria-label=\"示意产品\"><path id=\"qj-author-notch\" data-drawing-id=\"notch\" d=\"M310 248 H410 Q418 248 418 256 Q418 264 410 264 H310 Q302 264 302 256 Q302 248 310 248 Z\" fill=\"#fff0e9\" stroke=\"#252935\" stroke-width=\"5\" stroke-linecap=\"round\"/><path id=\"qj-author-battery\" data-drawing-id=\"battery\" d=\"M438 255 H470 V271 H438 Z M470 260 H476 Q480 260 480 264 Q480 268 476 268 H470 M442 258 V268 H461 V258 Z\" fill=\"#fff0e9\" stroke=\"#fb7353\" stroke-width=\"5\" stroke-linecap=\"round\"/><path id=\"qj-author-pull-arrow\" data-drawing-id=\"pull-arrow\" d=\"M360 292 V368 M345 352 L360 374 L375 352\" fill=\"#fff0e9\" stroke=\"#fb7353\" stroke-width=\"5\" stroke-linecap=\"round\"/><path id=\"qj-author-brightness-track\" data-drawing-id=\"brightness-track\" d=\"M326 447 H450\" fill=\"#fff0e9\" stroke=\"#252935\" stroke-width=\"5\" stroke-linecap=\"round\"/><path id=\"qj-author-connector1\" data-drawing-id=\"connector1\" d=\"M360 516 V552 M345 536 L360 558 L375 536\" fill=\"#fff0e9\" stroke=\"#fb7353\" stroke-width=\"5\" stroke-linecap=\"round\"/><path id=\"qj-author-location-pin\" data-drawing-id=\"location-pin\" d=\"M298 592 C285 592 276 602 276 614 C276 632 298 646 298 646 C298 646 320 632 320 614 C320 602 311 592 298 592 Z M290 614 A8 8 0 1 1 306 614 A8 8 0 1 1 290 614\" fill=\"#fff0e9\" stroke=\"#fb7353\" stroke-width=\"5\" stroke-linecap=\"round\"/><path id=\"qj-author-location-waves\" data-drawing-id=\"location-waves\" d=\"M270 612 A28 28 0 0 1 326 612 M260 602 A44 44 0 0 1 336 602\" fill=\"#fff0e9\" stroke=\"#4c95b7\" stroke-width=\"5\" stroke-linecap=\"round\"/><path id=\"qj-author-connector2\" data-drawing-id=\"connector2\" d=\"M360 692 V728 M345 712 L360 734 L375 712\" fill=\"#fff0e9\" stroke=\"#fb7353\" stroke-width=\"5\" stroke-linecap=\"round\"/><path id=\"qj-author-phone-side-glow\" data-drawing-id=\"phone-side-glow\" d=\"M202 250 Q188 300 198 550 Q204 730 198 850\" fill=\"#fff0e9\" stroke=\"#4c95b7\" stroke-width=\"5\" stroke-linecap=\"round\"/></svg></div><p id=\"note\">流程 / 画面为示意</p></section><script>window.QJMotion = Object.freeze({\n  textRise(tl, selector, at=0.2) { return tl.fromTo(selector,{y:90,opacity:0,filter:'blur(14px)'},{y:0,opacity:1,filter:'blur(0px)',duration:0.68,ease:'power3.out'},at); },\n  cardPop(tl, selector, at=0.35) { return tl.fromTo(selector,{scale:0.86,opacity:0,rotation:-3},{scale:1,opacity:1,rotation:0,duration:0.82,ease:'back.out(1.3)'},at); },\n  lineDraw(tl, selector, at=0.7) { return tl.fromTo(selector,{scaleX:0,transformOrigin:'left center'},{scaleX:1,duration:0.42,ease:'expo.out'},at); },\n  imageDrift(tl, selector, at=0.2, duration=4.8) { return tl.fromTo(selector,{scale:1.08,x:-24},{scale:1.17,x:24,duration,ease:'none'},at); },\n  splitWipe(tl, selector, at=0.18) { return tl.fromTo(selector,{clipPath:'inset(0 100% 0 0)'},{clipPath:'inset(0 0% 0 0)',duration:0.76,ease:'power4.out'},at); },\n  fadeOut(tl, selector, at, duration=0.3) { return tl.to(selector,{opacity:0,y:-18,duration,ease:'power2.in'},at); },\n  keywordPunch(tl, selector, at=.3) { return tl.fromTo(selector,{scale:.94,opacity:0},{scale:1,opacity:1,duration:.42,ease:'back.out(1.1)'},at); },\n  lowerThird(tl, selector, at=.4) { return tl.fromTo(selector,{x:-32,opacity:0},{x:0,opacity:1,duration:.5,ease:'power3.out'},at); },\n  chapterProgress(tl, selector, at=.4, duration=4.8) { return tl.fromTo(selector,{scaleX:0,transformOrigin:'left center'},{scaleX:1,duration,ease:'none'},at); },\n  compareReveal(tl, selector, at=.6) { return tl.fromTo(selector,{x:36,opacity:0},{x:0,opacity:1,duration:.62,ease:'expo.out',stagger:.18},at); },\n  drawStroke(tl, selector, at=.4, duration=.7) { gsap.utils.toArray(selector).forEach((node,i)=>{const length=node.getTotalLength();tl.set(node,{strokeDasharray:length,strokeDashoffset:length},0);tl.fromTo(node,{strokeDashoffset:length},{strokeDashoffset:0,duration,ease:'power2.out'},at+i*.12);});return tl; },\n  markerSweep(tl, selector, at=.5) { return tl.fromTo(selector,{scaleX:0,transformOrigin:'left center'},{scaleX:1,duration:.55,ease:'expo.out'},at); },\n  staggerReveal(tl, selector, at=.2, duration=.45, ease='power3.out') { const nodes=gsap.utils.toArray(selector);return tl.fromTo(nodes,{y:24,opacity:0},{y:0,opacity:1,duration,ease,stagger:nodes.length>1?Math.min(.08,.4/(nodes.length-1)):0},at); },\n  cardSettle(tl, selector, at=.2, duration=.5, ease='power3.out') { return tl.fromTo(selector,{y:20,scale:.97,opacity:0},{y:0,scale:1,opacity:1,duration,ease},at); },\n  focusPulse(tl, selector, at=1.4, duration=.6) { tl.to(selector,{scale:1.025,duration:duration/2,ease:'sine.out'},at);return tl.to(selector,{scale:1,duration:duration/2,ease:'sine.in',immediateRender:false},at+duration/2); },\n  ambientFloat(tl, selector, at=.2, duration=4, amplitude=8) { const count=Math.max(1,Math.ceil(duration/2));const segment=duration/count;for(let i=0;i<count;i++)tl.fromTo(selector,{y:i===0?0:(i%2?amplitude:-amplitude)},{y:i%2?-amplitude:amplitude,duration:segment,ease:'sine.inOut',immediateRender:i===0},at+i*segment);return tl; },\n  connectorFlow(tl, selector, at=.5, duration=.7) { gsap.utils.toArray(selector).forEach((node,i)=>{const length=node.getTotalLength();tl.fromTo(node,{strokeDasharray:length,strokeDashoffset:length,opacity:0},{strokeDashoffset:0,opacity:1,duration,ease:'power2.out'},at+i*.12);});return tl; },\n  barGrow(tl, selector, at=.4, duration=.8) { return tl.fromTo(selector,{scaleY:0,transformOrigin:'center bottom'},{scaleY:1,duration,ease:'power3.out'},at); },\n  radialBurst(tl, selector, at=1, radius=36) { const nodes=gsap.utils.toArray(selector);nodes.forEach((node,i)=>{const angle=i*2*Math.PI/nodes.length;tl.fromTo(node,{x:0,y:0,scale:.3,opacity:0},{x:Math.cos(angle)*radius,y:Math.sin(angle)*radius,scale:1,opacity:.65,duration:.35,ease:'expo.out'},at);tl.to(node,{opacity:0,scale:.7,duration:.35,ease:'sine.in',immediateRender:false},at+.35);});return tl; }\n\n});window.__timelines={};const tl=gsap.timeline({paused:true});tl.from('#title',{y:20,opacity:0,duration:.6,ease:'power3.out'},.1);tl.from('#note',{opacity:0,duration:.5,ease:'sine.out'},.25);QJMotion.cardSettle(tl,'#qj-author-panel',0.180,0.45,'power3.out');QJMotion.connectorFlow(tl,'#qj-author-notch',0.55,0.45);QJMotion.connectorFlow(tl,'#qj-author-battery',0.55,0.45);QJMotion.cardSettle(tl,'#qj-author-step1-label',0.220,0.45,'power3.out');QJMotion.connectorFlow(tl,'#qj-author-pull-arrow',0.55,0.45);QJMotion.cardSettle(tl,'#qj-author-brightness-card',0.260,0.45,'power3.out');QJMotion.cardSettle(tl,'#qj-author-sun-icon',0.300,0.45,'power3.out');QJMotion.connectorFlow(tl,'#qj-author-brightness-track',0.55,0.45);QJMotion.cardSettle(tl,'#qj-author-brightness-knob',0.340,0.45,'power3.out');QJMotion.cardSettle(tl,'#qj-author-brightness-label',0.380,0.45,'power3.out');QJMotion.connectorFlow(tl,'#qj-author-connector1',0.55,0.45);QJMotion.cardSettle(tl,'#qj-author-location-card',0.420,0.45,'power3.out');QJMotion.connectorFlow(tl,'#qj-author-location-pin',0.55,0.45);QJMotion.connectorFlow(tl,'#qj-author-location-waves',0.55,0.45);QJMotion.cardSettle(tl,'#qj-author-location-label',0.460,0.45,'power3.out');QJMotion.connectorFlow(tl,'#qj-author-connector2',0.55,0.45);QJMotion.cardSettle(tl,'#qj-author-result-card',0.500,0.45,'power3.out');QJMotion.cardSettle(tl,'#qj-author-bottom-caption',0.540,0.45,'power3.out');QJMotion.cardSettle(tl,'#qj-author-note',0.580,0.45,'power3.out');QJMotion.connectorFlow(tl,'#qj-author-phone-side-glow',0.55,0.45);tl.to('#qj-author-step1-label',{backgroundColor:'#fff0e9',borderColor:'#fb7353',duration:0.350,ease:'sine.inOut'},0.270);QJMotion.focusPulse(tl,'#qj-author-step1-label',0.270,0.600);tl.to('#qj-author-brightness-label',{backgroundColor:'#fff0e9',borderColor:'#fb7353',duration:0.350,ease:'sine.inOut'},2.210);QJMotion.focusPulse(tl,'#qj-author-brightness-label',2.210,0.600);tl.to('#qj-author-location-label',{backgroundColor:'#fff0e9',borderColor:'#fb7353',duration:0.350,ease:'sine.inOut'},6.860);QJMotion.focusPulse(tl,'#qj-author-location-label',6.860,0.600);tl.to('#qj-author-result-card',{backgroundColor:'#fff0e9',borderColor:'#fb7353',duration:0.350,ease:'sine.inOut'},8.180);QJMotion.focusPulse(tl,'#qj-author-result-card',8.180,0.600);QJMotion.ambientFloat(tl,'#ambient-a',.1,10.56,6);QJMotion.ambientFloat(tl,'#ambient-b',.1,10.56,-4);window.__timelines.main=tl;document.fonts.ready.then(()=>{for(const node of document.querySelectorAll('[data-qj-number]')){const range=document.createRange();range.selectNodeContents(node);const style=getComputedStyle(node),box=node.getBoundingClientRect(),scale=node.offsetWidth?box.width/node.offsetWidth:1;const width=range.getBoundingClientRect().width/(scale||1),available=node.clientWidth-parseFloat(style.paddingLeft)-parseFloat(style.paddingRight);if(width>available+1)throw new Error('数字字形溢出：'+node.id+' '+node.textContent+' 实际'+width.toFixed(2)+'px>可用'+available.toFixed(2)+'px；保留数字与字号，加宽或重排。');}});</script></body></html>"
+}
