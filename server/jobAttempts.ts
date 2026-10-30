@@ -21,6 +21,7 @@ export function beginJobAttempt(job: Job, revision: string | null, timestamp: st
     id: randomUUID(), number: (previous?.number ?? 0) + 1,
     reason: previous?.status === 'interrupted' ? 'restart' : previous ? 'retry' : 'initial',
     kind: job.kind, status: 'running', startedAt: timestamp, revision,
+    ...(job.capabilities ? { capabilities: structuredClone(job.capabilities) } : {}),
     ...(job.artifactId ? { inheritedArtifactId: job.artifactId } : {}),
   };
   (job.attempts ??= []).push(attempt);

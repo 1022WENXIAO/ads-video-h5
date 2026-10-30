@@ -20,9 +20,9 @@ cd "$staging"
 export HYPERFRAMES_SKIP_SKILLS=1 PNPM_MAX_WORKERS=1
 pnpm install --frozen-lockfile --ignore-scripts --prefer-offline --network-concurrency=2 --child-concurrency=1
 VITE_BASE_PATH=/qingjian/ pnpm build
-node -e 'if(require("./dist/release.json").revision!==process.argv[1]||require("./dist/admin/release.json").revision!==process.argv[1])process.exit(1)' "$revision"
+node -e 'if(["./dist/release.json","./dist/admin/release.json","./dist/desktop/release.json"].some(file=>require(file).revision!==process.argv[1]))process.exit(1)' "$revision"
 # These are newly created staging directories, never an existing checkout.
-rm -rf -- node_modules apps/admin/node_modules apps/miniprogram/node_modules
+rm -rf -- node_modules apps/admin/node_modules apps/desktop/node_modules apps/miniprogram/node_modules
 pnpm install --frozen-lockfile --ignore-scripts --prefer-offline --os=linux --cpu=x64 --libc=glibc --network-concurrency=2 --child-concurrency=1
 node --input-type=commonjs - "$revision" <<'JS'
 const fs=require('node:fs'),path=require('node:path');

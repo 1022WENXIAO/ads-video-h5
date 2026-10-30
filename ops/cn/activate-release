@@ -21,8 +21,10 @@ runuser -u qingjian-cn -- /opt/qingjian-cn/node/bin/node -e '
 '
 test -f "$release/dist/index.html"
 test -f "$release/dist/admin/index.html"
+test -f "$release/dist/desktop/index.html"
 test -d "$release/node_modules"
 /opt/qingjian-cn/node/bin/node -e 'const fs=require("fs");const r=JSON.parse(fs.readFileSync(process.argv[1]));if(r.revision!==process.argv[2])process.exit(1)' "$release/dist/release.json" "$expected"
+/opt/qingjian-cn/node/bin/node -e 'const fs=require("fs");const r=JSON.parse(fs.readFileSync(process.argv[1]));if(r.revision!==process.argv[2])process.exit(1)' "$release/dist/desktop/release.json" "$expected"
 
 exec 9>/run/lock/qingjian-cn-deploy.lock
 flock -n 9 || { echo 'Another activation is running.' >&2; exit 1; }
@@ -63,7 +65,7 @@ for attempt in $(seq 1 30); do
     const get=path=>fetch(base+path,{signal:AbortSignal.timeout(4000)});
     const health=await get("/api/health").then(r=>r.json());
     if(!health.ok||health.revision!==process.argv[1])process.exit(1);
-    for(const path of ["/qingjian/","/admin/"])if(!(await get(path)).ok)process.exit(1);
+    for(const path of ["/qingjian/","/admin/","/qingjian/desktop/"])if(!(await get(path)).ok)process.exit(1);
     if((await get("/api/state")).status!==401)process.exit(1);
   ' "$expected"; then
     # Video acceptance runs in the isolated production pipeline after startup;

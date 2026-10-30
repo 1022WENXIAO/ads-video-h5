@@ -17,6 +17,7 @@ import {withReadOnlyTextFallback,ReadOnlyCapabilityError} from './readOnlyFallba
 import {questionNeedsResearch,researchQuestion,questionSourceContext,type QuestionResearch} from './questionResearch';
 import {recoverToolDecision} from './workflowDriver';
 import { applyEditAudioPolicy, editProposalNarrativeFeedback, editProposalTimingFeedback, editSentenceBudgetHint, normalizeEditProposal } from './editProposal';
+import { currentAgentRuntime, limitParallelTools, runtimeParallelLimit } from './agentRuntime';
 
 const ffmpeg = ffmpegPath || 'ffmpeg';
 
@@ -142,14 +143,17 @@ function textModel(config: ModelConfig) {
 export const textThinking = (config:Pick<ModelConfig,'modelId'>) => ({type:config.modelId==='glm-5-3-flash-260828'?'enabled':'disabled'});
 
 export function getAgent(config: ModelConfig, tools: AgentTool[], systemPrompt: string, requireTools = false, requestOptions: { maxTokens?: number } = {}) {
+  const runtime = currentAgentRuntime();
+  const runParallel = runtime ? runtimeParallelLimit(runtime) : limitParallelTools(1);
+  if (runtime) { tools = [...tools, ...runtime.tools]; systemPrompt += '\n\n' + runtime.instructions; }
   const { models, model } = textModel(config);
   const ark = new URL(config.baseUrl).hostname === 'ark.cn-beijing.volces.com';
   const thinkingRequired = config.modelId === 'glm-5-3-flash-260828';
   const signal = currentJobSignal();
   const agent = new Agent({
-    initialState: { systemPrompt, model, thinkingLevel: thinkingRequired ? 'low' : 'off', tools: tools.map(tool => ({ ...tool, execute: async (...args: Parameters<AgentTool['execute']>) => {
+    initialState: { systemPrompt, model, thinkingLevel: thinkingRequired ? 'low' : 'off', tools: tools.map(tool => ({ ...tool, executionMode: tool.executionMode || 'sequential', execute: async (...args: Parameters<AgentTool['execute']>) => {
       throwIfJobCancelled(signal);
-      const result = await tool.execute(...args);
+      const result = await (runtime?.settings.toolMode === 'parallel' && tool.executionMode === 'parallel' ? runParallel(() => tool.execute(...args)) : tool.execute(...args));
       throwIfJobCancelled(signal);
       return result;
     } })) },
@@ -182,7 +186,7 @@ export function getAgent(config: ModelConfig, tools: AgentTool[], systemPrompt: 
     // GLM 5.3 Flash only supports thinking=enabled. Pi replays its reasoning
     // with tool results; answerWithPi publishes only the reply tool's fields.
     onPayload: (payload) => payload && typeof payload === 'object' ? { ...payload, ...(ark ? { thinking: textThinking(config) } : {}), ...(requireTools ? { tool_choice: 'required' } : {}) } : undefined,
-    toolExecution: 'sequential',
+    toolExecution: runtime?.settings.toolMode || 'sequential',
   });
   const prompt = agent.prompt.bind(agent);
   agent.prompt = (async (...args: Parameters<Agent['prompt']>) => {

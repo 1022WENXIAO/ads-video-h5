@@ -1,0 +1,39 @@
+{
+  "at": "2026-10-30T19:16:36.637098+00:00",
+  "action": "preview-only",
+  "retained": [
+    "/opt/qingjian-cn/releases/021b26f7d0db3fd10aa621ac79eeffe8ac272416",
+    "/opt/qingjian-cn/releases/e86f833f8651b8caeba40eedecfe2643eff6bb03"
+  ],
+  "targets": [
+    "/opt/qingjian-cn/releases/093e662ffdbf8d85ffc0a1185fa3250ed302842c",
+    "/opt/qingjian-cn/releases/09f4a0c089bd478b94e15929ae2ba254282493e9",
+    "/opt/qingjian-cn/releases/0a0a1470f449f8db9af5a204655913b037821ce4",
+    "/opt/qingjian-cn/releases/1fcbd5085d60c592d25cf9ed1cb889718b7afa03",
+    "/opt/qingjian-cn/releases/2509a45b041b8fff2d599e7e667084d4085e0bab",
+    "/opt/qingjian-cn/releases/2c3295c6b7f2c6c7a5a2d1c43805151ca78c39c3",
+    "/opt/qingjian-cn/releases/477a85966a2ff9d14e32a628468bffb7c4e589b4",
+    "/opt/qingjian-cn/releases/5744847c3179ca4ed85c49dd64f44caf614ac3e6",
+    "/opt/qingjian-cn/releases/76ccb218c089df32e6694ec33fec6bae97897988",
+    "/opt/qingjian-cn/releases/8c0b186a5001591d5ecf0b69fabdbe21d5e56100",
+    "/opt/qingjian-cn/releases/91d8afdb71e4b5298e1e07a65573ad230eb7a701",
+    "/opt/qingjian-cn/releases/9c35d5bc0779a3a8d48774b2a54c8dc01331fa7c",
+    "/opt/qingjian-cn/releases/a1e16b6b88ed663b2f7b3f2a96658806200fbcb8",
+    "/opt/qingjian-cn/releases/acc0a495978f4224eeb8112bc4c0d3075881ff2a",
+    "/opt/qingjian-cn/releases/aebbf53c2ae8ad2e09507759feba8dc6f160eaf3",
+    "/opt/qingjian-cn/releases/af4dcf19308d440f82804c53803bdfdf4bca701c",
+    "/opt/qingjian-cn/releases/b3a8a2f201f05349269b1430b4a8e37c50b4d4b5",
+    "/opt/qingjian-cn/releases/bb21233f658fbca65e19df45748d7fd329641d02",
+    "/opt/qingjian-cn/releases/bdfdb0962bbd8315dabbc8199cbd6a7b52d87bf7",
+    "/opt/qingjian-cn/releases/bf526b3c1282428f5453e052ba8ad80b84041f4b",
+    "/opt/qingjian-cn/releases/c393b1d381fdff478e2c045a71c78d49a41e029d",
+    "/opt/qingjian-cn/releases/c47b82ae28d3c535b624ac0dd4b1659fdfdd5934",
+    "/opt/qingjian-cn/releases/c76e8125b6c8ae287a5f1a405e9996a9e25b3f10",
+    "/opt/qingjian-cn/releases/c8a00a99625d3307564eea7039c6bf445d7bbbf4",
+    "/opt/qingjian-cn/releases/cb36d7c817196b98acdc6d56d3d95907ae8d52f9",
+    "/opt/qingjian-cn/releases/e8cdb8936580e53a0be2a466ce9c783befb3cd3a"
+  ],
+  "current": "/opt/qingjian-cn/releases/e86f833f8651b8caeba40eedecfe2643eff6bb03",
+  "targetCount": 26,
+  "note": "Only inactive release directories; user data and operator evidence are excluded."
+}

@@ -41,6 +41,10 @@ import { wantsScheduleManagement } from './scheduleIntent';
 import { jobDelay, JobCancelledError, throwIfJobCancelled, getJobTransportDiagnostics, jobErrorDiagnostics, withoutJobSignal } from './jobExecution';
 import { beginJobAttempt, finishJobAttempt, jobFailureMessage, publicJob } from './jobAttempts';
 import { executionFailure } from './executionErrors';
+import { createExtensions } from './extensions';
+import { mountExtensionRoutes } from './extensionRoutes';
+import { withAgentRuntime } from './agentRuntime';
+import { defaultAgentCapabilities } from '../shared/agentCapabilities';
 import { createJobRunner, restoreInterruptedJobs } from './jobRunner';
 import { createEvaluations, evaluationFileHash, evaluationImplementation, EvaluationError } from './evaluations';
 import { privateEvaluationStorage, isEvaluationOwner } from './evaluationIsolation';
@@ -77,6 +81,8 @@ await Promise.all([mediaDir, artifactDir, exportDir, tmpDir].map((dir) => mkdir(
 const effects = createEffectStore(dataDir, oss);
 await effects.init();
 const audioUnderstanding = createAudioUnderstanding(dataDir);
+const extensions = createExtensions(dataDir);
+await extensions.load();
 
 interface StoredState {
   activeSessionId: string;
@@ -656,7 +662,13 @@ async function processQueue() {
           modelSecrets = snapshotModels(models).flatMap(model => model?.apiKey ? [model.apiKey] : []);
           await saveState();
           if (!isEvaluationOwner(job.ownerId) && !auth.listUsers().some(user => user.id === job.ownerId)) throw new CreditError('任务所属账户不存在，无法记录积分用量。', 'CREDIT_OWNER_MISSING', 409);
-          const execute = () => withModelSnapshot(models!, () => performJob(job));
+          const runtime = await extensions.runtime(job.ownerId!, job.capabilities || activeSession?.capabilities, async events => {
+            job.workflow = structuredClone([...(job.workflow || []).filter(event => !events.some(value => value.callId === event.callId)), ...events]);
+            if(activeSession) recordWorkflowReply(activeSession,job,events);
+            job.stage = [...events].reverse().find(event => event.status === 'running')?.stage || events.at(-1)?.stage;
+            await saveState();
+          });
+          const execute = () => withAgentRuntime(runtime, () => withModelSnapshot(models!, () => performJob(job)));
           return await (isEvaluationOwner(job.ownerId) ? execute() : withCreditUsage(credits, job.ownerId!, job.creditTaskId ?? job.id, execute));
           } finally { transport = getJobTransportDiagnostics(); }
         });
@@ -695,6 +707,7 @@ async function enqueueAgentMessage(session: Session, text: string, attachmentIds
   const message: ChatMessage = { id: randomUUID(), role: 'user', text, createdAt, attachmentIds };
   const job: Job = { id: randomUUID(), ownerId: session.ownerId, sessionId: session.id, messageId: message.id, kind: classify(text), status: 'queued', createdAt, updatedAt: createdAt, progress: 0 };
   job.creditTaskId = creditTaskId;
+  job.capabilities = structuredClone(session.capabilities || defaultAgentCapabilities());
   // Freeze the selected asset when the request is accepted, so a UI switch
   // during a long render cannot change this job's author identity.
   job.authorAvatarId=state.profiles[session.ownerId!]?.settings.authorAvatarId||null;
@@ -785,6 +798,7 @@ app.get('/api/effects/assets/:id', async (request, response) => {
 });
 auth.mount(app, credits.readiness, user => credits.snapshot(user.id));
 mountCreditRoutes(app, credits);
+mountExtensionRoutes(app, extensions, { sessions: () => state.sessions, jobs: () => state.jobs, save: saveState, publicState, activate: async(user,session) => { (await profileOf(user)).activeSessionId = session.id; } });
 mountVoiceInputRoutes(app, tmpDir, undefined, credits);
 mountAvatarRoutes(app,{
   media:()=>state.media,mediaDir,tmpDir,save:saveState,publicState,
@@ -995,7 +1009,7 @@ app.post('/api/jobs/:id/retry', async (request, response) => {
   if(needsLessonRepair&&candidate?.review)job.kind=reviewNeedsContentRepair(candidate.review)?'export':'review';
   job.status = 'queued'; job.error = undefined; job.progress = 0; job.updatedAt = now();
   const session = getSession(job.sessionId);
-  if(session)session.messages=session.messages.filter(m=>!(m.role==='assistant'&&m.jobId===job.id));
+  if(session){session.messages=session.messages.filter(m=>!(m.role==='assistant'&&m.jobId===job.id));job.capabilities=structuredClone(session.capabilities||defaultAgentCapabilities());}
   await saveState(); response.json(await publicState(user)); void processQueue();
 });
 function artifactFile(artifact: Artifact) { if (artifact.kind === 'video') return path.join(exportDir, `${artifact.id}.mp4`); const filename = state.artifactFiles[artifact.id]; return filename ? path.join(artifactDir, path.basename(filename)) : null; }

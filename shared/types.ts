@@ -329,6 +329,7 @@ export interface JobFailure {
   causes?: JobFailure[];
 }
 export interface JobAttempt {
+  capabilities?: import('./agentCapabilities').AgentCapabilities;
   id: string;
   number: number;
   reason: 'initial' | 'retry' | 'restart';
@@ -351,6 +352,7 @@ export interface JobAttempt {
 }
 
 export interface Job {
+  capabilities?: import('./agentCapabilities').AgentCapabilities;
   attemptId?: string;
   attempts?: JobAttempt[];
   legacyWorkflow?: WorkflowEvent[];
@@ -377,6 +379,8 @@ export interface Job {
 }
 
 export interface Session {
+  capabilities?: import('./agentCapabilities').AgentCapabilities;
+  forkedFrom?: { sessionId: string; messageId?: string; at: string };
   lessonDraft?: LessonReport;
   ownerId?: string;
   id: string;

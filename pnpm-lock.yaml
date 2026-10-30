@@ -134,6 +134,37 @@ importers:
         specifier: ^7.1.0
         version: 7.3.6(@types/node@24.13.6)(tsx@4.23.15)(yaml@2.9.0)
 
+  apps/desktop:
+    dependencies:
+      lucide-react:
+        specifier: ^0.468.0
+        version: 0.468.0(react@19.3.0)
+      react:
+        specifier: ^19.1.0
+        version: 19.3.0
+      react-dom:
+        specifier: ^19.1.0
+        version: 19.3.0(react@19.3.0)
+    devDependencies:
+      '@types/node':
+        specifier: ^24.0.0
+        version: 24.13.6
+      '@types/react':
+        specifier: ^19.1.0
+        version: 19.3.0
+      '@types/react-dom':
+        specifier: ^19.1.0
+        version: 19.3.0(@types/react@19.3.0)
+      '@vitejs/plugin-react':
+        specifier: ^4.7.0
+        version: 4.7.0(supports-color@8.1.1)(vite@7.3.6(@types/node@24.13.6)(tsx@4.23.15)(yaml@2.9.0))
+      typescript:
+        specifier: ^5.9.0
+        version: 5.9.3
+      vite:
+        specifier: ^7.1.0
+        version: 7.3.6(@types/node@24.13.6)(tsx@4.23.15)(yaml@2.9.0)
+
   apps/miniprogram:
     devDependencies:
       jsdom:

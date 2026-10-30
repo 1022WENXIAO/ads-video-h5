@@ -82,6 +82,7 @@ jobs:
           VITE_BASE_PATH=/qingjian/ pnpm build
           pnpm build:mini
           node -e 'const r=require("./dist/release.json");if(r.revision!==process.env.GITHUB_SHA)process.exit(1)'
+          node -e 'const r=require("./dist/desktop/release.json");if(r.revision!==process.env.GITHUB_SHA)process.exit(1)'
       - name: Package Linux runtime without production data
         shell: bash
         run: |
@@ -90,6 +91,7 @@ jobs:
           git archive "$GITHUB_SHA" | tar -x -C "$staging"
           cp -a node_modules "$staging/node_modules"
           cp -a apps/admin/node_modules "$staging/apps/admin/node_modules"
+          cp -a apps/desktop/node_modules "$staging/apps/desktop/node_modules"
           cp -a apps/miniprogram/node_modules "$staging/apps/miniprogram/node_modules"
           cp -a dist "$staging/dist"
           test ! -e "$staging/data/auth.json"
