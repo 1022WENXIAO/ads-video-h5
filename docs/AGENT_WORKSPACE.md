@@ -64,3 +64,5 @@ MCP 仅连接 `QINGJIAN_MCP_ALLOWED_HOSTS` 中精确匹配的 HTTPS 主机（含
 实际资源、固定下载版本、已执行的旧版本清理清单、原生测试结果与回退方式见 [`ops/cn/ant-browser/README.md`](../ops/cn/ant-browser/README.md)。Ant V1.8.0 已在同机受限服务中通过原生与真实后台适配器测试；页面连接状态仍以实际探测为准，未验证时显示“尚未验证”。
 
 参考：[Codex 功能](https://developers.openai.com/codex/app/features)、[WorkBuddy 插件](https://www.codebuddy.cn/docs/workbuddy/Plugins)、[MCP Streamable HTTP](https://modelcontextprotocol.io/specification/2025-06-18/basic/transports)、[Ant-Browser API 合约](https://github.com/black-ant/Ant-Browser/blob/master/skills/ant-chrome-openclaw-automation-plan/references/api-contract.md)。
+
+画面分析会保留同一组真实抽帧，格式或临时请求失败最多发起两次逻辑请求。备用仅来自任务开始时冻结的、同服务中已配置的画面理解模型；没有备用时只重试当前模型。原始返回脱敏后以 0600 权限留存，仅合法的事实描述、top/bottom 区域及匹配帧时间可进入缓存。未完成的实际画面分析不会使用虚构默认区域继续渲染。

@@ -52,6 +52,10 @@ for(const[index,attempt]of knowledge.attempts.entries())test(`P8 knowledge ${ind
 for(const[index,attempt]of fixture.attempts.entries()){
   test(`P8 news ${index+1}: content-preserving card reflow retains text, font, paths and input`,()=>{
     const before=structuredClone(attempt.drawing),fixed=reflowCardDetails(attempt.drawing,htmlLayoutIssues(attempt.report),'9:16');assert.ok(fixed);
+    // Exact generated date-copy IDs may resolve to their owned card; an
+    // arbitrary nested selector must never acquire that authority.
+    assert.ok(reflowCardDetails(attempt.drawing,[{code:'content_overlap',selector:'#qj-date-copy-event_card',containerSelector:'#qj-author-event_detail'}],'9:16'));
+    assert.equal(reflowCardDetails(attempt.drawing,[{code:'content_overlap',selector:'#qj-date-copy-event_card > span',containerSelector:'#qj-author-event_detail'}],'9:16'),undefined);
     validateDrawing(fixed,'9:16');assert.deepEqual(attempt.drawing,before);assert.equal(drawingContentHash(fixed),drawingContentHash(before));
     for(const n of before.nodes){const after=fixed.nodes.find(node=>node.id===n.id)!;assert.equal(after.fontSize,n.fontSize);assert.equal(after.x,n.x);assert.equal(after.w,n.w);if(n.kind==='card'&&after.text==='')assert.equal(fixed.nodes.find(node=>node.id===n.id+'_label')!.text,n.text);else assert.equal(after.text,n.text);if(['line','path'].includes(n.kind))assert.deepEqual(after,n);}
   });

@@ -204,6 +204,16 @@ export async function getTextFallbackConfigs(primary:ModelConfig|null):Promise<M
   });
 }
 
+/** Freeze one explicitly configured alternative for image understanding. */
+export async function getUnderstandingFallbackConfigs(primary:ModelConfig|null):Promise<ModelConfig[]>{
+  if(!primary)return [];
+  const data=await loadRegistry(),token=await getAdminToken();
+  return data.models.filter(model=>model.kind==='understanding'&&model.enabled&&model.id!==primary.id&&model.provider===primary.provider&&model.baseUrl.replace(/\/$/,'')===primary.baseUrl.replace(/\/$/,'')&&modelKey(model,data)).slice(0,1).map(model=>{
+    const {apiKeyCiphertext:_key,apiKeySourceId:_source,...fields}=model;
+    return {...fields,apiKey:decrypt(modelKey(model,data)!,token)};
+  });
+}
+
 export async function setDefaultTextModelId(id: string | null): Promise<void> {
   await mutate((data) => {
     if (id !== null && !data.models.some((model) => model.id === id && model.kind === 'text' && model.enabled && modelKey(model, data))) {

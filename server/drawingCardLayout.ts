@@ -1,5 +1,6 @@
 import type { HtmlDrawing } from './narrativeScenes';
 import {drawingDomId} from './narrativeScenes';
+import {drawingDateCopyId,drawingDateText} from './drawingDateText';
 import type { Format } from '../src/types';
 
 type Node = HtmlDrawing['nodes'][number];
@@ -14,7 +15,13 @@ const associated = (card:Node,text:Node) => {
   return inside>=text.h*.8&&text.y+text.h<=card.y+card.h+Math.min(24,card.h*.1);
 };
 const issueNodes=(drawing:HtmlDrawing,issue:Issue):Node[]|undefined=>{
-  const selectors=[issue.selector,issue.containerSelector];
+  // HyperFrames reports the real text wrapper when a date is kept intact.
+  // Resolve only our exact generated ID on a node that actually owns dates;
+  // arbitrary descendants and unknown/mixed selectors remain unsupported.
+  const selectors=[issue.selector,issue.containerSelector].map(selector=>{
+    const copies=drawing.nodes.filter(n=>selector==='#'+drawingDateCopyId(n.id)&&drawingDateText(n.text,s=>s).startsWith('<span class="qj-date-copy"'));
+    return copies.length===1?'#'+drawingDomId(copies[0].id):selector;
+  });
   if(selectors.some(s=>!s||!/^#[a-zA-Z][a-zA-Z0-9_-]*$/.test(s)))return;
   // Resolve complete compiled IDs, including logical IDs already carrying the
   // prefix. Never strip a prefix and accidentally select a different node.

@@ -10,7 +10,7 @@ import type { AppSettings, AppState, Artifact, ChatMessage, Job, JobKind, MediaI
 import { answerForSessionWithPi, createImagePromptWithPi, createMusicQueryWithPi, createNarrationWithPi, createPlanWithPi, detectImage, detectShots, probeAudio, probeVideo, renderPlan as renderBasePlan, runFFmpeg } from './core';
 import { writePresetBgm } from './bgm';
 import { download24bitAudio, downloadPixabayAudio, getPixabayTrackDetail, MusicSourceError, musicSearchLinks, pixabayAudioUrl, search24bitMusic, searchPixabayMusic } from './music';
-import { getDefaultTextModelId, getModelConfig, getTextFallbackConfigs, listPublicModels } from './modelRegistry';
+import { getDefaultTextModelId, getModelConfig, getTextFallbackConfigs, getUnderstandingFallbackConfigs, listPublicModels } from './modelRegistry';
 import { generateAudio, generateImage, ProviderError } from './providers';
 import { mountAdminRoutes } from './adminRoutes';
 import { createAdminAuth } from './adminAuth';
@@ -656,7 +656,7 @@ async function processQueue() {
           if (isEvaluationOwner(job.ownerId) && !models) throw new EvaluationError('评测模型快照已中断，请重新运行评测。');
           if (!models) {
             const [text, image, audio, understanding] = await Promise.all([getModelConfig('text', activeSession?.modelId), getModelConfig('image'), getModelConfig('audio'), getModelConfig('understanding')]);
-            models = { text, image, audio, understanding, textFallbacks: await getTextFallbackConfigs(text) };
+            models = { text, image, audio, understanding, textFallbacks: await getTextFallbackConfigs(text), understandingFallbacks: await getUnderstandingFallbackConfigs(understanding) };
           }
           job.textModel = models.text ? { id: models.text.id, name: models.text.name, modelId: models.text.modelId } : undefined;
           modelSecrets = snapshotModels(models).flatMap(model => model?.apiKey ? [model.apiKey] : []);
@@ -724,7 +724,7 @@ const evaluations = createEvaluations({
   implementation: runtimeImplementation,
   models: async preferred => {
     const [text, audio, understanding, image] = await Promise.all([getModelConfig('text', preferred), getModelConfig('audio'), getModelConfig('understanding'), getModelConfig('image')]);
-    return { text, audio, understanding, image, textFallbacks: await getTextFallbackConfigs(text) };
+    return { text, audio, understanding, image, textFallbacks: await getTextFallbackConfigs(text), understandingFallbacks: await getUnderstandingFallbackConfigs(understanding) };
   },
   stop: async runId => {
     for (const session of state.sessions.filter(s => s.ownerId?.startsWith(`evaluation:${runId}:`))) jobRunner.stopSession(state.jobs, session.ownerId!, session.id, now());
