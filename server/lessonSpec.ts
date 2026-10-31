@@ -306,6 +306,7 @@ function speechDecimalText(text:string):string{
 function spokenDates(text:string){
   return [...text.replace(/\s/g,'').matchAll(/([\d零〇一二两三四五六七八九十百千万亿]+)([年月日号])/g)].map(m=>({unit:m[2],value:speechNumberValue(m[1])}));
 }
+export const lessonSpokenDateValues=(text:string)=>spokenDates(text);
 function speechNumberValue(s:string):number{
   const digits:Record<string,number>={'零':0,'〇':0,'一':1,'二':2,'两':2,'三':3,'四':4,'五':5,'六':6,'七':7,'八':8,'九':9};
   for(let i=0;i<10;i++)digits[String(i)]=i;

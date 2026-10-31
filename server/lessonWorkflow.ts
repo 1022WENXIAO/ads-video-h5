@@ -1,3 +1,4 @@
+import {createNarrationDateBaseline,restoreNarrationDateBaseline,assertNarrationRepairDates,type NarrationDateBaseline} from './narrationDateRepair';
 import {chapterBarChart,inferBarData} from './barChart';
 import {lessonBarChartGrounding} from './lessonBarChartGrounding';
 import { jobFetch, throwIfJobCancelled } from './jobExecution';
@@ -132,6 +133,8 @@ export async function runLessonWorkflow(o:Options){
   let research:Awaited<ReturnType<typeof researchGaps>>|undefined;
   let report:LessonReport|undefined;let phase='research',feedback='',repairRequirements='';let acceptedScriptVersions=0,failures=0,renders=0,turns=0,voiceRevision=0;
   let factRepairHistory=emptyLessonFactRepairHistory();
+  let narrationDateBaseline:NarrationDateBaseline|undefined;
+  const protectNarrationDates=()=>{if(current&&report)narrationDateBaseline??=createNarrationDateBaseline(report.chapters);};
   let precisionBaseline:LessonPrecisionBaseline|undefined,precisionWitnesses:unknown;
   const names:Record<string,string>={research:'research_topic',budget:'plan_lesson_budget',script:'write_lesson_script','fact-review':'review_lesson_script',narration:'synthesize_narration',scenes:'draw_lesson_scenes',timeline:'arrange_lesson_timeline',render:'render_lesson',review:'review_lesson',repair:'repair_lesson'};
   let researchRounds=0,pacingRetakes=0,idleTurns=0,reviewRetries=0,reselects=0;let stalledReply='',modelFailure='',requestedTool='';let chapterVoiceRevisions:Record<string,number>={};
@@ -154,6 +157,7 @@ export async function runLessonWorkflow(o:Options){
   }}catch{}
   if(o.requestedAt===undefined&&Number.isFinite(savedCheckpoint?.requestedAt))requestedAt=savedCheckpoint.requestedAt;
   if(savedCheckpoint){
+    narrationDateBaseline=restoreNarrationDateBaseline(savedCheckpoint.narrationDateBaseline);
     precisionBaseline=restoreLessonPrecisionBaseline(savedCheckpoint.precisionBaseline);precisionWitnesses=savedCheckpoint.precisionWitnesses;
     // Preserve exact legacy bytes before any migration/revocation can persist.
     if(savedCheckpoint.factRepairHistory===undefined)await preserveNewsSourceCheckpoint(work);
@@ -185,7 +189,7 @@ export async function runLessonWorkflow(o:Options){
   if(current&&report?.factReview&&!report.factReview.needsRepair&&(todayEventFindings(report.factReview.todayEvents,report,o.prompt,requestedAt).length||selectionReasonFindings(report.factReview.selectionReason,report,o.prompt).length||newsObservationFindings(report,requestedAt).length)){report.factReview=undefined;if(phase!=='research')phase='fact-review';}
   if(report?.factReview?.needsRepair&&(!feedback||feedback.includes('超过6次')))feedback=report.factReview.findings.join('；');
   if(current&&report?.factReview?.needsRepair&&feedback.includes(NEWS_PUBLICATION_GAP))phase='research';
-  const persistCheckpoint=async()=>writeFile(path.join(work,'checkpoint.json'),JSON.stringify({fingerprint,requestedAt,rendererHash,newsSourceParserHash:sourceParserVersion,newsSourceRevalidation:sourceRevalidation,phase,research,report,factRepairHistory,precisionBaseline,precisionWitnesses,scriptBudget,voiceRevision,pacingRetakes,chapterVoiceRevisions,feedback,repairRequirements,researchRounds,reselects,rejectedNewsTopics,visualFeedback,layoutRepairProofs,renders,reviewRetries,plan,rendered,renderedHash,review,best,gapRetakes:[...gapRetakes]}),{mode:0o600});
+  const persistCheckpoint=async()=>writeFile(path.join(work,'checkpoint.json'),JSON.stringify({fingerprint,requestedAt,rendererHash,newsSourceParserHash:sourceParserVersion,newsSourceRevalidation:sourceRevalidation,phase,research,report,factRepairHistory,narrationDateBaseline,precisionBaseline,precisionWitnesses,scriptBudget,voiceRevision,pacingRetakes,chapterVoiceRevisions,feedback,repairRequirements,researchRounds,reselects,rejectedNewsTopics,visualFeedback,layoutRepairProofs,renders,reviewRetries,plan,rendered,renderedHash,review,best,gapRetakes:[...gapRetakes]}),{mode:0o600});
   async function requireGroundedCharts(...reports:Array<LessonReport|undefined>){
     const findings=[...new Set(reports.flatMap(value=>value?lessonBarChartGrounding(value).findings:[]))];
     if(!findings.length)return true;
@@ -302,7 +306,7 @@ export async function runLessonWorkflow(o:Options){
     if(rate.passed){phase='scenes';return;}
     // A process can stop after the last ASR write but before the whole-track
     // pacing gate. Resume must not mistake those files for a completed gate.
-    phase='script';feedback=rate.detail+'调整所有章节的实际信息密度并重新合成，不能仅凭目标时长放行。';repairRequirements=feedback;
+    protectNarrationDates();phase='script';feedback=rate.detail+'调整所有章节的实际信息密度并重新合成，不能仅凭目标时长放行。';repairRequirements=feedback;
   }
   let restoredSpeech=false;
   if(o.export&&savedCheckpoint&&(o.rebuildScenes||savedCheckpoint.rendererHash&&savedCheckpoint.rendererHash!==rendererHash)){
@@ -383,7 +387,7 @@ export async function runLessonWorkflow(o:Options){
       if(!cached)throw error;
       next={...cached.research,summary:`本次联网检索失败，使用同一用户同一指令的已核验来源缓存（最早取得时间${cached.retrievedAt}，24小时有效）；不是本次新检索，仍需独立审查本版全部声明。\n`+cached.research.summary};
     }
-    if(current){sourceParserVersion=newsSourceParserHash();sourceRevalidation=undefined;research=mergeResearch(research,next);if(reselect){report=undefined;scriptBudget=undefined;precisionBaseline=undefined;precisionWitnesses=undefined;}else if(report){report.hotResearch=research.current;report.references=research.references.filter(r=>report!.references.some(old=>old.id===r.id));report.factReview=undefined;}}
+    if(current){sourceParserVersion=newsSourceParserHash();sourceRevalidation=undefined;research=mergeResearch(research,next);if(reselect){report=undefined;scriptBudget=undefined;narrationDateBaseline=undefined;precisionBaseline=undefined;precisionWitnesses=undefined;}else if(report){report.hotResearch=research.current;report.references=research.references.filter(r=>report!.references.some(old=>old.id===r.id));report.factReview=undefined;}}
     else if(research){const refs=structuredClone(research.references);for(const ref of next.references){const existing=refs.find(r=>r.url===ref.url);if(existing){if(['primary-page','primary-paper','primary-record','public-page'].includes(ref.verification))Object.assign(existing,ref,{id:existing.id});}else refs.push({...ref,id:`ref-${refs.length+1}`});}research={...next,summary:lessonResearchSummary(research.summary.split('\n\n可用原始来源与实际网页摘录')[0]+'\n追加定向查证：\n'+next.summary.split('\n\n可用原始来源与实际网页摘录')[0],refs),references:refs};}
     else research=next;
     phase=refreshOnly?'fact-review':settings.requestedSeconds<=60&&!report&&!scriptBudget?'budget':'script';await writeFile(path.join(work,'research.json'),JSON.stringify(research,null,2),{mode:0o600});return {summary:research.summary,references:research.references,settings,pacing,totalNarrationCharacters:lessonNarrationBudget(settings.requestedSeconds,pacing),nextTool:currentTool()};
@@ -407,7 +411,8 @@ export async function runLessonWorkflow(o:Options){
     for(const c of a.chapters as LessonChapter[])c.referenceIds=[...new Set([...c.referenceIds,...c.claims.flatMap(cl=>cl.referenceIds)])];
     const used=new Set<string>(a.chapters.flatMap((c:LessonChapter)=>c.referenceIds));
     const next:LessonReport={workflowId:report?.workflowId||randomUUID(),...settings,title:a.title,audience:a.audience,objectives:a.objectives,arc:a.arc,chapters:a.chapters,references:research.references.filter(r=>used.has(r.id)),...(research.current?{hotResearch:structuredClone(research.current)}:{}),limitations:[current?`新闻资料截止${research.current?.asOf}；仅核验已读取正文摘录，事件日期与发布日期分别理解，热度不保证传播效果。`:'历史与事实依据实际联网引用和独立脚本审查，未逐条读取原论文全文。','旁白是统一的合成教学声线，不代表用户本人；字词时间码由Seed 2.1 Lite估计。']};
-    report=validateLesson({...next,presentation},o.prompt,undefined,research.references);speech=new Map();plan=undefined;rendered=undefined;review=undefined;phase='fact-review';
+    assertNarrationRepairDates(narrationDateBaseline,next.chapters,requestedAt);
+    report=validateLesson({...next,presentation},o.prompt,undefined,research.references);narrationDateBaseline=undefined;speech=new Map();plan=undefined;rendered=undefined;review=undefined;phase='fact-review';
     await writeFile(path.join(work,'script-bar-grounding.json'),JSON.stringify(lessonBarChartGrounding(report),null,2),{mode:0o600});await writeFile(path.join(work,'script.json'),JSON.stringify(report,null,2),{mode:0o600});await o.saveDraft(report);acceptedScriptVersions++;return {chapters:report.chapters.map(c=>({id:c.id,title:c.title,goal:c.goal})),acceptedScriptVersions,maximumScriptVersions:6,nextTool:'review_lesson_script'};
   });
   add('revise_lesson_script',current?'修正新闻脚本与图解':'定向返修教学章节','只提交审查反馈涉及的所有章节，服务端保留其他已通过章节和教学顺序。必须保留章节ID，完整修复对应旁白、事实依据、图解和cue；不要重新生成整稿。',Type.Object({chapters:Type.Array(budgetedChapter,{minItems:1})}),async a=>{
@@ -420,7 +425,8 @@ export async function runLessonWorkflow(o:Options){
     if(scriptBudget)assertLessonScriptBudget(next.chapters,scriptBudget);
     for(const c of next.chapters)c.referenceIds=[...new Set([...c.referenceIds,...c.claims.flatMap(cl=>cl.referenceIds)])];
     const used=new Set(next.chapters.flatMap(c=>c.referenceIds));next.references=research.references.filter(r=>used.has(r.id));
-    report=validateLesson({...next,presentation},o.prompt,undefined,research.references);speech=new Map();plan=undefined;rendered=undefined;review=undefined;phase='fact-review';
+    assertNarrationRepairDates(narrationDateBaseline,next.chapters,requestedAt);
+    report=validateLesson({...next,presentation},o.prompt,undefined,research.references);narrationDateBaseline=undefined;speech=new Map();plan=undefined;rendered=undefined;review=undefined;phase='fact-review';
     await writeFile(path.join(work,'script-bar-grounding.json'),JSON.stringify(lessonBarChartGrounding(report),null,2),{mode:0o600});await writeFile(path.join(work,'script.json'),JSON.stringify(report,null,2),{mode:0o600});await o.saveDraft(report);acceptedScriptVersions++;
     return {repaired:a.chapters.map((c:LessonChapter)=>c.id),preserved:report.chapters.filter(c=>!a.chapters.some((u:LessonChapter)=>u.id===c.id)).map(c=>c.id),acceptedScriptVersions,maximumScriptVersions:6,nextTool:'review_lesson_script'};
   });
@@ -536,9 +542,9 @@ export async function runLessonWorkflow(o:Options){
     const rawSeconds=pending.reduce((n,c)=>n+c.duration,0),padding=lessonPadding(raw.length,pacing);
     const characters=report.chapters.reduce((n,c)=>n+compactSpeech(c.narration).length,0);
     const budgetCheck=lessonPacingCheck(characters,settings.requestedSeconds-padding,pacing);
-    if(!budgetCheck.passed){phase='script';throw new Error(`${budgetCheck.detail}总旁白应约${lessonNarrationBudget(settings.requestedSeconds,pacing,raw.length)}字，当前${characters}字。调整内容密度；不能通过放慢语速或拖长空白凑时长。`);}
+    if(!budgetCheck.passed){protectNarrationDates();phase='script';throw new Error(`${budgetCheck.detail}总旁白应约${lessonNarrationBudget(settings.requestedSeconds,pacing,raw.length)}字，当前${characters}字。调整内容密度；不能通过放慢语速或拖长空白凑时长。`);}
     const tempo=pending.length?(frozen.length?pendingLessonSpeechTempo(rawSeconds,settings.requestedSeconds,padding,frozenSeconds,settings.explicitDuration,report.voice?.tempo,pending.every(c=>c.cached)):lessonTempo(rawSeconds,settings.requestedSeconds,padding,report.voice?.tempo,raw.every(c=>c.cached),settings.explicitDuration)):(report.voice?.tempo||frozen[0]?.frozen?.tempo||1);
-    const pendingTimingFailure=(ids:string[],detail:string,defer=false):never=>{const message=ids.map(id=>`${id}：${detail} 保留其他已核验旁白，仅定向调整本章的拗口表达与信息密度，保持真实数字和完整句。`).join('\n');if(!defer){phase='script';repairRequirements=message;}throw new NarrationTimingRepairError(ids,message);};
+    const pendingTimingFailure=(ids:string[],detail:string,defer=false):never=>{const message=ids.map(id=>`${id}：${detail} 保留其他已核验旁白，仅定向调整本章的拗口表达与信息密度，保持真实数字和完整句。`).join('\n');if(!defer){protectNarrationDates();phase='script';repairRequirements=message;}throw new NarrationTimingRepairError(ids,message);};
     if(!Number.isFinite(tempo)||tempo<.8||tempo>1.25){
       if(frozen.length)pendingTimingFailure(pending.map(c=>c.chapter.id),`待制作旁白实测${rawSeconds.toFixed(3)}秒，剩余语音窗口${(settings.requestedSeconds-padding-frozenSeconds).toFixed(3)}秒，所需变速${Number.isFinite(tempo)?tempo:'不可行'}不在0.8–1.25安全范围内。`);
       if(pacingRetakes++===0){voiceRevision++;phase='narration';throw new Error(`合成旁白实测${rawSeconds.toFixed(1)}秒，所需变速${tempo}超过安全范围。保持已核验脚本，按规划每秒${pacing.targetCharactersPerSecond}字重新合成同一声线；不降低规划语速。`);}
@@ -597,14 +603,14 @@ export async function runLessonWorkflow(o:Options){
       if(!verified)throw lastError;
       await persistRawSpeech(chapter,file);
     },failures=>selectNarrationBatchFailure(failures,pending.map(c=>c.chapter.id)));}catch(error){
-      if(error instanceof NarrationBatchVerificationError){phase='script';repairRequirements=error.message;}
+      if(error instanceof NarrationBatchVerificationError){protectNarrationDates();phase='script';repairRequirements=error.message;}
       // A parallel local quality failure must never route a provider/IO error
       // into script repair or replay an ambiguous paid submission.
       else phase='narration';
       throw error;
     }
     const spokenCharacters=[...speech.values()].reduce((n,c)=>n+compactSpeech(c.analysis.transcript).length,0),spokenSeconds=[...speech.values()].reduce((n,c)=>n+c.analysis.duration,0);
-    const rate=await trace.run('verify_narration_pacing','校验实际旁白语速',{spokenCharacters,spokenSeconds,pacing},async()=>{const result=lessonPacingCheck(spokenCharacters,spokenSeconds,pacing);if(!result.passed){phase='script';throw new Error(result.detail+'调整所有章节的实际信息密度并重新合成，不能仅凭目标时长放行。');}return result;});
+    const rate=await trace.run('verify_narration_pacing','校验实际旁白语速',{spokenCharacters,spokenSeconds,pacing},async()=>{const result=lessonPacingCheck(spokenCharacters,spokenSeconds,pacing);if(!result.passed){protectNarrationDates();phase='script';throw new Error(result.detail+'调整所有章节的实际信息密度并重新合成，不能仅凭目标时长放行。');}return result;});
     report.voice={...report.voice!,spokenCharacters,spokenSeconds:+spokenSeconds.toFixed(3),charactersPerSecond:rate.charactersPerSecond};
     phase='scenes';await o.saveDraft(report);return {pacing,voice:report.voice,frozenChapters:frozen.map(c=>({id:c.chapter.id,audioHash:c.frozen!.processedHash,tempo:c.frozen!.tempo,duration:c.duration})),pendingTempo:pending.length?tempo:undefined,chapters:report.chapters.map(c=>({id:c.id,speechMatch:c.speechMatch,cues:c.cues})),nextTool:'draw_lesson_scenes'};
   });

@@ -66,3 +66,5 @@ MCP 仅连接 `QINGJIAN_MCP_ALLOWED_HOSTS` 中精确匹配的 HTTPS 主机（含
 参考：[Codex 功能](https://developers.openai.com/codex/app/features)、[WorkBuddy 插件](https://www.codebuddy.cn/docs/workbuddy/Plugins)、[MCP Streamable HTTP](https://modelcontextprotocol.io/specification/2025-06-18/basic/transports)、[Ant-Browser API 合约](https://github.com/black-ant/Ant-Browser/blob/master/skills/ant-chrome-openclaw-automation-plan/references/api-contract.md)。
 
 画面分析会保留同一组真实抽帧，格式或临时请求失败最多发起两次逻辑请求。备用仅来自任务开始时冻结的、同服务中已配置的画面理解模型；没有备用时只重试当前模型。原始返回脱敏后以 0600 权限留存，仅合法的事实描述、top/bottom 区域及匹配帧时间可进入缓存。未完成的实际画面分析不会使用虚构默认区域继续渲染。
+
+新闻旁白因听辨或时长问题进入定向修稿时，工作流会保存明确日期基线，并随检查点恢复。修稿可采用等值汉字、数字及日/号读法；月末表达也按实际月份、闰年比较，不能把 10 月 30 日改成“十月最后一天”。验证在覆盖脚本和后续媒体调用前执行，错误候选单独保留。未提供日期的文案仍支持缺省；正常事实审查纠错与新闻重新选题使用各自流程。

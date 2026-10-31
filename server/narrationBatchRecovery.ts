@@ -15,7 +15,7 @@ export class NarrationBatchVerificationError extends Error {
   constructor(failures:ReadonlyArray<{chapterIds:readonly string[];error:ChapterRepairError}>){
     const ids=[...new Set(failures.flatMap(f=>f.chapterIds))];
     const details=failures.map(f=>`${f.chapterIds.join('、')}：${f.error instanceof NarrationVerificationError?'已完成同一台词的有限复听和重录，下一步须定向改写拗口表达。':''}${f.error.message.slice(0,900)}`).join('\n');
-    super(`修稿章节：${ids.join('、')}\n${details}\n这些章节已耗尽本轮有限核验或超出安全时长。一次定向调整全部所列章节的拗口表达与信息密度，保留其他已核验旁白、真实事实数值和限定条件。非必须口播的难读型号可用来源支持的通俗描述，图解保留正式名称；明确要求逐字保留的内容继续保留。不把错误识别结果改成台词，不只缩短其他章节却原样重复失败表达。`,{cause:failures[0]?.error});
+    super(`修稿章节：${ids.join('、')}\n${details}\n这些章节已耗尽本轮有限核验或超出安全时长。一次定向调整全部所列章节的拗口表达与信息密度，保留其他已核验旁白、真实事实数值和限定条件。日期只可换成等值汉字或日/号等读法，月底或最后一天等表达也必须保持原年月日，不能为了避开听辨错误而改日期。非必须口播的难读型号可用来源支持的通俗描述，图解保留正式名称；明确要求逐字保留的内容继续保留。不把错误识别结果改成台词，不只缩短其他章节却原样重复失败表达。`,{cause:failures[0]?.error});
     this.name='NarrationBatchVerificationError';this.errors=failures.map(f=>f.error);this.chapterIds=ids;
   }
 }

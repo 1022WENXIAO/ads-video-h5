@@ -1,0 +1,23 @@
+{
+  "provenance": {
+    "revision": "17d324e54095d492fdadf854188cb1d526cd4abe",
+    "jobId": "e1ec5039-fd99-4d03-bc4c-e6e9214eab81",
+    "originalCallId": "92b6ccdf-c492-4507-9f14-04ebb2942308",
+    "repairCallId": "call_n72brixtynq35nizmfd9upbe",
+    "repairAt": "2026-10-31T01:09:22.686Z"
+  },
+  "chapterId": "chapter-1",
+  "originalNarration": "第一财经在十月三十日上午报道：英特尔前一天发财报，盘后明显下挫。注意，报道日和事件日不同。",
+  "replacementNarration": "看这条热点，先认准报道时间：第一财经在十月最后一天上午刊发，说英特尔前一天发财报。两个日期别混。",
+  "source": {
+    "id": "ref-8",
+    "url": "https://www.yicai.com/news/103417665.html",
+    "publishedAt": "2026-10-30T02:18:29.000Z",
+    "dateEvidence": "原页标题署名行日期：2026-10-30 10:18:29"
+  },
+  "speechVerificationFailure": {
+    "audioHash": "84dae1138c848e9bc090dae84aad535b379850d153bd89dd26b08d128bffbb06",
+    "firstError": "NarrationVerificationError: 章节chapter-1日期数字或年月日单位与脚本不同，脚本值(2)=[{\"unit\":\"月\",\"value\":10},{\"unit\":\"日\",\"value\":30}]；识别值(2)=[{\"unit\":\"月\",\"value\":10},{\"unit\":\"日\",\"value\":3}]；需要独立复听或重录。",
+    "recheckError": "NarrationVerificationError: 章节chapter-1末尾台词匹配不完整或出现额外尾词，脚本末尾「道日和事件日不同」；识别末尾「报道日和事件日不」；需要独立复听或重录，不能放行漏字字幕。"
+  }
+}
