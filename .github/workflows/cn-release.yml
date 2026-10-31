@@ -10,6 +10,8 @@ name: Domestic Linux release
       - 'ops/cn/package-release'
       - 'ops/cn/activate-release'
       - 'ops/cn/init-data'
+      - 'ops/cn/configure-evaluation-limits.ts'
+      - 'ops/cn/ant-browser/**'
       - 'ops/render-space-preflight.mjs'
       - 'ops/cd/qingjian-cd'
       - 'server/**'

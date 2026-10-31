@@ -9,6 +9,9 @@ if [[ ! "$release" =~ ^/opt/qingjian-cn/releases/[0-9a-f]{40}$ || ! -d "$release
   exit 1
 fi
 expected=${release##*/}
+if [[ -n ${QINGJIAN_RELEASE_CASE_TIMEOUT_SECONDS:-} ]]; then
+  [[ "$QINGJIAN_RELEASE_CASE_TIMEOUT_SECONDS" =~ ^[1-9][0-9]{1,3}$ ]] && (( QINGJIAN_RELEASE_CASE_TIMEOUT_SECONDS >= 60 && QINGJIAN_RELEASE_CASE_TIMEOUT_SECONDS <= 3600 )) || { echo 'Expected a bounded 60–3600 second case timeout.' >&2; exit 1; }
+fi
 # Persistent stores must be intentionally provisioned before public activation.
 # Provisioning is explicit; activation never creates or replaces a store.
 for file in auth.json credits.json app-state.json; do
@@ -55,6 +58,13 @@ trap 'exit 130' INT
 trap 'exit 143' TERM
 trap 'exit 129' HUP
 trap finish EXIT
+if [[ -n ${QINGJIAN_RELEASE_CASE_TIMEOUT_SECONDS:-} ]]; then
+  # A resource-specific trial may need longer real provider/render recovery.
+  # Keep the same suite limit, cases and quality checks; never edit verdicts.
+  switched=1
+  systemctl stop qingjian-cn
+  (cd "$release" && /opt/qingjian-cn/node/bin/node --import tsx ops/cn/configure-evaluation-limits.ts "$QINGJIAN_RELEASE_CASE_TIMEOUT_SECONDS")
+fi
 ln -sfn "$release" /opt/qingjian-cn/current.next
 mv -Tf /opt/qingjian-cn/current.next /opt/qingjian-cn/current
 switched=1
