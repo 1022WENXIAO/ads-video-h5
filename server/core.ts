@@ -1,3 +1,4 @@
+import {currentTaskExecution} from './taskRuntime';
 import { spawnForJob as spawn, currentJobSignal, onJobAbort, throwIfJobCancelled, jobFetch, jobDelay } from './jobExecution';
 import ffmpegPath from 'ffmpeg-static';
 import { Agent, type AgentTool } from '@earendil-works/pi-agent-core';
@@ -142,10 +143,11 @@ function textModel(config: ModelConfig, inputImages=false) {
 
 export const textThinking = (config:Pick<ModelConfig,'modelId'>) => ({type:config.modelId==='glm-5-3-flash-260828'?'enabled':'disabled'});
 
-export function getAgent(config: ModelConfig, tools: AgentTool[], systemPrompt: string, requireTools = false, requestOptions: { maxTokens?: number; inputImages?:boolean } = {}) {
-  const runtime = currentAgentRuntime();
+export function getAgent(config: ModelConfig, tools: AgentTool[], systemPrompt: string, requireTools = false, requestOptions: { maxTokens?: number; inputImages?:boolean; role?:'reviewer'|'author' } = {}) {
+  const runtime = requestOptions.role==='reviewer'?undefined:currentAgentRuntime();
   const runParallel = runtime ? runtimeParallelLimit(runtime) : limitParallelTools(1);
   if (runtime) { tools = [...tools, ...runtime.tools]; systemPrompt += '\n\n' + runtime.instructions; }
+  const task=currentTaskExecution();if(task)systemPrompt+='\n\n'+task.instructions;
   const { models, model } = textModel(config,requestOptions.inputImages);
   const ark = new URL(config.baseUrl).hostname === 'ark.cn-beijing.volces.com';
   const thinkingRequired = config.modelId === 'glm-5-3-flash-260828';
@@ -153,8 +155,10 @@ export function getAgent(config: ModelConfig, tools: AgentTool[], systemPrompt: 
   const agent = new Agent({
     initialState: { systemPrompt, model, thinkingLevel: thinkingRequired ? 'low' : 'off', tools: tools.map(tool => ({ ...tool, executionMode: tool.executionMode || 'sequential', execute: async (...args: Parameters<AgentTool['execute']>) => {
       throwIfJobCancelled(signal);
-      const result = await (runtime?.settings.toolMode === 'parallel' && tool.executionMode === 'parallel' ? runParallel(() => tool.execute(...args)) : tool.execute(...args));
-      throwIfJobCancelled(signal);
+      await task?.consume();task?.guard();
+      const execute=()=>task?task.checkpoint((requestOptions.role||'author')+':'+tool.name,args[1],()=>tool.execute(...args)):tool.execute(...args);
+      const result = await (runtime?.settings.toolMode === 'parallel' && tool.executionMode === 'parallel' ? runParallel(execute) : execute());
+      throwIfJobCancelled(signal);task?.guard();
       return result;
     } })) },
     // jobFetch owns the bounded pre-response retry. Keep SDK retries disabled

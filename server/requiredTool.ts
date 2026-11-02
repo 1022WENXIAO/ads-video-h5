@@ -1,5 +1,5 @@
 import type { Agent } from '@earendil-works/pi-agent-core';
-import { throwIfJobCancelled } from './jobExecution';
+import { throwIfJobCancelled,withExecutionDeadline } from './jobExecution';
 import { traceValue } from './toolTrace';
 import type { ModelConfig } from './modelRegistry';
 import { recoverToolDecision } from './workflowDriver';
@@ -7,7 +7,8 @@ import { recoverToolDecision } from './workflowDriver';
 // A required tool is an executable contract. A promise or refusal in plain
 // text does not satisfy it. Keep the correction bounded and preserve the
 // actual public response/provider error, never private reasoning.
-export async function runRequiredTool(agent:Agent,prompt:string,options:{name:string;label:string;done:()=>boolean;config?:ModelConfig;secrets?:string[];timeoutMs?:number;maxTurns?:number;maxRejections?:number}){
+export async function runRequiredTool(agent:Agent,prompt:string,options:{name:string;label:string;done:()=>boolean;config?:ModelConfig;secrets?:string[];timeoutMs?:number;maxTurns?:number;maxRejections?:number;progressKey?:()=>string}){
+  const failuresByState=new Map<string,number>();
   const allowed=new Set(agent.state.tools.map(t=>t.name));
   let turns=0,idle=0,rejections=0,lastReply='',reason='',expired=false,recovered=false;
   const maxRejections=Number.isInteger(options.maxRejections)?Math.max(1,Math.min(6,options.maxRejections!)):3;
@@ -20,7 +21,7 @@ export async function runRequiredTool(agent:Agent,prompt:string,options:{name:st
     }
     const calls=message.content.filter(c=>c.type==='toolCall'&&allowed.has(c.name));
     const failures=turn.toolResults.filter(r=>r.isError||Boolean(r.details&&typeof r.details==='object'&&((r.details as any).passed===false||(r.details as any).needsRepair===true))).flatMap(r=>r.content.filter(c=>c.type==='text').map(c=>c.text)).join('\n');
-    if(failures){reason=clean(failures);rejections++;}else if(calls.length)rejections=0;
+    if(failures){reason=clean(failures);rejections++;const key=(options.progressKey?.()||'')+'|'+failures.replace(/[a-f0-9]{32,}/gi,'[hash]').replace(/\"revision\":\d+/g,'\"revision\":0');const count=(failuresByState.get(key)||0)+1;failuresByState.set(key,count);if(count>=maxRejections){reason='同一工程状态下重复失败，已停止无效循环：'+reason;return {action:'end'};}if(count>=2)agent.steer({role:'user',content:'同一失败重复出现。先重新核对原因并更换修复方法；只读查询不算进展，不能重复提交同一补丁。',timestamp:Date.now()});}else if(calls.length)rejections=0;
     if(!calls.length){
       idle++;const text=message.content.filter(c=>c.type==='text').map(c=>c.text).join('').trim();
       if(text)lastReply=clean(text);
@@ -36,7 +37,7 @@ export async function runRequiredTool(agent:Agent,prompt:string,options:{name:st
     return {action:'continue'};
   };
   const timer=setTimeout(()=>{expired=true;agent.abort();},options.timeoutMs??180000);
-  try{await agent.prompt(`本次执行契约：完成${options.name}，其他工作由后续阶段处理。\n`+prompt);}
+  try{await withExecutionDeadline(options.timeoutMs??180000,()=>agent.prompt(`本次执行契约：完成${options.name}，其他工作由后续阶段处理。\n`+prompt));}
   catch(error){throwIfJobCancelled();throw new Error(`${options.label}未完成：${clean(error instanceof Error?error.message:String(error))}`);}
   finally{clearTimeout(timer);}
   throwIfJobCancelled();

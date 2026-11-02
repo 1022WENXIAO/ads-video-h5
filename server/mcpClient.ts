@@ -1,3 +1,5 @@
+import {currentTaskExecution} from './taskRuntime';
+import {stateHash} from './durableState';
 import { randomUUID } from 'node:crypto';
 import { currentJobSignal } from './jobExecution';
 export interface McpConnection {
@@ -138,6 +140,7 @@ export class McpClient {
       await this.rpc('notifications/initialized', undefined, true);
     }));
   }
+  private catalogHash?:string;
   async list(): Promise<McpTool[]> {
     await this.initialize();
     const tools: McpTool[] = [];
@@ -149,7 +152,7 @@ export class McpClient {
       cursor = result.nextCursor;
       if (tools.length > 200) throw new Error('MCP 工具数量超过限制。');
     } while (cursor);
-    return tools;
+    const fingerprint=stateHash([...tools].sort((a,b)=>a.name.localeCompare(b.name)));if(this.catalogHash&&this.catalogHash!==fingerprint)throw Error('MCP工具定义在运行期间变化，已停止调用；请重新发现能力并启动新任务。');this.catalogHash=fingerprint;await currentTaskExecution()?.observeDependency('mcp-catalog:'+this.connection.id,tools.map(t=>({name:t.name,inputSchema:t.inputSchema,annotations:t.annotations})).sort((a,b)=>a.name.localeCompare(b.name)));return tools;
   }
   async call(name: string, args: Record<string, unknown>, readOnly = false) {
     const tool = (await this.list()).find((item) => item.name === name);

@@ -7,6 +7,8 @@ import { fetchWithTextRecovery, type TransportDiagnostic } from './providerTrans
 const execution = new AsyncLocalStorage<{ signal: AbortSignal; transport: TransportDiagnostic[] }>();
 const failureTransport = new WeakMap<object, TransportDiagnostic[]>();
 
+export class JobDeadlineError extends Error {constructor(){super('任务及子阶段已达到共享执行时限。');this.name='JobDeadlineError';}}
+
 export class JobCancelledError extends Error {
   constructor() { super('用户已停止运行。'); this.name = 'JobCancelledError'; }
 }
@@ -27,7 +29,7 @@ export function recordJobTransportDiagnostic(diagnostic: TransportDiagnostic): v
 export const jobErrorDiagnostics = (error: unknown): TransportDiagnostic[] => error !== null && typeof error === 'object' ? failureTransport.get(error)?.map(diagnostic => structuredClone(diagnostic)) ?? [] : [];
 
 export function throwIfJobCancelled(signal = currentJobSignal()) {
-  if (signal?.aborted) throw new JobCancelledError();
+  if (signal?.aborted) throw signal.reason instanceof JobDeadlineError?signal.reason:new JobCancelledError();
 }
 
 export function onJobAbort(callback: () => void, signal = currentJobSignal()): () => void {
@@ -65,17 +67,17 @@ export const jobFetch: typeof fetch = async (input, init) => {
   } catch (error) { throwIfJobCancelled(signal); throw error; }
 };
 
-export const spawnForJob: typeof spawn = ((command: string, argsOrOptions?: readonly string[] | SpawnOptions, options?: SpawnOptions): ChildProcess => {
+export const spawnForJob = ((command: string, argsOrOptions?: readonly string[] | SpawnOptions, options?: SpawnOptions): ChildProcess => {
   const signal = currentJobSignal();
   throwIfJobCancelled(signal);
   const args = Array.isArray(argsOrOptions) ? argsOrOptions : [];
-  const settings = (Array.isArray(argsOrOptions) ? options : argsOrOptions) as SpawnOptions | undefined;
+  const {inheritEnv=true,...settings} = ((Array.isArray(argsOrOptions) ? options : argsOrOptions)||{}) as SpawnOptions&{inheritEnv?:boolean};
   // Give CLI renderers a process group so their FFmpeg workers stop with them.
   const grouped = Boolean(signal) && process.platform !== 'win32';
   // Services may start with an absolute Node path and a minimal PATH. CLI
   // wrappers still invoke `node` via env/sh; use the same runtime as this
   // service instead of failing much later after paid narration completed.
-  const env = { ...process.env, ...settings?.env };
+  const env = { ...(inheritEnv?process.env:{}), ...settings.env };
   env.PATH = [path.dirname(process.execPath), env.PATH].filter(Boolean).join(path.delimiter);
   const child = spawn(command, args, { ...settings, env, ...(grouped ? { detached: true } : {}) });
   const unbind = onJobAbort(() => {
@@ -87,13 +89,19 @@ export const spawnForJob: typeof spawn = ((command: string, argsOrOptions?: read
   child.once('close', unbind);
   child.once('error', unbind);
   return child;
-}) as typeof spawn;
+}) as typeof spawn & ((command:string,args:readonly string[],options:SpawnOptions&{inheritEnv:false})=>ChildProcess);
 
 export function jobDelay(ms: number): Promise<void> {
   const signal = currentJobSignal();
   throwIfJobCancelled(signal);
   return new Promise((resolve, reject) => {
     const timer = setTimeout(() => { unbind(); resolve(); }, ms);
-    const unbind = onJobAbort(() => { clearTimeout(timer); reject(new JobCancelledError()); }, signal);
+    const unbind = onJobAbort(() => { clearTimeout(timer); reject(signal?.reason instanceof JobDeadlineError?signal.reason:new JobCancelledError()); }, signal);
   });
+}
+
+export async function withExecutionDeadline<T>(ms:number,action:()=>Promise<T>):Promise<T>{
+ const parent=execution.getStore(),controller=new AbortController();const timer=setTimeout(()=>controller.abort(new JobDeadlineError()),ms);
+ const signal=parent?AbortSignal.any([parent.signal,controller.signal]):controller.signal;
+ try{return await execution.run({signal,transport:parent?.transport||[]},async()=>{const result=await action();throwIfJobCancelled(signal);return result;});}finally{clearTimeout(timer);}
 }

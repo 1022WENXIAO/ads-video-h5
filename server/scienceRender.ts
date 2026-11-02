@@ -1,3 +1,5 @@
+import {assertScienceReceipt} from './scienceWorkspace';
+import {currentTaskExecution} from './taskRuntime';
 import type { Page } from 'playwright';
 import { createHash } from 'node:crypto';
 import { access, copyFile, cp, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
@@ -130,6 +132,7 @@ async function capture(command:string,args:string[],maxBytes=4_000_000):Promise<
 
 export async function renderScienceVideo(o:{template:LoadedVideoTemplate;config:ScienceScene;references:ResearchReference[];directory:string;progress?:(frames:number,total:number)=>Promise<void>}) {
   const {template,config,directory}=o;
+  if(config.program&&(config.program.selfCheck||currentTaskExecution()))assertScienceReceipt(config);
   await mkdir(directory,{recursive:true});const project=path.join(directory,'project');await mkdir(project);
   const [rendererBytes,sceneBytes,bgmBytes]=await Promise.all(['assets/integration/renderer.mjs','assets/integration/scene.mjs','assets/starter/audio/default-loop-16s.wav'].map(f=>readFile(path.join(template.directory,f))));
   await Promise.all([

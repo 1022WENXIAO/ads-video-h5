@@ -292,7 +292,7 @@ export interface MusicSearch {
 }
 
 export interface Artifact {
-  creative?: {engine:'defold';sourceHash:string;technicalPassed:boolean;modelSelfChecked:boolean;userAccepted:false};
+  creative?: {engine:'defold';sourceHash:string;artifactHash?:string;technicalPassed:boolean;modelSelfChecked:boolean;userAccepted:false};
   template?: import('./videoTemplates').TemplateSelection & { panels: number; technicalPassed: boolean; userAccepted: false; boundary: string; basis: string[]; animationMode?:'code'|'declarative'; sourceHash?:string; motion?:{meanChangedAreaPct:number;activeFramePct:number} };
   projectUrl?: string;
   /** Original user-message time; reviewing an existing movie keeps this cutoff. */
@@ -355,6 +355,7 @@ export interface JobAttempt {
 }
 
 export interface Job {
+  taskSpec?: import('./taskRuntime').TaskSpec;
   template?: import('./videoTemplates').TemplateSelection;
   capabilities?: import('./agentCapabilities').AgentCapabilities;
   attemptId?: string;
@@ -365,6 +366,7 @@ export interface Job {
   textModel?: Pick<PublicModel, 'id' | 'name' | 'modelId'>;
   avatarSourceId?: string;
   authorAvatarId?: string | null;
+  cancelReason?: 'superseded';
   stopRequestedAt?: string;
   cancelledAt?: string;
   workflow?: WorkflowEvent[];
@@ -383,6 +385,9 @@ export interface Job {
 }
 
 export interface Session {
+  taskSpec?: import('./taskRuntime').TaskSpec;
+  taskRevisions?: Record<string,number>;
+  taskSpecsByTemplate?: Record<string,import('./taskRuntime').TaskSpec>;
   templateId?: string;
   templateDraft?: import('./scienceScene').ScienceScene;
   creativeDraft?: import('./creativeProject').CreativeProject;

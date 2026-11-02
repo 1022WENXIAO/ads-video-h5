@@ -1,3 +1,5 @@
+import {currentTaskExecution} from './taskRuntime';
+import {tokenCostMicros} from './tokenPricing';
 import { AsyncLocalStorage } from 'node:async_hooks';
 import { randomUUID } from 'node:crypto';
 import type { Credits } from './credits';
@@ -22,6 +24,7 @@ export const creditFetch: typeof fetch = async (input, init) => {
   if (typeof payload.model !== 'string') throw new Error('模型计费缺少模型 ID。');
   const modelId = payload.model, price = await owner.credits.price(modelId);
   const hasAudio = payload.messages?.some(m => Array.isArray(m.content) && m.content.some(v => v?.type === 'input_audio')) ?? false;
+  const task=currentTaskExecution();await task?.assertModelBudget();
   const response = await fetch(input, init);
   if (!response.body) return response;
   const sse = response.headers.get('content-type')?.includes('text/event-stream') ?? false;
@@ -40,7 +43,7 @@ export const creditFetch: typeof fetch = async (input, init) => {
       } else { usage = parsed; detail = parsed ? undefined : '供应商返回的 token 明细无效，待核对'; }
     }
   };
-  const finish = () => recorded ??= response.ok || usage ? owner.credits.recordUsage(owner.userId, owner.taskId, modelId, requestId, usage, price, detail) : Promise.resolve();
+  const finish = () => recorded ??= response.ok || usage ? owner.credits.recordUsage(owner.userId, owner.taskId, modelId, requestId, usage, price, detail).then(()=>task?.recordCost(modelId+':'+requestId,usage?tokenCostMicros(usage,price):undefined)) : Promise.resolve();
   const frame = (text: string) => {
     const data = text.split(/\r?\n/).filter(line => line.startsWith('data:')).map(line => line.slice(5).trimStart()).join('\n');
     if (data.trim() === '[DONE]') { ended = true; return; }

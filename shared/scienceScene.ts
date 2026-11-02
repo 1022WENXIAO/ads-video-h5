@@ -15,7 +15,7 @@ export interface ScienceScene {
 export interface ScienceProgram {
   apiVersion: 2;
   source: string;
-  selfCheck?: {approved:true;sourceHash:string;sceneHash:string;projectHash:string;reviewedAt:string};
+  selfCheck?: {contractHash?:string;approved:true;sourceHash:string;sceneHash:string;projectHash:string;reviewedAt:string};
   files?: import("./creativeProject").CreativeFile[];
   entry?: string;
   nodes?: import("./creativeProject").CreativeNode[];

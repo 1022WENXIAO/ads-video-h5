@@ -10,7 +10,7 @@ export function restoreInterruptedJobs(jobs: Job[], timestamp: string) {
     if (job.status === 'stopping' || job.stopRequestedAt && isActiveJob(job)) {
       job.status = 'cancelled'; job.cancelledAt = timestamp; job.updatedAt = timestamp;
       job.progress = undefined; job.stage = '已停止运行';
-    } else if (job.status === 'running') job.status = 'queued';
+    } else if (job.status === 'running') {if(!job.taskSpec&&job.workflow?.some(e=>['call_mcp_tool','ant_browser'].includes(e.tool))){job.status='failed';job.error='重启前存在外部操作，缺少持久化确认收据；请先核对远程结果，不能自动再次提交。';}else job.status = 'queued';}
   }
 }
 
@@ -24,6 +24,12 @@ export function createJobRunner() {
       if (job.stopRequestedAt || job.status === 'stopping' || job.status === 'cancelled') controller.abort(new JobCancelledError());
       try { return await runWithJobSignal(controller.signal, action); }
       finally { running.delete(job.id); }
+    },
+    supersede(jobs:Job[],spec:import('../shared/taskRuntime').TaskSpec,timestamp:string){
+      for(const job of jobs)if(isActiveJob(job)&&job.taskSpec?.id===spec.id&&job.taskSpec.revision<spec.revision){
+        job.cancelReason='superseded';job.stopRequestedAt=timestamp;job.updatedAt=timestamp;
+        if(job.status==='queued'){job.status='cancelled';job.cancelledAt=timestamp;}else{job.status='stopping';running.get(job.id)?.abort(new JobCancelledError());}
+      }
     },
     stopSession(jobs: Job[], ownerId: string, sessionId: string, timestamp: string) {
       const stopped: Job[] = [];

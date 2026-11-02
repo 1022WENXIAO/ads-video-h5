@@ -1,3 +1,7 @@
+import {loadTaskDraft,saveTaskDraft} from './taskDrafts';
+import {acquireFileLock} from './durableState';
+import {createTaskSpec,assertTaskRevision,priorTaskSpec} from './taskContract';
+import {withTaskExecution,captureTaskEnvironment,currentTaskExecution} from './taskRuntime';
 import express, { type ErrorRequestHandler, type Response } from 'express';
 import multer from 'multer';
 import { randomUUID } from 'node:crypto';
@@ -71,6 +75,8 @@ import { wantsConversation } from './intents';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const dataDir = process.env.QINGJIAN_DATA_DIR ? path.resolve(process.env.QINGJIAN_DATA_DIR) : path.join(root, 'data');
+// A data directory has one active backend writer; a second process cannot replay its queue.
+await acquireFileLock(path.join(dataDir,'service-owner'));
 const ossEnvFile = path.join(dataDir, 'oss.env');
 if (existsSync(ossEnvFile)) process.loadEnvFile(ossEnvFile);
 const resendEnvFile = path.join(dataDir, 'resend.env');
@@ -246,20 +252,24 @@ async function performJob(job: Job): Promise<void> {
       const reply=await answerForSessionWithPi({prompt:prompt+'\n所选模板规则：\n'+template.context,config,media,history,plan:session.plan,attached,progress:workflowProgress});
       addReply(session,job,reply);return;
     }
+    const savedDraft=job.taskSpec?await loadTaskDraft(dataDir,job.taskSpec):undefined;
+    const legacyDraft=!savedDraft&&/^(?:请|帮我)?\s*(?:修改|调整|改成|改为|重新|生成成片|导出)/.test(prompt);
     if(template.workflow==='defold-game'){
-      const made=await codeDefoldProject({template,prompt,config,directory:path.join(dataDir,'game-projects',job.id,job.attemptId||randomUUID()),previous:session.templateId===template.id?session.creativeDraft:undefined,progress:workflowProgress});
+      const made=await codeDefoldProject({template,prompt,config,directory:path.join(dataDir,'game-projects',job.id,job.attemptId||randomUUID()),previous:(savedDraft&&'kind' in savedDraft?savedDraft:legacyDraft&&session.templateId===template.id?session.creativeDraft:undefined),progress:workflowProgress});
       const id=randomUUID(),folder=path.join(exportDir,`${id}-game`);
       try{await cp(made.build.directory,folder,{recursive:true});await Promise.all([copyFile(made.archive,path.join(exportDir,`${id}-project.zip`)),copyFile(made.cover,path.join(exportDir,`${id}-cover.jpg`)),writeFile(path.join(exportDir,`${id}-template.json`),JSON.stringify({config:made.draft,verification:made.verification},null,2))]);throwIfJobCancelled();}
       catch(error){await Promise.all([rm(folder,{recursive:true,force:true}),...['project.zip','cover.jpg','template.json'].map(ext=>rm(path.join(exportDir,`${id}-${ext}`),{force:true}))]);throw error;}
-      session.templateId=template.id;session.creativeDraft=made.draft;
-      const artifact:Artifact={id,ownerId:job.ownerId,sessionId:session.id,messageId:job.messageId,kind:'game',name:made.draft.title+'.zip',url:`/api/artifacts/${id}/play`,downloadUrl:`/api/artifacts/${id}/project`,projectUrl:`/api/artifacts/${id}/project`,coverUrl:`/api/artifacts/${id}/cover`,coverMimeType:'image/jpeg',createdAt:now(),version:state.artifacts.filter(a=>a.sessionId===session.id&&a.kind==='game').length+1,creative:{engine:'defold',sourceHash:made.verification.sourceHash,technicalPassed:true,modelSelfChecked:true,userAccepted:false},workflow:structuredClone(job.workflow)};
-      state.artifacts.push(artifact);job.artifactId=id;addReply(session,job,`已用Defold完成《${made.draft.title}》：游戏与动画节点已实际编译为HTML5，输入和重启试玩及模型自检通过。可直接试玩或下载源码工程，待你审阅玩法和画面。`,id);await saveState();return;
+      if(job.taskSpec)await saveTaskDraft(dataDir,job.taskSpec,made.draft,()=>currentTaskExecution()?.guard());
+      if(session.taskSpec?.id===job.taskSpec?.id){session.templateId=template.id;session.creativeDraft=made.draft;}
+      const artifact:Artifact={id,ownerId:job.ownerId,sessionId:session.id,messageId:job.messageId,kind:'game',name:made.draft.title+'.zip',url:`/api/artifacts/${id}/play`,downloadUrl:`/api/artifacts/${id}/project`,projectUrl:`/api/artifacts/${id}/project`,coverUrl:`/api/artifacts/${id}/cover`,coverMimeType:'image/jpeg',createdAt:now(),version:state.artifacts.filter(a=>a.sessionId===session.id&&a.kind==='game').length+1,creative:{engine:'defold',sourceHash:made.verification.sourceHash,artifactHash:made.build.artifactHash,technicalPassed:true,modelSelfChecked:true,userAccepted:false},workflow:structuredClone(job.workflow)};
+      currentTaskExecution()?.guard();state.artifacts.push(artifact);job.artifactId=id;addReply(session,job,`已用Defold完成《${made.draft.title}》：游戏与动画节点已实际编译为HTML5，输入和重启试玩及模型自检通过。可直接试玩或下载源码工程，待你审阅玩法和画面。`,id);await saveState();return;
     }
     updateReply(session,job,`已使用「${template.name}」，正在核对资料并设计同屏对照动画。`,'commentary','template-start');await saveState();
-    const result=await runTemplateWorkflow({template,prompt,config,history,previous:session.templateId===template.id?session.templateDraft:undefined,
+    const result=await runTemplateWorkflow({template,prompt,config,history,previous:(savedDraft&&'panels' in savedDraft?savedDraft:legacyDraft&&session.templateId===template.id?session.templateDraft:undefined),
       directory:path.join(dataDir,'template-projects',job.id,job.attemptId||randomUUID()),progress:workflowProgress,
       renderProgress:async(frames,total)=>{job.progress=Math.max(job.progress||0,35+Math.round(frames/total*50));job.stage=`渲染模板视频 · ${Math.round(frames/total*100)}%`;await saveState();}});
-    session.templateId=template.id;session.templateDraft=result.draft;
+    if(job.taskSpec)await saveTaskDraft(dataDir,job.taskSpec,result.draft,()=>currentTaskExecution()?.guard());
+    if(session.taskSpec?.id===job.taskSpec?.id){session.templateId=template.id;session.templateDraft=result.draft;}
     if(!result.rendered){addReply(session,job,`「${template.name}」方案已保存：${result.draft.title}，${result.draft.panels.length}图同屏，${result.draft.duration}秒。\n${result.draft.panels.map((p,i)=>`${i+1}. ${p.name}：${p.difference}`).join('\n')}\n发送“生成成片”即可继续制作。`);await saveState();return;}
     const rendered=result.rendered,id=randomUUID(),mediaId=randomUUID();
     const destinations=[path.join(exportDir,`${id}.mp4`),path.join(mediaDir,mediaId),path.join(exportDir,`${id}-cover.png`),path.join(exportDir,`${id}-project.zip`),path.join(exportDir,`${id}-template.json`)];
@@ -269,7 +279,7 @@ async function performJob(job: Job): Promise<void> {
       throwIfJobCancelled();
     }catch(error){await Promise.all(destinations.map(f=>rm(f,{force:true})));if(oss)await Promise.allSettled([oss.remove(job.ownerId!,'exports',id),oss.remove(job.ownerId!,'media',mediaId),oss.remove(job.ownerId!,'covers',id),oss.remove(job.ownerId!,'artifacts',`${id}-project`),oss.remove(job.ownerId!,'artifacts',`${id}-template`)]);throw error;}
     const artifact:Artifact={id,ownerId:job.ownerId,sessionId:session.id,messageId:job.messageId,kind:'video',name:result.draft.title+'.mp4',url:`/api/artifacts/${id}`,downloadUrl:`/api/download/${id}`,projectUrl:`/api/artifacts/${id}/project`,coverUrl:`/api/artifacts/${id}/cover`,coverMimeType:'image/png',createdAt:now(),version:state.artifacts.filter(a=>a.sessionId===session.id&&a.kind==='video').length+1,duration:result.draft.duration,format:'9:16',mediaId,hasNarration:false,hasBgm:result.draft.bgm,workflow:structuredClone(job.workflow),template:{...job.template,panels:result.draft.panels.length,technicalPassed:true,userAccepted:false,boundary:result.draft.boundary,basis:result.draft.basis,animationMode:rendered.verification.animationMode as 'code'|'declarative',sourceHash:rendered.verification.programSourceSha256||undefined,motion:rendered.verification.motionV2?{meanChangedAreaPct:rendered.verification.motionV2.meanChangedAreaPct,activeFramePct:rendered.verification.motionV2.activeFramePct}:undefined}};
-    state.artifacts.push(artifact);state.media.push({id:mediaId,ownerId:job.ownerId,name:artifact.name,mimeType:'video/mp4',kind:'video',duration:artifact.duration,url:`/api/media/${mediaId}`,createdAt:now(),origin:'generated'});
+    currentTaskExecution()?.guard();state.artifacts.push(artifact);state.media.push({id:mediaId,ownerId:job.ownerId,name:artifact.name,mimeType:'video/mp4',kind:'video',duration:artifact.duration,url:`/api/media/${mediaId}`,createdAt:now(),origin:'generated'});
     job.artifactId=id;addReply(session,job,`已按「${template.name}」制作《${result.draft.title}》：${result.draft.panels.length}图同屏，${result.draft.duration}秒单页循环，无口播${result.draft.bgm?'、带循环配乐':''}。成片、封面和可编辑工程已保存，技术检查通过，待你审阅。`,id);await saveState();return;
   }
   if(job.kind==='avatar') {
@@ -712,7 +722,18 @@ async function processQueue() {
             job.stage = [...events].reverse().find(event => event.status === 'running')?.stage || events.at(-1)?.stage;
             await saveState();
           });
-          const execute = () => withAgentRuntime(runtime, () => withModelSnapshot(models!, () => performJob(job)));
+          job.taskSpec ||= createTaskSpec(activeSession?.messages.filter(m=>m.createdAt<=job.createdAt)||[],activeSession?.messages.find(m=>m.id===job.messageId)?.text||job.kind,job.template?.id);
+          if(activeSession){activeSession.taskRevisions||={};activeSession.taskRevisions[job.taskSpec.id]??=job.taskSpec.revision;}
+          await saveState();
+          const execute = () => withAgentRuntime(runtime, async()=>{
+            const manifest={models:snapshotModels(models!).map(({id,modelId,provider,baseUrl})=>({id,modelId,provider,baseUrl})),capabilities:job.capabilities,extensions:runtime.fingerprint,template:job.template};
+            const assertTemplate=async()=>{if(job.template&&(await loadVideoTemplates()).find(t=>t.id===job.template!.id)?.skillHash!==job.template.skillHash)throw Error('模板执行文件已变化，请使用最新模板重新运行。');};await assertTemplate();
+            const environmentHash=await captureTaskEnvironment(root,manifest);
+            return withTaskExecution({timeoutMs:Number(process.env.QINGJIAN_TASK_TIMEOUT_MS)||1800000,ledgerDirectory:path.join(dataDir,'agent-effects',job.taskSpec!.id),maxCredits:process.env.QINGJIAN_TASK_MAX_CREDITS===undefined?undefined:Number(process.env.QINGJIAN_TASK_MAX_CREDITS),spec:job.taskSpec!,directory:path.join(dataDir,'agent-runs',job.id),environmentHash,
+              assertCurrent:()=>assertTaskRevision(job.taskSpec!,getSession(job.sessionId)?.taskRevisions),
+              assertEnvironment:async()=>{await assertTemplate();await runtime.assertFresh?.();if(environmentHash!==await captureTaskEnvironment(root,manifest))throw Error('执行环境已变化，旧验收不能用于交付。');},
+            },()=>withModelSnapshot(models!,()=>performJob(job)));
+          });
           return await (isEvaluationOwner(job.ownerId) ? execute() : withCreditUsage(credits, job.ownerId!, job.creditTaskId ?? job.id, execute));
           } finally { transport = getJobTransportDiagnostics(); }
         });
@@ -722,7 +743,7 @@ async function processQueue() {
         if (error instanceof JobCancelledError || job.stopRequestedAt) {
           job.status = 'cancelled'; job.cancelledAt = now(); job.progress = undefined; job.error = undefined; job.stage = '已停止运行';
           const session = getSession(job.sessionId);
-          if (session) addReply(session, job, '已停止运行。已完成的步骤和生成结果已保留。');
+          if (session) addReply(session, job, job.cancelReason==='superseded'?'要求已更新，旧版本执行已停止；已完成的结果保留。':'已停止运行。已完成的步骤和生成结果已保留。');
         } else {
           job.status = 'failed'; job.progress = undefined;
           job.failure = executionFailure(error, modelSecrets);
@@ -751,6 +772,8 @@ async function enqueueAgentMessage(session: Session, text: string, attachmentIds
   const createdAt = now();
   const message: ChatMessage = { id: randomUUID(), role: 'user', text, createdAt, attachmentIds };
   const job: Job = { id: randomUUID(), ownerId: session.ownerId, sessionId: session.id, messageId: message.id, kind: selection.kind, status: 'queued', createdAt, updatedAt: createdAt, progress: 0, ...(selection.template?{template:templateSelection(selection.template)}:{}) };
+  job.taskSpec=createTaskSpec([...session.messages,message],text,selection.template?.id,priorTaskSpec(session,selection.template?.id));if(selection.template)(session.taskSpecsByTemplate||={})[selection.template.id]=job.taskSpec;if(!wantsConversation(text))session.taskSpec=job.taskSpec;session.taskRevisions||={};session.taskRevisions[job.taskSpec.id]=job.taskSpec.revision;
+  jobRunner.supersede(state.jobs,job.taskSpec,now());
   job.creditTaskId = creditTaskId;
   if(selection.template&&!wantsConversation(text)){if(session.templateId!==selection.template.id){session.templateDraft=undefined;session.creativeDraft=undefined;}session.templateId=selection.template.id;}
   job.capabilities = structuredClone(session.capabilities || defaultAgentCapabilities());
@@ -849,7 +872,7 @@ await mountTemplateTestRoutes(app,{
   },
   job:id=>state.jobs.find(j=>j.id===id),artifact:job=>state.artifacts.find(a=>a.id===job.artifactId&&a.ownerId===job.ownerId&&a.sessionId===job.sessionId),
   async stop(sessionId,ownerId){jobRunner.stopSession(state.jobs,ownerId,sessionId,now());await persistState();},
-  preview:a=>a.kind==='game'?creativePreviews.issue(path.join(exportDir,`${a.id}-game`)):undefined,
+  preview:a=>a.kind==='game'?creativePreviews.issue(path.join(exportDir,`${a.id}-game`),'index.html',a.creative?.artifactHash):undefined,
   asset:(a,kind)=>a.kind==='game'?(kind==='project'?path.join(exportDir,`${a.id}-project.zip`):kind==='cover'?path.join(exportDir,`${a.id}-cover.jpg`):kind==='report'?path.join(exportDir,`${a.id}-template.json`):undefined):kind==='video'?path.join(exportDir,`${a.id}.mp4`):kind==='cover'?path.join(exportDir,`${a.id}-cover.png`):kind==='project'?path.join(exportDir,`${a.id}-project.zip`):path.join(exportDir,`${a.id}-template.json`),
   dispatch:()=>{void processQueue();},
 });
@@ -864,7 +887,7 @@ auth.mount(app, credits.readiness, user => credits.snapshot(user.id));
 mountCreditRoutes(app, credits);
 mountExtensionRoutes(app, extensions, { sessions: () => state.sessions, jobs: () => state.jobs, save: saveState, publicState, activate: async(user,session) => { (await profileOf(user)).activeSessionId = session.id; } });
 app.get('/api/creative/capabilities',async(_q,r)=>{const e=await defoldEnvironment();r.json({nodeKinds:['canvas','animation','game'],engines:[{id:'defold',available:e.available,version:e.version,setup:e.available?undefined:e.setup}],editing:['create','read','update','delete','search','history'],modelSelfCheck:true});});
-app.get('/api/artifacts/:id/play',(q,r)=>{const a=state.artifacts.find(a=>a.id===q.params.id&&owned(a,userOf(q).id)&&a.kind==='game');if(!a)return r.status(404).json({error:'游戏不存在。'});r.json({url:creativePreviews.issue(path.join(exportDir,`${a.id}-game`))});});
+app.get('/api/artifacts/:id/play',(q,r)=>{const a=state.artifacts.find(a=>a.id===q.params.id&&owned(a,userOf(q).id)&&a.kind==='game');if(!a)return r.status(404).json({error:'游戏不存在。'});r.json({url:creativePreviews.issue(path.join(exportDir,`${a.id}-game`),'index.html',a.creative?.artifactHash)});});
 app.get('/api/templates',(_request,response)=>response.json({templates:videoTemplates.map(publicTemplate)}));
 mountVoiceInputRoutes(app, tmpDir, undefined, credits);
 mountAvatarRoutes(app,{
@@ -1064,10 +1087,17 @@ app.get('/api/jobs/:id/attempts/:attemptId', (request, response) => {
   if (!attempt) return response.status(404).json({ error: '本次执行记录不存在。' });
   response.json({ attempt });
 });
+app.get('/api/jobs/:id/runtime',async(request,response)=>{
+  const job=state.jobs.find(j=>j.id===request.params.id&&owned(j,userOf(request).id));
+  if(!job)return response.status(404).json({error:'任务不存在。'});
+  try{const run=JSON.parse(await readFile(path.join(dataDir,'agent-runs',job.id,'run.json'),'utf8'));const effects=job.taskSpec?await readFile(path.join(dataDir,'agent-effects',job.taskSpec.id,'effects.json'),'utf8').then(JSON.parse,()=>null):null;response.json({taskSpec:job.taskSpec,contractHash:run.contractHash,environmentHash:run.environmentHash,plan:run.plan,checkpoints:run.checkpoints,budget:{calls:run.calls,deadlineAt:run.deadlineAt,spentPoints:(run.spentMicros||0)/1000000,usageUnknown:Boolean(run.usageUnknown)},actions:(effects?.actions||run.actions).map(({result:_result,...a}:any)=>a),evidence:run.evidence});}
+  catch(error){response.status((error as NodeJS.ErrnoException).code==='ENOENT'?404:500).json({error:'任务执行记录暂不可用。'});}
+});
 app.post('/api/jobs/:id/retry', async (request, response) => {
   const user = userOf(request);
   const job = state.jobs.find((item) => item.id === request.params.id && owned(item, user.id));
   if (!job) return response.status(404).json({ error: '任务不存在。' });
+  if(job.cancelReason==='superseded')return response.status(409).json({error:'此任务已被后续要求替代，请继续最新任务，不能重试旧版本。'});
   const candidate=state.artifacts.find(a=>a.id===job.artifactId&&owned(a,user.id));
   const needsLessonRepair=job.status==='succeeded'&&candidate?.plan?.lesson&&candidate.review?.status==='needs-review';
   if (job.status !== 'failed'&&!needsLessonRepair) return response.status(409).json({ error: '只有失败的任务或未通过审查的教学成片可以重试。' });

@@ -1,3 +1,5 @@
+import {stateHash} from './durableState';
+import {currentTaskExecution} from './taskRuntime';
 import { randomUUID, createHash } from 'node:crypto';
 import { mkdir, readFile, rename, writeFile } from 'node:fs/promises';
 import path from 'node:path';
@@ -423,7 +425,7 @@ export function createExtensions(dataDir: string) {
             execute: async (_call, args: any) => {
               const client = clients.get(args.serverId);
               if (!client) throw new ExtensionError('MCP 服务未在当前会话启用。');
-              return content(await client.call(args.name, args.arguments, readOnly));
+              const task=currentTaskExecution(),run=()=>client.call(args.name,args.arguments,readOnly);return content(await (!readOnly&&task?task.external('mcp:'+args.serverId+':'+args.name,args.arguments,run,connections.flatMap(c=>c.token?[c.token]:[])):run()));
             },
           });
       }
@@ -447,15 +449,17 @@ export function createExtensions(dataDir: string) {
           replay: 'never',
           execute: async (_call, args: any) => {
             const { operation, ...values } = args;
-            return content(await browserCall(id, operation, settings.browserProfile, values));
+            const task=currentTaskExecution(),run=()=>browserCall(id,operation,settings.browserProfile,values);return content(await (task&&!['read','status'].includes(operation)?task.external('browser:'+settings.browserProfile+':'+operation,values,run):run()));
           },
         });
+      tools.push({name:'list_external_action_receipts',label:'查询外部操作收据',description:'读取已经发起的外部写入及其确认/未知状态。结果未知时必须先只读核对，不能再次提交。',parameters:Type.Object({}),execute:async()=>content(await currentTaskExecution()?.receipts()||[])});
+      const fingerprint=stateHash({settings,instructions,connections:connections.map(({token:_token,...c})=>c)});
       const trace = createToolTrace(
         publish,
         connections.flatMap((item) => (item.token ? [item.token] : [])),
       );
       return {
-        settings,
+        settings,fingerprint,assertFresh:async()=>{if(stateHash(owner(id))!==stateHash(snapshot))throw Error('会话外部能力已变化，请以新配置重新运行。');const actual=(await Promise.all([...skillIds].map(async key=>builtins.some(b=>b.id===key)?loadEditingSkill(key as EditingSkill):owner(id).skills.find(s=>s.id===key)?.content))).join('\n\n');if(actual!==instructions)throw Error('Skill内容在运行期间发生变化，旧验收已失效。');},
         instructions:
           instructions +
           (tools.length

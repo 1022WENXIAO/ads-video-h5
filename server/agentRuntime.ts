@@ -6,6 +6,8 @@ export interface AgentRuntime {
   settings: AgentCapabilities;
   instructions: string;
   tools: AgentTool[];
+  fingerprint?: string;
+  assertFresh?:()=>Promise<void>;
   dispose?: () => Promise<void>;
 }
 const context = new AsyncLocalStorage<AgentRuntime>();

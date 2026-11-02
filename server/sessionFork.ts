@@ -25,7 +25,7 @@ export function forkSession(
     });
   return {
     ...structuredClone(source),
-    ...(throughMessageId || active.size ? { plan: null, lessonDraft: undefined } : {}),
+    ...(throughMessageId || active.size ? { plan: null, lessonDraft: undefined, templateDraft: undefined, creativeDraft: undefined, templateId: undefined, taskSpec: undefined, taskRevisions: undefined, taskSpecsByTemplate: undefined } : {}),
     id: randomUUID(),
     title: `${source.title} · 分叉`.slice(0, 100),
     messages,

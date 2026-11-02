@@ -16,6 +16,7 @@ export async function verifyCreativeResearch(raw:ResearchResult,prompt:string,re
   const references=raw.references.filter(r=>publicResearchUrl(r.url)).slice(0,12).map(r=>({...r}));
   const reads=await mapLimited(references,4,async ref=>{
     try{
+      ref.verification='search-cited';
       const page=await read(ref.url);throwIfJobCancelled();
       const parsed=primaryPageText(page.text);
       if(!parsed)throw new Error('页面无法读取有效正文或是访问检查。');

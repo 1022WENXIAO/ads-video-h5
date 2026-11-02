@@ -1,3 +1,5 @@
+import {currentTaskExecution} from './taskRuntime';
+import {createTaskSpec,taskContext,taskSpecHash,taskRequestText} from './taskContract';
 import type { ModelConfig } from './modelRegistry';
 import type { WorkflowEvent } from '../shared/types';
 import type { LoadedVideoTemplate } from './videoTemplates';
@@ -7,7 +9,7 @@ import type { ScienceScene } from './scienceScene';
 import { validateScienceProgram } from './scienceProgram';
 import { codeScienceScene } from './scienceCoding';
 import { renderScienceVideo } from './scienceRender';
-import { wantsPlanOnly, excludesBgm, shouldUpdatePlan } from './intents';
+import { wantsPlanOnly, shouldUpdatePlan } from './intents';
 import { readPublicPage } from './publicResearch';
 import { primaryPageText, primaryLessonUrl } from './lessonResearch';
 import { throwIfJobCancelled } from './jobExecution';
@@ -18,7 +20,7 @@ import {creativeHash} from './creativeWorkspace';
 
 async function templateResearch(o:Parameters<typeof runTemplateWorkflow>[0],trace:ReturnType<typeof createToolTrace>):Promise<ResearchResult> {
   const topic=o.prompt+(o.previous?'\n当前工程主题：'+o.previous.title:'');
-  const urls=[...new Set([...o.template.sourceHints.filter(h=>h.keywords.some(k=>topic.toLocaleLowerCase().includes(k.toLocaleLowerCase()))).flatMap(h=>h.urls),...(!shouldUpdatePlan(o.prompt,Boolean(o.previous))?o.previous?.basis||[]:[])])];
+  const urls=[...new Set([...o.template.sourceHints.filter(h=>h.keywords.some(k=>topic.toLocaleLowerCase().includes(k.toLocaleLowerCase()))).flatMap(h=>h.urls),...(!shouldUpdatePlan(taskRequestText(o.prompt),Boolean(o.previous))?o.previous?.basis||[]:[])])];
   if(urls.length){
     const reads=await Promise.all(urls.map(async url=>{
       try{
@@ -34,6 +36,8 @@ async function templateResearch(o:Parameters<typeof runTemplateWorkflow>[0],trac
 }
 
 export async function runTemplateWorkflow(o:{template:LoadedVideoTemplate;prompt:string;config:ModelConfig;directory:string;history?:Array<{role:string;text:string}>;previous?:ScienceScene;progress:(events:WorkflowEvent[])=>Promise<void>;renderProgress?:(frames:number,total:number)=>Promise<void>}) {
+  const contract=currentTaskExecution()?.spec||createTaskSpec(o.history||[],o.prompt,o.template.id);
+  const authorRequest=o.prompt+'\n'+taskContext(contract);
   await mkdir(o.directory,{recursive:true});
   const trace=createToolTrace(o.progress,[o.config.apiKey]);
   await trace.run('load_video_template','读取模板制作规则',{template:o.template.name,version:o.template.version,skillHash:o.template.skillHash},async()=>({skill:o.template.skillName,defaults:o.template.defaults}));
@@ -41,20 +45,22 @@ export async function runTemplateWorkflow(o:{template:LoadedVideoTemplate;prompt
   const verified=research.references.filter(r=>['primary-page','primary-paper','public-page'].includes(r.verification));
   const allowed=new Set(verified.map(r=>r.url));let scene:ScienceScene|undefined;
   const reviewed=structuredClone(o.previous),receipt=reviewed?.program?.selfCheck;if(reviewed?.program)delete reviewed.program.selfCheck;
-  if(o.previous?.program&&receipt?.approved&&receipt.sourceHash===creativeHash(o.previous.program.source)&&receipt.sceneHash===creativeHash(reviewed)&&!shouldUpdatePlan(o.prompt,true))scene=await trace.run('reuse_template_draft','沿用已确认的动画程序',{title:o.previous.title},async()=>validateScienceProgram(o.previous!,allowed));
-  if(!scene)scene=await trace.run('code_template_animation','编写、预览与修订动画代码',{template:o.template.id},()=>codeScienceScene({template:o.template,prompt:o.prompt,config:o.config,references:verified,directory:o.directory,previous:o.previous,progress:o.progress}));
-  if(excludesBgm(o.prompt))scene.bgm=false;
+  if(o.previous?.program&&receipt?.contractHash===taskSpecHash(contract)&&receipt?.approved&&receipt.sourceHash===creativeHash(o.previous.program.source)&&receipt.sceneHash===creativeHash(reviewed)&&!shouldUpdatePlan(taskRequestText(o.prompt),true))scene=await trace.run('reuse_template_draft','沿用已确认的动画程序',{title:o.previous.title},async()=>validateScienceProgram(o.previous!,allowed));
+  if(scene&&currentTaskExecution()){scene=undefined;}
+  if(!scene)scene=await trace.run('code_template_animation','编写、预览与修订动画代码',{template:o.template.id},()=>codeScienceScene({template:o.template,prompt:authorRequest,config:o.config,references:verified,directory:o.directory,previous:o.previous,preserveExisting:!shouldUpdatePlan(taskRequestText(o.prompt),true),progress:o.progress}));
   if(wantsPlanOnly(o.prompt))return {draft:scene!,references:verified};
   for(let attempt=0;attempt<2;attempt++){
     try{
       const rendered=await trace.run('render_template_video','渲染循环视频并验证成片',{panels:scene!.panels.length,duration:scene!.duration,attempt:attempt+1},()=>renderScienceVideo({template:o.template,config:scene!,references:verified,directory:attempt?path.join(o.directory,'render-repaired'):o.directory,progress:o.renderProgress}));
+      const verifiedProject=scene!.program?.selfCheck?.projectHash||creativeHash(scene);
+      await currentTaskExecution()?.verify('render',verifiedProject,rendered.verification);
+      await currentTaskExecution()?.accept({projectHash:verifiedProject,artifactHash:String(rendered.verification.videoSha256),technicalPassed:true,requirementsReviewed:Boolean(scene!.program?.selfCheck?.approved)});
       return {draft:scene!,references:verified,rendered};
     }catch(error){
       throwIfJobCancelled();const message=error instanceof Error?error.message:String(error);
       if(attempt||!scene!.program||!/动效未达到|文字超出|正文|非等比缩放|循环|断言|场景执行|非确定性/.test(message))throw error;
       await writeFile(path.join(o.directory,'render-repair.json'),JSON.stringify({attempt:1,error:message,userAccepted:false},null,2));
-      scene=await trace.run('repair_animation_code','根据成片检查修订动画代码',{error:message},()=>codeScienceScene({template:o.template,prompt:o.prompt+'\n成片独立检查未通过，请基于上一版源码修复并重新预览：'+message,config:o.config,references:verified,directory:path.join(o.directory,'authoring-repair'),previous:scene,progress:o.progress}));
-      if(excludesBgm(o.prompt))scene.bgm=false;
+      scene=await trace.run('repair_animation_code','根据成片检查修订动画代码',{error:message},()=>codeScienceScene({template:o.template,prompt:authorRequest+'\n成片独立检查未通过，请基于上一版源码修复并重新预览：'+message,config:o.config,references:verified,directory:path.join(o.directory,'authoring-repair'),previous:scene,progress:o.progress}));
     }
   }
   throw new Error('动画成片修复后仍未通过检查。');

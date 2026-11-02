@@ -4,9 +4,9 @@ import type {CreativeWorkspace} from './creativeWorkspace';
 import type {CreativeNode} from '../shared/creativeProject';
 const revision=Type.Integer({minimum:1}),file=Type.String({minLength:1,maxLength:160}),content=Type.String({maxLength:160000});
 const result=(value:unknown)=>({content:[{type:'text' as const,text:JSON.stringify(value)}],details:value});
-export function creativeEditingTools(workspace:CreativeWorkspace,onChange:()=>void):AgentTool[]{
+export function creativeEditingTools(workspace:CreativeWorkspace,onChange:()=>void,canChange:()=>boolean=()=>true):AgentTool[]{
  const changed=async(action:Promise<unknown>)=>{await action;onChange();return result(workspace.list());};
- return [
+ const tools:AgentTool[]=[
  {name:'list_project_files',label:'查询工程文件与节点',description:'读取当前版本、文件哈希、入口与实际节点。修改时必须使用当前revision。',parameters:Type.Object({}),execute:async()=>result(workspace.list())},
  {name:'read_project_file',label:'读取代码与行号',description:'读取当前工程文件的实际内容、行号与SHA，供精确编辑；不访问服务端其他文件。',parameters:Type.Object({path:file,startLine:Type.Integer({minimum:1}),endLine:Type.Integer({minimum:1})}),execute:async(_id,a:any)=>result(workspace.read(a.path,a.startLine,a.endLine))},
  {name:'search_project_files',label:'搜索变量和引用',description:'按原文搜索全部文件中的变量、函数和资源引用，返回行号。',parameters:Type.Object({query:Type.String({minLength:1,maxLength:200})}),execute:async(_id,a:any)=>result(workspace.search(a.query))},
@@ -18,4 +18,5 @@ export function creativeEditingTools(workspace:CreativeWorkspace,onChange:()=>vo
  {name:'delete_project_node',label:'删除可编程节点',description:'移除指定节点，后续构建/预览不再执行该节点；源码和历史不自动删除。',parameters:Type.Object({expectedRevision:revision,id:Type.String()}),execute:async(_id,a:any)=>{const node=workspace.snapshot().nodes.find(n=>n.id===a.id);if(!node)throw Error('节点不存在。');return changed(workspace.node(a.expectedRevision,'delete',node));}},
  {name:'restore_project_revision',label:'恢复工程历史版本',description:'将指定历史快照恢复为一个新版本，保留全部操作历史。恢复后必须重新验证与自检。',parameters:Type.Object({expectedRevision:revision,revision}),execute:async(_id,a:any)=>changed(workspace.restore(a.expectedRevision,a.revision))},
  ];
+ return tools.map(tool=>/^(create|update|delete|restore)_project_/.test(tool.name)?{...tool,execute:async(...args)=>{if(!canChange())throw Error('当前工程检查通过，本次仅导出，不能修改已有内容。');return tool.execute(...args);}}:tool);
 }

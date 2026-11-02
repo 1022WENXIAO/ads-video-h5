@@ -213,3 +213,10 @@ HTML 特效的管理、草稿预览、渲染和下载接口见 [HTML 特效说�
 `GET /api/creative/capabilities`返回canvas/animation/game节点、编辑工具、自检能力及Defold环境状态。`@Defold游戏`调用真实Defold作者Agent及固定Bob构建器，返回`kind=game`产物；`creative`包含sourceHash、technicalPassed、modelSelfChecked、userAccepted=false。对话和后台通过已认证的`/api/artifacts/:id/play`或模板测试`assets/preview`获取限时只读试玩URL，iframe无同源权限。工程下载复用`projectUrl`。
 
 所有文件/节点变更均携带revision，文件修改还携带SHA与行范围；独立模型自检读取当前源码及实际预览，修复后重新验证，采用时绑定最新哈希。详见[节点、自检与部署说明](CREATIVE_CODE_NODES.md)。
+
+
+### Agent可靠性运行记录
+
+`GET /api/jobs/:id/runtime`只允许任务所有者读取，返回任务契约、运行环境指纹、计划前置条件、工具检查点、调用/积分预算、持久化截止时间和外部操作收据状态；不会返回工具原始结果或凭证。已被后续要求替代的任务`cancelReason=superseded`，重试返回409。纯导出沿用既有任务约束；明确修改增加同一目标revision，新的独立目标不继承旧目标的约束。
+
+MCP写入和浏览器变更的稳定收据按目标保存，跨任务重试仍可识别未知结果；未知状态不能自动放行再次提交。自动验收维持`userAccepted=false`。构建产物带内容摘要，验收后的试玩目录变化时能力URL返回410。运行与恢复边界见[可编程节点说明](CREATIVE_CODE_NODES.md)。

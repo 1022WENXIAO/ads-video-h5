@@ -1,6 +1,11 @@
 import type {ScienceScene} from '../shared/scienceScene';
 import type {CreativeProject} from '../shared/creativeProject';
 import {compileCanvasProject} from './creativeCompiler';
+import {creativeHash} from './creativeWorkspace';
+export function assertScienceReceipt(scene:ScienceScene){
+ const receipt=scene.program?.selfCheck,copy=structuredClone(scene);if(copy.program)delete copy.program.selfCheck;
+ if(!receipt?.approved||receipt.sourceHash!==creativeHash(scene.program!.source)||receipt.sceneHash!==creativeHash(copy))throw Error('动画源码或场景元数据已改变，请重新验证与自检后再渲染。');
+}
 export function scienceWorkspaceInput(scene:ScienceScene):Omit<CreativeProject,'revision'|'updatedAt'>{
  if(!scene.program)throw Error('需要可编程场景。');const {source,files,entry,nodes,selfCheck,...metaProgram}=scene.program;
  const meta={...scene,program:metaProgram};
