@@ -2,7 +2,7 @@ import express, { type ErrorRequestHandler, type Response } from 'express';
 import multer from 'multer';
 import { randomUUID } from 'node:crypto';
 import {createJsonStateWriter} from './jsonStateWriter';
-import { copyFile, mkdir, readFile, rename, rm, writeFile } from 'node:fs/promises';
+import { cp, copyFile, mkdir, readFile, rename, rm, writeFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -60,6 +60,14 @@ import { withCreditUsage } from './creditUsage';
 import { mountCreditRoutes, mountCreditAdminRoutes } from './creditRoutes';
 import { createReleaseEvaluations } from './releaseEvaluations';
 import { loadApplicationState } from './stateLoading';
+import { loadVideoTemplates, publicTemplate, templateSelection } from './videoTemplates';
+import { resolveTemplateRequest } from './templateRequest';
+import { runTemplateWorkflow } from './templateWorkflow';
+import { codeDefoldProject } from './defoldCoding';
+import { createCreativePreviews } from './creativePreview';
+import { defoldEnvironment } from './defoldRuntime';
+import { mountTemplateTestRoutes } from './templateTestRoutes';
+import { wantsConversation } from './intents';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const dataDir = process.env.QINGJIAN_DATA_DIR ? path.resolve(process.env.QINGJIAN_DATA_DIR) : path.join(root, 'data');
@@ -72,6 +80,7 @@ const mediaDir = path.join(dataDir, 'media');
 const artifactDir = path.join(dataDir, 'artifacts');
 const exportDir = path.join(dataDir, 'exports');
 const tmpDir = path.join(dataDir, 'uploads');
+const videoTemplates = await loadVideoTemplates();
 const stateFile = path.join(dataDir, 'app-state.json');
 const port = Number(process.env.PORT || 8787);
 const publicBase = `/${(process.env.PUBLIC_BASE_PATH || '').replace(/^\/+|\/+$/g, '')}`.replace(/^\/$/, '');
@@ -147,13 +156,13 @@ const extFor = (mime: string) => mime === 'image/jpeg' ? 'jpg' : mime === 'image
 async function publicState(user: PublicUser): Promise<AppState> {
   const [models, profile, wallet] = await Promise.all([listPublicModels(), profileOf(user), credits.snapshot(user.id)]);
   const textConfig = await getModelConfig('text', getSession(profile.activeSessionId, user.id)?.modelId);
-  return { credits: wallet, activeSessionId: profile.activeSessionId, sessions: state.sessions.filter((item) => owned(item, user.id)), media: state.media.filter((item) => owned(item, user.id)).map((item) => ({ ...item, url: item.character ? publicUrl(item.url) : assetUrl(user.id, 'media', item.id, item.url), shots: item.shots?.map((shot, index) => ({ ...shot, thumbnailUrl: assetUrl(user.id, 'shots', `${item.id}-${index}`, shot.thumbnailUrl) })) })), artifacts: state.artifacts.filter((item) => owned(item, user.id)).map((item) => ({ ...item, url: assetUrl(user.id, item.kind === 'video' ? 'exports' : 'artifacts', item.id, item.url), downloadUrl: publicUrl(item.downloadUrl), ...(item.coverUrl ? { coverUrl: assetUrl(user.id, 'covers', item.id, item.coverUrl) } : {}) })), jobs: state.jobs.filter((item) => owned(item, user.id)).map(publicJob), settings: profile.settings, models, mode: textConfig ? 'pi' : 'unconfigured' };
+  return { templates: videoTemplates.map(publicTemplate), credits: wallet, activeSessionId: profile.activeSessionId, sessions: state.sessions.filter((item) => owned(item, user.id)), media: state.media.filter((item) => owned(item, user.id)).map((item) => ({ ...item, url: item.character ? publicUrl(item.url) : assetUrl(user.id, 'media', item.id, item.url), shots: item.shots?.map((shot, index) => ({ ...shot, thumbnailUrl: assetUrl(user.id, 'shots', `${item.id}-${index}`, shot.thumbnailUrl) })) })), artifacts: state.artifacts.filter((item) => owned(item, user.id)).map((item) => ({ ...item, url: item.kind==='game'?publicUrl(item.url):assetUrl(user.id, item.kind === 'video' ? 'exports' : 'artifacts', item.id, item.url), downloadUrl: publicUrl(item.downloadUrl), ...(item.projectUrl ? { projectUrl: publicUrl(item.projectUrl) } : {}), ...(item.coverUrl ? { coverUrl: item.kind==='game'?publicUrl(item.coverUrl):assetUrl(user.id, 'covers', item.id, item.coverUrl) } : {}) })), jobs: state.jobs.filter((item) => owned(item, user.id)).map(publicJob), settings: profile.settings, models, mode: textConfig ? 'pi' : 'unconfigured' };
 }
 
 function addReply(session: Session, job: Job, text: string, artifactId?: string) {
   return updateReply(session, job, text, 'final', 'final', artifactId);
 }
-async function addArtifact(session: Session, job: Job, kind: Artifact['kind'], name: string, bytes: Buffer, mimeType: string, text?: string, duration?: number): Promise<Artifact> {
+async function addArtifact(session: Session, job: Job, kind: Exclude<Artifact['kind'],'game'>, name: string, bytes: Buffer, mimeType: string, text?: string, duration?: number): Promise<Artifact> {
   throwIfJobCancelled();
   const id = randomUUID();
   const filename = `${id}.${extFor(mimeType)}`;
@@ -228,6 +237,41 @@ async function performJob(job: Job): Promise<void> {
     job.progress=Math.max(job.progress||0,Math.min(88,10+events.filter(e=>e.status==='succeeded').length*2));await saveState();
   };
   const basicProgress = workflowProgress;
+  if (job.template) {
+    const template = videoTemplates.find(t=>t.id===job.template!.id);
+    if (!template || template.skillHash!==job.template.skillHash) throw new Error('模板规则已变化，请重新发送制作要求以使用当前版本。');
+    const config=await getModelConfig('text',session.modelId);
+    if(!config)throw new Error('文本模型尚未配置，请在管理后台设置后重试。');
+    if(wantsConversation(prompt)){
+      const reply=await answerForSessionWithPi({prompt:prompt+'\n所选模板规则：\n'+template.context,config,media,history,plan:session.plan,attached,progress:workflowProgress});
+      addReply(session,job,reply);return;
+    }
+    if(template.workflow==='defold-game'){
+      const made=await codeDefoldProject({template,prompt,config,directory:path.join(dataDir,'game-projects',job.id,job.attemptId||randomUUID()),previous:session.templateId===template.id?session.creativeDraft:undefined,progress:workflowProgress});
+      const id=randomUUID(),folder=path.join(exportDir,`${id}-game`);
+      try{await cp(made.build.directory,folder,{recursive:true});await Promise.all([copyFile(made.archive,path.join(exportDir,`${id}-project.zip`)),copyFile(made.cover,path.join(exportDir,`${id}-cover.jpg`)),writeFile(path.join(exportDir,`${id}-template.json`),JSON.stringify({config:made.draft,verification:made.verification},null,2))]);throwIfJobCancelled();}
+      catch(error){await Promise.all([rm(folder,{recursive:true,force:true}),...['project.zip','cover.jpg','template.json'].map(ext=>rm(path.join(exportDir,`${id}-${ext}`),{force:true}))]);throw error;}
+      session.templateId=template.id;session.creativeDraft=made.draft;
+      const artifact:Artifact={id,ownerId:job.ownerId,sessionId:session.id,messageId:job.messageId,kind:'game',name:made.draft.title+'.zip',url:`/api/artifacts/${id}/play`,downloadUrl:`/api/artifacts/${id}/project`,projectUrl:`/api/artifacts/${id}/project`,coverUrl:`/api/artifacts/${id}/cover`,coverMimeType:'image/jpeg',createdAt:now(),version:state.artifacts.filter(a=>a.sessionId===session.id&&a.kind==='game').length+1,creative:{engine:'defold',sourceHash:made.verification.sourceHash,technicalPassed:true,modelSelfChecked:true,userAccepted:false},workflow:structuredClone(job.workflow)};
+      state.artifacts.push(artifact);job.artifactId=id;addReply(session,job,`已用Defold完成《${made.draft.title}》：游戏与动画节点已实际编译为HTML5，输入和重启试玩及模型自检通过。可直接试玩或下载源码工程，待你审阅玩法和画面。`,id);await saveState();return;
+    }
+    updateReply(session,job,`已使用「${template.name}」，正在核对资料并设计同屏对照动画。`,'commentary','template-start');await saveState();
+    const result=await runTemplateWorkflow({template,prompt,config,history,previous:session.templateId===template.id?session.templateDraft:undefined,
+      directory:path.join(dataDir,'template-projects',job.id,job.attemptId||randomUUID()),progress:workflowProgress,
+      renderProgress:async(frames,total)=>{job.progress=Math.max(job.progress||0,35+Math.round(frames/total*50));job.stage=`渲染模板视频 · ${Math.round(frames/total*100)}%`;await saveState();}});
+    session.templateId=template.id;session.templateDraft=result.draft;
+    if(!result.rendered){addReply(session,job,`「${template.name}」方案已保存：${result.draft.title}，${result.draft.panels.length}图同屏，${result.draft.duration}秒。\n${result.draft.panels.map((p,i)=>`${i+1}. ${p.name}：${p.difference}`).join('\n')}\n发送“生成成片”即可继续制作。`);await saveState();return;}
+    const rendered=result.rendered,id=randomUUID(),mediaId=randomUUID();
+    const destinations=[path.join(exportDir,`${id}.mp4`),path.join(mediaDir,mediaId),path.join(exportDir,`${id}-cover.png`),path.join(exportDir,`${id}-project.zip`),path.join(exportDir,`${id}-template.json`)];
+    try{
+      await Promise.all([copyFile(rendered.file,destinations[0]),copyFile(rendered.file,destinations[1]),copyFile(rendered.cover,destinations[2]),copyFile(rendered.archive,destinations[3]),writeFile(destinations[4],JSON.stringify({config:result.draft,references:result.references,verification:rendered.verification},null,2),{mode:0o600})]);
+      await Promise.all([oss?.put(job.ownerId!,'exports',id,destinations[0],'video/mp4'),oss?.put(job.ownerId!,'media',mediaId,destinations[1],'video/mp4'),oss?.put(job.ownerId!,'covers',id,destinations[2],'image/png'),oss?.put(job.ownerId!,'artifacts',`${id}-project`,destinations[3],'application/zip'),oss?.put(job.ownerId!,'artifacts',`${id}-template`,destinations[4],'application/json')]);
+      throwIfJobCancelled();
+    }catch(error){await Promise.all(destinations.map(f=>rm(f,{force:true})));if(oss)await Promise.allSettled([oss.remove(job.ownerId!,'exports',id),oss.remove(job.ownerId!,'media',mediaId),oss.remove(job.ownerId!,'covers',id),oss.remove(job.ownerId!,'artifacts',`${id}-project`),oss.remove(job.ownerId!,'artifacts',`${id}-template`)]);throw error;}
+    const artifact:Artifact={id,ownerId:job.ownerId,sessionId:session.id,messageId:job.messageId,kind:'video',name:result.draft.title+'.mp4',url:`/api/artifacts/${id}`,downloadUrl:`/api/download/${id}`,projectUrl:`/api/artifacts/${id}/project`,coverUrl:`/api/artifacts/${id}/cover`,coverMimeType:'image/png',createdAt:now(),version:state.artifacts.filter(a=>a.sessionId===session.id&&a.kind==='video').length+1,duration:result.draft.duration,format:'9:16',mediaId,hasNarration:false,hasBgm:result.draft.bgm,workflow:structuredClone(job.workflow),template:{...job.template,panels:result.draft.panels.length,technicalPassed:true,userAccepted:false,boundary:result.draft.boundary,basis:result.draft.basis,animationMode:rendered.verification.animationMode as 'code'|'declarative',sourceHash:rendered.verification.programSourceSha256||undefined,motion:rendered.verification.motionV2?{meanChangedAreaPct:rendered.verification.motionV2.meanChangedAreaPct,activeFramePct:rendered.verification.motionV2.activeFramePct}:undefined}};
+    state.artifacts.push(artifact);state.media.push({id:mediaId,ownerId:job.ownerId,name:artifact.name,mimeType:'video/mp4',kind:'video',duration:artifact.duration,url:`/api/media/${mediaId}`,createdAt:now(),origin:'generated'});
+    job.artifactId=id;addReply(session,job,`已按「${template.name}」制作《${result.draft.title}》：${result.draft.panels.length}图同屏，${result.draft.duration}秒单页循环，无口播${result.draft.bgm?'、带循环配乐':''}。成片、封面和可编辑工程已保存，技术检查通过，待你审阅。`,id);await saveState();return;
+  }
   if(job.kind==='avatar') {
     const source=media.find(m=>m.id===job.avatarSourceId&&m.character?.role==='reference');
     if(!source)throw new Error('形象原图不存在。');
@@ -701,12 +745,14 @@ async function processQueue() {
   });
 }
 
-async function enqueueAgentMessage(session: Session, text: string, attachmentIds: string[], voiceTicket?: string): Promise<Job> {
+async function enqueueAgentMessage(session: Session, text: string, attachmentIds: string[], voiceTicket?: string, modelSnapshot?:ModelSnapshot): Promise<Job> {
+  const selection=resolveTemplateRequest(text,session,videoTemplates);
   const creditTaskId = isEvaluationOwner(session.ownerId) ? undefined : await credits.admit(session.ownerId!, text, voiceTicket);
   const createdAt = now();
   const message: ChatMessage = { id: randomUUID(), role: 'user', text, createdAt, attachmentIds };
-  const job: Job = { id: randomUUID(), ownerId: session.ownerId, sessionId: session.id, messageId: message.id, kind: classify(text), status: 'queued', createdAt, updatedAt: createdAt, progress: 0 };
+  const job: Job = { id: randomUUID(), ownerId: session.ownerId, sessionId: session.id, messageId: message.id, kind: selection.kind, status: 'queued', createdAt, updatedAt: createdAt, progress: 0, ...(selection.template?{template:templateSelection(selection.template)}:{}) };
   job.creditTaskId = creditTaskId;
+  if(selection.template&&!wantsConversation(text)){if(session.templateId!==selection.template.id){session.templateDraft=undefined;session.creativeDraft=undefined;}session.templateId=selection.template.id;}
   job.capabilities = structuredClone(session.capabilities || defaultAgentCapabilities());
   // Freeze the selected asset when the request is accepted, so a UI switch
   // during a long render cannot change this job's author identity.
@@ -715,6 +761,7 @@ async function enqueueAgentMessage(session: Session, text: string, attachmentIds
   session.messages.push(message);
   if (session.title === '新对话' || session.title === '新会话') session.title = text.slice(0, 24);
   session.updatedAt = createdAt;
+  if(modelSnapshot)evaluationJobModels.set(job.id,modelSnapshot);
   state.jobs.push(job);
   return job;
 }
@@ -778,6 +825,7 @@ try { await releaseEvaluations.init(); }
 catch (error) { console.error(JSON.stringify({ event: 'release-evaluation.init-failed', failure: executionFailure(error) })); }
 
 const app = express();
+const creativePreviews=createCreativePreviews(publicBase);creativePreviews.mount(app);
 app.set('trust proxy', 'loopback');
 app.use(express.json({ limit: '1mb' }));
 const auth = createAuth(dataDir, publicBase);
@@ -789,6 +837,22 @@ await adminAuth.load();
 adminAuth.mount(app);
 mountAdminRoutes(app, effects, adminAuth, publicBase, evaluations, releaseEvaluations);
 mountCreditAdminRoutes(app, credits, adminAuth, auth.listUsers);
+await mountTemplateTestRoutes(app,{
+  dataDir,templates:videoTemplates,adminAuth,
+  async start(id,prompt,modelId){
+    const config=await getModelConfig('text',modelId||await getDefaultTextModelId());
+    if(!config)throw new Error('请先配置可用的文本模型，再运行模板测试。');
+    const session={...newSession(config.id),ownerId:`evaluation:template:${id}`,title:'视频模板测试'};
+    const modelSnapshot:ModelSnapshot={text:config,image:null,audio:null,understanding:null,textFallbacks:await getTextFallbackConfigs(config)};
+    state.sessions.push(session);const job=await enqueueAgentMessage(session,prompt,[],undefined,modelSnapshot);
+    await saveState();return {session,job};
+  },
+  job:id=>state.jobs.find(j=>j.id===id),artifact:job=>state.artifacts.find(a=>a.id===job.artifactId&&a.ownerId===job.ownerId&&a.sessionId===job.sessionId),
+  async stop(sessionId,ownerId){jobRunner.stopSession(state.jobs,ownerId,sessionId,now());await persistState();},
+  preview:a=>a.kind==='game'?creativePreviews.issue(path.join(exportDir,`${a.id}-game`)):undefined,
+  asset:(a,kind)=>a.kind==='game'?(kind==='project'?path.join(exportDir,`${a.id}-project.zip`):kind==='cover'?path.join(exportDir,`${a.id}-cover.jpg`):kind==='report'?path.join(exportDir,`${a.id}-template.json`):undefined):kind==='video'?path.join(exportDir,`${a.id}.mp4`):kind==='cover'?path.join(exportDir,`${a.id}-cover.png`):kind==='project'?path.join(exportDir,`${a.id}-project.zip`):path.join(exportDir,`${a.id}-template.json`),
+  dispatch:()=>{void processQueue();},
+});
 app.get('/api/effects', (_request, response) => response.json({ effects: effects.list().filter((item) => item.enabled).map(({ id, name, description, duration, width, height }) => ({ id, name, description, duration, width, height })) }));
 app.get('/api/effects/assets/:id', async (request, response) => {
   const asset = effects.getAsset(request.params.id);
@@ -799,6 +863,9 @@ app.get('/api/effects/assets/:id', async (request, response) => {
 auth.mount(app, credits.readiness, user => credits.snapshot(user.id));
 mountCreditRoutes(app, credits);
 mountExtensionRoutes(app, extensions, { sessions: () => state.sessions, jobs: () => state.jobs, save: saveState, publicState, activate: async(user,session) => { (await profileOf(user)).activeSessionId = session.id; } });
+app.get('/api/creative/capabilities',async(_q,r)=>{const e=await defoldEnvironment();r.json({nodeKinds:['canvas','animation','game'],engines:[{id:'defold',available:e.available,version:e.version,setup:e.available?undefined:e.setup}],editing:['create','read','update','delete','search','history'],modelSelfCheck:true});});
+app.get('/api/artifacts/:id/play',(q,r)=>{const a=state.artifacts.find(a=>a.id===q.params.id&&owned(a,userOf(q).id)&&a.kind==='game');if(!a)return r.status(404).json({error:'游戏不存在。'});r.json({url:creativePreviews.issue(path.join(exportDir,`${a.id}-game`))});});
+app.get('/api/templates',(_request,response)=>response.json({templates:videoTemplates.map(publicTemplate)}));
 mountVoiceInputRoutes(app, tmpDir, undefined, credits);
 mountAvatarRoutes(app,{
   media:()=>state.media,mediaDir,tmpDir,save:saveState,publicState,
@@ -882,6 +949,7 @@ app.post('/api/chat', async (request, response) => {
   if (!session) return response.status(404).json({ error: '对话不存在，请刷新后重试。' });
   const text = typeof request.body?.message === 'string' ? request.body.message.trim().slice(0, 2000) : '';
   if (!text) return response.status(400).json({ error: '请输入想让轻剪完成的内容。' });
+  try{resolveTemplateRequest(text,session,videoTemplates);}catch(error){return response.status(400).json({error:error instanceof Error?error.message:'请选择有效的视频模板。'});}
   const attachments = Array.isArray(request.body?.attachmentIds) ? request.body.attachmentIds : [];
   if (attachments.length > 6 || attachments.some((id: unknown) => typeof id !== 'string' || !state.media.some((item) => item.id === id && owned(item, user.id)))) return response.status(400).json({ error: '附件不存在或一次添加过多。' });
   if (request.body?.voiceTicket !== undefined && (typeof request.body.voiceTicket !== 'string' || request.body.voiceTicket.length > 100)) return response.status(400).json({ error: '语音指令凭证格式无效。' });
@@ -1019,8 +1087,15 @@ app.get('/api/artifacts/:id/edit-report', (request, response) => {
   response.setHeader('Content-Disposition', `attachment; filename=edit-report-${artifact.id}.json`);
   response.json({ artifactId: artifact.id, planHash: artifact.planHash, plan: artifact.plan, workflow: artifact.workflow, review: artifact.review });
 });
+app.get('/api/artifacts/:id/project',async(request,response)=>{
+  const user=userOf(request),artifact=state.artifacts.find(a=>a.id===request.params.id&&owned(a,user.id));
+  if(!artifact?.template&&!artifact?.creative)return response.status(404).json({error:'模板工程不存在。'});
+  const file=path.join(exportDir,`${artifact.id}-project.zip`);
+  try{await oss?.ensure(user.id,'artifacts',`${artifact.id}-project`,file);response.download(file,artifact.name.replace(/\.(mp4|zip)$/,'')+'-工程.zip');}
+  catch{response.status(502).json({error:'模板工程暂时无法下载。'});}
+});
 app.get('/api/artifacts/:id/cover', async (request, response) => {
-  const artifact = state.artifacts.find((item) => item.id === request.params.id && item.kind === 'video' && owned(item, userOf(request).id));
+  const artifact = state.artifacts.find((item) => item.id === request.params.id && (item.kind === 'video'||item.kind==='game') && owned(item, userOf(request).id));
   if (!artifact?.coverMimeType) return response.status(404).json({ error: '封面不存在。' });
   const file = path.join(exportDir, `${artifact.id}-cover.${extFor(artifact.coverMimeType)}`);
   try { await oss?.ensure(userOf(request).id, 'covers', artifact.id, file); response.type(artifact.coverMimeType).sendFile(file); }

@@ -180,3 +180,36 @@ HTML 特效的管理、草稿预览、渲染和下载接口见 [HTML 特效说�
 缓存 token 是输入 token 的子集，音频缓存同时是缓存和音频输入的子集，不重复计费；输出 token 已包含推理 token。当前计费覆盖返回 token 用量的 Chat/Responses 模型调用，图片按张、TTS 按字符、搜索工具的独立费用不按 token 扣分。未配置价格的新 token 模型停止调用并提示管理员配置。
 
 `GET /api/health` 的 `credits` 字段仅返回 `{ready,initialSpecialAccountApplied}` 两个布尔值，供部署核对账本就绪和默认测试账户的一次性额度是否已应用；不返回账户标识、名单或余额。
+
+## Skill 视频模板
+
+- `GET /api/templates`：当前用户可用的模板目录，只返回展示信息与默认参数。
+- `/api/chat` 支持 `@动态图科普视频 制作一个LLM Prompt的原理视频`；未知模板、仅有模板名或多个不同模板会明确报错。已选模板会写入任务快照（ID、版本、内容哈希），后续“生成成片”或修改指令沿用该模板；只要方案时不会渲染。
+- 模板独立执行资料核对、可编程场景与确定性状态模型、结果断言、逐帧布局、1080×1920/30fps渲染、媒体验证。默认无口播，单页循环BGM。结果的 `artifact.template.userAccepted` 保持 `false`，直到用户实际审阅。
+- `GET /api/artifacts/:id/project`：经当前用户所有权校验后下载可编辑工程 ZIP；包含网页、配置、状态/绘图代码、原始 Skill、来源与检查记录。成片与封面沿用原有下载接口。
+- 模板在 `skills/<id>/template.json` 注册。目录名与ID一致；元数据、上下文文件、可选原始来源提示、默认参数与测试案例都在清单中。新增同类模板可使用已有 `animated-science` 执行器；其他制作类型需实现并注册对应执行器。
+
+### 管理后台模板测试（仅管理员）
+
+- `GET /api/admin/templates`：目录、完整 Skill 上下文、版本哈希与预置测试案例。
+- `POST /api/admin/templates/:id/tests/:caseId/run`：可选 `{ "modelId": "..." }`，202返回运行记录。使用与聊天相同的任务队列和制作流程，隔离测试会话及文件，不占用普通用户会话；已有测试运行时返回409。
+- `GET /api/admin/template-tests`：最近100条运行记录，含状态、进度、错误与工具过程；记录持久化，服务重启后从任务读取真实状态。
+- `POST /api/admin/template-tests/:id/stop`：停止当前测试，传播取消信号至模型、浏览器与FFmpeg。
+- `GET /api/admin/template-tests/:id/assets/{video|cover|project|report}`：带管理员Bearer会话读取本次成片、封面、工程或JSON检查记录。测试文件不上传公共OSS。
+- 预置案例 `animated-science-video / llm-prompt`：`@动态图科普视频 制作一个LLM Prompt的原理视频`。
+
+### 可编程动画 V2
+
+动态图模板版本2.0使用`program.apiVersion=2`场景模块。大模型通过读取接口、写源码、真实预览、精确修订及确认工具完成制作；可在`createScene(api)`内自行增加几何与动效函数。源码只在无同源权限的sandbox iframe执行，禁用网络/Worker/子框架；服务端仅作语法编译，不执行模块。每次源码和预览均保存。
+
+支持独立时间、缓动、等比变换、折线/贝塞尔路径、多粒子流、拖尾、辉光、逐字生成、矩阵、数值条、剪刀及Canvas2D绘制。旧节点工程继续可读取，新制作优先可编程场景。
+
+预览检查全部帧正文/标题分区、最小字号、数学断言、接缝与确定性；检查不通过时保留错误和预览供模型修订。成片发生可修复的场景问题时最多自动返修一次；编码后独立检查连续帧。`verification.motionV2`记录相邻帧变化面积、活动帧占比及最长近静止时段；`programSourceSha256`记录实际源码。对标门槛来自Skill的`references/motion-baseline.json`，不表示已获用户视觉验收。
+
+后台新增`compression-reference`对标用例，LLM Prompt原用例保持原始指令。工程ZIP包含可编辑源码、固定版本运动库与只在浏览器执行场景的预览/重渲染工具。
+
+### 可编程工程与Defold
+
+`GET /api/creative/capabilities`返回canvas/animation/game节点、编辑工具、自检能力及Defold环境状态。`@Defold游戏`调用真实Defold作者Agent及固定Bob构建器，返回`kind=game`产物；`creative`包含sourceHash、technicalPassed、modelSelfChecked、userAccepted=false。对话和后台通过已认证的`/api/artifacts/:id/play`或模板测试`assets/preview`获取限时只读试玩URL，iframe无同源权限。工程下载复用`projectUrl`。
+
+所有文件/节点变更均携带revision，文件修改还携带SHA与行范围；独立模型自检读取当前源码及实际预览，修复后重新验证，采用时绑定最新哈希。详见[节点、自检与部署说明](CREATIVE_CODE_NODES.md)。

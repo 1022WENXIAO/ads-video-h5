@@ -1,0 +1,59 @@
+{
+  "id": "animated-science-video",
+  "name": "动态图科普视频",
+  "description": "用同屏动态图解释原理与方法差异。暗色竖屏，4–8 图对照，无口播、带循环配乐。",
+  "version": "2.1.0",
+  "workflow": "animated-science",
+  "contextFiles": [
+    "references/animation-design.md",
+    "references/programmable-animation.md"
+  ],
+  "sourceHints": [
+    {
+      "keywords": [
+        "prompt",
+        "提示词",
+        "提示工程"
+      ],
+      "urls": [
+        "https://arxiv.org/abs/2005.14165",
+        "https://arxiv.org/abs/2201.11903",
+        "https://arxiv.org/abs/2109.01652"
+      ]
+    },
+    {
+      "keywords": [
+        "压缩",
+        "量化",
+        "剪枝",
+        "蒸馏",
+        "compression"
+      ],
+      "urls": [
+        "https://arxiv.org/abs/1510.00149",
+        "https://arxiv.org/abs/1503.02531"
+      ]
+    }
+  ],
+  "defaults": {
+    "width": 1080,
+    "height": 1920,
+    "fps": 30,
+    "seconds": 16,
+    "panels": 4,
+    "narration": false,
+    "bgm": true
+  },
+  "testCases": [
+    {
+      "id": "llm-prompt",
+      "name": "LLM Prompt 原理",
+      "prompt": "@动态图科普视频 制作一个LLM Prompt的原理视频"
+    },
+    {
+      "id": "compression-reference",
+      "name": "压缩原理对标复刻",
+      "prompt": "@动态图科普视频 制作《大模型压缩原理对照》，以分享包中的四图压缩示例为视觉和动作基线，复刻量化、剪枝、知识蒸馏、低秩分解的连续动作。16秒、4图、无口播，保持参考片的动作和版式。"
+    }
+  ]
+}

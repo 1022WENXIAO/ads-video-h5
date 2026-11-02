@@ -8,6 +8,7 @@ import { isTransientExecutionError, recordExecutionOrigin } from './executionErr
 export function traceValue(value: unknown, secrets: string[]=[], depth=0): unknown {
   if(depth>5)return '[depth limited]';
   if(value instanceof Uint8Array)return `[media omitted: ${value.byteLength} bytes]`;
+  if(value&&typeof value==='object'&&(value as {type?:string}).type==='image'&&typeof (value as {data?:unknown}).data==='string')return {type:'image',mimeType:(value as {mimeType?:string}).mimeType,data:'[image omitted]'};
   if(typeof value==='string'){
     let text=value;for(const secret of secrets)if(secret.length>=6)text=text.replaceAll(secret,'[redacted]');
     text=text.replace(/Bearer\s+[\w.+/=-]+/gi,'Bearer [redacted]').replace(/data:(?:audio|image)\/[^;]+;base64,[\w+/=]+/gi,'[media omitted]');

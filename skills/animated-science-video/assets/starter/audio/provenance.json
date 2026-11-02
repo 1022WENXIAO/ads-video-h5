@@ -1,0 +1,11 @@
+{
+  "source_video_id": "7698730045510728874",
+  "selection": "项目作者于2026-10-30指定的无口播教学动画默认BGM",
+  "master": "default-loop-16s.wav",
+  "duration_seconds": 16,
+  "sample_rate": 48000,
+  "channels": 2,
+  "sha256": "e5dfb9be6f7bcee0fd1c1e1f3d05cf323dd75ad00b628f15623663d2dd3d60de",
+  "processing": "16秒循环母带，环形交叉淡化，不改变速度或音高",
+  "replace": "配置bgm可指向自己的本地音频"
+}
