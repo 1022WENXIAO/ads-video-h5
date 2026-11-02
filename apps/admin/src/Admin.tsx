@@ -4,6 +4,7 @@ import type { ModelKind } from '../../../shared/types';
 import type { AdminAccount, AdminLogin as LoginResult } from '../../../shared/adminAuthTypes';
 import { api as request, ApiError } from './api';
 import AdminLogin from './AdminLogin';
+const TemplateAdmin = lazy(() => import('./TemplateAdmin'));
 const EffectAdmin = lazy(() => import('./EffectAdmin'));
 const EvaluationAdmin = lazy(() => import('./EvaluationAdmin'));
 const AccountSecurity = lazy(() => import('./AccountSecurity'));
@@ -46,7 +47,7 @@ export default function Admin() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
-  const [tab, setTab] = useState<'models' | 'effects' | 'evaluations' | 'credits' | 'security'>('models');
+  const [tab, setTab] = useState<'models' | 'effects' | 'templates' | 'evaluations' | 'credits' | 'security'>('models');
 
   const load = useCallback(async (accessToken: string, signal?: AbortSignal) => {
     const data = await request<{ models: AdminModel[]; defaultTextModelId: string | null }>('/api/admin/models', accessToken, { signal });
@@ -162,10 +163,10 @@ export default function Admin() {
         <AdminLogin onLogin={loggedIn} notice={loginNotice} />
       ) : !account ? <main className="admin-login"><h1>正在验证登录…</h1>{error ? <div className="admin-alert" role="alert">{error}</div> : null}</main> : (
         <main className="admin-layout">
-          <nav className="admin-tabs" aria-label="管理功能"><button type="button" disabled={account.mustChangePassword} className={tab === 'models' ? 'is-active' : ''} onClick={() => setTab('models')}>模型与密钥</button><button type="button" disabled={account.mustChangePassword} className={tab === 'effects' ? 'is-active' : ''} onClick={() => setTab('effects')}>HTML 视频特效</button><button type="button" disabled={account.mustChangePassword} className={tab === 'evaluations' ? 'is-active' : ''} onClick={() => setTab('evaluations')}>Agent 能力评测</button><button type="button" disabled={account.mustChangePassword} className={tab === 'credits' ? 'is-active' : ''} onClick={() => setTab('credits')}>用户与积分</button><button type="button" className={tab === 'security' ? 'is-active' : ''} onClick={() => setTab('security')}>账号安全</button></nav>
+          <nav className="admin-tabs" aria-label="管理功能"><button type="button" disabled={account.mustChangePassword} className={tab === 'models' ? 'is-active' : ''} onClick={() => setTab('models')}>模型与密钥</button><button type="button" disabled={account.mustChangePassword} className={tab === 'effects' ? 'is-active' : ''} onClick={() => setTab('effects')}>HTML 视频特效</button><button type="button" disabled={account.mustChangePassword} className={tab === 'templates' ? 'is-active' : ''} onClick={() => setTab('templates')}>视频模板</button><button type="button" disabled={account.mustChangePassword} className={tab === 'evaluations' ? 'is-active' : ''} onClick={() => setTab('evaluations')}>Agent 能力评测</button><button type="button" disabled={account.mustChangePassword} className={tab === 'credits' ? 'is-active' : ''} onClick={() => setTab('credits')}>用户与积分</button><button type="button" className={tab === 'security' ? 'is-active' : ''} onClick={() => setTab('security')}>账号安全</button></nav>
           {error && tab !== 'models' ? <div className="admin-alert" role="alert">{error}</div> : null}
           {notice && tab === 'security' ? <div className="admin-notice" role="status"><Check size={16} />{notice}</div> : null}
-          {tab === 'credits' ? <Suspense fallback={<p>正在加载用户与积分…</p>}><CreditAdmin token={token} /></Suspense> : tab === 'security' ? <Suspense fallback={<p>正在加载账号安全…</p>}><AccountSecurity token={token} account={account} onLogin={loggedIn} /></Suspense> : tab === 'effects' ? <Suspense fallback={<p>正在加载特效库…</p>}><EffectAdmin token={token} /></Suspense> : tab === 'evaluations' ? <Suspense fallback={<p>正在加载评测台…</p>}><EvaluationAdmin token={token} models={models}/></Suspense> : <>
+          {tab === 'templates' ? <Suspense fallback={<p>正在加载视频模板…</p>}><TemplateAdmin token={token} models={models}/></Suspense> : tab === 'credits' ? <Suspense fallback={<p>正在加载用户与积分…</p>}><CreditAdmin token={token} /></Suspense> : tab === 'security' ? <Suspense fallback={<p>正在加载账号安全…</p>}><AccountSecurity token={token} account={account} onLogin={loggedIn} /></Suspense> : tab === 'effects' ? <Suspense fallback={<p>正在加载特效库…</p>}><EffectAdmin token={token} /></Suspense> : tab === 'evaluations' ? <Suspense fallback={<p>正在加载评测台…</p>}><EvaluationAdmin token={token} models={models}/></Suspense> : <>
           <div className="admin-heading"><div><h1>模型与密钥</h1><p>配置对话、图片和口播模型。新密钥保存后仅显示配置状态。</p></div><ShieldCheck size={28} /></div>
           {error ? <div className="admin-alert" role="alert">{error}<button onClick={() => setError('')} aria-label="关闭错误"><X size={16} /></button></div> : null}
           {notice ? <div className="admin-notice" role="status"><Check size={16} />{notice}</div> : null}

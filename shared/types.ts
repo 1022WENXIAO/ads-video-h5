@@ -1,6 +1,6 @@
 export type Format = '9:16' | '16:9' | '1:1';
 export type MediaKind = 'video' | 'image' | 'audio';
-export type ArtifactKind = 'image' | 'audio' | 'video';
+export type ArtifactKind = 'image' | 'audio' | 'video' | 'game';
 export type JobKind = 'plan' | 'image' | 'audio' | 'export' | 'music' | 'effect' | 'understanding' | 'review' | 'avatar';
 export type JobStatus = 'queued' | 'running' | 'stopping' | 'cancelled' | 'succeeded' | 'failed';
 export type ModelKind = 'text' | 'image' | 'audio' | 'understanding';
@@ -292,6 +292,9 @@ export interface MusicSearch {
 }
 
 export interface Artifact {
+  creative?: {engine:'defold';sourceHash:string;technicalPassed:boolean;modelSelfChecked:boolean;userAccepted:false};
+  template?: import('./videoTemplates').TemplateSelection & { panels: number; technicalPassed: boolean; userAccepted: false; boundary: string; basis: string[]; animationMode?:'code'|'declarative'; sourceHash?:string; motion?:{meanChangedAreaPct:number;activeFramePct:number} };
+  projectUrl?: string;
   /** Original user-message time; reviewing an existing movie keeps this cutoff. */
   requestedAt?: string;
   workflow?: WorkflowEvent[];
@@ -352,6 +355,7 @@ export interface JobAttempt {
 }
 
 export interface Job {
+  template?: import('./videoTemplates').TemplateSelection;
   capabilities?: import('./agentCapabilities').AgentCapabilities;
   attemptId?: string;
   attempts?: JobAttempt[];
@@ -379,6 +383,9 @@ export interface Job {
 }
 
 export interface Session {
+  templateId?: string;
+  templateDraft?: import('./scienceScene').ScienceScene;
+  creativeDraft?: import('./creativeProject').CreativeProject;
   capabilities?: import('./agentCapabilities').AgentCapabilities;
   forkedFrom?: { sessionId: string; messageId?: string; at: string };
   lessonDraft?: LessonReport;
@@ -409,6 +416,7 @@ export interface AppSettings {
 }
 
 export interface AppState {
+  templates?: import('./videoTemplates').VideoTemplate[];
   credits?: import('./creditTypes').CreditWallet;
   activeSessionId: string;
   sessions: Session[];

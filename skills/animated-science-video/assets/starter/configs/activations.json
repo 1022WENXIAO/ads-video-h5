@@ -1,0 +1,65 @@
+{
+  "title": "激活函数输出分布",
+  "subtitle": "同一批输入，经过函数后变成什么分布",
+  "kicker": "神经网络 / 输出分布",
+  "duration": 16,
+  "panels": [
+    {
+      "name": "Sigmoid",
+      "english": "",
+      "sub": "将输出压进 0 到 1",
+      "color": "#7dd3fc"
+    },
+    {
+      "name": "Tanh",
+      "english": "",
+      "sub": "将输出压进 -1 到 1",
+      "color": "#c4b5fd"
+    },
+    {
+      "name": "ReLU",
+      "english": "",
+      "sub": "负数归零，正数保留",
+      "color": "#6ee7b7"
+    },
+    {
+      "name": "Leaky ReLU",
+      "english": "",
+      "sub": "负数缩小，保留通路",
+      "color": "#fbbf24"
+    },
+    {
+      "name": "GELU",
+      "english": "",
+      "sub": "平滑地抑制部分负输入",
+      "color": "#f9a8d4"
+    },
+    {
+      "name": "SiLU",
+      "english": "",
+      "sub": "由输入自身平滑门控",
+      "color": "#fb927e"
+    }
+  ],
+  "boundary": "输入为固定种子的均匀随机样本，x∈[-3,5]，y统一[-1,5]。直方图为24箱计数，横轴上限144，6图共享样本。GELU采用erf数值近似，Leaky ReLU负半轴斜率0.1。8秒一轮，不表示训练过程或性能排序。",
+  "basis": [
+    "https://docs.pytorch.org/docs/stable/nn.html#non-linear-activations-weighted-sum-nonlinearity"
+  ],
+  "scene": "activations",
+  "fps": 30,
+  "prompt": "144 个相同随机输入 · 所有图统一坐标与计数尺度",
+  "footerNote": "左：函数曲线与输入过程　右：输出计数直方图",
+  "footerLeft": "深度学习 · 动态原理图",
+  "author": "by轻喵制作",
+  "bgm": "../audio/default-loop-16s.wav",
+  "bgmGainDb": -3,
+  "reviewTimes": [
+    0,
+    1.5,
+    3,
+    5,
+    9,
+    13
+  ],
+  "filename": "激活函数输出分布.mp4"
+}

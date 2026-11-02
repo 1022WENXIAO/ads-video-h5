@@ -1,0 +1,17 @@
+function init(self)
+ gui.set_render_order(0);self.nodes={};self.time=0
+ for x=30,950,48 do
+  for y=90,465,48 do
+   local node=gui.new_box_node(vmath.vector3(x,y,0),vmath.vector3(2,2,0))
+   gui.set_color(node,vmath.vector4(.22,.48,.65,.25));table.insert(self.nodes,{node=node,x=x,y=y})
+  end
+ end
+end
+function update(self,dt)
+ self.time=self.time+dt
+ for i,o in ipairs(self.nodes) do
+  local a=.12+.18*(.5+.5*math.sin(self.time*2+o.x*.015+o.y*.01))
+  gui.set_color(o.node,vmath.vector4(.22,.58,.85,a))
+  gui.set_position(o.node,vmath.vector3(o.x+math.sin(self.time+o.y*.02)*7,o.y,0))
+ end
+end

@@ -1,3 +1,4 @@
+import CreativeGamePreview from './CreativeGamePreview';
 import { lazy, Suspense, useCallback, useEffect, useLayoutEffect, useRef, useState, type FormEvent } from "react";
 import { WorkflowTrace } from './WorkflowTrace';
 import {
@@ -41,6 +42,7 @@ import type {
 import { MAX_MEDIA_UPLOAD_BYTES } from "./uploadLimits";
 import AssistantReply from "./AssistantReply";
 import HotResearchCard from "./HotResearchCard";
+import TemplateMentionInput from './TemplateMentionInput';
 import VoiceInput from './VoiceInput';
 import { fetchCredits } from './creditApi';
 import type { CreditWallet } from '../shared/creditTypes';
@@ -368,6 +370,7 @@ function ArtifactCard({
   repair?: () => void;
 }) {
   const t = labels[locale];
+  if(artifact.kind==='game')return <div className="artifact-card game-card"><h3>{artifact.name.replace(/\.zip$/,'')}</h3><CreativeGamePreview endpoint={artifact.url}/><p>Defold · 编译、试玩与模型自检通过，待审阅</p><a className="artifact-download" href={artifact.projectUrl} download>下载可编辑工程</a></div>;
   if (artifact.kind === "audio")
     return (
       <div className="artifact-card audio-card">
@@ -500,6 +503,14 @@ function ArtifactCard({
         </article>)}
         <a href={artifact.downloadUrl.replace('/api/download/', '/api/artifacts/') + '/edit-report'} download>下载剪辑记录 JSON</a>
         {artifact.plan.reconstruction.limitations.map((s,i)=><small key={i}>{s}</small>)}
+      </details> : null}
+      {artifact.template ? <details className="template-delivery">
+        <summary>{artifact.template.name} · {artifact.template.panels}图同屏 · 待审阅</summary>
+        <p>{artifact.template.boundary}</p>
+        <small>模板 v{artifact.template.version} · {artifact.template.technicalPassed ? '技术检查通过' : '待检查'} · 用户验收待确认</small>
+        {artifact.projectUrl ? <a href={artifact.projectUrl} download>下载可编辑工程 ZIP</a> : null}
+        {artifact.coverUrl ? <a href={artifact.coverUrl} download>下载封面</a> : null}
+        {artifact.template.basis.map(url=><a key={url} href={url} target="_blank" rel="noreferrer">{url}</a>)}
       </details> : null}
       {artifact.plan?.editorial ? <details className="editorial-report">
         <summary>叙事脚本与分镜依据 · {artifact.plan.editorial.scenes.length} 段</summary>
@@ -1285,29 +1296,7 @@ export default function App({ user, onLogout }: { user: PublicUser; onLogout: ()
                     })}
                   </div>
                 ) : null}
-                <textarea
-                  ref={composerInput}
-                  disabled={voiceBusy}
-                  aria-label={t.input}
-                  placeholder={t.input}
-                  enterKeyHint="enter"
-                  value={prompt}
-                  onChange={(e) => setPrompt(e.target.value)}
-                  rows={Math.min(5, Math.max(attachments.length ? 2 : 1, prompt.split("\n").length))}
-                  maxLength={3000}
-                  onKeyDown={(e) => {
-                    if (
-                      e.key === "Enter" &&
-                      !e.shiftKey &&
-                      !e.nativeEvent.isComposing &&
-                      e.nativeEvent.keyCode !== 229 &&
-                      !window.matchMedia("(pointer: coarse)").matches
-                    ) {
-                      e.preventDefault();
-                      void send();
-                    }
-                  }}
-                />
+                <TemplateMentionInput key={session?.id} templates={state?.templates||[]} value={prompt} onChange={setPrompt} inputRef={composerInput} disabled={voiceBusy} placeholder={t.input} rows={Math.min(5, Math.max(attachments.length ? 2 : 1, prompt.split("\n").length))} onSubmit={()=>void send()} selectedTemplateId={session?.templateId}/>
                 <div className="composer-actions">
                   <button
                     type="button"

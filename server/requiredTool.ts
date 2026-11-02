@@ -19,7 +19,7 @@ export async function runRequiredTool(agent:Agent,prompt:string,options:{name:st
       reason=clean(message.errorMessage||`模型响应${message.stopReason}`);return {action:'end'};
     }
     const calls=message.content.filter(c=>c.type==='toolCall'&&allowed.has(c.name));
-    const failures=turn.toolResults.filter(r=>r.isError).flatMap(r=>r.content.filter(c=>c.type==='text').map(c=>c.text)).join('\n');
+    const failures=turn.toolResults.filter(r=>r.isError||Boolean(r.details&&typeof r.details==='object'&&((r.details as any).passed===false||(r.details as any).needsRepair===true))).flatMap(r=>r.content.filter(c=>c.type==='text').map(c=>c.text)).join('\n');
     if(failures){reason=clean(failures);rejections++;}else if(calls.length)rejections=0;
     if(!calls.length){
       idle++;const text=message.content.filter(c=>c.type==='text').map(c=>c.text).join('').trim();

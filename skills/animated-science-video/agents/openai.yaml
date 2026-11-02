@@ -1,0 +1,4 @@
+interface:
+  display_name: "动态图科普视频制作"
+  short_description: "制作无口播、多机制同屏对照的循环教学动画，含可移植源码模板与成片验收"
+  default_prompt: "使用 $animated-science-video 制作一个六图同屏、原理清楚、无口播的循环科普视频，先完成一条供我审阅。"

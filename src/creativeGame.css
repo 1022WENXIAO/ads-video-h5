@@ -1,0 +1,8 @@
+.creative-game-preview { width:100%; min-width:0; }
+.creative-game-preview iframe { display:block; border-radius:10px; }
+.creative-game-controls { display:flex; flex-wrap:wrap; gap:8px; margin:10px 0; }
+.creative-game-controls button { border:1px solid #dce2e8; border-radius:8px; background:#fff; color:#263448; padding:8px 12px; font:inherit; font-size:13px; cursor:pointer; }
+.creative-game-controls button:hover { background:#f3f6f9; }
+.creative-game-preview iframe:fullscreen { width:100vw !important; height:100vh !important; border-radius:0; }
+.game-card { padding:12px; }
+.game-card h3 { font-size:16px; }

@@ -106,7 +106,7 @@ export function validatePlan(input: EditPlan, media: MediaItem[], allowImageClip
   return validateTimeline({ ...input, format: input.format, targetSeconds: +total.toFixed(3), summary: String(input.summary || '已整理剪辑方案').slice(0, 160), clips, coverMediaId: cover?.id }, media);
 }
 
-function textModel(config: ModelConfig) {
+function textModel(config: ModelConfig, inputImages=false) {
   const models = createModels();
   const provider = `qingjian-${config.id.replace(/[^a-zA-Z0-9_-]/g, '-')}`;
   const ark = new URL(config.baseUrl).hostname === 'ark.cn-beijing.volces.com';
@@ -119,7 +119,7 @@ function textModel(config: ModelConfig) {
     provider,
     baseUrl: config.baseUrl.replace(/\/$/, ''),
     reasoning: thinkingRequired,
-    input: ['text'],
+    input: inputImages ? ['text','image'] : ['text'],
     cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
     // September Seed 2.1: official Coding Plan limits, also checked against
     // the actual Chat endpoint. Output ceilings and context are distinct.
@@ -142,11 +142,11 @@ function textModel(config: ModelConfig) {
 
 export const textThinking = (config:Pick<ModelConfig,'modelId'>) => ({type:config.modelId==='glm-5-3-flash-260828'?'enabled':'disabled'});
 
-export function getAgent(config: ModelConfig, tools: AgentTool[], systemPrompt: string, requireTools = false, requestOptions: { maxTokens?: number } = {}) {
+export function getAgent(config: ModelConfig, tools: AgentTool[], systemPrompt: string, requireTools = false, requestOptions: { maxTokens?: number; inputImages?:boolean } = {}) {
   const runtime = currentAgentRuntime();
   const runParallel = runtime ? runtimeParallelLimit(runtime) : limitParallelTools(1);
   if (runtime) { tools = [...tools, ...runtime.tools]; systemPrompt += '\n\n' + runtime.instructions; }
-  const { models, model } = textModel(config);
+  const { models, model } = textModel(config,requestOptions.inputImages);
   const ark = new URL(config.baseUrl).hostname === 'ark.cn-beijing.volces.com';
   const thinkingRequired = config.modelId === 'glm-5-3-flash-260828';
   const signal = currentJobSignal();

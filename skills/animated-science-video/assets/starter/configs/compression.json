@@ -1,0 +1,54 @@
+{
+  "title": "大模型压缩原理对照",
+  "subtitle": "精度、连接、知识与矩阵，分别改变什么",
+  "kicker": "模型压缩 / 原理对照",
+  "duration": 16,
+  "panels": [
+    {
+      "name": "权重量化",
+      "english": "Quant",
+      "sub": "降低每个权重的存储位宽",
+      "color": "#7dd3fc"
+    },
+    {
+      "name": "权重剪枝",
+      "english": "Pruning",
+      "sub": "移除较小权重的连接",
+      "color": "#c4b5fd"
+    },
+    {
+      "name": "知识蒸馏",
+      "english": "KD",
+      "sub": "用教师的软分布训练学生",
+      "color": "#fbbf24"
+    },
+    {
+      "name": "低秩分解",
+      "english": "Low-rank",
+      "sub": "用两张小矩阵近似原矩阵",
+      "color": "#6ee7b7"
+    }
+  ],
+  "boundary": "量化为对称INT4数值级示例，scale=0.13；只比较权重位宽，不宣称整机显存等比例降低。剪枝以绝对值0.35为阈值，将16条连接变成9条；较小权重不是普遍重要性证明，稀疏也不保证硬件提速。蒸馏优化软目标交叉熵，不复制教师参数。低秩例子特意构造为秩2矩阵，6×6可用6×2和2×6表示，参数36变24；一般矩阵的低秩近似会有误差。",
+  "basis": [
+    "https://arxiv.org/abs/1510.00149",
+    "https://arxiv.org/abs/1503.02531"
+  ],
+  "scene": "compression",
+  "fps": 30,
+  "prompt": "不同压缩方法，改变模型的不同部分",
+  "footerNote": "同一主题，多种可见的处理路径",
+  "footerLeft": "深度学习 · 动态原理图",
+  "author": "by轻喵制作",
+  "bgm": "../audio/default-loop-16s.wav",
+  "bgmGainDb": -3,
+  "reviewTimes": [
+    0,
+    3,
+    4.2,
+    6,
+    10,
+    13.4
+  ],
+  "filename": "大模型压缩原理对照.mp4"
+}

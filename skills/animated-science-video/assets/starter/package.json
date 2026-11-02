@@ -1,0 +1,17 @@
+{
+  "name": "animated-science-starter",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "preview": "node serve.mjs",
+    "render": "node render.mjs",
+    "verify": "node verify.mjs"
+  },
+  "dependencies": {
+    "@napi-rs/canvas": "0.1.100"
+  }
+}

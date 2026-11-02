@@ -1,0 +1,65 @@
+{
+  "referenceName": "07-大模型压缩原理对照.mp4",
+  "sha256": "a5a0d1d28776759d1295dad976d844ed47d96ca3a30964206dae1a18f5211dc7",
+  "duration": 16,
+  "fps": 30,
+  "decodedMotion": {
+    "frames": 480,
+    "width": 230,
+    "height": 262,
+    "pixelThreshold": 12,
+    "framePairs": 479,
+    "meanChangedAreaPct": 0.41622696914622587,
+    "medianChangedAreaPct": 0.3700630600730169,
+    "p90ChangedAreaPct": 0.7633587786259542,
+    "activeFramePct": 92.48434237995825,
+    "longestStillSeconds": 0.6,
+    "panels": [
+      {
+        "panel": 1,
+        "framePairs": 479,
+        "meanChangedAreaPct": 0.41371293980897345,
+        "medianChangedAreaPct": 0.2370178840767076,
+        "p90ChangedAreaPct": 0.883430295195001,
+        "activeFramePct": 55.741127348643005,
+        "longestStillSeconds": 5.733333333333333
+      },
+      {
+        "panel": 2,
+        "framePairs": 479,
+        "meanChangedAreaPct": 1.3708711363138497,
+        "medianChangedAreaPct": 1.0019392372333549,
+        "p90ChangedAreaPct": 3.1243266537384184,
+        "activeFramePct": 83.08977035490605,
+        "longestStillSeconds": 0.8666666666666667
+      },
+      {
+        "panel": 3,
+        "framePairs": 479,
+        "meanChangedAreaPct": 0.4427722590561846,
+        "medianChangedAreaPct": 0.20469726352079293,
+        "p90ChangedAreaPct": 1.3143719026071967,
+        "activeFramePct": 56.57620041753653,
+        "longestStillSeconds": 3.1666666666666665
+      },
+      {
+        "panel": 4,
+        "framePairs": 479,
+        "meanChangedAreaPct": 0.3668626596294539,
+        "medianChangedAreaPct": 0.19392372333548805,
+        "p90ChangedAreaPct": 1.4113337642749408,
+        "activeFramePct": 74.32150313152401,
+        "longestStillSeconds": 1.9666666666666666
+      }
+    ]
+  },
+  "gate": {
+    "meanChangedAreaPct": 0.3,
+    "medianChangedAreaPct": 0.18,
+    "activeFramePct": 75,
+    "maxStillSeconds": 1.2,
+    "panelMeanChangedAreaPct": 0.18,
+    "panelActiveFramePct": 50
+  },
+  "scope": "相同主体区裁切，缩放230x262；相邻帧RGB最大差>12；数据只证明技术运动覆盖率，用户审阅另行确认。"
+}
