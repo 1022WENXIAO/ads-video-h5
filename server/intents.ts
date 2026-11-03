@@ -21,7 +21,13 @@ export function wantsConversation(text:string):boolean {
   if(answerOnly){
     const after=text.slice(answerOnly.index!+answerOnly[0].length);
     const laterProduction=[...after.matchAll(/(?:直接|然后|最后|再)\s*(?:制作|生成|出片|渲染|导出)/g)].some(match=>!/(?:不要|不用|别|不|无需)[^，。；,;.!?！？]{0,8}$/.test(after.slice(Math.max(0,match.index!-14),match.index)));
-    if(!laterProduction)return true;
+    // "只回答一个问题" can constrain a video's subject, followed by a
+    // separate imperative such as "做成30秒竖屏视频，配音和字幕". Require
+    // an unquoted action at a clause boundary and a completed media object;
+    // advice ("做成视频需要什么") and negated actions are not grants.
+    const unquoted=after.replace(/“[^”]*”|「[^」]*」|‘[^’]*’|"[^"]*"|'[^']*'/g,'');
+    const laterVideo=/(?:^|[。；;.!?！？])\s*(?:请\s*)?(?:做成|剪成|制作|生成)[^，。；,;.!?！？“”「」"']{0,40}(?:视频|短片|成片|mp4)\s*(?=[，。；,;.!?！？]|$)/i.test(unquoted);
+    if(!laterProduction&&!laterVideo)return true;
   }
   if(/^(?:请问)?(?:你|轻剪|这个工具|这个Agent)?(?:能不能|能|可以|支持)(?:制作|生成|做)(?:教学|科普|资讯|新闻)?视频(?:吗)?[?？]?$/.test(text))return true;
   if(/(?:现在|最后|改为|改成|请)\s*(?:不用解释了[，,]?\s*)?直接(?:制作|生成|出片|渲染)/.test(text))return false;
