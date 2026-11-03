@@ -23,7 +23,7 @@ node tooling/creative/defold-runtime.mjs doctor
 
 模型不获得系统shell、任意安装或系统文件读写工具。服务端只调用固定构建命令；macOS构建限制用户目录读取、工程外写入和网络。生成的Lua脚本不会被Node导入执行；当前仅支持Defold，未安装或接入Godot。Defold运行在无账号、无同源权限的sandbox iframe中；试玩使用临时存储。
 
-Linux部署可使用提供的容器worker，尚未在本次macOS环境执行Linux容器验证：
+Linux部署可使用提供的容器worker：
 
 ```bash
 node tooling/creative/defold-runtime.mjs install --bob-only
@@ -32,6 +32,17 @@ export QINGJIAN_DEFOLD_WORKER=/absolute/repo/tooling/creative/worker/run-defold.
 ```
 
 容器关闭网络、丢弃capabilities、限制CPU/内存/PID，只挂载本次工程和只读引擎缓存。没有受限worker的Linux服务明确返回环境未就绪，不回退为直接执行模型代码。配置的worker必须是可信服务端启动器。
+
+国内单机还可使用已在 Ubuntu 上验证的 [`run-defold-bwrap.py`](../tooling/creative/worker/run-defold-bwrap.py)，复用已有的 `/usr/bin/bwrap` 和独立 Java，无需为此拉取 Docker 镜像。此启动器对应国内部署目录：Java 位于 `/opt/qingjian-cn/engines/java25/bin/java`，Bob 1.14.0 位于 `/opt/qingjian-cn/engines/defold/1.14.0/bob.jar`；两者须预先按官方摘要核验并由管理员维护。安装启动器后设置服务端环境：
+
+```bash
+install -m 0755 tooling/creative/worker/run-defold-bwrap.py /opt/qingjian-cn/engines/run-defold-bwrap.py
+export QINGJIAN_JAVA_PATH=/opt/qingjian-cn/engines/java25/bin/java
+export QINGJIAN_DEFOLD_BOB=/opt/qingjian-cn/engines/defold/1.14.0/bob.jar
+export QINGJIAN_DEFOLD_WORKER=/opt/qingjian-cn/engines/run-defold-bwrap.py
+```
+
+bubblewrap 隔离网络、进程和挂载命名空间，仅读取系统运行库与引擎目录，只允许当前工程目录写入；清空父进程环境，并限制为 2 GiB 虚拟地址空间、150 秒 CPU 时间和 1024 个文件描述符。先挂载临时目录，再挂载当前工程，保证 `/tmp` 下的隔离工程仍可访问。该版本已通过真实 Defold 编译、画面移动/重启及外部文件/宿主网络拒绝检查；Docker worker 的验证状态单独记录。
 
 ## 接口与边界
 
