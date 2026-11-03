@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {createHash} from 'node:crypto';
 import type {EditPlan,MediaItem,RenderReview,WorkflowEvent} from '../shared/types';
 import {runEditorialWorkflow,selectScenes} from '../server/editorialWorkflow';
-import {extractVisualRetentionRequirements,parseVisualRetentionChecks,visualRetentionFindings,visualRetentionOmittedPlanningWitnesses,VisualRetentionReviewError} from '../server/visualRetentionReview';
+import {extractVisualRetentionRequirements,parseVisualRetentionChecks,visualRetentionFindings,visualRetentionOmittedPlanningWitnesses,visualRetentionUnverifiedPlanningWitnesses,VisualRetentionReviewError} from '../server/visualRetentionReview';
 import {editorialRepairCandidates} from '../server/editorialRepairCandidates';
 import {timelineOffsets} from '../server/timeline';
 import {ARK_BASE_URL,TEXT_MODEL_PRESETS} from '../shared/textModels';
@@ -62,6 +62,18 @@ test('preserved observations reject invented samples, duplicate times, wrong sou
     }
     assert.equal(visualRetentionOmittedPlanningWitnesses(r,prompt,plan,media),undefined,mode);
   }
+});
+
+test('partial observations remain mandatory when the missing half is unverified rather than confirmed absent',()=>{
+  const sources=[source('a'),source('b')],plan=planFor(sources),review=reviewFor(sources);
+  const check=review.semantic!.visualRetentionChecks![0];check.status='unverified';check.frameTimes=[];delete check.sourceOmitted;
+  const before=structuredClone(review);
+  assert.deepEqual(visualRetentionUnverifiedPlanningWitnesses(review,prompt,plan,sources),[
+    {sourceId:'b',sourceHash:sources[1].analysis!.sourceHash,time:6,purpose:'resolve-unverified'},
+    {sourceId:'a',sourceHash:sources[0].analysis!.sourceHash,time:6,purpose:'preserve-observed',outputTime:1},
+  ]);
+  assert.deepEqual(review,before,'planning observations never promote unknown to missing or passed');
+  check.preserveFrameTimes=[20];assert.equal(visualRetentionUnverifiedPlanningWitnesses(review,prompt,plan,sources),undefined);
 });
 
 test('SDK repair rejects swapping away the already observed half and independently reviews both retained halves within two renders',async()=>{

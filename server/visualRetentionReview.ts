@@ -160,6 +160,9 @@ export function visualRetentionUnverifiedPlanningWitnesses(review:RenderReview,p
         witnesses.push({sourceId:w.sourceId,sourceHash:w.sourceHash!,time:w.time,purpose:'preserve-met'});
       }
     }
+    const observed=observedPlanningWitnesses([...new Set(checks.flatMap(check=>check.preserveFrameTimes||[]))],plan,sources);
+    if(!observed)return;
+    for(const witness of observed)if(!witnesses.some(w=>w.purpose===witness.purpose&&w.sourceId===witness.sourceId&&w.time===witness.time&&w.sourceHash===witness.sourceHash))witnesses.push(witness);
     return witnesses;
   }catch{return;}
 }
