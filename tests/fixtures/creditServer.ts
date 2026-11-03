@@ -5,6 +5,7 @@ import { createCipheriv, createHash, randomBytes, scryptSync } from 'node:crypto
 import { mkdtemp, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { hashPassword } from '../../server/auth';
 import { defaultTokenPrices } from '../../server/tokenPricing';
 import { disposeOwnedFixture, waitForOwnedFixtureReady } from './ownedProcess';
@@ -66,7 +67,7 @@ export async function startCreditServer(options: { wechat?: boolean } = {}) {
   ]);
   const reserve = createServer(); reserve.listen(0, '127.0.0.1'); await once(reserve, 'listening');
   const port = (reserve.address() as { port: number }).port; await new Promise<void>(r => reserve.close(() => r()));
-  const root = path.resolve(path.dirname(new URL(import.meta.url).pathname), '../..');
+  const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
   const imports = options.wechat ? ['--import', './tests/fixtures/wechatFetch.ts'] : [];
   child = spawn(process.execPath, ['--import', 'tsx', ...imports, 'server/index.ts'], { cwd: root, env: { ...process.env, QINGJIAN_DATA_DIR: directory, PORT: String(port), PUBLIC_BASE_PATH: '', QINGJIAN_ADMIN_PASSWORD: adminPassword,
     ...(options.wechat ? { QINGJIAN_TEST_WECHAT_PROVIDER: providerBase, QINGJIAN_WECHAT_APP_ID: 'wxf5dfb5d144bcd684', QINGJIAN_WECHAT_APP_SECRET: 'fixture-wechat-secret' } : {}),

@@ -13,6 +13,7 @@ export interface Shot {
 }
 
 export interface MediaItem {
+  thumbnailUrl?: string;
   ownerId?: string;
   id: string;
   name: string;
@@ -421,6 +422,7 @@ export interface AppSettings {
 }
 
 export interface AppState {
+  limits?: { maxAttachments: number };
   templates?: import('./videoTemplates').VideoTemplate[];
   credits?: import('./creditTypes').CreditWallet;
   activeSessionId: string;

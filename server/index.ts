@@ -35,7 +35,7 @@ import { runEditorialWorkflow } from './editorialWorkflow';
 import { runNarrativeWorkflow, voiceReferenceAuthorized } from './narrativeWorkflow';
 import { inspectScene, verifySceneQuotes } from './sceneUnderstanding';
 import { mapLimited } from './taskPool';
-import { MAX_MEDIA_UPLOAD_BYTES } from '../src/uploadLimits';
+import { MAX_CHAT_ATTACHMENTS, MAX_MEDIA_UPLOAD_BYTES } from '../src/uploadLimits';
 import { uploadMediaType } from './nativeUpload';
 import { updateReply, recordWorkflowReply } from './replies';
 import { runLessonWorkflow } from './lessonWorkflow';
@@ -162,7 +162,7 @@ const extFor = (mime: string) => mime === 'image/jpeg' ? 'jpg' : mime === 'image
 async function publicState(user: PublicUser): Promise<AppState> {
   const [models, profile, wallet] = await Promise.all([listPublicModels(), profileOf(user), credits.snapshot(user.id)]);
   const textConfig = await getModelConfig('text', getSession(profile.activeSessionId, user.id)?.modelId);
-  return { templates: videoTemplates.map(publicTemplate), credits: wallet, activeSessionId: profile.activeSessionId, sessions: state.sessions.filter((item) => owned(item, user.id)), media: state.media.filter((item) => owned(item, user.id)).map((item) => ({ ...item, url: item.character ? publicUrl(item.url) : assetUrl(user.id, 'media', item.id, item.url), shots: item.shots?.map((shot, index) => ({ ...shot, thumbnailUrl: assetUrl(user.id, 'shots', `${item.id}-${index}`, shot.thumbnailUrl) })) })), artifacts: state.artifacts.filter((item) => owned(item, user.id)).map((item) => ({ ...item, url: item.kind==='game'?publicUrl(item.url):assetUrl(user.id, item.kind === 'video' ? 'exports' : 'artifacts', item.id, item.url), downloadUrl: publicUrl(item.downloadUrl), ...(item.projectUrl ? { projectUrl: publicUrl(item.projectUrl) } : {}), ...(item.coverUrl ? { coverUrl: item.kind==='game'?publicUrl(item.coverUrl):assetUrl(user.id, 'covers', item.id, item.coverUrl) } : {}) })), jobs: state.jobs.filter((item) => owned(item, user.id)).map(publicJob), settings: profile.settings, models, mode: textConfig ? 'pi' : 'unconfigured' };
+  return { limits: { maxAttachments: MAX_CHAT_ATTACHMENTS }, templates: videoTemplates.map(publicTemplate), credits: wallet, activeSessionId: profile.activeSessionId, sessions: state.sessions.filter((item) => owned(item, user.id)), media: state.media.filter((item) => owned(item, user.id)).map((item) => ({ ...item, ...(item.kind === 'image' ? { thumbnailUrl: publicUrl('/api/media/' + item.id + '/thumbnail') } : {}), url: item.character ? publicUrl(item.url) : assetUrl(user.id, 'media', item.id, item.url), shots: item.shots?.map((shot, index) => ({ ...shot, thumbnailUrl: assetUrl(user.id, 'shots', `${item.id}-${index}`, shot.thumbnailUrl) })) })), artifacts: state.artifacts.filter((item) => owned(item, user.id)).map((item) => ({ ...item, url: item.kind==='game'?publicUrl(item.url):assetUrl(user.id, item.kind === 'video' ? 'exports' : 'artifacts', item.id, item.url), downloadUrl: publicUrl(item.downloadUrl), ...(item.projectUrl ? { projectUrl: publicUrl(item.projectUrl) } : {}), ...(item.coverUrl ? { coverUrl: item.kind==='game'?publicUrl(item.coverUrl):assetUrl(user.id, 'covers', item.id, item.coverUrl) } : {}) })), jobs: state.jobs.filter((item) => owned(item, user.id)).map(publicJob), settings: profile.settings, models, mode: textConfig ? 'pi' : 'unconfigured' };
 }
 
 function addReply(session: Session, job: Job, text: string, artifactId?: string) {
@@ -974,7 +974,7 @@ app.post('/api/chat', async (request, response) => {
   if (!text) return response.status(400).json({ error: '请输入想让轻剪完成的内容。' });
   try{resolveTemplateRequest(text,session,videoTemplates);}catch(error){return response.status(400).json({error:error instanceof Error?error.message:'请选择有效的视频模板。'});}
   const attachments = Array.isArray(request.body?.attachmentIds) ? request.body.attachmentIds : [];
-  if (attachments.length > 6 || attachments.some((id: unknown) => typeof id !== 'string' || !state.media.some((item) => item.id === id && owned(item, user.id)))) return response.status(400).json({ error: '附件不存在或一次添加过多。' });
+  if (attachments.length > MAX_CHAT_ATTACHMENTS || attachments.some((id: unknown) => typeof id !== 'string' || !state.media.some((item) => item.id === id && owned(item, user.id)))) return response.status(400).json({ error: '附件不存在或一次添加过多。' });
   if (request.body?.voiceTicket !== undefined && (typeof request.body.voiceTicket !== 'string' || request.body.voiceTicket.length > 100)) return response.status(400).json({ error: '语音指令凭证格式无效。' });
   await enqueueAgentMessage(session, text, attachments, request.body?.voiceTicket);
   await saveState(); response.json(await publicState(user)); void processQueue();
@@ -1050,12 +1050,41 @@ app.delete('/api/media/:id', async (request, response) => {
   for (const session of state.sessions) if (owned(session, user.id) && (session.plan?.clips.some((clip) => clip.sourceId === item.id) || session.plan?.coverMediaId === item.id)) session.plan = null;
   for (const artifact of state.artifacts) if (owned(artifact, user.id) && artifact.mediaId === item.id) artifact.mediaId = undefined;
   await saveState(); await rm(path.join(mediaDir, item.id), { force: true }); await audioUnderstanding.remove(item.id);
+  await rm(path.join(mediaDir, `${item.id}-preview.jpg`), { force: true });
   try { await oss?.remove(user.id, 'media', item.id); } catch { console.error('OSS media cleanup failed for', item.id); }
   for (const [index] of (item.shots || []).entries()) {
     await rm(path.join(mediaDir, `${item.id}-shot-${index}.jpg`), { force: true });
     try { await oss?.remove(user.id, 'shots', `${item.id}-${index}`); } catch { console.error('OSS shot cleanup failed for', item.id, index); }
   }
   response.json(await publicState(user));
+});
+const imagePreviews = new Map<string, Promise<void>>();
+app.get('/api/media/:id/thumbnail', async (request, response) => {
+  const user = userOf(request);
+  const item = state.media.find(media => media.id === request.params.id && media.kind === 'image' && owned(media, user.id));
+  if (!item) return response.status(404).json({ error: '图片不存在。' });
+  const target = path.join(mediaDir, `${item.id}-preview.jpg`);
+  try {
+    if (!existsSync(target)) {
+      let pending = imagePreviews.get(item.id);
+      if (!pending) {
+        pending = (async () => {
+          const source = path.join(mediaDir, item.id), tmp = path.join(mediaDir, `${item.id}-preview-${randomUUID()}.jpg`);
+          try {
+            await oss?.ensure(user.id, 'media', item.id, source);
+            await runFFmpeg(['-hide_banner', '-loglevel', 'error', '-y', '-i', source, '-frames:v', '1', '-vf', 'scale=320:320:force_original_aspect_ratio=decrease', '-q:v', '4', tmp], 30_000);
+            if (!state.media.some(media => media.id === item.id && owned(media, user.id))) throw new Error('素材已删除。');
+            await rename(tmp, target);
+          } finally { await rm(tmp, { force: true }); }
+        })();
+        imagePreviews.set(item.id, pending);
+        const done = () => { if (imagePreviews.get(item.id) === pending) imagePreviews.delete(item.id); };
+        pending.then(done, done);
+      }
+      await pending;
+    }
+    response.set('Cache-Control', 'private, no-store').type('image/jpeg').sendFile(target);
+  } catch { response.status(502).json({ error: '缩略图暂时无法生成，请重试。' }); }
 });
 app.get('/api/media/:id', async (request, response) => {
   const item = state.media.find((media) => media.id === request.params.id && owned(media, userOf(request).id));
