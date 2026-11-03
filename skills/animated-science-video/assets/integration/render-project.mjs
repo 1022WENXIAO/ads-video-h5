@@ -11,7 +11,9 @@ try{const host=await browser.newPage();await host.setRequestInterception(true);h
  const snapshot=async t=>Buffer.from(await frame.evaluate(t=>{window.science.renderer.draw(t);return document.querySelector('canvas').toDataURL('image/png').split(',')[1];},t),'base64');
  for(let f=0;f<config.duration*30;f++)await writeFile(path.join(frames,`frame-${String(f).padStart(5,'0')}.png`),await snapshot(f/30));await writeFile(path.join(out,'poster.png'),await snapshot(config.duration-.8));
  const args=['-framerate','30','-i',path.join(frames,'frame-%05d.png')];
- if(config.bgm){const bgm=path.join(out,'bgm-finite.wav');await ff(['-stream_loop','-1','-i','bgm.wav','-t',String(config.duration),'-c:a','pcm_s16le',bgm]);args.push('-i',bgm);}
- args.push('-map','0:v:0');if(config.bgm)args.push('-map','1:a:0');args.push('-c:v','libx264','-preset','fast','-crf','18','-pix_fmt','yuv420p','-threads','4','-frames:v',String(config.duration*30),'-t',String(config.duration));if(config.bgm)args.push('-c:a','aac','-b:a','192k','-ar','48000','-af','volume=-3dB');args.push('-movflags','+faststart',file);await ff(args);
+ const bgm=path.join(out,'bgm-finite.wav'),silent=path.join(out,'video-silent.mp4');
+ if(config.bgm)await ff(['-stream_loop','-1','-i','bgm.wav','-t',String(config.duration),'-c:a','pcm_s16le',bgm]);
+ args.push('-map','0:v:0','-c:v','libx264','-preset','fast','-crf','18','-pix_fmt','yuv420p','-threads','4','-frames:v',String(config.duration*30),'-t',String(config.duration),'-movflags','+faststart',config.bgm?silent:file);await ff(args);
+ if(config.bgm)try{await ff(['-i',silent,'-i',bgm,'-map','0:v:0','-map','1:a:0','-c:v','copy','-c:a','aac','-b:a','192k','-ar','48000','-af','volume=-3dB','-t',String(config.duration),'-movflags','+faststart',file]);}finally{await rm(silent,{force:true});}
  console.log(JSON.stringify({file,frames:config.duration*30,sha256:createHash('sha256').update(await readFile(file)).digest('hex'),userAccepted:false}));
 }finally{clearTimeout(guard);await browser.close();await rm(frames,{recursive:true,force:true});}

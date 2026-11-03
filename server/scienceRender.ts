@@ -165,12 +165,14 @@ export async function renderScienceVideo(o:{template:LoadedVideoTemplate;config:
     const finiteBgm=path.join(directory,'bgm-finite.wav');
     if(config.bgm)await runFFmpeg(['-nostdin','-v','error','-stream_loop','-1','-i',path.join(project,'bgm.wav'),'-t',String(config.duration),'-c:a','pcm_s16le',finiteBgm],60000);
     const args=['-nostdin','-hide_banner','-loglevel','error','-framerate','30','-i',path.join(frames,'frame-%05d.png')];
-    if(config.bgm)args.push('-i',finiteBgm);
-    args.push('-map','0:v:0');if(config.bgm)args.push('-map','1:a:0');
+    args.push('-map','0:v:0');
     args.push('-c:v','libx264','-preset','fast','-crf','18','-pix_fmt','yuv420p','-threads','4','-frames:v',String(config.duration*30),'-t',String(config.duration));
-    if(config.bgm)args.push('-c:a','aac','-b:a','192k','-ar','48000','-af','volume=-3dB');
-    args.push('-movflags','+faststart',file);
+    // FFmpeg 4.4 stops reading audio early when the video frame limit is reached.
+    // Encode exact video frames first, then mux the complete finite soundtrack.
+    const silentVideo=config.bgm?path.join(directory,'video-silent.mp4'):file;
+    args.push('-movflags','+faststart',silentVideo);
     try{await runFFmpeg(args,Math.max(180000,config.duration*10000));}finally{await rm(frames,{recursive:true,force:true});}
+    if(config.bgm)try{await runFFmpeg(['-nostdin','-v','error','-i',silentVideo,'-i',finiteBgm,'-map','0:v:0','-map','1:a:0','-c:v','copy','-c:a','aac','-b:a','192k','-ar','48000','-af','volume=-3dB','-t',String(config.duration),'-movflags','+faststart',file],60000);}finally{await rm(silentVideo,{force:true});}
     const probePath=createRequire(import.meta.url)('ffprobe-static').path as string;
     const probe=JSON.parse((await capture(probePath,['-v','error','-count_frames','-show_streams','-show_format','-of','json',file])).toString());
     const video=probe.streams.find((s:any)=>s.codec_type==='video'),audio=probe.streams.find((s:any)=>s.codec_type==='audio');
