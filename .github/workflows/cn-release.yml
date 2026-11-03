@@ -20,6 +20,8 @@ name: Domestic Linux release
       - 'apps/**'
       - 'tests/**'
       - 'tooling/**'
+      - 'third_party/pixelfx/**'
+      - 'skills/defold-game/**'
       - 'package.json'
       - 'pnpm-lock.yaml'
       - 'pnpm-workspace.yaml'

@@ -5,4 +5,4 @@ export interface CreativeProject {format:1;kind:CreativeKind;title:string;revisi
 export interface CreativeDiagnostic {file:string;line:number;message:string;severity:'error'|'warning'}
 export interface RequirementCheck {id:string;status:'satisfied'|'unverified'|'failed'|'superseded';evidence:string[];supersededBy?:string}
 export interface CreativeReview {requirementChecks?:RequirementCheck[];projectHash:string;approved:boolean;summary:string;issues:Array<CreativeDiagnostic&{fix:string}>;reviewedAt:string}
-export interface CreativeBuild {projectHash:string;engine:'defold';engineVersion:string;directory:string;entry:string;logs:string;builtAt:string;artifactHash?:string;environmentHash?:string}
+export interface CreativeBuild {projectHash:string;engine:'defold';engineVersion:string;directory:string;entry:string;logs:string;builtAt:string;artifactHash?:string;environmentHash?:string;effectAssets?:Array<{name:string;id:string;cacheKey:string;frames:number;fps:number}>}

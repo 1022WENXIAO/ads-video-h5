@@ -1,5 +1,11 @@
 # 轻剪前后端契约
 
+## 可复用游戏特效
+
+`GET /api/creative/effects?query=冰霜&limit=6`使用现有账号鉴权，按中英文查询本地pixelfx目录；`limit`限制1–12，返回`{total,effects,next}`，各项含准确`id`、名称、分类、标签、尺寸、时长、循环与角色绑定标记。`GET /api/creative/capabilities`的`effectLibraries`包含来源、固定提交、MIT许可、244个特效、21个分类及默认帧率。
+
+Agent的检索/读取/预览工具均不修改工程；`use_pixelfx_effect`及`remove_pixelfx_effect`修改`assets/pixelfx.json`，遵循工程revision冲突与只导出保护，并使原检查结果失效。默认15fps，可指定6–30fps、种子、配色；固定导出器生成透明分页纹理、Defold原生资源与调用模块，跨任务按内容摘要复用。详细方法、许可和边界见[PIXELFX.md](PIXELFX.md)。
+
 所有接口使用同源 `/api`（远端测试部署使用 `/qingjian/api`），JSON 错误统一为 `{ "error": "可读的中文错误" }`。浏览器只接收 `PublicModel`，不能获得 API Key。公共类型见 `src/types.ts`。当 `OSS_PUBLIC_READ=true` 时，`AppState` 中的素材、产物、封面、分镜缩略图预览 URL 为可匿名访问的新加坡 OSS HTTPS 直链；`downloadUrl` 仍为应用内接口。
 
 教学主题可在无附件的新会话直接生成视频，一般教学默认180秒横屏，从浅入深/变迁史默认240秒，详见[教学流程](TEACHING_WORKFLOW.md)。`Session.lessonDraft` 保存已核查脚本，`EditPlan.lesson` 保存逐章目标、旁白、引用、图解数据及音视频证据；`Job.workflow` / `Artifact.workflow` 保存脱敏工具输入、输出、调用标识与耗时，供页面折叠查看及制作记录导出。
