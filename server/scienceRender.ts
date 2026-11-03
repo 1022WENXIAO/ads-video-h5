@@ -178,7 +178,8 @@ export async function renderScienceVideo(o:{template:LoadedVideoTemplate;config:
     const motionV2=config.program?await measureEncodedAnimation(file,template,config.panels.length):null;
     if(motionV2)assertAnimationMotion(motionV2);
     const sampleFrames=[...new Set([0,60,120,180,240,Math.floor(config.duration*30*.84),config.duration*30-1].filter(f=>f<config.duration*30))].sort((a,b)=>a-b);
-    const sampled=await capture(ffmpeg||'ffmpeg',['-v','error','-i',file,'-vf',`select='${sampleFrames.map(f=>`eq(n,${f})`).join('+')}',scale=270:480`,'-fps_mode','passthrough','-pix_fmt','rgb24','-f','rawvideo','-'],12_000_000);
+    // Passthrough must also work with Ubuntu 22.04's FFmpeg 4.4, which predates fps_mode.
+    const sampled=await capture(ffmpeg||'ffmpeg',['-v','error','-i',file,'-vf',`select='${sampleFrames.map(f=>`eq(n,${f})`).join('+')}',scale=270:480`,'-vsync','0','-pix_fmt','rgb24','-f','rawvideo','-'],12_000_000);
     const frameBytes=270*480*3;if(sampled.length!==sampleFrames.length*frameBytes)throw new Error('抽帧解码数量不符。');
     const rows=Math.ceil(config.panels.length/2),panelH=(1045-(rows-1)*25)/rows;
     const motion=config.panels.map((_p,i)=>{
