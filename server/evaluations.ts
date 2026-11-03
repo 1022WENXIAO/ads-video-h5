@@ -50,7 +50,7 @@ interface Options {
   dataDir: string;
   implementation: Awaited<ReturnType<typeof evaluationImplementation>>;
   models: (preferred?: string) => Promise<ModelSnapshot>;
-  execute: (test: EvaluationCase, context: { runId: string; resultId: string; models: ModelSnapshot; signal: AbortSignal; fixtures: Array<EvaluationFixture & { file: string; shots: Shot[] }>; progress: (progress: EvaluationProgress) => Promise<void> }) => Promise<EvaluationOutcome>;
+  execute: (test: EvaluationCase, context: { runId: string; resultId: string; models: ModelSnapshot; signal: AbortSignal; deadlineAt: number; fixtures: Array<EvaluationFixture & { file: string; shots: Shot[] }>; progress: (progress: EvaluationProgress) => Promise<void> }) => Promise<EvaluationOutcome>;
   stop: (runId: string) => Promise<void>;
   artifactFile: (runId: string, resultId: string, artifactId: string) => string | undefined;
 }
@@ -89,7 +89,7 @@ export function createEvaluations(options: Options) {
       let timedOut = false;
       const timer = setTimeout(() => { timedOut = true; caseController.abort(); }, run.maxCaseSeconds * 1000);
       try {
-        const output = await options.execute(result.case, { runId: run.id, resultId: result.id, models, signal, fixtures: result.fixtures.map(f => ({ ...f, file: path.join(fixturesDir, f.id), shots: fixtures.find(item => item.id === f.id)!.shots })), progress: async update => {
+        const output = await options.execute(result.case, { runId: run.id, resultId: result.id, models, signal, deadlineAt: started + run.maxCaseSeconds * 1000, fixtures: result.fixtures.map(f => ({ ...f, file: path.join(fixturesDir, f.id), shots: fixtures.find(item => item.id === f.id)!.shots })), progress: async update => {
           result.jobIds = [...new Set([...result.jobIds, ...update.jobs.map(j => j.id)])];
           const active = update.jobs.at(-1); result.stage = active?.stage || active?.status; result.progress = active?.progress;
           result.workflow = update.jobs.flatMap(j => j.workflow || []); await persist();

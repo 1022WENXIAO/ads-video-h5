@@ -51,6 +51,7 @@ import { withAgentRuntime } from './agentRuntime';
 import { defaultAgentCapabilities } from '../shared/agentCapabilities';
 import { createJobRunner, restoreInterruptedJobs } from './jobRunner';
 import { createEvaluations, evaluationFileHash, evaluationImplementation, EvaluationError } from './evaluations';
+import { taskTimeoutMs } from './evaluationTaskBudget';
 import { privateEvaluationStorage, isEvaluationOwner } from './evaluationIsolation';
 import { withModelSnapshot, snapshotModels, type ModelSnapshot } from './modelContext';
 import { mountAvatarRoutes } from './avatarRoutes';
@@ -136,6 +137,7 @@ if (!state.sessions.some((session) => session.id === state.activeSessionId)) sta
 restoreInterruptedJobs(state.jobs, now());
 const jobRunner = createJobRunner();
 const evaluationJobModels = new Map<string, ModelSnapshot>();
+const evaluationJobDeadlines = new Map<string, number>();
 const persistState=createJsonStateWriter(stateFile,()=>state);
 function saveState(): Promise<void> { throwIfJobCancelled(); return persistState(); }
 await saveState();
@@ -729,7 +731,7 @@ async function processQueue() {
             const manifest={models:snapshotModels(models!).map(({id,modelId,provider,baseUrl})=>({id,modelId,provider,baseUrl})),capabilities:job.capabilities,extensions:runtime.fingerprint,template:job.template};
             const assertTemplate=async()=>{if(job.template&&(await loadVideoTemplates()).find(t=>t.id===job.template!.id)?.skillHash!==job.template.skillHash)throw Error('模板执行文件已变化，请使用最新模板重新运行。');};await assertTemplate();
             const environmentHash=await captureTaskEnvironment(root,manifest);
-            return withTaskExecution({timeoutMs:Number(process.env.QINGJIAN_TASK_TIMEOUT_MS)||1800000,ledgerDirectory:path.join(dataDir,'agent-effects',job.taskSpec!.id),maxCredits:process.env.QINGJIAN_TASK_MAX_CREDITS===undefined?undefined:Number(process.env.QINGJIAN_TASK_MAX_CREDITS),spec:job.taskSpec!,directory:path.join(dataDir,'agent-runs',job.id),environmentHash,
+            return withTaskExecution({timeoutMs:taskTimeoutMs(job.ownerId,evaluationJobDeadlines.get(job.id)),ledgerDirectory:path.join(dataDir,'agent-effects',job.taskSpec!.id),maxCredits:process.env.QINGJIAN_TASK_MAX_CREDITS===undefined?undefined:Number(process.env.QINGJIAN_TASK_MAX_CREDITS),spec:job.taskSpec!,directory:path.join(dataDir,'agent-runs',job.id),environmentHash,
               assertCurrent:()=>assertTaskRevision(job.taskSpec!,getSession(job.sessionId)?.taskRevisions),
               assertEnvironment:async()=>{await assertTemplate();await runtime.assertFresh?.();if(environmentHash!==await captureTaskEnvironment(root,manifest))throw Error('执行环境已变化，旧验收不能用于交付。');},
             },()=>withModelSnapshot(models!,()=>performJob(job)));
@@ -759,6 +761,7 @@ async function processQueue() {
       finishJobAttempt(job, job.updatedAt, transport, job.failure);
       if (job.status !== 'failed') console.info(JSON.stringify({ event: 'job.finished', jobId: job.id, attemptId: attempt.id, revision: attempt.revision, status: job.status, kind: job.kind, artifactId: job.artifactId, durationMs: Date.parse(job.updatedAt) - Date.parse(attempt.startedAt), recoveredRequests: transport.filter(d => d.outcome === 'recovered').length }));
       evaluationJobModels.delete(job.id);
+      evaluationJobDeadlines.delete(job.id);
       const session = getSession(job.sessionId); if (session) session.updatedAt = now();
       await saveState();
     }
@@ -822,6 +825,7 @@ const evaluations = createEvaluations({
         if (context.signal.aborted) throw new EvaluationError('评测已停止。');
         if (wantsScheduleManagement(text)) throw new EvaluationError('视频评测不执行定时任务管理，请填写研究、剪辑或视频制作指令。');
         const job = await enqueueAgentMessage(session, text, sourceIds); jobs.push(job); evaluationJobModels.set(job.id, context.models);
+        evaluationJobDeadlines.set(job.id, context.deadlineAt);
         await saveState(); await context.progress({ jobs }); void processQueue();
         while (['queued','running','stopping'].includes(job.status)) {
           if (context.signal.aborted) onAbort();
@@ -837,7 +841,7 @@ const evaluations = createEvaluations({
       context.signal.removeEventListener('abort', onAbort);
       const unfinished = jobs.some(job => ['queued','running','stopping'].includes(job.status));
       if (unfinished) jobRunner.stopSession(state.jobs, ownerId, session.id, now());
-      for (const job of jobs) evaluationJobModels.delete(job.id);
+      for (const job of jobs) { evaluationJobModels.delete(job.id); evaluationJobDeadlines.delete(job.id); }
       if (unfinished) await persistState();
     }
   },
