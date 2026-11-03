@@ -171,6 +171,7 @@ export async function runEditorialWorkflow(o: WorkflowOptions) {
     if(rejectedRetentionSelections.has(selectionKey(selected)))throw new Error('该完整选句组合的实际成片未保留用户点名的原有画面表达；仅改理由或叙事不能修复，请选择包含该表达且保留完整原话的真实源片段。');
     if(unverifiedRetentionSelections.has(selectionKey(selected)))throw new Error('该选句组合的画面保留状态仍未验证；本次仅授权包含原选段外的已绑定源见证以消除不确定性，不能只改理由或重复原选段。');
     if(planningWitnesses?.some(w=>w.purpose==='confirmed-omission'&&!selected.some(scene=>scene.sourceId===w.sourceId&&w.time>=scene.start&&w.time<scene.end)))throw new Error('返修选句仍未包含已绑定的必留原画面见证，必须选择覆盖对应sourceId与time的完整原句；不能仅换其它句子或理由。'+JSON.stringify(planningWitnesses));
+    if(planningWitnesses?.some(w=>w.purpose==='preserve-observed'&&!selected.some(scene=>scene.sourceId===w.sourceId&&scene.sourceHash===w.sourceHash&&w.time>=scene.start-.1&&w.time<scene.end+.35)))throw new Error('返修选句丢失了已经观察到的必留原画面；补入遗漏部分时仍须保留这些原有观察，不能以一个部分替换另一个部分。'+JSON.stringify(planningWitnesses));
     const unchecked=selected.filter(scene=>!verifiedScenes.has(sceneKey(scene)));if(unchecked.length)await o.verifySelection?.(unchecked);
     for(const scene of selected){verifiedScenes.add(sceneKey(scene));const visual=visuals.get(sceneKey(scene));if(visual)scene.visual=structuredClone(visual);}
     scenes=selected;script=undefined;manualArrange=false;invalidate();return scenes;
@@ -218,6 +219,7 @@ export async function runEditorialWorkflow(o: WorkflowOptions) {
         if(preserve){retentionStopped=true;review.limitations.push(resolving?'画面保留状态仍未验证，但当前要求固定选段；保留原成片、原分和不确定性，不能擅自包含选段外见证或认定缺失。':'实际审查发现未保留用户点名的画面表达，但当前要求固定选段；保留原成片和问题，不能擅自重选。');}
         else if(renderCount<2){
           planningWitnesses=resolving||visualRetentionOmittedPlanningWitnesses(review,o.prompt,plan,o.sources);
+          if(!planningWitnesses&&checks!.some(check=>check.preserveFrameTimes?.length)){retentionStopped=true;review.limitations.push('待保留观察无法唯一映射到当前源片段，保留原评分和成片，不能丢弃观察后重选。');return review;}
           const checked=review,checkedPlan=plan,candidates=visualRetentionSourceRecovery(checked,o.prompt,plan,o.sources),rejectedKey=selectionKey(scenes);
           if(candidates.length){scenes=[];script=undefined;invalidate();}
           for(const sourceId of new Set(candidates.map(candidate=>candidate.sourceId))){

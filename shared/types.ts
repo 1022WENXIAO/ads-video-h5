@@ -225,6 +225,8 @@ export interface NewsPublicationProof extends NewsPublicationAnnotation {
 }
 export interface VisualRetentionCheck {
   id:string; quote:string; status:'met'|'unmet'|'unverified'; frameTimes:number[]; detail:string;
+  /** Actual output observations to preserve when another part of this clause is repaired; never proof that the whole clause passed. */
+  preserveFrameTimes?:number[];
   sourceEvidence?:{sourceId:string;time:number;sourceHash?:string};
   /** Calculated from actual sampled source bytes and selected ranges, never trusted from a model. */
   sourceOmitted?:true;

@@ -67,7 +67,7 @@ export function reviewFrameMessages(plan:EditPlan,outputs:Array<{time:number;ima
  * mandatory protocols. These values are placeholders, not review evidence. */
 export function reviewJsonOutputExample(requirements:readonly {id:string;quote:string}[],newsCandidate?:{chapterId:string},firstFrameTime=0){
   return {score:0,findings:[] as string[],suggestions:['非阻塞改进建议'],needsRepair:true,
-    ...(requirements.length?{visualRetentionChecks:requirements.map(({id,quote})=>({id,quote,status:'unverified',frameTimes:[],detail:'按本次实际帧填写观察结果，不照抄示例状态'}))}:{}),
+    ...(requirements.length?{visualRetentionChecks:requirements.map(({id,quote})=>({id,quote,status:'unverified',frameTimes:[],preserveFrameTimes:[],detail:'按本次实际帧填写观察结果，不照抄示例状态'}))}:{}),
     ...(newsCandidate?{newsPublication:{visible:false,chapterId:newsCandidate.chapterId,quote:'',frameTime:firstFrameTime}}:{})};
 }
 

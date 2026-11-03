@@ -43,9 +43,10 @@ export function parseVisualRetentionChecks(value:unknown):VisualRetentionCheck[]
     if(!item||typeof item!=='object'||Array.isArray(item))throw new VisualRetentionReviewError('视觉保留核验项格式无效。');
     const v=item as Record<string,unknown>;
     if(typeof v.id!=='string'||!v.id.trim()||v.id.length>100||typeof v.quote!=='string'||!v.quote.trim()||v.quote.length>600||!['met','unmet','unverified'].includes(String(v.status))||!Array.isArray(v.frameTimes)||v.frameTimes.length>32||v.frameTimes.some(t=>typeof t!=='number'||!Number.isFinite(t)||t<0)||new Set(v.frameTimes).size!==v.frameTimes.length||typeof v.detail!=='string'||!v.detail.trim()||v.detail.length>600)throw new VisualRetentionReviewError('视觉保留核验缺少有效id、原句、状态、实际抽帧秒数或观察说明。');
+    if(v.preserveFrameTimes!==undefined&&(!Array.isArray(v.preserveFrameTimes)||v.preserveFrameTimes.length>32||v.preserveFrameTimes.some(t=>typeof t!=='number'||!Number.isFinite(t)||t<0)||new Set(v.preserveFrameTimes).size!==v.preserveFrameTimes.length))throw new VisualRetentionReviewError('待保留观察必须是最多32个不重复的实际成片秒数。');
     const source=v.sourceEvidence as Record<string,unknown>|undefined;
     if(source!==undefined&&(!source||typeof source!=='object'||Array.isArray(source)||typeof source.sourceId!=='string'||!source.sourceId||source.sourceId.length>120||typeof source.time!=='number'||!Number.isFinite(source.time)||source.time<0))throw new VisualRetentionReviewError('视觉保留原素材观察格式无效。');
-    return {id:v.id,quote:v.quote,status:v.status as VisualRetentionCheck['status'],frameTimes:v.frameTimes as number[],detail:v.detail,...(source?{sourceEvidence:{sourceId:source.sourceId as string,time:source.time as number}}:{})};
+    return {id:v.id,quote:v.quote,status:v.status as VisualRetentionCheck['status'],frameTimes:v.frameTimes as number[],detail:v.detail,...(v.preserveFrameTimes!==undefined?{preserveFrameTimes:v.preserveFrameTimes as number[]}:{}),...(source?{sourceEvidence:{sourceId:source.sourceId as string,time:source.time as number}}:{})};
   });
 }
 export function bindVisualRetentionSources(checks:VisualRetentionCheck[]|undefined,context?:VisualRetentionSourceContext):VisualRetentionCheck[]|undefined{
@@ -69,13 +70,14 @@ export function visualRetentionFindings(checks:VisualRetentionCheck[]|undefined,
     if(!required||required.quote!==check.quote||ids.has(check.id))throw new VisualRetentionReviewError('视觉保留核验id或原句不符、未知或重复。');
     ids.add(check.id);
     if(check.frameTimes.some(time=>!actualFrameTimes.includes(time))||check.status!=='unverified'&&!check.frameTimes.length)throw new VisualRetentionReviewError('视觉保留核验必须绑定本次实际抽帧，满足或确定未满足不能没有画面证据。');
+    if(check.preserveFrameTimes?.some(time=>!actualFrameTimes.includes(time)))throw new VisualRetentionReviewError('待保留观察未绑定本次实际成片抽帧。');
     if(check.status!=='met')findings.push(`用户明确视觉保留要求${check.status==='unmet'?'未满足':'未验证'}「${check.quote}」：${check.detail}${check.sourceOmitted?'；实际原素材见证位于选片之外，须重新选择包含该原有画面的真实片段，不能只改叙事理由。':check.status==='unmet'?'；必须修复该明确要求，不能只改叙事理由。':'；保留真实未验证状态，不能假定满足或伪造缺失。'}`);
   }
   return findings;
 }
 export function visualRetentionReviewInstruction(requirements:VisualRetentionRequirement[]):string{
   if(!requirements.length)return '';
-  return '\n以下是从原始请求保留的明确视觉保留要求，必须逐项核对全部并返回visualRetentionChecks:[{id,quote,status:"met"|"unmet"|"unverified",frameTimes:[本次成片实际抽帧秒数],detail:"实际可见证据或具体缺失/不确定原因",sourceEvidence?:{sourceId:"实际原素材ID",time:实际原素材抽帧秒数}}]。id与quote逐字使用下列值，每项恰一次。只保留主题大意或原声句子不等于保留用户点名的原有画面表达。met与unmet均须至少一张本次真实成片帧，不能把原素材帧当成片已保留。原素材帧明确显示所要求内容时，用sourceEvidence定位；不自报哈希或sourceOmitted。若内容已选入却被挡住，指出画面问题，不捏造成源片段未选入。未看到且证据不足返回unverified，确认未保留返回unmet。任一unmet/unverified都不能通过，即使评分80以上；原分保留，不能提分冲抵遗漏。这是模型对实际帧的观察，不是机器像素识别证明。要求：'+JSON.stringify(requirements);
+  return '\n以下是从原始请求保留的明确视觉保留要求，必须逐项核对全部并返回visualRetentionChecks:[{id,quote,status:"met"|"unmet"|"unverified",frameTimes:[本次成片实际抽帧秒数],preserveFrameTimes:[实际显示已保留部分的成片抽帧秒数，无则空数组],detail:"实际可见证据或具体缺失/不确定原因",sourceEvidence?:{sourceId:"实际原素材ID",time:实际原素材抽帧秒数}}]。id与quote逐字使用下列值，每项恰一次。一个原句同时要求保留多种画面时，必须分别观察：若部分已出现而另一部分遗漏或未验证，整体仍不能通过；将已出现部分的真实成片时刻列入preserveFrameTimes，避免重选补入另一部分时丢掉它。preserveFrameTimes与证明缺失的frameTimes分开，不得编造观察时刻，也不代表原句整体通过。只保留主题大意或原声句子不等于保留用户点名的原有画面表达。met与unmet均须至少一张本次真实成片帧，不能把原素材帧当成片已保留。原素材帧明确显示所要求内容时，用sourceEvidence定位；不自报哈希或sourceOmitted。若内容已选入却被挡住，指出画面问题，不捏造成源片段未选入。未看到且证据不足返回unverified，确认未保留返回unmet。任一unmet/unverified都不能通过，即使评分80以上；原分保留，不能提分冲抵遗漏。这是模型对实际帧的观察，不是机器像素识别证明。要求：'+JSON.stringify(requirements);
 }
 /** Only a bound explicit omission authorizes source reselection. Uncertainty
  * remains a review failure, not a claim that material is absent. */
@@ -98,6 +100,18 @@ export interface VisualRetentionPlanningWitness {
   sourceId:string;sourceHash:string;time:number;
   purpose:'resolve-unverified'|'preserve-met'|'preserve-observed'|'confirmed-omission';
   outputTime?:number;
+}
+function observedPlanningWitnesses(times:readonly number[],plan:EditPlan,sources:readonly MediaItem[]):VisualRetentionPlanningWitness[]|undefined{
+  const offsets=timelineOffsets(plan),witnesses:VisualRetentionPlanningWitness[]=[];
+  for(const outputTime of times){
+    const matches=plan.clips.flatMap((clip,index)=>outputTime>=offsets[index]&&outputTime<offsets[index]+clip.end-clip.start?[{clip,index}]:[]);
+    if(matches.length!==1)return;
+    const {clip,index}=matches[0],matching=sources.filter(s=>s.id===clip.sourceId),source=matching[0],a=source?.analysis;
+    const time=clip.start+outputTime-offsets[index];
+    if(matching.length!==1||source.kind!=='video'||source.hasAudio===false||a?.status!=='ready'||!/^[a-f0-9]{64}$/.test(a.sourceHash)||!Number.isFinite(time)||time<clip.start||time>=clip.end||!Number.isFinite(a.duration)||time>=a.duration||!Number.isFinite(source.duration)||time>=source.duration!||!plan.editorial?.scenes.some(s=>s.id===clip.sceneId&&s.sourceId===source.id&&s.sourceHash===a.sourceHash))return;
+    witnesses.push({sourceId:source.id,sourceHash:a.sourceHash,time,purpose:'preserve-observed',outputTime});
+  }
+  return witnesses;
 }
 /** Planning permission only: include a bound, currently unselected source
  * observation to resolve uncertainty in a NEW movie. Never change the review
@@ -164,5 +178,11 @@ export function visualRetentionOmittedPlanningWitnesses(review:RenderReview,prom
     if(matches.length!==1||source.kind!=='video'||source.hasAudio===false||a?.status!=='ready'||a.sourceHash!==w.sourceHash||!Number.isFinite(a.duration)||w.time>=a.duration||!Number.isFinite(source.duration)||w.time>=source.duration!||!plan.editorial?.scenes.some(s=>s.sourceId===source.id&&s.sourceHash===w.sourceHash)||plan.clips.some(c=>c.sourceId===source.id&&w.time>=c.start&&w.time<c.end))return;
     witnesses.push({sourceId:w.sourceId,sourceHash:w.sourceHash!,time:w.time,purpose:'confirmed-omission'});
   }
+  // A compound clause can be partly visible even while its overall status is
+  // unmet. Carry these bound observations into the NEW selection, not a pass.
+  const checks=parseVisualRetentionChecks(review.semantic!.visualRetentionChecks)!;
+  const observed=observedPlanningWitnesses([...new Set(checks.flatMap(check=>check.preserveFrameTimes||[]))],plan,sources);
+  if(!observed)return;
+  witnesses.push(...observed);
   return witnesses.length?witnesses:undefined;
 }

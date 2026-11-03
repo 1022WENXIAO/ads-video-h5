@@ -1,5 +1,5 @@
 import type { EditPlan, MediaItem, RenderReview, SelectedScene } from '../shared/types';
-import { extractVisualRetentionRequirements, parseVisualRetentionChecks, visualRetentionSelectionNeeded, visualRetentionUnverifiedPlanningWitnesses } from './visualRetentionReview';
+import { extractVisualRetentionRequirements, parseVisualRetentionChecks, visualRetentionSelectionNeeded, visualRetentionUnverifiedPlanningWitnesses, visualRetentionOmittedPlanningWitnesses } from './visualRetentionReview';
 import { timelineOffsets } from './timeline';
 
 export interface EditorialRepairSelection {
@@ -57,9 +57,12 @@ export function editorialRepairCandidates(options:{
   const planning=visualRetentionUnverifiedPlanningWitnesses(review,prompt,plan,sources);
   if(!planning&&!visualRetentionSelectionNeeded(review,prompt,plan))return;
   const requirements=extractVisualRetentionRequirements(prompt),checks=parseVisualRetentionChecks(review.semantic?.visualRetentionChecks)!;
+  const omitted=planning?undefined:visualRetentionOmittedPlanningWitnesses(review,prompt,plan,sources);
+  if(!planning&&!omitted&&checks.some(check=>check.preserveFrameTimes?.length))return;
+  const constrained=Boolean(planning||omitted?.some(w=>w.purpose==='preserve-observed'));
   const used=new Set(plan.clips.map(c=>c.sourceId));
   let invalidWitness=false;
-  const witnesses=planning||checks.flatMap((check,index)=>{
+  const witnesses=planning||omitted||checks.flatMap((check,index)=>{
     const trusted=review.semantic!.visualRetentionChecks![index],w=trusted.sourceEvidence;
     if(check.status!=='unmet'||trusted.sourceOmitted!==true||!w||!requirements.some(r=>r.id===check.id&&r.quote===check.quote))return [];
     const matches=sources.filter(s=>s.id===w.sourceId),source=matches[0],analysis=source?.analysis;
@@ -86,12 +89,12 @@ export function editorialRepairCandidates(options:{
     // Necessary upper envelope only; real validators below still decide every
     // cut and silence margin. This avoids spending the bounded validations on
     // selections that cannot possibly cover a mandatory observation.
-    if(planning&&witnesses.some(w=>{const rows=selected.filter(row=>row.source.id===w.sourceId);return !rows.length||w.time<Math.min(...rows.map(row=>row.sentence.start))-.1||w.time>=Math.max(...rows.map(row=>row.sentence.end))+.35;}))return;
+    if(constrained&&witnesses.some(w=>{const rows=selected.filter(row=>row.source.id===w.sourceId);return !rows.length||w.time<Math.min(...rows.map(row=>row.sentence.start))-.1||w.time>=Math.max(...rows.map(row=>row.sentence.end))+.35;}))return;
     const selections=sources.filter(s=>used.has(s.id)).map(source=>({sourceId:source.id,sentenceIds:selected.filter(row=>row.source.id===source.id).map(row=>row.sentence.id),reason:'候选仅核算完整原句、原时长和已绑定画面见证；叙事意义仍须核对',purpose:plan.clips.find(c=>c.sourceId===source.id)?.purpose||'argument' as SelectedScene['purpose']}));
-    const adjacent=Boolean(planning)&&selections.some(entry=>{const all=sources.find(s=>s.id===entry.sourceId)!.analysis!.sentences;return entry.sentenceIds.some((id,i)=>i>0&&all.findIndex(s=>s.id===id)===all.findIndex(s=>s.id===entry.sentenceIds[i-1])+1);});
+    const adjacent=constrained&&selections.some(entry=>{const all=sources.find(s=>s.id===entry.sourceId)!.analysis!.sentences;return entry.sentenceIds.some((id,i)=>i>0&&all.findIndex(s=>s.id===id)===all.findIndex(s=>s.id===entry.sentenceIds[i-1])+1);});
     const variants=adjacent?[selections,selections.flatMap(entry=>entry.sentenceIds.map(id=>({...entry,sentenceIds:[id]})))]:[selections];
     for(const variant of variants){
-      if(planning&&variant.reduce((count,entry)=>{const all=sources.find(s=>s.id===entry.sourceId)!.analysis!.sentences;return count+entry.sentenceIds.filter((id,i)=>!i||all.findIndex(s=>s.id===id)!==all.findIndex(s=>s.id===entry.sentenceIds[i-1])+1).length;},0)>16)continue;
+      if(constrained&&variant.reduce((count,entry)=>{const all=sources.find(s=>s.id===entry.sourceId)!.analysis!.sentences;return count+entry.sentenceIds.filter((id,i)=>!i||all.findIndex(s=>s.id===id)!==all.findIndex(s=>s.id===entry.sentenceIds[i-1])+1).length;},0)>16)continue;
       if(validated>=240){limited=true;return;}validated++;
       const checked=options.validate(structuredClone(variant));
       if(!checked||!Number.isFinite(checked.targetSeconds)||witnesses.some(w=>!checked.clips.some(c=>c.sourceId===w.sourceId&&w.time>=c.start&&w.time<c.end)))continue;
