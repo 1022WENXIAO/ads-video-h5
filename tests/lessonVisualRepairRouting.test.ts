@@ -15,6 +15,24 @@ import {withModelSnapshot} from '../server/modelContext';
 
 const actual=JSON.parse(await readFile(new URL('./fixtures/p19-visual-repair-routing.json',import.meta.url),'utf8')) as {report:LessonReport;review:RenderReview};
 const rejection=(findings:string[]):RenderReview=>({...structuredClone(actual.review),semantic:{score:72,findings,suggestions:[]}});
+// Actual new live-review wording projected onto this controlled checkpoint.
+// No real generated-video result or source report is changed by these tests.
+const liveVisualFindings=[
+  'ch2：调整该卡片内说明文字排版，将“不贴紧”三个字放在同一行内，避免单个“紧”字孤立换行，保证文字排布连贯自然。',
+  'global：在现有文字图解基础上补充玄关进门、雨伞滴水放置在通风窗边角落的生活化轻松动态示意，适配用户要求的生活科普画面感。',
+];
+
+test('actual orphan-line and illustration wording routes only visual repair while genuine source/speech faults remain script work',()=>{
+  const review={...rejection(liveVisualFindings),score:85},before=structuredClone({report:actual.report,review});
+  const plan=lessonRepairPlan(actual.report,review);
+  assert.equal(plan.kind,'visual');assert.deepEqual(plan.scriptChapterIds,[]);
+  assert.deepEqual(plan.visualChapterIds,actual.report.chapters.map(c=>c.id));
+  assert.deepEqual(lessonRepairPlan(actual.report,rejection([liveVisualFindings[0]])).layoutChapterIds,['chapter-2']);
+  for(const fault of ['来源未核验。','旁白与来源不符。','字幕漏字。','旁白错读。']){
+    assert.equal(lessonRepairPlan(actual.report,rejection([liveVisualFindings[1]+fault])).kind,'script',fault);
+  }
+  assert.deepEqual({report:actual.report,review},before);
+});
 
 test('all four actual P19 rendering findings preserve the verified script rather than returning it to factual repair',()=>{
   const before=structuredClone(actual),plan=lessonRepairPlan(actual.report,actual.review);
@@ -96,19 +114,22 @@ async function seed(directory:string){
   return{work,mediaDir,media,report,hashes,script,file};
 }
 
-for(const secondPassed of [true,false])test(`actual P19 visual repair redraws only affected scenes without TTS/ASR/script changes; second review ${secondPassed?'passes':'remains failed'}`,async()=>{
+for(const scenario of [
+  {name:'P19',firstReview:actual.review,affected:['chapter-1','chapter-2']},
+  {name:'live orphan/dynamic wording',firstReview:{...rejection(liveVisualFindings),score:85},affected:['chapter-1','chapter-2','chapter-3']},
+])for(const secondPassed of [true,false])test(`${scenario.name}: visual repair redraws affected scenes without TTS/ASR/script changes; second review ${secondPassed?'passes':'remains failed'}`,async()=>{
   const directory=await mkdtemp(path.join(tmpdir(),'qingjian-p19-visual-route-')),savedFetch=globalThis.fetch,s=await seed(directory),before=canonical(s.report),events:WorkflowEvent[]=[],authored:string[]=[],produced:string[]=[],drafts:LessonReport[]=[];let calls=0,asr=0,renders=0,reviews=0;
   globalThis.fetch=async()=>{calls++;throw new Error('Visual repair cannot make a provider request');};
   try{
     const result=await withModelSnapshot({text:config,understanding:null,audio:{...config,kind:'audio',modelId:'seed-audio-1.0'},image:null},()=>runLessonWorkflow({prompt,config,audioConfig:{...config,kind:'audio',modelId:'seed-audio-1.0'},media:s.media,dataDir:directory,mediaDir:s.mediaDir,ownerId:'fixture-owner',checkpointKey:'case',export:true,stage:async()=>{},progress:async updates=>{events.splice(0,events.length,...updates);},register:async()=>{},persist:async()=>{},saveDraft:async draft=>{drafts.push(structuredClone(draft));},analyze:async()=>{asr++;throw new Error('No new ASR');},
-      authorVisual:async(_config,beat)=>{authored.push(beat.id);assert.ok(['chapter-1','chapter-2'].includes(beat.id));const brief=JSON.parse(beat.visualBrief||'{}');assert.equal(brief.audienceContent.narration,before.chapters.find((c:any)=>c.id===beat.id).narration);return{title:'模型与专家',nodes:[{id:'one',kind:'card',x:60,y:280,w:260,h:120,text:'模型容量',tone:'blue',fontSize:24,highlight:false},{id:'two',kind:'card',x:380,y:280,w:260,h:120,text:'少量专家',tone:'ink',fontSize:24,highlight:false},{id:'link',kind:'line',x:320,y:340,w:60,h:0,text:'',tone:'ink',fontSize:24,highlight:false}]};},
-      produceScene:async chapter=>{produced.push(chapter.id);assert.ok(['chapter-1','chapter-2'].includes(chapter.id));const index=s.report.chapters.findIndex(c=>c.id===chapter.id),old=s.media.find(m=>m.id==='old-scene-'+index)!,file=path.join(s.work,chapter.id,'new-scene.mp4'),bytes=Buffer.from('CONTROLLED redraw of '+chapter.id);await writeFile(file,bytes);return{file,duration:old.duration!,audioHash:old.generation!.audioHash,htmlHash:hashBytes('controlled corrected HTML '+chapter.id),analysis:{...structuredClone(old.analysis!),sourceHash:hashBytes(bytes)}};},
+      authorVisual:async(_config,beat)=>{authored.push(beat.id);assert.ok(scenario.affected.includes(beat.id));const brief=JSON.parse(beat.visualBrief||'{}');assert.equal(brief.audienceContent.narration,before.chapters.find((c:any)=>c.id===beat.id).narration);return{title:'模型与专家',nodes:[{id:'one',kind:'card',x:60,y:280,w:260,h:120,text:'模型容量',tone:'blue',fontSize:24,highlight:false},{id:'two',kind:'card',x:380,y:280,w:260,h:120,text:'少量专家',tone:'ink',fontSize:24,highlight:false},{id:'link',kind:'line',x:320,y:340,w:60,h:0,text:'',tone:'ink',fontSize:24,highlight:false}]};},
+      produceScene:async chapter=>{produced.push(chapter.id);assert.ok(scenario.affected.includes(chapter.id));const index=s.report.chapters.findIndex(c=>c.id===chapter.id),old=s.media.find(m=>m.id==='old-scene-'+index)!,file=path.join(s.work,chapter.id,'new-scene.mp4'),bytes=Buffer.from('CONTROLLED redraw of '+chapter.id);await writeFile(file,bytes);return{file,duration:old.duration!,audioHash:old.generation!.audioHash,htmlHash:hashBytes('controlled corrected HTML '+chapter.id),analysis:{...structuredClone(old.analysis!),sourceHash:hashBytes(bytes)}};},
       render:async plan=>{renders++;assert.equal(renders,1,'only one reserved post-review render');assert.deepEqual(plan.lesson!.chapters.map(c=>({id:c.id,narration:c.narration,claims:c.claims,referenceIds:c.referenceIds})),before.chapters.map((c:any)=>({id:c.id,narration:c.narration,claims:c.claims,referenceIds:c.referenceIds})));const file=path.join(directory,'candidate-2.mp4');await writeFile(file,'CONTROLLED fresh candidate bytes, not media QA');return{id:'candidate-2',file};},
-      review:async file=>{reviews++;assert.equal(file,path.join(directory,reviews===1?'candidate-1.mp4':'candidate-2.mp4'));if(reviews===1)return structuredClone(actual.review);return{status:secondPassed?'passed':'needs-review',score:secondPassed?92:75,checks:[{name:'成片语义审查',passed:secondPassed,detail:secondPassed?'Controlled independent callback after rerender':'chapter-2：连线仍有交叉错乱。'}],semantic:{score:secondPassed?92:75,findings:secondPassed?[]:['chapter-2：连线仍有交叉错乱。'],suggestions:[]},limitations:['Controlled callback; this test establishes routing and immutable identity only, not actual media acceptance.'],createdAt:''};},
+      review:async file=>{reviews++;assert.equal(file,path.join(directory,reviews===1?'candidate-1.mp4':'candidate-2.mp4'));if(reviews===1)return structuredClone(scenario.firstReview);return{status:secondPassed?'passed':'needs-review',score:secondPassed?92:75,checks:[{name:'成片语义审查',passed:secondPassed,detail:secondPassed?'Controlled independent callback after rerender':'chapter-2：连线仍有交叉错乱。'}],semantic:{score:secondPassed?92:75,findings:secondPassed?[]:['chapter-2：连线仍有交叉错乱。'],suggestions:[]},limitations:['Controlled callback; this test establishes routing and immutable identity only, not actual media acceptance.'],createdAt:''};},
     }));
-    assert.equal(calls,0);assert.equal(asr,0);assert.equal(renders,1);assert.equal(reviews,2);assert.deepEqual(authored,['chapter-1','chapter-2']);assert.deepEqual(produced,['chapter-1','chapter-2']);assert.equal(result.rendered?.id,'candidate-2');assert.equal(result.review?.status,secondPassed?'passed':'needs-review');
+    assert.equal(calls,0);assert.equal(asr,0);assert.equal(renders,1);assert.equal(reviews,2);assert.deepEqual(authored,scenario.affected);assert.deepEqual(produced,scenario.affected);assert.equal(result.rendered?.id,secondPassed||scenario.firstReview.score<=75?'candidate-2':'candidate-1');assert.equal(result.review?.status,secondPassed?'passed':'needs-review');
     assert.equal(events.some(e=>['revise_lesson_script','review_lesson_script','synthesize_narration','synthesize_chapter','transcribe_chapter'].includes(e.tool)),false);
-    const repair=events.find(e=>e.tool==='repair_lesson')?.output as any;assert.deepEqual(repair.details.redrawChapters,['chapter-1','chapter-2']);assert.equal(repair.details.preservedScript,true);assert.equal(repair.details.preservedAudio,true);
+    const repair=events.find(e=>e.tool==='repair_lesson')?.output as any;assert.deepEqual(repair.details.redrawChapters,scenario.affected);assert.equal(repair.details.preservedScript,true);assert.equal(repair.details.preservedAudio,true);
     const cp=JSON.parse(await readFile(path.join(s.work,'checkpoint.json'),'utf8'));assert.equal(cp.renders,2);assert.equal(cp.voiceRevision,0);assert.deepEqual(cp.chapterVoiceRevisions,{});assert.deepEqual(cp.report.factReview,before.factReview);assert.deepEqual(cp.report.references,before.references);
     for(const draft of drafts)assert.deepEqual(draft.chapters.map(c=>({narration:c.narration,claims:c.claims,referenceIds:c.referenceIds})),before.chapters.map((c:any)=>({narration:c.narration,claims:c.claims,referenceIds:c.referenceIds})));
     assert.deepEqual(await readFile(path.join(s.work,'script.json')),s.script);for(const [file,hash]of Object.entries(s.hashes))assert.equal(hashBytes(await readFile(file)),hash);

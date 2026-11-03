@@ -35,7 +35,7 @@ const escaped=(text:string)=>text.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
 const mentions=(text:string,id:string)=>new RegExp(String.raw`(^|[^\w-])${escaped(id)}(?=$|[^\w-])`).test(text);
 const spoken=/(?:旁白|口播|台词|解说|原声|语音)/;
 const sourceConflict=(text:string)=>/(?:来源|原文|报道|事实|证据|claim)/i.test(text)&&/不一致|不符|矛盾|相反|错误|误导|不支持|未.*对齐/.test(text);
-const layoutDefect=(text:string)=>/遮挡|遮住|盖住|重叠|越界|截断|裁切|溢出|超出.*(?:边界|画面|安全区)|(?:字体|字号|文字|标签).*(?:过小|太小|不可读|无法辨认|难以辨认)|(?:孤字|单字)(?:换行|成行|占一行)/.test(text);
+const layoutDefect=(text:string)=>/遮挡|遮住|盖住|重叠|越界|截断|裁切|溢出|超出.*(?:边界|画面|安全区)|(?:字体|字号|文字|标签).*(?:过小|太小|不可读|无法辨认|难以辨认)|(?:孤字|单字|孤立)(?:换行|成行|占一行)/.test(text);
 const captionSeparatorDefect=(text:string)=>/字幕/.test(text)&&/空格|顿号|分隔|并列成分|标点/.test(text)
   &&!sourceConflict(text)&&!sourceUnverified(text)&&!sourceClaimFault(text)
   &&!/事实错误|数据错误|公式错误|错字|错读|漏字|漏读|缺字|缺少.*字|音轨|失真|音色|不同|不符|不一致|错误|遗漏|缺失/.test(text);
@@ -44,7 +44,7 @@ const renderingDefect=(text:string)=>renderedSurface(text)&&/拼写错误|错写
 // Recognizing a drawn object concerns its depiction, not the wording of the
 // verified narration. The existing spoken/source/caption guards still apply.
 const illustrationRecognitionDefect=(text:string)=>/(?:插画|插图|图形|示意图|轮廓)[^。；;\n]{0,200}(?:(?:难以|无法|不能|不易)(?:清楚|明确)?(?:识别|辨认)|认不出)/.test(text);
-const visualDefect=(text:string)=>layoutDefect(text)||renderingDefect(text)||illustrationRecognitionDefect(text)||/图标|配图|没有.*(?:图|画)|未呈现|缺乏.*图解|缺少.*(?:示意|图解)|未.*(?:画出|展示)|静态卡片|任务清单|图解仅复现文字|无法.*直观|(?:画面|卡片|图解|视觉|抽帧|提示条).*(?:错误|误写|缺失|遗漏|误导|误以为|归属|绑定|合并|混乱|不符|不一致|制作备注|内部说明)|抽帧.*(?:未出现|未展示)|动画/.test(text);
+const visualDefect=(text:string)=>layoutDefect(text)||renderingDefect(text)||illustrationRecognitionDefect(text)||/图标|配图|没有.*(?:图|画)|未呈现|缺乏.*图解|缺少.*(?:示意|图解)|(?:补充|增加|补上)[^。；;\n]{0,160}(?:动态示意|动态图解)|未.*(?:画出|展示)|静态卡片|任务清单|图解仅复现文字|无法.*直观|(?:画面|卡片|图解|视觉|抽帧|提示条).*(?:错误|误写|缺失|遗漏|误导|误以为|归属|绑定|合并|混乱|不符|不一致|制作备注|内部说明)|抽帧.*(?:未出现|未展示)|动画/.test(text);
 // Repeating a correct scene heading is a rendering defect. Keep this separate
 // from an inaccurate title or a request to repeat unverified claims: the usual
 // spoken, caption and source guards below still decide those cases.
