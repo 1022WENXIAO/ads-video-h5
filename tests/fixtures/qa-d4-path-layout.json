@@ -1,0 +1,390 @@
+{
+  "sourceRevision": "d4b849f30877108308bcc21cc2377c3eebf88bd7",
+  "run": "30e0ac2f-36fb-4ca0-9916-287d1e36700b",
+  "originalFailure": "SVG route occluded title; local identity retry rejected",
+  "first": {
+    "title": "当天发生了什么",
+    "nodes": [
+      {
+        "id": "c1",
+        "kind": "card",
+        "x": 50,
+        "y": 235,
+        "w": 620,
+        "h": 190,
+        "text": "",
+        "tone": "paper",
+        "fontSize": 36,
+        "highlight": false
+      },
+      {
+        "id": "d1",
+        "kind": "text",
+        "x": 78,
+        "y": 258,
+        "w": 250,
+        "h": 56,
+        "text": "11月4日",
+        "tone": "coral",
+        "fontSize": 24,
+        "highlight": true
+      },
+      {
+        "id": "t1",
+        "kind": "text",
+        "x": 78,
+        "y": 310,
+        "w": 560,
+        "h": 56,
+        "text": "泰航TG663 上海→曼谷",
+        "tone": "ink",
+        "fontSize": 24,
+        "highlight": false
+      },
+      {
+        "id": "t2",
+        "kind": "text",
+        "x": 78,
+        "y": 360,
+        "w": 560,
+        "h": 56,
+        "text": "起飞后发现左侧风挡裂痕",
+        "tone": "ink",
+        "fontSize": 24,
+        "highlight": false
+      },
+      {
+        "id": "c2",
+        "kind": "card",
+        "x": 50,
+        "y": 455,
+        "w": 290,
+        "h": 250,
+        "text": "",
+        "tone": "paper",
+        "fontSize": 32,
+        "highlight": false
+      },
+      {
+        "id": "cap1",
+        "kind": "text",
+        "x": 72,
+        "y": 478,
+        "w": 246,
+        "h": 56,
+        "text": "裂痕位置示意",
+        "tone": "ink",
+        "fontSize": 24,
+        "highlight": false
+      },
+      {
+        "id": "plane",
+        "kind": "path",
+        "x": 90,
+        "y": 535,
+        "w": 210,
+        "h": 130,
+        "text": "",
+        "pathData": "M40 80 L110 70 L150 35 L170 35 L155 72 L195 78 L205 58 L220 58 L210 82 C235 88 245 98 232 108 L205 112 L185 132 L165 128 L180 105 L120 112 L70 128 L55 124 L90 100 L42 105 L25 95 Z",
+        "tone": "blue",
+        "fontSize": 24,
+        "highlight": false
+      },
+      {
+        "id": "crack",
+        "kind": "path",
+        "x": 145,
+        "y": 540,
+        "w": 60,
+        "h": 80,
+        "text": "",
+        "pathData": "M20 5 L32 25 L22 42 L38 70 M32 25 L48 35 M22 42 L10 55",
+        "tone": "coral",
+        "fontSize": 24,
+        "highlight": true
+      },
+      {
+        "id": "leftlabel",
+        "kind": "text",
+        "x": 80,
+        "y": 665,
+        "w": 120,
+        "h": 56,
+        "text": "左侧",
+        "tone": "coral",
+        "fontSize": 24,
+        "highlight": true
+      },
+      {
+        "id": "windlabel",
+        "kind": "text",
+        "x": 200,
+        "y": 665,
+        "w": 120,
+        "h": 56,
+        "text": "风挡",
+        "tone": "ink",
+        "fontSize": 24,
+        "highlight": false
+      },
+      {
+        "id": "c3",
+        "kind": "card",
+        "x": 380,
+        "y": 455,
+        "w": 290,
+        "h": 250,
+        "text": "",
+        "tone": "paper",
+        "fontSize": 32,
+        "highlight": false
+      },
+      {
+        "id": "cap2",
+        "kind": "text",
+        "x": 402,
+        "y": 478,
+        "w": 246,
+        "h": 56,
+        "text": "按程序处置",
+        "tone": "ink",
+        "fontSize": 24,
+        "highlight": false
+      },
+      {
+        "id": "step1",
+        "kind": "circle",
+        "x": 405,
+        "y": 540,
+        "w": 70,
+        "h": 56,
+        "text": "1",
+        "tone": "blue",
+        "fontSize": 28,
+        "highlight": false
+      },
+      {
+        "id": "st1",
+        "kind": "text",
+        "x": 490,
+        "y": 543,
+        "w": 160,
+        "h": 56,
+        "text": "发现异常",
+        "tone": "ink",
+        "fontSize": 24,
+        "highlight": false
+      },
+      {
+        "id": "line1",
+        "kind": "line",
+        "x": 440,
+        "y": 596,
+        "w": 0,
+        "h": 38,
+        "text": "",
+        "tone": "blue",
+        "fontSize": 24,
+        "highlight": false
+      },
+      {
+        "id": "step2",
+        "kind": "circle",
+        "x": 405,
+        "y": 604,
+        "w": 70,
+        "h": 56,
+        "text": "2",
+        "tone": "blue",
+        "fontSize": 28,
+        "highlight": false
+      },
+      {
+        "id": "st2",
+        "kind": "text",
+        "x": 490,
+        "y": 610,
+        "w": 160,
+        "h": 56,
+        "text": "申请返航",
+        "tone": "ink",
+        "fontSize": 24,
+        "highlight": true
+      },
+      {
+        "id": "line2",
+        "kind": "line",
+        "x": 440,
+        "y": 660,
+        "w": 0,
+        "h": 30,
+        "text": "",
+        "tone": "blue",
+        "fontSize": 24,
+        "highlight": false
+      },
+      {
+        "id": "step3",
+        "kind": "circle",
+        "x": 405,
+        "y": 655,
+        "w": 70,
+        "h": 56,
+        "text": "3",
+        "tone": "coral",
+        "fontSize": 28,
+        "highlight": false
+      },
+      {
+        "id": "st3",
+        "kind": "text",
+        "x": 490,
+        "y": 662,
+        "w": 170,
+        "h": 56,
+        "text": "降落浦东",
+        "tone": "ink",
+        "fontSize": 24,
+        "highlight": false
+      },
+      {
+        "id": "mapcard",
+        "kind": "card",
+        "x": 50,
+        "y": 735,
+        "w": 620,
+        "h": 245,
+        "text": "",
+        "tone": "paper",
+        "fontSize": 32,
+        "highlight": false
+      },
+      {
+        "id": "mapcap",
+        "kind": "text",
+        "x": 76,
+        "y": 758,
+        "w": 500,
+        "h": 56,
+        "text": "航线示意（非真实航迹）",
+        "tone": "ink",
+        "fontSize": 24,
+        "highlight": false
+      },
+      {
+        "id": "route",
+        "kind": "path",
+        "x": 120,
+        "y": 815,
+        "w": 480,
+        "h": 120,
+        "text": "",
+        "pathData": "M110 95 C210 20 330 30 390 85 C455 145 520 120 565 70",
+        "tone": "blue",
+        "fontSize": 24,
+        "highlight": true
+      },
+      {
+        "id": "returnarrow",
+        "kind": "path",
+        "x": 120,
+        "y": 815,
+        "w": 480,
+        "h": 120,
+        "text": "",
+        "pathData": "M112 95 L128 88 M112 95 L121 112",
+        "tone": "coral",
+        "fontSize": 24,
+        "highlight": true
+      },
+      {
+        "id": "shanghai",
+        "kind": "circle",
+        "x": 96,
+        "y": 891,
+        "w": 24,
+        "h": 24,
+        "text": "",
+        "tone": "coral",
+        "fontSize": 24,
+        "highlight": true
+      },
+      {
+        "id": "shlabel",
+        "kind": "text",
+        "x": 82,
+        "y": 920,
+        "w": 120,
+        "h": 56,
+        "text": "上海浦东",
+        "tone": "ink",
+        "fontSize": 24,
+        "highlight": true
+      },
+      {
+        "id": "bangkok",
+        "kind": "circle",
+        "x": 552,
+        "y": 870,
+        "w": 24,
+        "h": 24,
+        "text": "",
+        "tone": "blue",
+        "fontSize": 24,
+        "highlight": false
+      },
+      {
+        "id": "bklabel",
+        "kind": "text",
+        "x": 520,
+        "y": 900,
+        "w": 90,
+        "h": 56,
+        "text": "曼谷",
+        "tone": "ink",
+        "fontSize": 24,
+        "highlight": false
+      }
+    ]
+  },
+  "proposedGeometryOnly": {
+    "nodes": [
+      {
+        "id": "plane",
+        "translate": {
+          "x": 65,
+          "y": 500
+        }
+      },
+      {
+        "id": "crack",
+        "translate": {
+          "x": 145,
+          "y": 535
+        }
+      },
+      {
+        "id": "route",
+        "translate": {
+          "x": 0,
+          "y": 780
+        }
+      },
+      {
+        "id": "returnarrow",
+        "translate": {
+          "x": 0,
+          "y": 780
+        }
+      },
+      {
+        "id": "c2",
+        "h": 270
+      },
+      {
+        "id": "c3",
+        "h": 270
+      }
+    ]
+  }
+}
