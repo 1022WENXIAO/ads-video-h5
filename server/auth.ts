@@ -7,6 +7,7 @@ import { sendRegistrationCode } from './resend';
 import type { CreditWallet } from '../shared/creditTypes';
 import { createWeChatExchange, WeChatLoginError, type WeChatIdentity } from './wechatAuth';
 import { providerTransportSettings } from './providerTransport';
+import { createLoginLimiter } from './loginRateLimit';
 
 const scrypt = promisify(scryptCallback);
 const sessionLifetime = 30 * 24 * 60 * 60 * 1000;
@@ -47,6 +48,8 @@ export function createAuth(dataDir: string, publicBase: string, options: { excha
   let store: AuthStore = { users: [], sessions: [], verifications: [] };
   let saveTail = Promise.resolve();
   const failures = new Map<string, { count: number; until: number }>();
+  const admitLogin = createLoginLimiter();
+  let invalidPasswordHash: Promise<string> | undefined;
   const sendLimits = new Map<string, { count: number; since: number }>();
   const sending = new Set<string>();
   const cookiePath = publicBase || '/';
@@ -106,9 +109,16 @@ export function createAuth(dataDir: string, publicBase: string, options: { excha
     next();
   }
   function rateKey(request: Request, email: string) { return `${request.ip}:${email}`; }
-  function isLimited(key: string) { const attempt = failures.get(key); return Boolean(attempt && attempt.count >= 5 && attempt.until > Date.now()); }
+  function pruneFailures() { for (const [key, attempt] of failures) if (attempt.until <= Date.now()) failures.delete(key); }
+  function isLimited(key: string) {
+    pruneFailures();
+    const attempt = failures.get(key);
+    return Boolean(attempt && attempt.count >= 5) || !attempt && failures.size >= 10_000;
+  }
   function failed(key: string) {
+    pruneFailures();
     const previous = failures.get(key);
+    if (!previous && failures.size >= 10_000) return;
     const count = previous && previous.until > Date.now() ? previous.count + 1 : 1;
     failures.set(key, { count, until: Date.now() + (count >= 5 ? Math.min(15 * 60_000, 30_000 * 2 ** Math.min(count - 5, 5)) : 60_000) });
   }
@@ -187,16 +197,24 @@ export function createAuth(dataDir: string, publicBase: string, options: { excha
   async function login(request: Request, response: Response) {
     const email = normalizeEmail(request.body?.email);
     const password = request.body?.password;
-    if (!email || typeof password !== 'string' || password.length > 256) { response.status(400).json({ error: '请输入邮箱和密码。' }); return; }
+    if (!emailValid(email) || typeof password !== 'string' || password.length > 256) { response.status(400).json({ error: '请输入邮箱和密码。' }); return; }
     const key = rateKey(request, email);
     if (isLimited(key)) { response.status(429).json({ error: '尝试过于频繁，请稍后再试。' }); return; }
-    const user = store.users.find((item) => item.email === email);
-    const valid = await verifyPassword(password, user?.passwordHash || await hashPassword('invalid-password'));
-    if (!user || !valid) { failed(key); response.status(401).json({ error: '邮箱或密码错误。' }); return; }
-    failures.delete(key);
-    issueSession(response, request, user.id);
-    await save();
-    response.json({ user: safeUser(user) });
+    const admission = admitLogin(request.ip || 'unknown');
+    if (!admission.allowed) {
+      response.set('Retry-After', String(admission.retryAfterSeconds)).status(429).json({ error: '登录请求过于频繁，请稍后再试。' });
+      return;
+    }
+    try {
+      const user = store.users.find((item) => item.email === email);
+      const fallback = () => invalidPasswordHash ??= hashPassword(randomBytes(32).toString('base64url'));
+      const valid = await verifyPassword(password, user?.passwordHash || await fallback());
+      if (!user || !valid) { failed(key); response.status(401).json({ error: '邮箱或密码错误。' }); return; }
+      failures.delete(key);
+      issueSession(response, request, user.id);
+      await save();
+      response.json({ user: safeUser(user) });
+    } finally { admission.release(); }
   }
   async function logout(request: Request, response: Response) {
     const cookie = request.headers.cookie?.split(';').map((part) => part.trim()).find((part) => part.startsWith(`${cookieName}=`))?.slice(cookieName.length + 1);
