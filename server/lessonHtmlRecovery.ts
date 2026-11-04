@@ -302,7 +302,7 @@ async function verifyNativeSequence<R>(project:string,failures:HtmlState<R>['fai
  * This never synthesizes speech or changes a verified lesson script. */
 export async function recoverLessonHtml<R extends SceneResult>(options: {
   project: string; chapterId: string; contextHash: string; format: Format;
-  author: (feedback: string) => Promise<HtmlDrawing>;
+  author: (feedback: string, priorDrawing?:HtmlDrawing) => Promise<HtmlDrawing>;
   produce: (drawing: HtmlDrawing) => Promise<R>;
   nativeFallback?: () => Promise<R>;
 }): Promise<R> {
@@ -379,7 +379,7 @@ export async function recoverLessonHtml<R extends SceneResult>(options: {
     throwIfJobCancelled();
     const prior = state.failed.at(-1);let drawing:HtmlDrawing;
     try{
-      const proposed=state.pendingDrawing || await options.author(prior?.feedback || ''),[width,height]=drawingDimensions(options.format);
+      const proposed=state.pendingDrawing || await options.author(prior?.feedback || '',prior?.report&&prior.drawing&&!prior.drawing.serverCardLabels?structuredClone(prior.drawing):undefined),[width,height]=drawingDimensions(options.format);
       drawing=validateDrawing(fitNumericDrawingSlots(proposed,{left:40,top:height>width?220:160,right:width-40,bottom:height>width?1010:height-170})||proposed,options.format);
     }
     catch(error){

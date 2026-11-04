@@ -12,6 +12,7 @@ import { createToolTrace } from './toolTrace';
 import { throwIfJobCancelled } from './jobExecution';
 import { editFrameZoom, editProposalNarrativeFeedback, editSentenceBudgetHint } from './editProposal';
 import { editorialRepairCandidates, type EditorialRepairSelection } from './editorialRepairCandidates';
+import {redundantOverlayRepair} from './editorialRedundantOverlay';
 import { extractVisualRetentionRequirements, parseVisualRetentionChecks, visualRetentionSelectionNeeded, visualRetentionOmittedPlanningWitnesses, visualRetentionUnverifiedPlanningWitnesses, type VisualRetentionPlanningWitness } from './visualRetentionReview';
 import { durationSourceRecovery, SourceAsrRecoveryError, sourceAsrRecoveryReasons, sourceWitnessHasCompleteSpeech, visualRetentionSourceRecovery, type SourceAsrRecoveryReason } from './sourceAsrRecovery';
 
@@ -234,6 +235,10 @@ export async function runEditorialWorkflow(o: WorkflowOptions) {
           if(candidates.length)return {...checked,...(repairCandidates?{repairCandidates}:{})};
         }
       }
+    }
+    if(renderCount===1&&script){
+      const correction=redundantOverlayRepair(review,o.prompt,plan,script);
+      if(correction){const original=review;script=correction.script;invalidate();return {...original,overlayRepair:{removed:correction.removed,preservedSourceRanges:true,preservedOriginalLabels:true,nextTool:'arrange_timeline'}};}
     }
     return repairCandidates&&renderCount===1?{...review,repairCandidates}:review;
   });
