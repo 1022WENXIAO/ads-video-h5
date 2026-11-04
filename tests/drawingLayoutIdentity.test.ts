@@ -53,6 +53,16 @@ test('geometry patches retain content by construction and reject creative fields
   assert.deepEqual(prior,fixture.first);
 });
 
+test('unchanged geometry and zero path translations are corrected inside the existing author budget instead of blocking the second HTML check',async t=>{
+  const checked=clear(),shape=checked.nodes.find(n=>n.kind==='path')!;
+  for(const patch of [{nodes:[{id:checked.nodes[0].id,x:checked.nodes[0].x}]},{nodes:[{id:shape.id,translate:{x:0,y:0}}]}])assert.throws(()=>applyDrawingLayoutPatch(patch,checked),/没有改变实际布局/);
+  const original=globalThis.fetch;t.after(()=>{globalThis.fetch=original;});let calls=0;
+  globalThis.fetch=async(_url,options)=>{calls++;const body=JSON.parse(String(options?.body));if(calls===2)assert.match(JSON.stringify(body.messages),/没有改变实际布局/);return new Response(JSON.stringify({choices:[{message:{content:JSON.stringify({nodes:[{id:'bad_label_neck',x:calls===1?90:91}]})}}]}));};
+  const config={...TEXT_MODEL_PRESETS[0],kind:'text' as const,provider:'ark',baseUrl:ARK_BASE_URL,enabled:true,apiKey:'controlled-noop-layout'};
+  const result=await authorDrawing(config,{title:checked.title,line:'Controlled no-op retry, not visual acceptance',visualBrief:'Fix measured overlap'} as any,'9:16',{layoutRepair:checked});
+  assert.equal(calls,2);assert.equal(result.nodes.find(n=>n.id==='bad_label_neck')!.x,91);assertDrawingLayoutIdentity(result,checked);
+});
+
 test('SVG translation handles absolute/relative moves, implicit lines, curves, H/V, closed subpaths and arcs without changing shape or scales',()=>{
   const a='m1 2 3 4 h5 v6 l7 8 C10 20 30 40 50 60 s1 2 3 4 Q5 6 7 8 T9 10 A5 6 30 0 1 20 30 z M40 50H60V70Z';
   const b=translateDrawingPath(a,100,200);

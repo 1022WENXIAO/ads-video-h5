@@ -63,7 +63,13 @@ export function applyDrawingLayoutPatch(value:unknown,prior:HtmlDrawing):HtmlDra
       node!.pathData=translateDrawingPath(node!.pathData!,t.x,t.y);
     }
   }
-  assertDrawingLayoutIdentity(result,prior);return result;
+  assertDrawingLayoutIdentity(result,prior);
+  const unchanged=result.nodes.every((n,i)=>{
+    const old=prior.nodes[i];
+    return ['x','y','w','h','fontSize'].every(key=>(n as any)[key]===(old as any)[key])&&(n.pathData===old.pathData||n.kind==='path'&&translateDrawingPath(n.pathData!,0,0)===translateDrawingPath(old.pathData!,0,0));
+  });
+  if(unchanged)fail('补丁没有改变实际布局；必须修复报告中重叠/遮挡的现有节点，零位移或重复原坐标不能消耗下一次HTML检查。');
+  return result;
 }
 const box=(n:HtmlDrawing['nodes'][number])=>({left:Math.min(n.x,n.x+n.w),right:Math.max(n.x,n.x+n.w),top:Math.min(n.y,n.y+n.h),bottom:Math.max(n.y,n.y+n.h)});
 const contains=(a:HtmlDrawing['nodes'][number],b:HtmlDrawing['nodes'][number])=>{const x=box(a),y=box(b);return x.left<=y.left&&x.right>=y.right&&x.top<=y.top&&x.bottom>=y.bottom;};
