@@ -82,8 +82,30 @@ export function editorialRepairCandidates(options:{
   // from the scene whose caption was explicitly disputed.
   const retained=new Set(plan.clips.filter(c=>!c.sceneId||!concern.scenes.has(c.sceneId)).flatMap(c=>(c.sentenceIds||[]).map(id=>key(c.sourceId,id))));
   const candidates:EditorialRepairCandidate[]=[];let visited=0,validated=0,limited=false;
+  function possibleWitness(rows:typeof pool,w:typeof witnesses[number]):boolean{
+    const all=sources.find(s=>s.id===w.sourceId)!.analysis!.sentences;
+    let start=0,end=0,last=-2;
+    for(const row of rows.filter(row=>row.source.id===w.sourceId)){
+      const position=all.findIndex(s=>s.id===row.sentence.id);
+      if(position!==last+1){if(last>=0&&w.time>=start-.1&&w.time<end+.35)return true;start=row.sentence.start;}
+      end=row.sentence.end;last=position;
+    }
+    return last>=0&&w.time>=start-.1&&w.time<end+.35;
+  }
   function search(index:number,selected:typeof pool){
     if(visited>=5000){limited=true;return;}visited++;
+    if(constrained){
+      // An exclusion-first walk can spend its entire budget in branches
+      // which already discarded the only early witness-bearing sentences.
+      // Prune only when even the generous selected+remaining source envelope
+      // cannot cover a bound witness within a consecutive source run. Gaps
+      // inside adjacent sentences stay possible; a skipped intervening
+      // sentence cannot make two separate physical cuts cover its gap.
+      // The ordinary cut/timing validators still decide every candidate.
+      const available=[...selected,...pool.slice(index)];
+      if([...used].some(id=>!available.some(row=>row.source.id===id)))return;
+      if(witnesses.some(w=>!possibleWitness(available,w)))return;
+    }
     if(index<pool.length){search(index+1,selected);search(index+1,[...selected,pool[index]]);return;}
     if(!selected.length||[...used].some(id=>!selected.some(row=>row.source.id===id)))return;
     // Necessary upper envelope only; real validators below still decide every

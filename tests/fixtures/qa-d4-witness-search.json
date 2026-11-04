@@ -1,0 +1,1510 @@
+{
+  "sourceRevision": "d4b849f30877108308bcc21cc2377c3eebf88bd7",
+  "originalScore": 85,
+  "prompt": "我传了两段横屏的程序示意动态图解，帮我精剪成20秒的方法对照小视频。普通话原声保留，画面按原比例完整呈现，不要裁掉标注。想让观众先看懂：观察现象时，要把看到的内容和可能的解释分开；再看懂：比较两个方案时，条件一致后再判断，结论不能超出证据支持的范围。请保留“程序示意、不是真实现场”的标注，也保留重复观察的画面和未知部分保留限制的画面表达。声音只从素材里实际通顺完整的原话中挑重点，别补词，也不要加真人、实景、采访、品牌或新闻片段。\n把这两段视频剪成20秒横屏，两段都用到，所选句子保留完整原话和原声，加字幕，不要新增配音或图片，给我成片。",
+  "firstPlan": {
+    "format": "16:9",
+    "summary": "用两段横屏程序示意动态图做约20秒方法对照：观察现象时先记录看到的内容、再提出可能解释；比较方案时先保持条件一致，并让结论受证据与未知限制约束。",
+    "targetSeconds": 19.05,
+    "fineCut": true,
+    "clips": [
+      {
+        "sceneId": "scene-1",
+        "sourceId": "ce362c5d-9b74-4da5-82c9-059bfe16bad4",
+        "start": 0.93,
+        "end": 9.83,
+        "sentenceIds": [
+          "ce362c5d-9b74-4da5-82c9-059bfe16bad4:sentence:1",
+          "ce362c5d-9b74-4da5-82c9-059bfe16bad4:sentence:2",
+          "ce362c5d-9b74-4da5-82c9-059bfe16bad4:sentence:3",
+          "ce362c5d-9b74-4da5-82c9-059bfe16bad4:sentence:4"
+        ],
+        "purpose": "hook",
+        "zoom": 1,
+        "transition": {
+          "kind": "cut",
+          "duration": 0
+        },
+        "volume": 1
+      },
+      {
+        "sceneId": "scene-2",
+        "sourceId": "8466caff-3ab2-4f7b-bdf3-13cc916e08f1",
+        "start": 1.49,
+        "end": 5.19,
+        "sentenceIds": [
+          "8466caff-3ab2-4f7b-bdf3-13cc916e08f1:sentence:1"
+        ],
+        "purpose": "conclusion",
+        "zoom": 1,
+        "transition": {
+          "kind": "cut",
+          "duration": 0
+        },
+        "volume": 1
+      },
+      {
+        "sceneId": "scene-3",
+        "sourceId": "8466caff-3ab2-4f7b-bdf3-13cc916e08f1",
+        "start": 9.05,
+        "end": 15.5,
+        "sentenceIds": [
+          "8466caff-3ab2-4f7b-bdf3-13cc916e08f1:sentence:3",
+          "8466caff-3ab2-4f7b-bdf3-13cc916e08f1:sentence:4"
+        ],
+        "purpose": "conclusion",
+        "zoom": 1,
+        "transition": {
+          "kind": "cut",
+          "duration": 0
+        },
+        "volume": 1
+      }
+    ],
+    "audio": {
+      "originalVolume": 1,
+      "bgmVolume": 0.12,
+      "narrationVolume": 1,
+      "normalize": true
+    },
+    "avatars": [],
+    "captions": [
+      {
+        "start": 0,
+        "end": 0.36,
+        "text": "时",
+        "style": "subtitle",
+        "animation": "none"
+      },
+      {
+        "start": 0.39,
+        "end": 2.04,
+        "text": "先记录看到了什么",
+        "style": "subtitle",
+        "animation": "none"
+      },
+      {
+        "start": 2.19,
+        "end": 3.97,
+        "text": "再提出可能解释",
+        "style": "subtitle",
+        "animation": "none"
+      },
+      {
+        "start": 4.98,
+        "end": 5.85,
+        "text": "这段画面",
+        "style": "subtitle",
+        "animation": "none"
+      },
+      {
+        "start": 5.88,
+        "end": 7.52,
+        "text": "是程序绘制的示意",
+        "style": "subtitle",
+        "animation": "none"
+      },
+      {
+        "start": 7.59,
+        "end": 7.92,
+        "text": "不是",
+        "style": "subtitle",
+        "animation": "none"
+      },
+      {
+        "start": 7.92,
+        "end": 8.75,
+        "text": "真实现场",
+        "style": "subtitle",
+        "animation": "none"
+      },
+      {
+        "start": 9,
+        "end": 10.5,
+        "text": "要先保持比较条件",
+        "style": "subtitle",
+        "animation": "none"
+      },
+      {
+        "start": 10.5,
+        "end": 11.05,
+        "text": "一致",
+        "style": "subtitle",
+        "animation": "none"
+      },
+      {
+        "start": 11.1,
+        "end": 12.54,
+        "text": "再看差异来自哪里",
+        "style": "subtitle",
+        "animation": "none"
+      },
+      {
+        "start": 12.7,
+        "end": 16.36,
+        "text": "结论应当由证据支持暂时",
+        "style": "subtitle",
+        "animation": "none"
+      },
+      {
+        "start": 16.36,
+        "end": 17.54,
+        "text": "没有把握的部分",
+        "style": "subtitle",
+        "animation": "none"
+      },
+      {
+        "start": 17.74,
+        "end": 18.99,
+        "text": "需要保留限制",
+        "style": "subtitle",
+        "animation": "none"
+      }
+    ],
+    "motions": [
+      {
+        "sceneId": "scene-1",
+        "kind": "steps",
+        "label": "先记录 再解释",
+        "zone": "bottom",
+        "start": 0.15,
+        "end": 8.8
+      },
+      {
+        "sceneId": "scene-2",
+        "kind": "underline",
+        "label": "条件先一致",
+        "zone": "bottom",
+        "start": 9.05,
+        "end": 12.5
+      },
+      {
+        "sceneId": "scene-3",
+        "kind": "arrow",
+        "label": "证据限定结论",
+        "zone": "bottom",
+        "start": 12.75,
+        "end": 18.95
+      }
+    ],
+    "editorial": {
+      "scenes": [
+        {
+          "id": "scene-1",
+          "sourceId": "ce362c5d-9b74-4da5-82c9-059bfe16bad4",
+          "sourceName": "controlled-semantic-v3-1.mp4",
+          "sourceHash": "52cee27c96ec89277816c60223fd1e56cbcd586dae235436926ba7e9bc38acc7",
+          "sentenceIds": [
+            "ce362c5d-9b74-4da5-82c9-059bfe16bad4:sentence:1",
+            "ce362c5d-9b74-4da5-82c9-059bfe16bad4:sentence:2",
+            "ce362c5d-9b74-4da5-82c9-059bfe16bad4:sentence:3",
+            "ce362c5d-9b74-4da5-82c9-059bfe16bad4:sentence:4"
+          ],
+          "start": 0.93,
+          "end": 9.68,
+          "quote": "时先记录看到了什么再提出可能解释这段画面是程序绘制的示意不是真实现场",
+          "reason": "为控制在20秒内，改为第一段选取连续完整的核心句：先记录看到了什么，再提出可能解释，并连续保留“程序绘制的示意、不是真实现场”的标注。音频约8.75秒，仍能通过源画面保留重复观察流程及右上角程序示意标注。",
+          "purpose": "hook",
+          "visual": {
+            "observations": "这是一组科普讲解类的程序示意图，背景为浅米白色，布局左右分栏、顶部设置标题与流程条。三帧内容连续：第一帧顶部流程条「观察」为蓝色高亮状态，左侧灰色斜向滑道上的蓝色实心圆球停在2号刻度位置；后续两帧的高亮状态切换为橙色的「解释」流程段，蓝色圆球先后移动到1号刻度附近。左侧分栏标题为蓝色字体「看到的运动」，滑道标注1、2、3刻度，底部带有标注「位置记录」的黑色横线；右侧分栏标题为橙色字体「可能的解释」，配有斜坡、外力两种推测示意图。顶部左上角有黑色标题文字「先观察，再解释」，右上角有灰色小字标注「程序示意·非真实现场」，所有文字元素均分布在画面上半区。",
+            "safeZone": "bottom",
+            "frameTimes": [
+              1.98,
+              5.305,
+              8.63
+            ]
+          }
+        },
+        {
+          "id": "scene-2",
+          "sourceId": "8466caff-3ab2-4f7b-bdf3-13cc916e08f1",
+          "sourceName": "controlled-semantic-v3-2.mp4",
+          "sourceHash": "d08c3de9a8ad9be03eb542e3bfbdd3e7f7a97c9641459b0b6dfea1fd827099d1",
+          "sentenceIds": [
+            "8466caff-3ab2-4f7b-bdf3-13cc916e08f1:sentence:1"
+          ],
+          "start": 1.59,
+          "end": 5.13,
+          "quote": "要先保持比较条件一致再看差异来自哪里",
+          "reason": "为将总时长压到约20秒，第二段保留三条完整原句作为方案对照结论：条件一致后再看差异、结论由证据支持、暂时没把握的部分保留限制。虽不连续取句，但每条句子本身完整，覆盖用户要求的公平比较、证据边界和未知限制；右上角“程序示意·非真实现场”在源画面中持续存在，底部限制画面也被保留。",
+          "purpose": "conclusion",
+          "visual": {
+            "observations": "演示文稿浅米白背景，顶部标题、流程条占据上层区域，主体部分为左右分栏的蓝橙配色卡通小车赛道对比图，底部标注说明文字，背景无实景人物，整体为扁平化科普风格，视觉内容全集中在画面纵向80%以内的中上区域，底部15%仅保留浅米白空白，可作为安全放置区。",
+            "safeZone": "bottom",
+            "frameTimes": [
+              2.015,
+              3.36,
+              4.705
+            ]
+          }
+        },
+        {
+          "id": "scene-3",
+          "sourceId": "8466caff-3ab2-4f7b-bdf3-13cc916e08f1",
+          "sourceName": "controlled-semantic-v3-2.mp4",
+          "sourceHash": "d08c3de9a8ad9be03eb542e3bfbdd3e7f7a97c9641459b0b6dfea1fd827099d1",
+          "sentenceIds": [
+            "8466caff-3ab2-4f7b-bdf3-13cc916e08f1:sentence:3",
+            "8466caff-3ab2-4f7b-bdf3-13cc916e08f1:sentence:4"
+          ],
+          "start": 9.15,
+          "end": 15.44,
+          "quote": "结论应当由证据支持暂时没有把握的部分需要保留限制",
+          "reason": "为将总时长压到约20秒，第二段保留三条完整原句作为方案对照结论：条件一致后再看差异、结论由证据支持、暂时没把握的部分保留限制。虽不连续取句，但每条句子本身完整，覆盖用户要求的公平比较、证据边界和未知限制；右上角“程序示意·非真实现场”在源画面中持续存在，底部限制画面也被保留。",
+          "purpose": "conclusion",
+          "visual": {
+            "observations": "米白色背景的扁平化科普演示图，顶部标题、流程框、流程箭头、结论框及带问号的圆圈标注均排布在画面上半区，中下部左右分别放置蓝色、橙色卡通小车，底部有小字免责说明，无人物主体。三帧画面内容完全一致，动效可能出现在底部无信息的空白区域，该区域距离底部免责小字较远，不会发生遮挡。",
+            "safeZone": "bottom",
+            "frameTimes": [
+              9.905,
+              12.295,
+              14.685
+            ]
+          }
+        }
+      ],
+      "script": {
+        "premise": "用两段横屏程序示意动态图做约20秒方法对照：观察现象时先记录看到的内容、再提出可能解释；比较方案时先保持条件一致，并让结论受证据与未知限制约束。",
+        "audience": "需要快速掌握“观察与解释分离”“公平比较与证据边界”的通识方法观众。",
+        "arc": "方法起点（scene-1）：连续原话说明先记录看到了什么，再提出可能解释，同时保留“程序绘制的示意、不是真实现场”标注；画面中的重复位置记录与“看到的运动/可能的解释”分栏支撑观察和推测分离。比较规则（scene-2）：原话要求比较两个方案时先保持条件一致，再看差异来自哪里。证据边界（scene-3）：以连续原话收束为结论应当由证据支持，暂时没有把握的部分需要保留限制。素材本身包含完整限制表达，不额外补词；“不能把猜测说成事实”因20秒时长限制未选入，但不新增替代结论。",
+        "style": "横屏原比例完整呈现两段程序示意图，保留所有原始标注、分栏、重复观察与未知限制视觉；不加真人、实景、采访、品牌、新闻片段或新图片。动效使用小型白底标签与珊瑚色路径，尽量放在中部空白或底部安全区上方，避开顶部标题流程、右上角程序示意标注和底部字幕。",
+        "beats": [
+          {
+            "sceneId": "scene-1",
+            "intent": "建立第一组方法：先记录看到的内容，再提出可能解释；同时保留程序示意、非真实现场和重复观察画面。",
+            "graphic": "steps",
+            "label": "先记录 再解释"
+          },
+          {
+            "sceneId": "scene-2",
+            "intent": "转入方案比较：必须先保持比较条件一致，再判断差异来自哪里。",
+            "graphic": "underline",
+            "label": "条件先一致"
+          },
+          {
+            "sceneId": "scene-3",
+            "intent": "收束证据边界：结论由证据支持，没把握的部分保留限制，避免超出证据。",
+            "graphic": "arrow",
+            "label": "证据限定结论"
+          }
+        ]
+      }
+    },
+    "version": 1
+  },
+  "review": {
+    "status": "needs-review",
+    "score": 85,
+    "checks": [
+      {
+        "name": "实际时长",
+        "passed": true,
+        "detail": "文件19.070秒，方案19.05秒"
+      },
+      {
+        "name": "画幅与音轨",
+        "passed": true,
+        "detail": "预期960×540，有音轨"
+      },
+      {
+        "name": "方案版本",
+        "passed": true,
+        "detail": "渲染清单哈希与当前方案比对"
+      },
+      {
+        "name": "分镜证据与叙事",
+        "passed": true,
+        "detail": "原话、源时间码、选择理由、脚本顺序与实际方案比对"
+      },
+      {
+        "name": "绘制动效合成",
+        "passed": true,
+        "detail": "实际合成3段GSAP透明绘制层，关键时刻参与抽帧审查"
+      },
+      {
+        "name": "字幕执行",
+        "passed": true,
+        "detail": "实际渲染指令包含13条字幕，0条叠字"
+      },
+      {
+        "name": "覆盖层执行",
+        "passed": true,
+        "detail": "渲染0条叠字"
+      },
+      {
+        "name": "推镜执行",
+        "passed": true,
+        "detail": "检查渲染方案的逐片段缩放"
+      },
+      {
+        "name": "转场执行",
+        "passed": true,
+        "detail": "检查实际渲染方案的入场叠化"
+      },
+      {
+        "name": "响度归一化执行",
+        "passed": true,
+        "detail": "渲染记录包含逐段和混音两遍测量/处理参数，仍须实测输出一致性"
+      },
+      {
+        "name": "字幕原话",
+        "passed": true,
+        "detail": "字幕与选中原声逐字稿比对"
+      },
+      {
+        "name": "字幕时间映射",
+        "passed": true,
+        "detail": "字幕时间与源字词到成片的映射比对，源时间仍为模型估计"
+      },
+      {
+        "name": "完整句子",
+        "passed": true,
+        "detail": "精剪片段必须覆盖所选完整原句"
+      },
+      {
+        "name": "人声响度",
+        "passed": true,
+        "detail": "综合响度-16.02 LUFS，峰值-3.70 dBTP"
+      },
+      {
+        "name": "分段人声响度一致性",
+        "passed": true,
+        "detail": "各段实际LUFS：scene-1=-16.11；scene-2=-16.12；scene-3=-16.12。极差0.01 LU，限值2.5 LU；静音段无有效响度单独列出。"
+      },
+      {
+        "name": "段落衔接音量跳变",
+        "passed": true,
+        "detail": "相邻段综合响度最大差0.01 LU，限值2 LU；scene-1→scene-2@8.9s: 0.01 LU，头尾瞬时差5.5 LU；scene-2→scene-3@12.6s: 0 LU，头尾瞬时差4.6 LU。头尾瞬时差需听辨，不能将自然重音直接当作失败。"
+      },
+      {
+        "name": "段内音量稳定性",
+        "passed": true,
+        "detail": "有声窗P90−P10：scene-1=6.9 LU；scene-2=3.8 LU；scene-3=6.9 LU，限值8 LU；忽略低能量停顿，保留自然语气。"
+      },
+      {
+        "name": "声音峰值与削波",
+        "passed": true,
+        "detail": "实际各段真峰值：scene-1=-3.82 dBTP；scene-2=-4.07 dBTP；scene-3=-3.7 dBTP；编码后上限−1 dBTP，处理目标−1.5 dBTP。"
+      },
+      {
+        "name": "成片语义审查",
+        "passed": false,
+        "detail": "scene-1（0.37秒、0.381秒、1.25秒、3.81秒、4.45秒抽帧均可见）：开头0-0.36秒的字幕仅显示残句末尾单字“时”，对应原音频开头的半句残句“时”，属于半截硬切，未保留完整通顺的原话语义，应当从“先记录看到了什么”作为台词起点，删除开头的残句，保证开篇第一句为完整通顺的原句。；scene-3（12.97秒、13.85秒、15.24秒、15.825秒抽帧均可见）：字幕错误将本应按停顿拆分的两句完整原句拼接为单行长文本“结论应当由证据支持暂时”，跨句边界处理不当，应当调整为“结论应当由证据支持”与“暂时没有把握的部分”两句分段显示，符合原句停顿节奏，避免字幕语义断裂。；用户明确视觉保留要求未满足「也保留重复观察的画面和未知部分保留限制的画面表达」：其中“未知部分保留限制”的画面已在scene-3所有抽帧中保留，显示带问号的橙色圆圈标注“未知部分保留限制”；但重复观察的完整画面仅存在于原素材sourceId=ce362c5d-9b74-4da5-82c9-059bfe16bad4的16.337秒处（对应画面包含“重复观察，核验解释”文字、绿色对勾标识、绿色圆点连线进度条），本次选入的该素材范围仅到sourceTime=9.83秒，所有scene-1抽帧中均未出现该部分画面，因此整体该要求未满足。；实际原素材见证位于选片之外，须重新选择包含该原有画面的真实片段，不能只改叙事理由。"
+      }
+    ],
+    "semantic": {
+      "visualRetentionChecks": [
+        {
+          "id": "visual-retention-6f934ae217c2ad67",
+          "quote": "请保留“程序示意、不是真实现场”的标注",
+          "status": "met",
+          "frameTimes": [
+            0.37,
+            0.381,
+            1.25,
+            3.81,
+            4.45,
+            9.27,
+            9.525,
+            10.15,
+            10.75,
+            12.97,
+            13.85,
+            15.24,
+            15.825,
+            18.669
+          ],
+          "detail": "所有抽帧的画面右上角均清晰显示“程序示意·非真实现场”标注，未被裁切或遮挡，符合用户保留标注的要求。",
+          "preserveFrameTimes": [
+            0.37,
+            0.381,
+            1.25,
+            3.81,
+            4.45,
+            9.27,
+            9.525,
+            10.15,
+            10.75,
+            12.97,
+            13.85,
+            15.24,
+            15.825,
+            18.669
+          ]
+        },
+        {
+          "id": "visual-retention-8224482198d4f35f",
+          "quote": "也保留重复观察的画面和未知部分保留限制的画面表达",
+          "status": "unmet",
+          "frameTimes": [
+            0.37,
+            0.381,
+            1.25,
+            3.81,
+            4.45
+          ],
+          "detail": "其中“未知部分保留限制”的画面已在scene-3所有抽帧中保留，显示带问号的橙色圆圈标注“未知部分保留限制”；但重复观察的完整画面仅存在于原素材sourceId=ce362c5d-9b74-4da5-82c9-059bfe16bad4的16.337秒处（对应画面包含“重复观察，核验解释”文字、绿色对勾标识、绿色圆点连线进度条），本次选入的该素材范围仅到sourceTime=9.83秒，所有scene-1抽帧中均未出现该部分画面，因此整体该要求未满足。",
+          "preserveFrameTimes": [
+            12.97,
+            13.85,
+            15.24,
+            15.825,
+            18.669
+          ],
+          "sourceEvidence": {
+            "sourceId": "ce362c5d-9b74-4da5-82c9-059bfe16bad4",
+            "time": 16.337,
+            "sourceHash": "52cee27c96ec89277816c60223fd1e56cbcd586dae235436926ba7e9bc38acc7"
+          },
+          "sourceOmitted": true
+        }
+      ],
+      "score": 85,
+      "findings": [
+        "scene-1（0.37秒、0.381秒、1.25秒、3.81秒、4.45秒抽帧均可见）：开头0-0.36秒的字幕仅显示残句末尾单字“时”，对应原音频开头的半句残句“时”，属于半截硬切，未保留完整通顺的原话语义，应当从“先记录看到了什么”作为台词起点，删除开头的残句，保证开篇第一句为完整通顺的原句。",
+        "scene-3（12.97秒、13.85秒、15.24秒、15.825秒抽帧均可见）：字幕错误将本应按停顿拆分的两句完整原句拼接为单行长文本“结论应当由证据支持暂时”，跨句边界处理不当，应当调整为“结论应当由证据支持”与“暂时没有把握的部分”两句分段显示，符合原句停顿节奏，避免字幕语义断裂。",
+        "用户明确视觉保留要求未满足「也保留重复观察的画面和未知部分保留限制的画面表达」：其中“未知部分保留限制”的画面已在scene-3所有抽帧中保留，显示带问号的橙色圆圈标注“未知部分保留限制”；但重复观察的完整画面仅存在于原素材sourceId=ce362c5d-9b74-4da5-82c9-059bfe16bad4的16.337秒处（对应画面包含“重复观察，核验解释”文字、绿色对勾标识、绿色圆点连线进度条），本次选入的该素材范围仅到sourceTime=9.83秒，所有scene-1抽帧中均未出现该部分画面，因此整体该要求未满足。；实际原素材见证位于选片之外，须重新选择包含该原有画面的真实片段，不能只改叙事理由。"
+      ],
+      "suggestions": [
+        "顶部新增的动效标签可适当降低透明度或缩小尺寸，进一步减少对顶部原有流程图元素的视觉干扰",
+        "可在scene-1的片段末尾保留原素材中蓝色圆球滚动到3号刻度的重复观察完成帧，让“重复观察”的动作表达更完整",
+        "跨片段切分原句时，可在句间增加极短的黑场过渡，避免生硬硬切带来的听觉突兀感"
+      ]
+    },
+    "audio": {
+      "limits": {
+        "targetLufs": -16,
+        "truePeakDb": -1.5,
+        "segmentSpreadLu": 2.5,
+        "adjacentJumpLu": 2,
+        "withinSpreadLu": 8
+      },
+      "segments": [
+        {
+          "id": "scene-1",
+          "mode": "original",
+          "start": 0,
+          "end": 8.9,
+          "integratedLufs": -16.11,
+          "truePeakDb": -3.82,
+          "voicedSpreadLu": 6.9,
+          "headLufs": -16.6,
+          "tailLufs": -19.5
+        },
+        {
+          "id": "scene-2",
+          "mode": "original",
+          "start": 8.9,
+          "end": 12.6,
+          "integratedLufs": -16.12,
+          "truePeakDb": -4.07,
+          "voicedSpreadLu": 3.8,
+          "headLufs": -14,
+          "tailLufs": -18.3
+        },
+        {
+          "id": "scene-3",
+          "mode": "original",
+          "start": 12.6,
+          "end": 19.05,
+          "integratedLufs": -16.12,
+          "truePeakDb": -3.7,
+          "voicedSpreadLu": 6.9,
+          "headLufs": -13.7,
+          "tailLufs": -17.2
+        }
+      ],
+      "segmentSpreadLu": 0.01,
+      "jumps": [
+        {
+          "from": "scene-1",
+          "to": "scene-2",
+          "time": 8.9,
+          "integratedDeltaLu": 0.01,
+          "boundaryDeltaLu": 5.5
+        },
+        {
+          "from": "scene-2",
+          "to": "scene-3",
+          "time": 12.6,
+          "integratedDeltaLu": 0,
+          "boundaryDeltaLu": 4.6
+        }
+      ],
+      "userReportedMismatch": false
+    },
+    "transport": {
+      "mode": "inline",
+      "requests": [
+        {
+          "stage": "semantic",
+          "attempt": 1,
+          "bytes": 1121495,
+          "durationMs": 15808,
+          "status": 200
+        },
+        {
+          "stage": "semantic",
+          "attempt": 2,
+          "bytes": 1123119,
+          "durationMs": 13886,
+          "status": 200
+        }
+      ]
+    },
+    "limitations": [
+      "源字词时间码为模型估计，未做独立强制对齐。",
+      "本次未设跨素材声线一致性验收：仅保留已知原视频各自原声，未要求跨素材统一说话者；仍须验收实际原声、响度、峰值、衔接和成片语义；未执行同一说话者审听，不代表原声字节身份或成片质量通过。",
+      "视觉保留审查同次请求使用最多2段原素材各4张真实对照帧，实际源SHA、同刻映射和末尾见证：[{\"sourceId\":\"ce362c5d-9b74-4da5-82c9-059bfe16bad4\",\"sourceName\":\"controlled-semantic-v3-1.mp4\",\"sourceHash\":\"52cee27c96ec89277816c60223fd1e56cbcd586dae235436926ba7e9bc38acc7\",\"purpose\":\"mapped\",\"clipIndex\":0,\"mappedOutputTime\":0.37,\"sourceTime\":1.3},{\"sourceId\":\"ce362c5d-9b74-4da5-82c9-059bfe16bad4\",\"sourceName\":\"controlled-semantic-v3-1.mp4\",\"sourceHash\":\"52cee27c96ec89277816c60223fd1e56cbcd586dae235436926ba7e9bc38acc7\",\"purpose\":\"mapped\",\"clipIndex\":0,\"mappedOutputTime\":1.25,\"sourceTime\":2.18},{\"sourceId\":\"ce362c5d-9b74-4da5-82c9-059bfe16bad4\",\"sourceName\":\"controlled-semantic-v3-1.mp4\",\"sourceHash\":\"52cee27c96ec89277816c60223fd1e56cbcd586dae235436926ba7e9bc38acc7\",\"purpose\":\"mapped\",\"clipIndex\":0,\"mappedOutputTime\":4.45,\"sourceTime\":5.38},{\"sourceId\":\"ce362c5d-9b74-4da5-82c9-059bfe16bad4\",\"sourceName\":\"controlled-semantic-v3-1.mp4\",\"sourceHash\":\"52cee27c96ec89277816c60223fd1e56cbcd586dae235436926ba7e9bc38acc7\",\"purpose\":\"tail\",\"sourceTime\":16.337},{\"sourceId\":\"8466caff-3ab2-4f7b-bdf3-13cc916e08f1\",\"sourceName\":\"controlled-semantic-v3-2.mp4\",\"sourceHash\":\"d08c3de9a8ad9be03eb542e3bfbdd3e7f7a97c9641459b0b6dfea1fd827099d1\",\"purpose\":\"mapped\",\"clipIndex\":1,\"mappedOutputTime\":10.75,\"sourceTime\":3.34},{\"sourceId\":\"8466caff-3ab2-4f7b-bdf3-13cc916e08f1\",\"sourceName\":\"controlled-semantic-v3-2.mp4\",\"sourceHash\":\"d08c3de9a8ad9be03eb542e3bfbdd3e7f7a97c9641459b0b6dfea1fd827099d1\",\"purpose\":\"mapped\",\"clipIndex\":2,\"mappedOutputTime\":15.825,\"sourceTime\":12.275},{\"sourceId\":\"8466caff-3ab2-4f7b-bdf3-13cc916e08f1\",\"sourceName\":\"controlled-semantic-v3-2.mp4\",\"sourceHash\":\"d08c3de9a8ad9be03eb542e3bfbdd3e7f7a97c9641459b0b6dfea1fd827099d1\",\"purpose\":\"mapped\",\"clipIndex\":2,\"mappedOutputTime\":18.669,\"sourceTime\":15.119},{\"sourceId\":\"8466caff-3ab2-4f7b-bdf3-13cc916e08f1\",\"sourceName\":\"controlled-semantic-v3-2.mp4\",\"sourceHash\":\"d08c3de9a8ad9be03eb542e3bfbdd3e7f7a97c9641459b0b6dfea1fd827099d1\",\"purpose\":\"tail\",\"sourceTime\":16.905}]；有界抽样不证明全源视频已完整观看。",
+      "语义审查模型原始处置（原分和flag保留，不等同验收结果）：[{\"attempt\":2,\"score\":85,\"needsRepair\":true,\"findings\":[\"scene-1（0.37秒、0.381秒、1.25秒、3.81秒、4.45秒抽帧均可见）：开头0-0.36秒的字幕仅显示残句末尾单字“时”，对应原音频开头的半句残句“时”，属于半截硬切，未保留完整通顺的原话语义，应当从“先记录看到了什么”作为台词起点，删除开头的残句，保证开篇第一句为完整通顺的原句。\",\"scene-3（12.97秒、13.85秒、15.24秒、15.825秒抽帧均可见）：字幕错误将本应按停顿拆分的两句完整原句拼接为单行长文本“结论应当由证据支持暂时”，跨句边界处理不当，应当调整为“结论应当由证据支持”与“暂时没有把握的部分”两句分段显示，符合原句停顿节奏，避免字幕语义断裂。\"]}]",
+      "原始视觉保留逐项评分及模型抽帧观察保留为审计，未提分：[{\"score\":85,\"checks\":[{\"id\":\"visual-retention-6f934ae217c2ad67\",\"quote\":\"请保留“程序示意、不是真实现场”的标注\",\"status\":\"met\",\"frameTimes\":[0.37,0.381,1.25,3.81,4.45,9.27,9.525,10.15,10.75,12.97,13.85,15.24,15.825,18.669],\"detail\":\"所有抽帧的画面右上角均清晰显示“程序示意·非真实现场”标注，未被裁切或遮挡，符合用户保留标注的要求。\",\"preserveFrameTimes\":[0.37,0.381,1.25,3.81,4.45,9.27,9.525,10.15,10.75,12.97,13.85,15.24,15.825,18.669]},{\"id\":\"visual-retention-8224482198d4f35f\",\"quote\":\"也保留重复观察的画面和未知部分保留限制的画面表达\",\"status\":\"unmet\",\"frameTimes\":[0.37,0.381,1.25,3.81,4.45],\"detail\":\"其中“未知部分保留限制”的画面已在scene-3所有抽帧中保留，显示带问号的橙色圆圈标注“未知部分保留限制”；但重复观察的完整画面仅存在于原素材sourceId=ce362c5d-9b74-4da5-82c9-059bfe16bad4的16.337秒处（对应画面包含“重复观察，核验解释”文字、绿色对勾标识、绿色圆点连线进度条），本次选入的该素材范围仅到sourceTime=9.83秒，所有scene-1抽帧中均未出现该部分画面，因此整体该要求未满足。\",\"preserveFrameTimes\":[12.97,13.85,15.24,15.825,18.669],\"sourceEvidence\":{\"sourceId\":\"ce362c5d-9b74-4da5-82c9-059bfe16bad4\",\"time\":16.337,\"sourceHash\":\"52cee27c96ec89277816c60223fd1e56cbcd586dae235436926ba7e9bc38acc7\"},\"sourceOmitted\":true}]}]",
+      "语义审查协议阶段诊断（不含模型正文）：[{\"attempt\":1,\"stage\":\"review-schema\",\"code\":\"SEMANTIC_REVIEW_SCHEMA_INVALID\",\"detail\":\"审查字段格式无效\",\"rawScore\":85,\"fields\":[{\"path\":\"findings[0]\",\"expected\":\"nonempty string or readable finding object\",\"actualType\":\"object\",\"missing\":false}]}]",
+      "语义审查覆盖完整音频和14张关键抽帧，未逐帧审阅整片。"
+    ],
+    "createdAt": "2026-11-04T14:16:18.531Z"
+  },
+  "sources": [
+    {
+      "id": "ce362c5d-9b74-4da5-82c9-059bfe16bad4",
+      "kind": "video",
+      "name": "controlled-semantic-v3-1.mp4",
+      "duration": 16.67,
+      "hasAudio": true,
+      "analysis": {
+        "modelId": "doubao-seed-2-1-lite-260915",
+        "sourceHash": "52cee27c96ec89277816c60223fd1e56cbcd586dae235436926ba7e9bc38acc7",
+        "duration": 16.67,
+        "timing": "model-estimated",
+        "createdAt": "2026-11-04T14:10:51.988Z",
+        "status": "ready",
+        "transcript": "观察一个现象\n时先记录看到了什么\n再提出可能解释\n这段画面是程序绘制的示意\n不是真实现场\n把观察和推测分开\n可以让表达更清楚\n也让后续核验有明确的方向",
+        "sentences": [
+          {
+            "id": "ce362c5d-9b74-4da5-82c9-059bfe16bad4:sentence:0",
+            "start": 0,
+            "end": 0.93,
+            "words": [
+              {
+                "start": 0,
+                "end": 0.12,
+                "text": "观"
+              },
+              {
+                "start": 0.12,
+                "end": 0.3,
+                "text": "察"
+              },
+              {
+                "start": 0.3,
+                "end": 0.39,
+                "text": "一"
+              },
+              {
+                "start": 0.39,
+                "end": 0.48,
+                "text": "个"
+              },
+              {
+                "start": 0.48,
+                "end": 0.69,
+                "text": "现"
+              },
+              {
+                "start": 0.69,
+                "end": 0.93,
+                "text": "象"
+              }
+            ],
+            "text": "观察一个现象",
+            "complete": true
+          },
+          {
+            "id": "ce362c5d-9b74-4da5-82c9-059bfe16bad4:sentence:1",
+            "start": 0.93,
+            "end": 2.97,
+            "words": [
+              {
+                "start": 0.93,
+                "end": 1.29,
+                "text": "时"
+              },
+              {
+                "start": 1.32,
+                "end": 1.62,
+                "text": "先"
+              },
+              {
+                "start": 1.62,
+                "end": 1.79,
+                "text": "记"
+              },
+              {
+                "start": 1.79,
+                "end": 1.95,
+                "text": "录"
+              },
+              {
+                "start": 1.95,
+                "end": 2.22,
+                "text": "看"
+              },
+              {
+                "start": 2.22,
+                "end": 2.31,
+                "text": "到"
+              },
+              {
+                "start": 2.31,
+                "end": 2.4,
+                "text": "了"
+              },
+              {
+                "start": 2.4,
+                "end": 2.59,
+                "text": "什"
+              },
+              {
+                "start": 2.59,
+                "end": 2.97,
+                "text": "么"
+              }
+            ],
+            "text": "时先记录看到了什么",
+            "complete": true
+          },
+          {
+            "id": "ce362c5d-9b74-4da5-82c9-059bfe16bad4:sentence:2",
+            "start": 3.12,
+            "end": 4.9,
+            "words": [
+              {
+                "start": 3.12,
+                "end": 3.39,
+                "text": "再"
+              },
+              {
+                "start": 3.39,
+                "end": 3.58,
+                "text": "提"
+              },
+              {
+                "start": 3.58,
+                "end": 3.81,
+                "text": "出"
+              },
+              {
+                "start": 3.81,
+                "end": 4.02,
+                "text": "可"
+              },
+              {
+                "start": 4.02,
+                "end": 4.29,
+                "text": "能"
+              },
+              {
+                "start": 4.29,
+                "end": 4.47,
+                "text": "解"
+              },
+              {
+                "start": 4.47,
+                "end": 4.9,
+                "text": "释"
+              }
+            ],
+            "text": "再提出可能解释",
+            "complete": true
+          },
+          {
+            "id": "ce362c5d-9b74-4da5-82c9-059bfe16bad4:sentence:3",
+            "start": 5.91,
+            "end": 8.45,
+            "words": [
+              {
+                "start": 5.91,
+                "end": 6.09,
+                "text": "这"
+              },
+              {
+                "start": 6.09,
+                "end": 6.3,
+                "text": "段"
+              },
+              {
+                "start": 6.3,
+                "end": 6.51,
+                "text": "画"
+              },
+              {
+                "start": 6.51,
+                "end": 6.78,
+                "text": "面"
+              },
+              {
+                "start": 6.81,
+                "end": 6.99,
+                "text": "是"
+              },
+              {
+                "start": 6.99,
+                "end": 7.23,
+                "text": "程"
+              },
+              {
+                "start": 7.23,
+                "end": 7.44,
+                "text": "序"
+              },
+              {
+                "start": 7.44,
+                "end": 7.65,
+                "text": "绘"
+              },
+              {
+                "start": 7.65,
+                "end": 7.84,
+                "text": "制"
+              },
+              {
+                "start": 7.84,
+                "end": 8.01,
+                "text": "的"
+              },
+              {
+                "start": 8.01,
+                "end": 8.16,
+                "text": "示"
+              },
+              {
+                "start": 8.16,
+                "end": 8.45,
+                "text": "意"
+              }
+            ],
+            "text": "这段画面是程序绘制的示意",
+            "complete": true
+          },
+          {
+            "id": "ce362c5d-9b74-4da5-82c9-059bfe16bad4:sentence:4",
+            "start": 8.52,
+            "end": 9.68,
+            "words": [
+              {
+                "start": 8.52,
+                "end": 8.68,
+                "text": "不"
+              },
+              {
+                "start": 8.68,
+                "end": 8.85,
+                "text": "是"
+              },
+              {
+                "start": 8.85,
+                "end": 9.03,
+                "text": "真"
+              },
+              {
+                "start": 9.03,
+                "end": 9.18,
+                "text": "实"
+              },
+              {
+                "start": 9.18,
+                "end": 9.42,
+                "text": "现"
+              },
+              {
+                "start": 9.42,
+                "end": 9.68,
+                "text": "场"
+              }
+            ],
+            "text": "不是真实现场",
+            "complete": true
+          },
+          {
+            "id": "ce362c5d-9b74-4da5-82c9-059bfe16bad4:sentence:5",
+            "start": 10.47,
+            "end": 12.19,
+            "words": [
+              {
+                "start": 10.47,
+                "end": 10.65,
+                "text": "把"
+              },
+              {
+                "start": 10.65,
+                "end": 10.86,
+                "text": "观"
+              },
+              {
+                "start": 10.86,
+                "end": 11.07,
+                "text": "察"
+              },
+              {
+                "start": 11.07,
+                "end": 11.19,
+                "text": "和"
+              },
+              {
+                "start": 11.19,
+                "end": 11.43,
+                "text": "推"
+              },
+              {
+                "start": 11.43,
+                "end": 11.64,
+                "text": "测"
+              },
+              {
+                "start": 11.64,
+                "end": 11.85,
+                "text": "分"
+              },
+              {
+                "start": 11.85,
+                "end": 12.19,
+                "text": "开"
+              }
+            ],
+            "text": "把观察和推测分开",
+            "complete": true
+          },
+          {
+            "id": "ce362c5d-9b74-4da5-82c9-059bfe16bad4:sentence:6",
+            "start": 12.36,
+            "end": 14.16,
+            "words": [
+              {
+                "start": 12.36,
+                "end": 12.54,
+                "text": "可"
+              },
+              {
+                "start": 12.54,
+                "end": 12.64,
+                "text": "以"
+              },
+              {
+                "start": 12.64,
+                "end": 12.81,
+                "text": "让"
+              },
+              {
+                "start": 12.81,
+                "end": 13.08,
+                "text": "表"
+              },
+              {
+                "start": 13.08,
+                "end": 13.29,
+                "text": "达"
+              },
+              {
+                "start": 13.29,
+                "end": 13.59,
+                "text": "更"
+              },
+              {
+                "start": 13.59,
+                "end": 13.89,
+                "text": "清"
+              },
+              {
+                "start": 13.89,
+                "end": 14.16,
+                "text": "楚"
+              }
+            ],
+            "text": "可以让表达更清楚",
+            "complete": true
+          },
+          {
+            "id": "ce362c5d-9b74-4da5-82c9-059bfe16bad4:sentence:7",
+            "start": 14.4,
+            "end": 16.67,
+            "words": [
+              {
+                "start": 14.4,
+                "end": 14.56,
+                "text": "也"
+              },
+              {
+                "start": 14.56,
+                "end": 14.76,
+                "text": "让"
+              },
+              {
+                "start": 14.76,
+                "end": 14.97,
+                "text": "后"
+              },
+              {
+                "start": 14.97,
+                "end": 15.09,
+                "text": "续"
+              },
+              {
+                "start": 15.09,
+                "end": 15.33,
+                "text": "核"
+              },
+              {
+                "start": 15.33,
+                "end": 15.6,
+                "text": "验"
+              },
+              {
+                "start": 15.63,
+                "end": 15.85,
+                "text": "有"
+              },
+              {
+                "start": 15.88,
+                "end": 16.08,
+                "text": "明"
+              },
+              {
+                "start": 16.08,
+                "end": 16.29,
+                "text": "确"
+              },
+              {
+                "start": 16.29,
+                "end": 16.38,
+                "text": "的"
+              },
+              {
+                "start": 16.38,
+                "end": 16.59,
+                "text": "方"
+              },
+              {
+                "start": 16.59,
+                "end": 16.67,
+                "text": "向"
+              }
+            ],
+            "text": "也让后续核验有明确的方向",
+            "complete": true
+          }
+        ],
+        "pauses": [
+          {
+            "start": 2.675,
+            "end": 3.082
+          },
+          {
+            "start": 4.596,
+            "end": 5.658
+          },
+          {
+            "start": 9.284,
+            "end": 10.19
+          },
+          {
+            "start": 11.772,
+            "end": 12.111
+          },
+          {
+            "start": 13.678,
+            "end": 14.163
+          }
+        ],
+        "warnings": [
+          "字词时间码由模型估计，已校验格式、顺序和范围，尚未经独立强制对齐。",
+          "停顿是低音量检测结果，不等于已确认无人说话。"
+        ],
+        "captionBreaks": [
+          5,
+          6,
+          12,
+          14,
+          21,
+          25,
+          31,
+          33,
+          35,
+          39,
+          47,
+          55,
+          59,
+          67
+        ]
+      }
+    },
+    {
+      "id": "8466caff-3ab2-4f7b-bdf3-13cc916e08f1",
+      "kind": "video",
+      "name": "controlled-semantic-v3-2.mp4",
+      "duration": 17.25,
+      "hasAudio": true,
+      "analysis": {
+        "modelId": "doubao-seed-2-1-lite-260915",
+        "sourceHash": "d08c3de9a8ad9be03eb542e3bfbdd3e7f7a97c9641459b0b6dfea1fd827099d1",
+        "duration": 17.25,
+        "timing": "model-estimated",
+        "createdAt": "2026-11-04T14:11:16.820Z",
+        "status": "ready",
+        "transcript": "比较两个方案时\n要先保持比较条件一致再看差异来自哪里\n这段画面也是程序绘制的示意\n结论应当由证据支持\n暂时没有把握的部分需要保留限制\n不能把猜测说成事实",
+        "sentences": [
+          {
+            "id": "8466caff-3ab2-4f7b-bdf3-13cc916e08f1:sentence:0",
+            "start": 0.08,
+            "end": 1.45,
+            "words": [
+              {
+                "start": 0.08,
+                "end": 0.21,
+                "text": "比"
+              },
+              {
+                "start": 0.21,
+                "end": 0.39,
+                "text": "较"
+              },
+              {
+                "start": 0.39,
+                "end": 0.53,
+                "text": "两"
+              },
+              {
+                "start": 0.53,
+                "end": 0.63,
+                "text": "个"
+              },
+              {
+                "start": 0.63,
+                "end": 0.81,
+                "text": "方"
+              },
+              {
+                "start": 0.81,
+                "end": 0.99,
+                "text": "案"
+              },
+              {
+                "start": 0.99,
+                "end": 1.45,
+                "text": "时"
+              }
+            ],
+            "text": "比较两个方案时",
+            "complete": true
+          },
+          {
+            "id": "8466caff-3ab2-4f7b-bdf3-13cc916e08f1:sentence:1",
+            "start": 1.59,
+            "end": 5.13,
+            "words": [
+              {
+                "start": 1.59,
+                "end": 1.8,
+                "text": "要"
+              },
+              {
+                "start": 1.8,
+                "end": 2.04,
+                "text": "先"
+              },
+              {
+                "start": 2.04,
+                "end": 2.25,
+                "text": "保"
+              },
+              {
+                "start": 2.25,
+                "end": 2.37,
+                "text": "持"
+              },
+              {
+                "start": 2.37,
+                "end": 2.49,
+                "text": "比"
+              },
+              {
+                "start": 2.49,
+                "end": 2.67,
+                "text": "较"
+              },
+              {
+                "start": 2.67,
+                "end": 2.88,
+                "text": "条"
+              },
+              {
+                "start": 2.88,
+                "end": 3.09,
+                "text": "件"
+              },
+              {
+                "start": 3.09,
+                "end": 3.36,
+                "text": "一"
+              },
+              {
+                "start": 3.36,
+                "end": 3.64,
+                "text": "致"
+              },
+              {
+                "start": 3.69,
+                "end": 3.93,
+                "text": "再"
+              },
+              {
+                "start": 3.93,
+                "end": 4.11,
+                "text": "看"
+              },
+              {
+                "start": 4.11,
+                "end": 4.32,
+                "text": "差"
+              },
+              {
+                "start": 4.32,
+                "end": 4.46,
+                "text": "异"
+              },
+              {
+                "start": 4.46,
+                "end": 4.62,
+                "text": "来"
+              },
+              {
+                "start": 4.62,
+                "end": 4.72,
+                "text": "自"
+              },
+              {
+                "start": 4.72,
+                "end": 4.95,
+                "text": "哪"
+              },
+              {
+                "start": 4.95,
+                "end": 5.13,
+                "text": "里"
+              }
+            ],
+            "text": "要先保持比较条件一致再看差异来自哪里",
+            "complete": true
+          },
+          {
+            "id": "8466caff-3ab2-4f7b-bdf3-13cc916e08f1:sentence:2",
+            "start": 5.85,
+            "end": 8.42,
+            "words": [
+              {
+                "start": 5.85,
+                "end": 6.05,
+                "text": "这"
+              },
+              {
+                "start": 6.05,
+                "end": 6.21,
+                "text": "段"
+              },
+              {
+                "start": 6.21,
+                "end": 6.42,
+                "text": "画"
+              },
+              {
+                "start": 6.42,
+                "end": 6.72,
+                "text": "面"
+              },
+              {
+                "start": 6.72,
+                "end": 6.88,
+                "text": "也"
+              },
+              {
+                "start": 6.88,
+                "end": 7.05,
+                "text": "是"
+              },
+              {
+                "start": 7.05,
+                "end": 7.26,
+                "text": "程"
+              },
+              {
+                "start": 7.26,
+                "end": 7.44,
+                "text": "序"
+              },
+              {
+                "start": 7.44,
+                "end": 7.68,
+                "text": "绘"
+              },
+              {
+                "start": 7.68,
+                "end": 7.81,
+                "text": "制"
+              },
+              {
+                "start": 7.81,
+                "end": 7.95,
+                "text": "的"
+              },
+              {
+                "start": 7.95,
+                "end": 8.16,
+                "text": "示"
+              },
+              {
+                "start": 8.16,
+                "end": 8.42,
+                "text": "意"
+              }
+            ],
+            "text": "这段画面也是程序绘制的示意",
+            "complete": true
+          },
+          {
+            "id": "8466caff-3ab2-4f7b-bdf3-13cc916e08f1:sentence:3",
+            "start": 9.15,
+            "end": 11.16,
+            "words": [
+              {
+                "start": 9.15,
+                "end": 9.42,
+                "text": "结"
+              },
+              {
+                "start": 9.42,
+                "end": 9.66,
+                "text": "论"
+              },
+              {
+                "start": 9.66,
+                "end": 9.84,
+                "text": "应"
+              },
+              {
+                "start": 9.84,
+                "end": 9.99,
+                "text": "当"
+              },
+              {
+                "start": 9.99,
+                "end": 10.2,
+                "text": "由"
+              },
+              {
+                "start": 10.2,
+                "end": 10.44,
+                "text": "证"
+              },
+              {
+                "start": 10.44,
+                "end": 10.59,
+                "text": "据"
+              },
+              {
+                "start": 10.59,
+                "end": 10.78,
+                "text": "支"
+              },
+              {
+                "start": 10.78,
+                "end": 11.16,
+                "text": "持"
+              }
+            ],
+            "text": "结论应当由证据支持",
+            "complete": true
+          },
+          {
+            "id": "8466caff-3ab2-4f7b-bdf3-13cc916e08f1:sentence:4",
+            "start": 12.39,
+            "end": 15.44,
+            "words": [
+              {
+                "start": 12.39,
+                "end": 12.63,
+                "text": "暂"
+              },
+              {
+                "start": 12.63,
+                "end": 12.81,
+                "text": "时"
+              },
+              {
+                "start": 12.81,
+                "end": 12.96,
+                "text": "没"
+              },
+              {
+                "start": 12.96,
+                "end": 13.08,
+                "text": "有"
+              },
+              {
+                "start": 13.08,
+                "end": 13.29,
+                "text": "把"
+              },
+              {
+                "start": 13.29,
+                "end": 13.42,
+                "text": "握"
+              },
+              {
+                "start": 13.42,
+                "end": 13.56,
+                "text": "的"
+              },
+              {
+                "start": 13.56,
+                "end": 13.77,
+                "text": "部"
+              },
+              {
+                "start": 13.77,
+                "end": 13.99,
+                "text": "分"
+              },
+              {
+                "start": 14.19,
+                "end": 14.4,
+                "text": "需"
+              },
+              {
+                "start": 14.4,
+                "end": 14.52,
+                "text": "要"
+              },
+              {
+                "start": 14.52,
+                "end": 14.73,
+                "text": "保"
+              },
+              {
+                "start": 14.73,
+                "end": 14.88,
+                "text": "留"
+              },
+              {
+                "start": 14.88,
+                "end": 15.12,
+                "text": "限"
+              },
+              {
+                "start": 15.12,
+                "end": 15.44,
+                "text": "制"
+              }
+            ],
+            "text": "暂时没有把握的部分需要保留限制",
+            "complete": true
+          },
+          {
+            "id": "8466caff-3ab2-4f7b-bdf3-13cc916e08f1:sentence:5",
+            "start": 15.66,
+            "end": 17.25,
+            "words": [
+              {
+                "start": 15.66,
+                "end": 15.75,
+                "text": "不"
+              },
+              {
+                "start": 15.75,
+                "end": 15.9,
+                "text": "能"
+              },
+              {
+                "start": 15.9,
+                "end": 16.05,
+                "text": "把"
+              },
+              {
+                "start": 16.05,
+                "end": 16.32,
+                "text": "猜"
+              },
+              {
+                "start": 16.32,
+                "end": 16.53,
+                "text": "测"
+              },
+              {
+                "start": 16.53,
+                "end": 16.77,
+                "text": "说"
+              },
+              {
+                "start": 16.77,
+                "end": 16.92,
+                "text": "成"
+              },
+              {
+                "start": 16.92,
+                "end": 17.13,
+                "text": "事"
+              },
+              {
+                "start": 17.13,
+                "end": 17.25,
+                "text": "实"
+              }
+            ],
+            "text": "不能把猜测说成事实",
+            "complete": true
+          }
+        ],
+        "pauses": [
+          {
+            "start": 1.34,
+            "end": 1.676
+          },
+          {
+            "start": 4.901,
+            "end": 5.777
+          },
+          {
+            "start": 8.166,
+            "end": 9.04
+          },
+          {
+            "start": 10.989,
+            "end": 12.27
+          },
+          {
+            "start": 13.71,
+            "end": 14.082
+          },
+          {
+            "start": 15.183,
+            "end": 15.545
+          }
+        ],
+        "warnings": [
+          "字词时间码由模型估计，已校验格式、顺序和范围，尚未经独立强制对齐。",
+          "停顿是低音量检测结果，不等于已确认无人说话。"
+        ],
+        "captionBreaks": [
+          6,
+          14,
+          16,
+          24,
+          28,
+          35,
+          37,
+          47,
+          55,
+          61,
+          70
+        ]
+      }
+    }
+  ]
+}
