@@ -1,4 +1,4 @@
-import {access,readFile,mkdir,writeFile,readdir,rm} from 'node:fs/promises';
+import {access,readFile,mkdir,writeFile,readdir,rm,copyFile} from 'node:fs/promises';
 import {homedir} from 'node:os';
 import {realpathSync} from 'node:fs';
 import path from 'node:path';
@@ -6,6 +6,7 @@ import {spawnForJob,throwIfJobCancelled} from './jobExecution';
 import {creativeHash} from './creativeWorkspace';
 import {writeDefoldProject} from './defoldProject';
 import {artifactDigest,fileDigest} from './artifactIntegrity';
+import {pixelBindings,pixelfxSourceFingerprint} from './pixelfx';
 import type {CreativeProject,CreativeBuild} from '../shared/creativeProject';
 export async function defoldEnvironment(){
  const directory=path.join(process.env.QINGJIAN_ENGINE_CACHE||path.join(homedir(),'.cache/qingjian-engines'),'defold/1.14.0');
@@ -18,19 +19,21 @@ export async function defoldEnvironment(){
 }
 export function defoldMacProfile(project:string,runtime:string){project=realpathSync(project);runtime=realpathSync(runtime);const q=JSON.stringify;return `(version 1)(deny default)(allow process*)(allow sysctl-read)(allow mach-lookup)(allow ipc-posix-shm*)(allow file-read*)(deny file-read-data (subpath ${q(homedir())}) (subpath "/private/tmp") (subpath "/private/var/folders"))(allow file-read-data (subpath ${q(runtime)}) (subpath ${q(project)}))(allow file-write* (subpath ${q(project)}) (literal "/dev/null"))`;}
 async function disablePersistence(index:string){const html=await readFile(index,'utf8');if(!html.includes('QJ_OPAQUE_PREVIEW'))await writeFile(index,html.replace("<script id='engine-setup' type='text/javascript'>","<script id='engine-setup' type='text/javascript'>\n// QJ_OPAQUE_PREVIEW: ephemeral browser storage only.\nModule.persistentStorage=false;"));}
-export async function buildDefold(project:CreativeProject,directory:string):Promise<CreativeBuild>{
+export async function buildDefold(project:CreativeProject,directory:string,options:{pixelfxCacheDirectory?:string}={}):Promise<CreativeBuild>{
  throwIfJobCancelled();const environment=await defoldEnvironment();if(!environment.available)throw Error('Defold构建环境未就绪：'+environment.setup);
- const environmentHash=creativeHash({version:environment.version,bob:await fileDigest(environment.bob!),java:process.platform==='darwin'?await fileDigest(environment.java!):environment.java,workerHash:process.env.QINGJIAN_DEFOLD_WORKER?await fileDigest(process.env.QINGJIAN_DEFOLD_WORKER):null,workerImage:process.env.QINGJIAN_DEFOLD_WORKER_IMAGE,worker:process.env.QINGJIAN_DEFOLD_WORKER||'mac-sandbox-v1'});
+ const hasEffects=(await pixelBindings(project.files)).length>0;
+ const environmentHash=creativeHash({version:environment.version,builderHash:creativeHash(await readFile(new URL('./defoldProject.ts',import.meta.url))),runtimeHash:creativeHash(await readFile(new URL('./defoldRuntime.ts',import.meta.url))),bob:await fileDigest(environment.bob!),java:process.platform==='darwin'?await fileDigest(environment.java!):environment.java,workerHash:process.env.QINGJIAN_DEFOLD_WORKER?await fileDigest(process.env.QINGJIAN_DEFOLD_WORKER):null,workerImage:process.env.QINGJIAN_DEFOLD_WORKER_IMAGE,worker:process.env.QINGJIAN_DEFOLD_WORKER||'mac-sandbox-v1',...(hasEffects?{pixelfx:await pixelfxSourceFingerprint()}:{} )});
  const hash=creativeHash(project),root=path.resolve(directory,hash),source=path.join(root,'source'),output=path.join(root,'web');
  try{const existing=JSON.parse(await readFile(path.join(root,'build.json'),'utf8'));await access(path.join(existing.directory,existing.entry));if(path.resolve(existing.directory).startsWith(output+path.sep)&&existing.projectHash===hash&&existing.environmentHash===environmentHash&&existing.artifactHash===await artifactDigest(existing.directory))return existing;}catch{}
  await Promise.all([rm(source,{recursive:true,force:true}),rm(output,{recursive:true,force:true})]);
- await Promise.all([mkdir(source,{recursive:true}),mkdir(output,{recursive:true}),mkdir(path.join(source,'.tmp'),{recursive:true}),mkdir(path.join(source,'.home'),{recursive:true})]);await writeDefoldProject(project,source);
+ await Promise.all([mkdir(source,{recursive:true}),mkdir(output,{recursive:true}),mkdir(path.join(source,'.tmp'),{recursive:true}),mkdir(path.join(source,'.home'),{recursive:true})]);const pixel=await writeDefoldProject(project,source,{pixelfxCacheDirectory:options.pixelfxCacheDirectory||path.join(directory,'.pixelfx-cache')});
  const args=['-Xmx512m','-XX:ActiveProcessorCount=2','-Djava.io.tmpdir='+path.join(source,'.tmp'),'-Duser.home='+path.join(source,'.home'),'-jar',environment.bob!,'--root',source,'--platform','wasm-web','--architectures','wasm-web','--variant','debug','--archive','--bundle-output',output,'build','bundle'];
  const command=process.platform==='darwin'?'/usr/bin/sandbox-exec':process.env.QINGJIAN_DEFOLD_WORKER!;
  const commandArgs=process.platform==='darwin'?['-p',defoldMacProfile(root,environment.directory),environment.java!,...args]:[environment.java!,...args];
  let logs='';await new Promise<void>((resolve,reject)=>{const child=spawnForJob(command,commandArgs,{cwd:source,inheritEnv:false,env:{QINGJIAN_DEFOLD_WORKER_IMAGE:process.env.QINGJIAN_DEFOLD_WORKER_IMAGE,PATH:'/usr/bin:/bin',LANG:'en_US.UTF-8',TMPDIR:path.join(source,'.tmp')},stdio:['ignore','pipe','pipe']});let overflow=false;const add=(b:Buffer)=>{logs+=b.toString();if(logs.length>1500000){overflow=true;child.kill('SIGKILL');}};child.stdout!.on('data',add);child.stderr!.on('data',add);const timer=setTimeout(()=>child.kill('SIGKILL'),180000);child.once('error',e=>{clearTimeout(timer);reject(e);});child.once('close',(code,signal)=>{clearTimeout(timer);if(code===0&&!overflow)resolve();else reject(Error((overflow?'构建日志超过限制。\n':`Defold构建失败（${signal||code}）：\n`)+logs.slice(-16000)));});});
  const find=async(dir:string,depth=0):Promise<string|undefined>=>{if(depth>4)return;for(const entry of await readdir(dir,{withFileTypes:true})){if(entry.isFile()&&entry.name==='index.html')return path.join(dir,entry.name);if(entry.isDirectory()){const f=await find(path.join(dir,entry.name),depth+1);if(f)return f;}}};
  const index=await find(output);if(!index)throw Error('Defold没有生成HTML5入口。');
+ if(hasEffects)await Promise.all([copyFile(path.join(source,'pixelfx-licenses/LICENSE'),path.join(path.dirname(index),'LICENSE.pixelfx.txt')),copyFile(path.join(source,'pixelfx-licenses/NOTICE.md'),path.join(path.dirname(index),'NOTICE.pixelfx.txt')),copyFile(path.join(source,'pixelfx-assets.json'),path.join(path.dirname(index),'pixelfx-assets.json'))]);
  await disablePersistence(index);
- const result:CreativeBuild={projectHash:hash,engine:'defold',engineVersion:environment.version,directory:path.dirname(index),entry:path.basename(index),logs:logs.replaceAll(root,'[build]').replaceAll(environment.directory,'[engine]').slice(-20000),builtAt:new Date().toISOString(),environmentHash,artifactHash:await artifactDigest(path.dirname(index))};await writeFile(path.join(root,'build.json'),JSON.stringify(result,null,2));return result;
+ const result:CreativeBuild={projectHash:hash,engine:'defold',engineVersion:environment.version,directory:path.dirname(index),entry:path.basename(index),logs:logs.replaceAll(root,'[build]').replaceAll(environment.directory,'[engine]').slice(-20000),builtAt:new Date().toISOString(),environmentHash,artifactHash:await artifactDigest(path.dirname(index)),...(pixel.bindings.length?{effectAssets:pixel.bindings.map(b=>({name:b.name,id:b.id,cacheKey:b.cacheKey,frames:b.frames,fps:b.fps}))}:{} )};await writeFile(path.join(root,'build.json'),JSON.stringify(result,null,2));return result;
 }
