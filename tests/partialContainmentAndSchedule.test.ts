@@ -25,7 +25,7 @@ test('actual gardening topic and educational reminders are content rather than s
   for(const request of [actual.request,'做一个视频讲每天运动后补水，也提醒不同年龄需求不同。','讲为什么每天固定浇水不好？请生成视频并提醒不同植物需求不同。'])assert.equal(wantsScheduleManagement(request),false,request);
 });
 test('explicit recurring reminders, scheduled videos and task lifecycle operations remain scheduling',()=>{
-  for(const request of ['每天早上9点，提醒我给盆栽检查土壤。','每天9点帮我生成新闻视频。','每隔30分钟自动执行任务。','明天8点提醒我们开会。','暂停定时任务','查看计划任务','schedule a daily job','帮我创建定时生成视频的任务'])assert.equal(wantsScheduleManagement(request),true,request);
+  for(const request of ['每天早上9点，提醒我给盆栽检查土壤。','每天9点提醒喝水','每隔30分钟提醒休息','每周一上午九点提醒检查盆土','每天9点帮我生成新闻视频。','每隔30分钟自动执行任务。','明天8点提醒我们开会。','暂停定时任务','查看计划任务','schedule a daily job','帮我创建定时生成视频的任务'])assert.equal(wantsScheduleManagement(request),true,request);
 });
 test('actual partial-containment drawing is rejected before repair and corrected geometry passes full browser checks',{skip:process.platform==='win32',timeout:180000},async()=>{
   const dir=await mkdtemp(path.join(tmpdir(),'qj-partial-containment-'));
