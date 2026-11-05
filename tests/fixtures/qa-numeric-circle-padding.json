@@ -1,0 +1,219 @@
+{
+  "provenance": {
+    "failure": "数字字形溢出：qj-author-n4 2026 实际62.02px>可用56.00px",
+    "revision": "b593210b041cb96eb7701bad9bc4401b07f5e12e",
+    "kind": "synthetic release acceptance",
+    "otherLayoutAlreadyRepaired": true,
+    "attempt": 2
+  },
+  "drawing": {
+    "title": "今天发布的是明年安排",
+    "nodes": [
+      {
+        "id": "n1",
+        "kind": "card",
+        "x": 64,
+        "y": 223,
+        "w": 592,
+        "h": 157,
+        "text": "",
+        "tone": "paper",
+        "fontSize": 40,
+        "highlight": false
+      },
+      {
+        "id": "n1_label",
+        "kind": "text",
+        "x": 79,
+        "y": 238,
+        "w": 562,
+        "h": 52,
+        "text": "国务院办公厅发布通知",
+        "tone": "paper",
+        "fontSize": 40,
+        "highlight": false
+      },
+      {
+        "id": "n2",
+        "kind": "text",
+        "x": 92,
+        "y": 305,
+        "w": 536,
+        "h": 42,
+        "text": "今天确认：2027年节假日安排已发布",
+        "tone": "ink",
+        "fontSize": 30,
+        "highlight": true
+      },
+      {
+        "id": "line1",
+        "kind": "line",
+        "x": 360,
+        "y": 380,
+        "w": 0,
+        "h": 120,
+        "text": "",
+        "tone": "blue",
+        "fontSize": 36,
+        "highlight": false
+      },
+      {
+        "id": "n3",
+        "kind": "card",
+        "x": 72,
+        "y": 500,
+        "w": 270,
+        "h": 210,
+        "text": "",
+        "tone": "paper",
+        "fontSize": 36,
+        "highlight": false
+      },
+      {
+        "id": "n4",
+        "kind": "circle",
+        "x": 122,
+        "y": 535,
+        "w": 70,
+        "h": 70,
+        "text": "2026",
+        "tone": "coral",
+        "fontSize": 24,
+        "highlight": true
+      },
+      {
+        "id": "n5",
+        "kind": "text",
+        "x": 205,
+        "y": 545,
+        "w": 110,
+        "h": 45,
+        "text": "发布通知",
+        "tone": "ink",
+        "fontSize": 27,
+        "highlight": false
+      },
+      {
+        "id": "n6",
+        "kind": "text",
+        "x": 105,
+        "y": 630,
+        "w": 210,
+        "h": 45,
+        "text": "11月5日当天",
+        "tone": "ink",
+        "fontSize": 32,
+        "highlight": false
+      },
+      {
+        "id": "arrow",
+        "kind": "line",
+        "x": 352,
+        "y": 605,
+        "w": 56,
+        "h": 0,
+        "text": "",
+        "tone": "blue",
+        "fontSize": 36,
+        "highlight": true
+      },
+      {
+        "id": "n7",
+        "kind": "card",
+        "x": 418,
+        "y": 500,
+        "w": 230,
+        "h": 210,
+        "text": "",
+        "tone": "paper",
+        "fontSize": 36,
+        "highlight": false
+      },
+      {
+        "id": "n8",
+        "kind": "circle",
+        "x": 466,
+        "y": 535,
+        "w": 70,
+        "h": 70,
+        "text": "2027",
+        "tone": "blue",
+        "fontSize": 24,
+        "highlight": true
+      },
+      {
+        "id": "n9",
+        "kind": "text",
+        "x": 548,
+        "y": 545,
+        "w": 72,
+        "h": 45,
+        "text": "假期",
+        "tone": "ink",
+        "fontSize": 34,
+        "highlight": false
+      },
+      {
+        "id": "n10",
+        "kind": "text",
+        "x": 448,
+        "y": 630,
+        "w": 170,
+        "h": 45,
+        "text": "明年才开始",
+        "tone": "ink",
+        "fontSize": 32,
+        "highlight": false
+      },
+      {
+        "id": "n11",
+        "kind": "card",
+        "x": 64,
+        "y": 770,
+        "w": 592,
+        "h": 190,
+        "text": "",
+        "tone": "paper",
+        "fontSize": 36,
+        "highlight": false
+      },
+      {
+        "id": "path1",
+        "kind": "path",
+        "x": 105,
+        "y": 815,
+        "w": 130,
+        "h": 100,
+        "text": "",
+        "pathData": "M110 890 L110 825 Q110 812 124 812 L205 812 Q220 812 220 825 L220 890 M110 850 L220 850 M135 850 L135 890 M190 850 L190 890",
+        "tone": "coral",
+        "fontSize": 36,
+        "highlight": false
+      },
+      {
+        "id": "n12",
+        "kind": "text",
+        "x": 265,
+        "y": 820,
+        "w": 330,
+        "h": 45,
+        "text": "普通人现在可以先规划行程",
+        "tone": "ink",
+        "fontSize": 27,
+        "highlight": true
+      },
+      {
+        "id": "n13",
+        "kind": "text",
+        "x": 265,
+        "y": 880,
+        "w": 330,
+        "h": 38,
+        "text": "返乡、错峰出行提前安排",
+        "tone": "ink",
+        "fontSize": 28,
+        "highlight": false
+      }
+    ]
+  }
+}
