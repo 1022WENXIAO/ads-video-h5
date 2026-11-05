@@ -23,6 +23,14 @@ const primaryOf=(texts:string[],complete:boolean[]=texts.map(()=>true)):Transcri
   let clock=0;return texts.map((text,index)=>{const words=[...text].map(text=>{const start=clock;clock+=.1;return{text,start,end:clock};});return{id:'primary-'+index,text,words,start:words[0].start,end:words.at(-1)!.end,complete:complete[index]};});
 };
 
+test('a rejected partial crossing offers the exact whole-original union without certifying or changing the rejected words',()=>{
+  const primary=primaryOf(['先观察再比较','证据支持结论']),before=structuredClone(primary),words=primary.flatMap(s=>s.words);
+  const rejected=regroupWords(words,{groups:[{first:0,last:1,complete:false},{first:2,last:8,complete:true},{first:9,last:11,complete:false}]},'source');
+  assert.throws(()=>validatePrimaryUtteranceBoundaries(primary,rejected,false,'raw-asr'),error=>{assert.match(String(error),/完整原句并集\[0,11\]/);assert.match(String(error),/不能据此强制complete=true/);return true;});
+  const joined=regroupWords(words,{groups:[{first:0,last:11,complete:true}]},'source');validatePrimaryUtteranceBoundaries(primary,joined);
+  assert.deepEqual(primary,before);assert.deepEqual(joined.flatMap(s=>s.words),words);assert.equal(rejected[1].complete,true,'the rejected proposal is preserved as evidence, never silently rewritten');
+});
+
 test('actual P9 text resegmentation cannot move the primary utterance tail into the following complete sentence',async()=>{
   const {raw,primary,words,correct}=await incident(),before=JSON.stringify(primary);
   const bad=regroupWords(words,{groups:raw.rejectedGrouping},'source');

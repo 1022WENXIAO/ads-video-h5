@@ -1,0 +1,153 @@
+{
+  "revision": "e3fcac826f3e2644c222baa62d679a4a18ff2191",
+  "drawing": {
+    "title": "当天补充了什么",
+    "motion": "corporate",
+    "nodes": [
+      {
+        "id": "reportdate",
+        "kind": "card",
+        "x": 48,
+        "y": 230,
+        "w": 624,
+        "h": 118,
+        "text": "报道日期：2026年11月5日",
+        "tone": "coral",
+        "fontSize": 40,
+        "highlight": true
+      },
+      {
+        "id": "datenote",
+        "kind": "card",
+        "x": 48,
+        "y": 366,
+        "w": 624,
+        "h": 88,
+        "text": "“近日”提起公诉，不等同于11月5日",
+        "tone": "paper",
+        "fontSize": 32,
+        "highlight": false
+      },
+      {
+        "id": "step1",
+        "kind": "card",
+        "x": 60,
+        "y": 490,
+        "w": 280,
+        "h": 150,
+        "text": "① 国家监委调查终结",
+        "tone": "paper",
+        "fontSize": 34,
+        "highlight": false
+      },
+      {
+        "id": "detail1",
+        "kind": "text",
+        "x": 72,
+        "y": 585,
+        "w": 256,
+        "h": 87,
+        "text": "移送检察机关审查起诉",
+        "tone": "ink",
+        "fontSize": 24,
+        "highlight": false
+      },
+      {
+        "id": "step2",
+        "kind": "card",
+        "x": 380,
+        "y": 490,
+        "w": 280,
+        "h": 150,
+        "text": "② 最高检决定逮捕",
+        "tone": "paper",
+        "fontSize": 34,
+        "highlight": false
+      },
+      {
+        "id": "detail2",
+        "kind": "text",
+        "x": 392,
+        "y": 585,
+        "w": 256,
+        "h": 87,
+        "text": "指定宜昌市检察院审查",
+        "tone": "ink",
+        "fontSize": 24,
+        "highlight": false
+      },
+      {
+        "id": "step3",
+        "kind": "card",
+        "x": 220,
+        "y": 720,
+        "w": 280,
+        "h": 150,
+        "text": "③ 已提起公诉",
+        "tone": "blue",
+        "fontSize": 38,
+        "highlight": true
+      },
+      {
+        "id": "court",
+        "kind": "text",
+        "x": 180,
+        "y": 835,
+        "w": 360,
+        "h": 72,
+        "text": "受理机关：宜昌市中级人民法院",
+        "tone": "ink",
+        "fontSize": 24,
+        "highlight": false
+      },
+      {
+        "id": "conn1",
+        "kind": "line",
+        "x": 340,
+        "y": 565,
+        "w": 40,
+        "h": 0,
+        "text": "",
+        "tone": "ink",
+        "fontSize": 24,
+        "highlight": false
+      },
+      {
+        "id": "conn2",
+        "kind": "line",
+        "x": 520,
+        "y": 640,
+        "w": -160,
+        "h": 80,
+        "text": "",
+        "tone": "ink",
+        "fontSize": 24,
+        "highlight": false
+      },
+      {
+        "id": "legal",
+        "kind": "card",
+        "x": 56,
+        "y": 930,
+        "w": 608,
+        "h": 70,
+        "text": "审查起诉：告知权利、讯问、听取辩护人意见",
+        "tone": "paper",
+        "fontSize": 26,
+        "highlight": false
+      }
+    ]
+  },
+  "patch": {
+    "nodes": [
+      {
+        "id": "step3",
+        "y": 690
+      },
+      {
+        "id": "court",
+        "y": 845
+      }
+    ]
+  }
+}

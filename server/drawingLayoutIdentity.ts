@@ -73,6 +73,7 @@ export function applyDrawingLayoutPatch(value:unknown,prior:HtmlDrawing):HtmlDra
 }
 const box=(n:HtmlDrawing['nodes'][number])=>({left:Math.min(n.x,n.x+n.w),right:Math.max(n.x,n.x+n.w),top:Math.min(n.y,n.y+n.h),bottom:Math.max(n.y,n.y+n.h)});
 const contains=(a:HtmlDrawing['nodes'][number],b:HtmlDrawing['nodes'][number])=>{const x=box(a),y=box(b);return x.left<=y.left&&x.right>=y.right&&x.top<=y.top&&x.bottom>=y.bottom;};
+const coverage=(a:HtmlDrawing['nodes'][number],b:HtmlDrawing['nodes'][number])=>{const x=box(a),y=box(b),area=(y.right-y.left)*(y.bottom-y.top);return area>0?Math.max(0,Math.min(x.right,y.right)-Math.max(x.left,y.left))*Math.max(0,Math.min(x.bottom,y.bottom)-Math.max(x.top,y.top))/area:0;};
 const originalContainer=(a:HtmlDrawing['nodes'][number],b:HtmlDrawing['nodes'][number])=>{if(contains(a,b))return true;if(b.kind!=='text')return false;const x=box(a),y=box(b),area=(y.right-y.left)*(y.bottom-y.top);return area>0&&Math.max(0,Math.min(x.right,y.right)-Math.max(x.left,y.left))*Math.max(0,Math.min(x.bottom,y.bottom)-Math.max(x.top,y.top))>=area*.5;};
 
 /** A browser-layout retry adjusts existing geometry, never creates another
@@ -92,8 +93,10 @@ export function assertDrawingLayoutIdentity(next:HtmlDrawing,prior:HtmlDrawing):
     }else if(![node.x,node.y,node.w,node.h,node.fontSize].every(Number.isFinite)||node.fontSize<24||node.fontSize>old.fontSize)fail();
     // Keep labels and fixed graphics in their original semantic container.
     const parents=prior.nodes.filter(n=>n.id!==old.id&&n.kind==='card'&&originalContainer(n,old));
-    const outside=parents.filter(parent=>!contains(next.nodes.find(n=>n.id===parent.id)!,node));
-    if(outside.length)fail(old.id+'的完整边界必须留在原卡片'+outside.map(n=>n.id).join(',')+'内；移动现有标签或扩大原卡片，不能新增标签。');
+    // Preserve the observed relation, not a stronger invented relation. A
+    // harmless existing partial text box must not block an unrelated repair.
+    const outside=parents.filter(parent=>{const after=next.nodes.find(n=>n.id===parent.id)!;return contains(parent,old)?!contains(after,node):coverage(after,node)+1e-9<coverage(parent,old);});
+    if(outside.length)fail(old.id+'必须保留与原卡片'+outside.map(n=>n.id).join(',')+'的包含关系；原先完全包含的仍须完全包含，部分包含的比例不得减少。');
     if(old.kind==='text'&&!parents.length&&next.nodes.some(n=>n.kind==='card'&&n.id!==old.id&&contains(n,node)))fail(old.id+'是独立标签，不能移入无关卡片。');
   }
 }

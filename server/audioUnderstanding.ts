@@ -139,7 +139,10 @@ export function validatePrimaryUtteranceBoundaries(primary: TranscriptSentence[]
       if(origin==='raw-asr'&&rawIncompleteContinuation(boundaries,index,sourceWords,first,last))repairs.push({candidate:{first,last},primary:{first:boundary.first,last:boundary.last}});
       else conflicts.push(boundary);
     }
-    if(conflicts.length)throw new SemanticUtteranceBoundaryError(`语义分句跨越原完整句界：候选原词[${first},${last}]“${sentence.text.slice(0,200)}”只保留了原完整句的一部分，却与相邻句合成complete=true。原音频句界：${conflicts.map(boundary=>`[${boundary.first},${boundary.last}]“${boundary.quote.slice(0,200)}”`).join('；')}。保留全部原词与时间；可在同一原句内部合法分句，或合并完整相邻原句，不能将前句尾词移入下一句。`,{candidate:{first,last},primary:conflicts.map(({first,last})=>({first,last}))});
+    if(conflicts.length){
+      const union={first:Math.min(first,...conflicts.map(b=>b.first)),last:Math.max(last,...conflicts.map(b=>b.last))};
+      throw new SemanticUtteranceBoundaryError(`语义分句跨越原完整句界：候选原词[${first},${last}]“${sentence.text.slice(0,200)}”只保留了原完整句的一部分，却与相邻句合成complete=true。原音频句界：${conflicts.map(boundary=>`[${boundary.first},${boundary.last}]“${boundary.quote.slice(0,200)}”`).join('；')}。保留全部原词与时间；可在同一原句内部合法分句，或合并完整相邻原句，不能将前句尾词移入下一句。若需要跨越这些句界，可考虑完整原句并集[${union.first},${union.last}]，而不是重复提交部分跨界；并集只说明原词范围合法，是否完整仍须按实际原话判断，不能据此强制complete=true。`,{candidate:{first,last},primary:conflicts.map(({first,last})=>({first,last}))});
+    }
   }
   return repairs;
 }
