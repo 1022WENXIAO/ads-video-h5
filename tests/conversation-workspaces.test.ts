@@ -11,6 +11,32 @@ import { capturePage, waitFor } from './fixtures/nativeClient';
 const req = createRequire(import.meta.url);
 const { openDraft, selectSession } = req('../apps/miniprogram/miniprogram/utils/sessions.js');
 
+test('real chat completes for another user while a production request is still waiting for its provider', async t => {
+  let releaseWork!: () => void, began!: () => void;
+  const blocked = new Promise<void>(resolve => { releaseWork = resolve; });
+  const started = new Promise<void>(resolve => { began = resolve; });
+  const f = await creditFixture({ onProviderRequest: async body => {
+    if (JSON.stringify(body.messages).includes('队列工作等待测试')) { began(); await blocked; }
+  } });
+  t.after(f.close);
+  try {
+    const owner = await f.login(), other = await f.login('shikanon@example.test');
+    const workState: any = await (await f.request(owner, '/api/sessions', { mode: 'work' })).json();
+    const admitted: any = await (await f.request(owner, '/api/chat', { sessionId: workState.activeSessionId, message: '你好，解释一下智能助手的用途。队列工作等待测试', interaction: 'create' })).json();
+    const workId = admitted.jobs.at(-1).id;
+    await Promise.race([started, new Promise((_, reject) => { const timeout = setTimeout(() => reject(new Error('Work did not reach its provider')), 10000); timeout.unref(); })]);
+    const chatState: any = await (await f.request(other, '/api/sessions', { mode: 'chat' })).json();
+    const sent: any = await (await f.request(other, '/api/chat', { sessionId: chatState.activeSessionId, message: '你好，简短问候一下。', interaction: 'chat' })).json();
+    const chatId = sent.jobs.at(-1).id;
+    await waitFor(async () => { const current: any = await (await f.request(other, '/api/state')).json(); return current.jobs.find((j: any) => j.id === chatId)?.status === 'succeeded'; });
+    const waiting: any = await (await f.request(owner, '/api/state')).json();
+    assert.equal(waiting.jobs.find((j: any) => j.id === workId).status, 'running', 'chat finishes before the work provider is released');
+    assert.equal(waiting.jobs.some((j: any) => j.id === chatId), false, 'concurrent users remain isolated');
+    releaseWork();
+    await waitFor(async () => { const current: any = await (await f.request(owner, '/api/state')).json(); return current.jobs.find((j: any) => j.id === workId)?.status === 'succeeded'; });
+  } finally { releaseWork(); }
+});
+
 test('empty drafts are reused and explicit history selection wins over an incorrect server active ID', async () => {
   const initial: any = { activeSessionId: 'old', sessions: [{ id: 'old', messages: [{ text: 'old' }] }, { id: 'draft', mode: 'chat', messages: [] }], features: { conversationModes: true }, jobs: [] };
   let creates = 0;

@@ -6,6 +6,7 @@ import express, { type ErrorRequestHandler, type Response } from 'express';
 import { mountAccountAvatar } from './account-avatar';
 import { reusableDraft, summarizeTitle } from './session-management';
 import { createScheduledTasks, mountScheduledTasks } from './scheduled-tasks';
+import { createJobQueue } from './jobQueue';
 import multer from 'multer';
 import { randomUUID } from 'node:crypto';
 import {createJsonStateWriter} from './jsonStateWriter';
@@ -703,15 +704,13 @@ async function performJob(job: Job): Promise<void> {
     addReply(session, job, `${plan.summary} 已整理 ${plan.clips.length} 个片段，合计约 ${plan.targetSeconds} 秒。${bgmIntent ? '已加入背景音乐。' : ''}继续告诉我怎么调整，或发送“生成成片”。`);
   } else addReply(session, job, await answerForSessionWithPi({prompt,config:textConfig,media,history,plan:session.plan,attached,progress:basicProgress,onSection:async(id,text)=>{updateReply(session,job,text,'commentary',id);await saveState();}}));
 }
-let processing = false;
-async function processQueue() {
-  return withoutJobSignal(async () => {
-  if (processing) return;
-  processing = true;
-  try {
-    while (true) {
-      const job = state.jobs.find((item) => item.status === 'queued');
-      if (!job) break;
+const jobQueue = createJobQueue({
+  jobs: () => state.jobs,
+  execute: processQueuedJob,
+  onError: (job, error) => console.error(JSON.stringify({ event: 'job.queue-error', jobId: job.id, failure: executionFailure(error) })),
+});
+function processQueue() { return withoutJobSignal(() => jobQueue.dispatch()); }
+async function processQueuedJob(job: Job) {
       const attempt = beginJobAttempt(job, runtimeImplementation.revision, now());
       let transport: NonNullable<NonNullable<Job['attempts']>[number]['transport']> = [];
       let modelSecrets: string[] = [];
@@ -778,17 +777,15 @@ async function processQueue() {
       evaluationJobDeadlines.delete(job.id);
       const session = getSession(job.sessionId); if (session) session.updatedAt = now();
       await saveState();
-    }
-  } finally { processing = false; }
-  });
 }
 
-async function enqueueAgentMessage(session: Session, text: string, attachmentIds: string[], voiceTicket?: string, modelSnapshot?:ModelSnapshot): Promise<Job> {
+async function enqueueAgentMessage(session: Session, text: string, attachmentIds: string[], voiceTicket?: string, modelSnapshot?:ModelSnapshot, interaction?: Job['interaction']): Promise<Job> {
   const selection=resolveTemplateRequest(text,session,videoTemplates);
   const creditTaskId = isEvaluationOwner(session.ownerId) ? undefined : await credits.admit(session.ownerId!, text, voiceTicket);
   const createdAt = now();
   const message: ChatMessage = { id: randomUUID(), role: 'user', text, createdAt, attachmentIds };
   const job: Job = { id: randomUUID(), ownerId: session.ownerId, sessionId: session.id, messageId: message.id, kind: selection.kind, status: 'queued', createdAt, updatedAt: createdAt, progress: 0, ...(selection.template?{template:templateSelection(selection.template)}:{}) };
+  if (interaction) { job.interaction = interaction; if (interaction !== 'create') job.kind = 'plan'; }
   job.taskSpec=createTaskSpec([...session.messages,message],text,selection.template?.id,priorTaskSpec(session,selection.template?.id));if(selection.template)(session.taskSpecsByTemplate||={})[selection.template.id]=job.taskSpec;if(!wantsConversation(text))session.taskSpec=job.taskSpec;session.taskRevisions||={};session.taskRevisions[job.taskSpec.id]=job.taskSpec.revision;
   jobRunner.supersede(state.jobs,job.taskSpec,now());
   job.creditTaskId = creditTaskId;
@@ -802,6 +799,8 @@ async function enqueueAgentMessage(session: Session, text: string, attachmentIds
   if (session.title === '新对话' || session.title === '新会话') session.title = summarizeTitle(text);
   session.updatedAt = createdAt;
   if(modelSnapshot)evaluationJobModels.set(job.id,modelSnapshot);
+  // Both workers must see a complete session and frozen dispatch mode.
+  if (!state.sessions.includes(session)) state.sessions.unshift(session);
   state.jobs.push(job);
   return job;
 }
@@ -965,9 +964,7 @@ const scheduledTasks = await createScheduledTasks(path.join(dataDir, 'scheduled-
   const profile = state.profiles[task.ownerId];
   if (!profile) throw new Error('账号信息不可用，请重新登录后创建任务。');
   const session: Session = { ...newSession(profile.settings.defaultModelId), ownerId: task.ownerId, mode: task.interaction === 'chat' ? 'chat' : 'work', title: task.title };
-  const job = await enqueueAgentMessage(session, task.prompt, []);
-  job.interaction = task.interaction; if (task.interaction !== 'create') job.kind = 'plan';
-  state.sessions.unshift(session);
+  const job = await enqueueAgentMessage(session, task.prompt, [], undefined, undefined, task.interaction);
   await saveState(); void processQueue();
   return { sessionId: session.id, jobId: job.id };
 });
@@ -1045,8 +1042,7 @@ app.post('/api/chat', async (request, response) => {
   if (request.body?.voiceTicket !== undefined && (typeof request.body.voiceTicket !== 'string' || request.body.voiceTicket.length > 100)) return response.status(400).json({ error: '语音指令凭证格式无效。' });
   const interaction = request.body?.interaction;
   if (interaction !== undefined && !['chat', 'explore', 'create'].includes(interaction)) return response.status(400).json({ error: '对话模式无效。' });
-  const acceptedJob = await enqueueAgentMessage(session, text, attachments, request.body?.voiceTicket);
-  if (interaction) { acceptedJob.interaction = interaction; if (interaction !== 'create') acceptedJob.kind = 'plan'; }
+  await enqueueAgentMessage(session, text, attachments, request.body?.voiceTicket, undefined, interaction);
   await saveState(); response.json(await publicState(user)); void processQueue();
 });
 app.post('/api/media', upload.array('files', 6), async (request, response) => {

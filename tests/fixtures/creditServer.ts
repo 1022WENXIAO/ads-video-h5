@@ -12,7 +12,7 @@ import { disposeOwnedFixture, waitForOwnedFixtureReady } from './ownedProcess';
 
 // Real Express/queue/Pi transport, disposable local users and a controllable
 // token provider. No production credentials or external services are used.
-export async function startCreditServer(options: { wechat?: boolean } = {}) {
+export async function startCreditServer(options: { wechat?: boolean; onProviderRequest?: (body: any) => Promise<void> } = {}) {
   const directory = await mkdtemp(path.join(tmpdir(), 'qj-credit-service-'));
   const password = 'Credit-QA-user-123', adminPassword = 'Credit-QA-admin-123';
   const providerState = { calls: 0, outputTokens: 100, delay: 0, multiTurn: false, fail: false, wechatCalls: 0 };
@@ -29,6 +29,7 @@ export async function startCreditServer(options: { wechat?: boolean } = {}) {
     }
     let raw = ''; for await (const chunk of request) raw += chunk;
     const body = JSON.parse(raw); const id = 'fixture-' + (++providerState.calls);
+    await options.onProviderRequest?.(body);
     if (providerState.fail) { response.writeHead(400, { 'Content-Type': 'application/json' }); response.end('{"error":{"message":"fixture failure"}}'); return; }
     if (providerState.delay) await new Promise(r => setTimeout(r, providerState.delay));
     if (response.destroyed) return;
