@@ -80,6 +80,11 @@ export function captionsFromTranscript(plan: EditPlan, media: MediaItem[], style
       text = '';firstWord=undefined;lastWord=undefined;
     };
     for (const w of words) {
+      // Provider display breaks may span a complete sentence and the opening
+      // of the next one. Keep the actual source boundary even with adjacent
+      // timestamps; an incomplete ASR fragment is not a sentence boundary.
+      const previousSentence=lastWord&&wordOwners.get(lastWord);
+      if(!plan.lesson&&text&&previousSentence?.complete&&wordOwners.get(w)!==previousSentence){flush();pendingBreak=false;}
       if (text && (text.length + w.text.length > 40 || (plan.lesson&&w.start-end>0.5&&safeEnds.has(position)) || (!analysis?.captionBreaks && (text.length + w.text.length > 18 || w.end - start > 3 || w.start - end > 0.5)))) {flush();pendingBreak=false;}
       if (!text) {start = w.start;firstWord=w;}
       text += w.text; end = w.end;lastWord=w;
