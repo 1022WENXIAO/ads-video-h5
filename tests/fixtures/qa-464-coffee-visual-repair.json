@@ -1,0 +1,1260 @@
+{
+  "revision": "4643ef38f2952da852ba25bc0007ae09ba817878",
+  "report": {
+    "workflowId": "b0800b7b-cb9c-4b67-b18f-7973101854a1",
+    "requestedSeconds": 30,
+    "explicitDuration": true,
+    "format": "9:16",
+    "title": "新手手冲：先润纸温壶",
+    "audience": "第一次在家做手冲咖啡、想快速理解润纸和温壶作用的新手。",
+    "objectives": [
+      "理解润湿滤纸可减少纸味并让滤纸贴合",
+      "知道润纸热水可顺便预热分享壶，减少温度流失",
+      "记住画圈润湿、倒掉水、再放粉的新手动作",
+      "了解豆子与水温仍会影响最终风味"
+    ],
+    "arc": "从清晨台面的常见问题切入，先用动态对照解释润纸与温壶的两个作用，再把操作压缩成好记的三步动作，并补充风味变量边界。",
+    "chapters": [
+      {
+        "id": "chapter-1",
+        "title": "先别急着放粉",
+        "role": "hook",
+        "goal": "建立新手问题：干滤纸直接放粉为什么不稳妥。",
+        "prerequisites": [],
+        "narration": "手冲第一步，先别急着放粉。干滤纸直接冲，可能带纸味，还容易翘边；先润湿，会让滤纸贴紧滤杯。",
+        "reason": "用清晨厨房中的器具和直接对比开场，先回答用户指定的核心疑问，并为下一章温壶铺垫。",
+        "referenceIds": [
+          "ref-2"
+        ],
+        "claims": [
+          {
+            "text": "手冲教程建议在加入咖啡粉前用热水冲洗纸滤纸，否则纸滤纸可能带来纸味；热水同时会预热冲煮器具和杯壶。",
+            "referenceIds": [
+              "ref-2"
+            ],
+            "basis": "source"
+          },
+          {
+            "text": "画面把干滤纸可能翘边、水流不稳表现为示意，用于帮助新手理解，不宣称是实验测量结果。",
+            "referenceIds": [
+              "ref-2"
+            ],
+            "basis": "synthesis",
+            "explanation": "来源明确支持冲洗滤纸可避免纸味并预热器具；脚本仅把贴合滤杯、水流更稳作为操作层面的直观示意，不编造定量流速。"
+          }
+        ],
+        "visual": {
+          "kind": "comparison",
+          "takeaway": "先润纸，滤纸更服帖，也少一点纸味。",
+          "items": [
+            {
+              "label": "干滤纸直接冲",
+              "detail": "纸边翘起，可能带纸味；右侧用问号提示新手风险。",
+              "cue": "干滤纸直接冲",
+              "illustration": "coffee"
+            },
+            {
+              "label": "热水润湿",
+              "detail": "细口壶沿滤纸内侧画小圈，纸边贴向滤杯壁。",
+              "cue": "先润湿",
+              "illustration": "steps"
+            },
+            {
+              "label": "清晨台面",
+              "detail": "手冲壶、滤杯、滤纸和咖啡粉摆在暖光桌面。",
+              "cue": "手冲第一步",
+              "illustration": "desk"
+            }
+          ]
+        },
+        "speechMatch": 1,
+        "cues": [
+          {
+            "text": "干滤纸直接冲",
+            "start": 2.55,
+            "end": 3.75
+          },
+          {
+            "text": "先润湿",
+            "start": 6.33,
+            "end": 7.15
+          },
+          {
+            "text": "手冲第一步",
+            "start": 0.09,
+            "end": 0.96
+          }
+        ],
+        "mediaId": "f046d917-8084-47c9-9478-b82a6ff86dfb",
+        "duration": 9.58,
+        "audioHash": "331df4599711bdff66a4bfdae563b57f88a616bde9c39c730c847dc0e0108292",
+        "htmlHash": "62621255100116615a00607216b93021de48511ba51cf2a1f1db7f02033554cb"
+      },
+      {
+        "id": "chapter-2",
+        "title": "顺手温壶更稳",
+        "role": "foundation",
+        "goal": "说明润纸的水落进分享壶可预热器具，帮助减少刚滴下时的热量流失。",
+        "prerequisites": [
+          "chapter-1"
+        ],
+        "narration": "润纸的热水流进壶里，顺手温一下分享壶再倒掉。咖啡滴下时，不被冷壶吸走热量，温度更稳。",
+        "reason": "把同一个小动作拆成润纸和温壶两个收益，避免新手以为只是多余步骤；温度影响由可靠冲煮资料支撑。",
+        "referenceIds": [
+          "ref-2",
+          "ref-4"
+        ],
+        "claims": [
+          {
+            "text": "Coffee Bros. 的手冲步骤说明，用热水冲洗纸滤纸的额外好处是预热冲煮器具和杯子或分享壶。",
+            "referenceIds": [
+              "ref-2"
+            ],
+            "basis": "source"
+          },
+          {
+            "text": "水温会影响咖啡萃取和风味平衡；手冲接触粉床和器具时会有热量损失，因此预热杯壶有助于减少刚开始滴滤时的温度波动。",
+            "referenceIds": [
+              "ref-4",
+              "ref-2"
+            ],
+            "basis": "synthesis",
+            "explanation": "ref-4支持水温影响萃取、接触器具会产生温度损失；ref-2直接支持热水预热器具。脚本归纳为冷壶会吸走热量、温度更稳，不给出未经测量的具体降幅。"
+          }
+        ],
+        "visual": {
+          "kind": "concept",
+          "takeaway": "同一股润纸水，先贴滤纸，再温分享壶。",
+          "items": [
+            {
+              "label": "热水入壶",
+              "detail": "润纸后的热水沿滤杯落入分享壶，壶壁出现暖色升温示意。",
+              "cue": "热水流进壶里",
+              "illustration": "thermos"
+            },
+            {
+              "label": "轻轻晃壶",
+              "detail": "分享壶轻轻转一圈，让热水接触壶壁，再把水倒掉。",
+              "cue": "顺手温一下分享壶",
+              "illustration": "steps"
+            },
+            {
+              "label": "温度少波动",
+              "detail": "冷壶的蓝色寒意变淡，咖啡液滴入后保持暖色；为示意而非实测。",
+              "cue": "温度更稳",
+              "illustration": "coffee"
+            }
+          ]
+        },
+        "speechMatch": 1,
+        "cues": [
+          {
+            "text": "热水流进壶里",
+            "start": 0.44,
+            "end": 1.52
+          },
+          {
+            "text": "顺手温一下分享壶",
+            "start": 1.8,
+            "end": 3.14
+          },
+          {
+            "text": "温度更稳",
+            "start": 6.99,
+            "end": 7.82
+          }
+        ],
+        "mediaId": "42467673-2c81-409f-96bc-9a3e74c30075",
+        "duration": 8.71,
+        "audioHash": "60835a39513f0baf792ed47fda4c22851bc5495a398c64a731e91be0ba416857",
+        "htmlHash": "2e077e0cefc3bd3cf80142682e9d7e58a2cfc96572c214f883118952e3b3bc1e"
+      },
+      {
+        "id": "chapter-3",
+        "title": "记住三小步",
+        "role": "recap",
+        "goal": "给出好记动作并提醒豆子、水温等变量仍会影响风味。",
+        "prerequisites": [
+          "chapter-1",
+          "chapter-2"
+        ],
+        "narration": "记住三小步：画圈润湿，倒掉水，再放粉。这样冲更稳妥；不过豆子新鲜度、烘焙和水温，也会改变最后风味。",
+        "reason": "用简短口诀收束全片，并明确润纸温壶不是万能开关，风味还受用户要求提醒的豆子和水温影响。",
+        "referenceIds": [
+          "ref-1",
+          "ref-2",
+          "ref-5"
+        ],
+        "claims": [
+          {
+            "text": "给新手的操作口诀“画圈润湿、倒掉水、再放粉”依据手冲教程中先冲洗滤纸、预热器具、再加入咖啡粉的顺序整理。",
+            "referenceIds": [
+              "ref-2"
+            ],
+            "basis": "synthesis",
+            "explanation": "ref-2的步骤要求先冲洗纸滤纸并预热器具，之后才加入咖啡粉；脚本将其改写成易记的三个动作。"
+          },
+          {
+            "text": "手冲咖啡的风味会受到咖啡豆品种、产地、烘焙等因素影响；研磨、比例、水温和时间也会改变冲煮结果。",
+            "referenceIds": [
+              "ref-1",
+              "ref-5"
+            ],
+            "basis": "source"
+          },
+          {
+            "text": "新鲜整豆并在冲煮前研磨更有利于风味，咖啡豆新鲜度是新手需要关注的变量之一。",
+            "referenceIds": [
+              "ref-2",
+              "ref-5"
+            ],
+            "basis": "source"
+          }
+        ],
+        "visual": {
+          "kind": "concept",
+          "takeaway": "画圈润湿，倒掉水，再放粉；豆子和水温也关键。",
+          "items": [
+            {
+              "label": "1 画圈润湿",
+              "detail": "用少量热水沿滤纸内侧慢慢画一圈。",
+              "cue": "画圈润湿",
+              "illustration": "steps"
+            },
+            {
+              "label": "2 倒掉水",
+              "detail": "把润纸兼温壶的热水倒出，不拿来冲咖啡。",
+              "cue": "倒掉水",
+              "illustration": "thermos"
+            },
+            {
+              "label": "3 再放粉",
+              "detail": "滤纸服帖、分享壶温热后，再加入咖啡粉正式冲。",
+              "cue": "再放粉",
+              "illustration": "coffee"
+            },
+            {
+              "label": "风味还有变量",
+              "detail": "豆子新鲜度、烘焙度和水温都会影响杯中味道。",
+              "cue": "豆子新鲜度、烘焙和水温",
+              "illustration": "coffee"
+            }
+          ]
+        },
+        "speechMatch": 1,
+        "cues": [
+          {
+            "text": "画圈润湿",
+            "start": 0.66,
+            "end": 2.01
+          },
+          {
+            "text": "倒掉水",
+            "start": 2.22,
+            "end": 2.9
+          },
+          {
+            "text": "再放粉",
+            "start": 3.57,
+            "end": 4.32
+          },
+          {
+            "text": "豆子新鲜度、烘焙和水温",
+            "start": 7.23,
+            "end": 8.96
+          }
+        ],
+        "mediaId": "3a86f192-3c44-4f1f-94a3-992750cff2b8",
+        "duration": 12.26,
+        "audioHash": "a767c5a7bd584214c2718d050d3fa28bc4688018d0d4ff639e66e7bc9dc55442",
+        "htmlHash": "aa835431a4586f12c8618bbc8f3f5bfaf235ca99fddaf7ba5a84297b5d033e1a"
+      }
+    ],
+    "references": [
+      {
+        "id": "ref-1",
+        "title": "Pour-over coffee - NCA - About Coffee",
+        "url": "https://www.aboutcoffee.org/brewing/pour-over-coffee/",
+        "retrievedAt": "2026-11-05T04:12:12.720Z",
+        "verification": "public-page",
+        "excerpt": "What is pour-over coffee? It’s pretty straightforward—you simply hand-pour water over coffee grounds in a filter, which extracts the flavors as it passes through the coffee grounds into a mug, carafe or container of your choosing. It’s a great option for coffee lovers who want to branch out and take more control over the brewing process. It’s a precise, manual process, so you get to learn a few new techniques , too! You can use any coffee beans you like, but what is pour-over coffee especially suited for? This method is known for bringing out distinctive flavors and aromas, so if you like single-origin coffees or other unique coffees, you should try using them for pour-over coffee. Sippable Fact Pour-over vs drip coffee—ever wondered what the difference is? Both methods involve pouring hot water through coffee grounds in a filter. However, while drip coffee is made by an automatic machine, you make pour-over coffee by hand-pouring the water, which usually takes more time than an automatic drip machine. While the methods are similar for pour-over vs drip coffee, they do have different advantages. Pour-over coffee can be more flavorful and is customizable, as you can fine-tune the entire brewing process to your taste. However, this method may only make one cup of coffee at a time, depending on the brewer, and it requires learning and using new techniques. Drip coffee is simple and convenient, and you can make a larger batch at one time with many drip coffee makers. But it doesn’t accentuate the flavors as much, and you have less control over the process overall. Here’s how to make pour-over coffee so that you get the best freshness and flavor—with tweaks that can help you find your perfect cup. Equipment To make pour-over coffee, you will need: Pour-over coffee brewer Filters Kettle or other hot water source Thermometer (unless one is built into kettle) Scale Grinder (optional, but preferred) Pour-over coffee brewers There are several different types of pour-over coffee brewers, or the device that holds the coffee filter and grounds. Filters are very important here! Pour-over coffee brewers are defined by the shape and function of their filters, which determine the pace of the brewing process. Ultimately, this can contribute to how your coffee will taste (along with other factors like the variety , origin , and roast of your coffee beans). Flat-bottom brewer This type of brewer has a flat bottom with three small holes, creating a slower and more even flow rate than other brewers and therefore making it easier to achieve a consistent brew. If you’re new to pour-over coffee brewing, this is a good brewer to try. Coffee cone/Conical brewer This brewer is cone shaped, with walls at a 60° angle, which creates a faster and more continuous flow rate. It requires some skill to pour evenly and ensure a consistent brew, making it a good choice if you’re more experienced with pour-over coffee and want to experiment. Coffee cone/Conical brewer designed with a carafe This brewer also has a cone shape, but it has a built-in carafe and a larger opening. However, it also uses a thicker filter, so the flow rate is slower than other conical brewers. It requires care and precision in pouring, so it’s probably a better fit if you’re more experienced—and especially if you want to brew larger batches of coffee. As you’re looking into pour-over coffee brewers, here are a few other key factors to keep in mind—and questions to ask yourself. Cost: What’s your price range for your brewer? Consider additional costs as well, such as any accessories you might want to buy, coffee filters that will need to be replenished, etc. Size: What will fit in the space you have? Capacity: How many cups of coffee do you need to make at one time? Design: Pour-over brewers are commonly sought after for their look and feel. What fits your aesthetic and the style of your kitchen? Customer reviews and ratings: There’s nothing like hearing from others who have used a coffee maker—what are they saying about your top choices? Filters If you’ve used drip coffee makers before, many of the same cone and flat bottom filters are also used with pour-over brewers. As with any brewi"
+      },
+      {
+        "id": "ref-2",
+        "title": "Perfect Pour Over Recipe: 6 Simple Steps &ndash; Coffee Bros.",
+        "url": "https://coffeebros.com/pages/pour-over-brew-guide",
+        "retrievedAt": "2026-11-05T04:12:11.664Z",
+        "verification": "public-page",
+        "excerpt": "Pour Over Recipe With just an electric kettle, a dripper, and a filter, pour-over coffee brewing can produce a crisp, transparent, and refined cup of coffee. While this brewing technique can accommodate any coffee variety, we recommend using light to medium roasts with delicate acidity and a well-balanced taste. When appropriately executed, pour-over coffee brewing can offer some of the most outstanding coffee experiences. What You&#39;ll Need Brewing a pour-over at home can be as cheap as $75.00 to get started (this excludes a grinder) or as expensive as $375.00 (includes a high-quality grinder and electric kettle with temperature readings). Even if you opt for the lower end of the scale to get started where you buy pre-ground coffee ( not ideal you can read why here ), a Hario V60, and a pour-over gooseneck kettle you can be all in for less than $75.00. Even with this rookie starter pack, you will get more exceptional cups of coffee than when relying on an automatic drip machine. Equipment: Grinder or preground coffee (not ideal) Any pour-over device (We like the V60 or the Kalita Wave) Pour-over filter paper Gooseneck kettle Scale Important Factors Grind Size Medium coarse. You would adjust your grind size finer if your coffee brews too quickly and coarser if it brews too slowly. Brew Ratio 1 gram of coffee for every 14 grams of water for dark roasts and upward of 1 gram of coffee for every 17 grams of water for light roasts. Water Temperature Light Roasts : 203 - 212 degrees or right off boil Medium Roasts : 194 - 203 degrees Dark Roasts : 185 - 195 degrees Water Water represents 99% of the liquid in your cup so brewing with a good spring water makes all the difference. Coffee Always brew freshly roasted whole-bean coffee and grind on demand. The optimal timeframe to brew and enjoy your coffee is 7 – 30 days past the roast date. Measure Always time and measure your brews to understand better the outcome and one you can repeat our iterate on. 1 / of 6 Step 1: Measure and Grind Coffee Coffee amount: 15 grams Brew ratio: 1:15 (1 gram of coffee for every 15 grams of water) Your grind size and quality are crucial factors that will impact the length of your brew and the taste. For pour-over brewing, medium-coarse grind size is ideal for helping hit your target brew length of roughly 3:00 minutes. You will adjust your grind size finer if your brew length is too short and the cup comes out too sour. You will adjust your grinder coarser if your brew length is too long and the cup is too strong and bitter. Step 2: Rinse Your Filter Place your brewer and filter on top of your mug or carafe and rinse the paper filter with hot water; otherwise, it will give off a papery taste. The added benefit of using hot water here is that it warms up your brewing device and mug as you prepare the coffee for brewing. Step 3: Add Coffee and Heat Up Your Water Water Amount: 240 grams (8.5 ounces) First, add your coffee into the filter, place it on the scale, and tare it out. If your scale also has a timer, you will start the timer in step 4. Next, heat 240 grams of high-quality spring water to the ideal brewing temperature for the roast type (hotter for light roasts, cooler for darker roasts). Step 4: Bloom Bloom size: 45 grams (3- 4x coffee weight) Bloom length: 1:00 minute Your first pour is what is referred to as the “bloom.” The bloom allows your coffee to degas and helps with a more even extraction. If the coffee is fresh, you will notice the bed of grounds rises and bubbles during this step. For your bloom, we recommend 3 – 4x the weight of the coffee or 45 – 60 grams of water as your first pour. You want to ensure you saturate all the grounds in the bed of coffee, and you can even spin the brewer after the pour to help with the saturation. There are recipes recommending the bloom stage to last anywhere between 30 seconds and 2 minutes, and this is a great place to test what works best for the coffee you are brewing. Step 5: Remaining Pour Pour frequency: After the bloom is complete, pour the remaining water at 6-8 grams a second until you hit the final weight. If the coffee is draining too slowly, it is okay to swirl the bed of coffee to he"
+      },
+      {
+        "id": "ref-4",
+        "title": "Coffee: Brewing Temperature — SCA Standards and Extraction Effects — Coffee Tower",
+        "url": "https://coffee.towerofrecords.com/coffee/brewing-temperature",
+        "retrievedAt": "2026-11-05T04:12:13.847Z",
+        "verification": "public-page",
+        "excerpt": "Coffee: Brewing Temperature — SCA Standards and Extraction Effects Category: sensory-quality Updated: 2026-02-26 SCA brewing standard specifies 93°C ±2°C (200°F ±3°F); temperatures below 87°C produce under-extraction (sour, thin), while above 96°C over-extracts bitter compounds and degrades thermolabile acid structures. Key Data Points Measure Value Unit Notes SCA Brewing Target 93 °C (±2°C) 200°F ±3°F Under-Extraction Threshold 87 °C Below this: sour, thin, grassy flavors Over-Extraction Threshold 96 °C Above this: harsh bitterness dominates Cold Brew Temperature 4 °C 12–24 hour steep; very different extraction profile Espresso Brew Temperature 90–96 °C At puck; boiler typically set 6–10°C higher Water temperature is one of the most controllable variables in coffee brewing and has a direct, well-documented effect on extraction yield and flavor balance. The Specialty Coffee Association (SCA) specifies a brewing water temperature of 93°C ±2°C (200°F ±3°F), representing decades of empirical refinement. Why Temperature Matters Temperature governs the solubility and extraction rate of coffee’s chemical compounds. Coffee contains hundreds of soluble compounds, and they do not all dissolve at the same rate or respond to temperature identically: Acids (chlorogenic, citric, malic): Extract relatively quickly even at lower temperatures, and some thermolabile acids degrade at high temperatures. Sugars and Maillard compounds : Require adequate temperature to dissolve efficiently; contribute sweetness and body. Bitter phenolics and chlorogenic acid degradation products : Increasingly soluble at higher temperatures; extraction accelerates above ~93°C. Lipids and aromatic volatiles : Temperature-sensitive; higher temperatures can drive off desirable aromatics during brewing. Extraction Zones Temperature Range Extraction Character Dominant Flavors 4°C (cold brew) Extremely slow, 12–24h steep Low acidity, chocolate, mellow bitterness Below 87°C Under-extracted Sour, grassy, thin, sharp acidity, weak body 87–91°C Slightly under Bright, acidic, lighter body, acceptable 91–95°C (SCA target) Optimal extraction Balanced acid, sweetness, body, complexity 95–96°C Slightly over Increased bitterness, fuller body Above 96°C Over-extracted Harsh, astringent, bitter, flat 100°C (boiling) Severe over-extraction Rubbery, bitter, scorched notes Method-Specific Temperature Guidance Different brewing methods require slight adjustments within the SCA’s acceptable range: Pour-over (V60, Chemex, Kalita) : Many specialty baristas brew at 94–96°C to compensate for temperature loss during the pour. Each pour drops brew water temperature approximately 2–3°C as it contacts coffee grounds and the vessel. French press : A full-immersion method that retains heat better. 93°C is appropriate. Longer steep times (4 minutes) mean temperature drop is more significant — insulated vessels help. AeroPress : Versatile; lower temperatures (80–85°C) can produce interesting results with light roasts, exploiting selective acid extraction. Not under-extraction when intentional and balanced. Espresso : The boiler or heat exchanger is set higher than the actual brew temperature at the puck. A boiler set to 93°C might deliver water at 88–92°C at the group head, depending on machine design. E61 group heads thermally regulate but require careful flush protocols. Modern PID-controlled machines aim for 90–95°C at puck. Cold brew : Room temperature (20–22°C) or refrigerator temperature (4°C). 12–24 hour steeping time. The resulting concentrate has a distinct chemical profile — lower total acid, different bitter compound ratios, less aromatic complexity than hot brewed. Roast Level and Temperature Interaction Dark roasts have more porous, friable cell structure due to CO₂ degassing during roasting. They extract faster and at lower temperatures than light roasts. Brewing a dark roast at 96°C risks over-extraction and harsh bitterness. Light roasts, conversely, have denser cellular structure — slightly higher temperatures (94–96°C) help achieve adequate extraction. Roast Level Recommended Temperature Light / Nordic 94–96°C Medium 92–94°C Medium-Dark 91–93°C Dark 88–91°C Measuring Brew Tempe"
+      },
+      {
+        "id": "ref-5",
+        "title": "Coffee Brewing | Hobby Portal",
+        "url": "https://www.hobbyportal.org/hobbies/coffee-brewing/",
+        "retrievedAt": "2026-11-05T04:12:13.142Z",
+        "verification": "public-page",
+        "excerpt": "Who It Suits Coffee brewing is the practice of extracting flavour from roasted, ground coffee with hot water. As a beginner you will spend most of your time at a kitchen counter: weighing coffee and water, grinding beans, pouring or pressing, and tasting the result. The main branches are immersion (French press, cold brew), pour-over and drip (cone brewers, filter machines), stovetop pressure (moka pot), and espresso — a high-pressure method that is a skill of its own and usually a later step. Coffee brewing suits people who enjoy small daily rituals, practical experimentation, and improving something they already drink. The honest appeal is that it is a cheap, repeatable craft: the same beans made with a slightly different grind or ratio taste noticeably different, so progress is something you can taste within a week. The honest constraints are that it needs a kettle, a little counter space, and care with hot water; that judging taste takes practice; and that the gear — grinders, scales, espresso machines — can quietly become expensive if you chase it. Getting Started Start with one simple method rather than buying a full coffee bar. A French press or a basic pour-over cone teaches the same fundamentals: ratio, grind, water temperature, and time. A reliable starting point, in line with the SCA’s brewing standards, is a brew ratio of about 1:15–1:18 (16–24 g of coffee per 100 g of water) with water just off the boil, roughly 90–96 °C (195–205 °F). For one cup that is about 15 g of coffee and 240–250 g of water. Buy whole beans roasted within the last few weeks if you can; ground coffee loses flavour within hours of grinding. Weigh coffee and water with a kitchen scale rather than scooping; it is the single biggest repeatability upgrade. Change one variable at a time (grind, ratio, temperature, time) so you know what made the cup better or worse. Keep short notes: beans, roast date, grind, ratio, time, and one taste word. You can learn entirely from your own notes, but local roasters often run free cuppings and brewing classes, and the SCA runs chapters and education courses in many countries — a fast way to get feedback on your cup. Key Terms Extraction — what brewing actually does: hot water dissolves soluble flavours out of ground coffee. Too little gives a weak, sour cup; too much gives a bitter, harsh one. Brew ratio — the proportion of coffee to water, written like 1:16 (one part coffee to sixteen parts water by weight). Grind size — how fine the beans are ground. Finer grinds extract faster and more; coarser grinds extract slower and less. It is the main dial for fixing a sour or bitter cup. Bloom — in pour-over, pouring a little water first to wet the grounds and let trapped CO₂ escape before the main pour. Under-extraction — a sour, thin, sometimes salty-tasting cup; usually fixed by grinding finer or brewing longer. Over-extraction — a bitter, dry, astringent cup; usually fixed by grinding coarser or brewing shorter. TDS (total dissolved solids) — how much is actually dissolved in the cup; a measure of strength. Roast date — when the beans were roasted. Freshness matters more than origin for most beginners. Single origin vs blend — beans from one region versus a mix designed for a consistent flavour. Arabica / robusta — the two main coffee species; most specialty coffee is arabica, while robusta is hardier, higher in caffeine, and common in espresso blends and instant coffee. Descaling — removing mineral buildup from kettles and machines with a mild acid (white vinegar or citric acid), done every few months depending on water hardness. Basic Gear Item Tier Typical price Buying criteria Kettle Must have $15–$60 Any kettle works to start. A gooseneck spout makes pour-over easier but is not required; a variable-temperature model is a later upgrade. One brewer Must have $10–$40 Pick one: French press, pour-over cone, moka pot, or a basic drip machine. Buy the cheapest decent version of the method you like. Kitchen scale Must have if buying one tool $10–$30 Choose a digital scale that reads to 1 g. It makes ratios repeatable and pays for itself quickly. Coffee Must have $8–$20 per 250 g Supermarket beans are fine for l"
+      }
+    ],
+    "limitations": [
+      "历史与事实依据实际联网引用和独立脚本审查，未逐条读取原论文全文。",
+      "旁白是统一的合成教学声线，不代表用户本人；字词时间码由Seed 2.1 Lite估计。"
+    ],
+    "presentation": {
+      "mood": "neutral",
+      "bgm": false
+    },
+    "pacing": {
+      "mode": "standard",
+      "targetCharactersPerSecond": 4,
+      "minCharactersPerSecond": 3.52,
+      "maxCharactersPerSecond": 4.64,
+      "maxPauseSeconds": 0.95,
+      "leadSeconds": 0.2,
+      "tailSeconds": 0.4,
+      "transitionSeconds": 0.25
+    },
+    "factReview": {
+      "score": 92,
+      "needsRepair": false,
+      "findings": [],
+      "suggestions": [
+        "chapter-1：旁白中“还容易翘边”与当前已公开的资料直接支持的“干滤纸可能带纸味”“热水冲洗可去除纸味、预热器具”相比，属于未被来源直接证实的经验性描述；建议将旁白与对应图解描述调整为“干滤纸直接冲，可能带纸味”，或补充来源后再保留翘边相关表述。",
+        "chapter-2：旁白“咖啡滴下时，不被冷壶吸走热量，温度更稳”可在画面中补充“减少刚开始滴滤时的温度波动”的限定，让表达更贴合预热器具、水温影响萃取的资料边界，避免被理解为对最终萃取温度的绝对保证。",
+        "chapter-1：旁白和图解中的“干滤纸……容易翘边”“滤纸更服帖”属于合理的新手操作示意，但现有摘录直接支持的是热水冲洗可避免纸味、预热器具；后续画面可把翘边明确表现为“可能发生/示意”，避免观众理解为已被来源实测的普遍结果。",
+        "chapter-2：“不被冷壶吸走热量，温度更稳”有预热器具和水温影响萃取的资料支持，但可在画面中补充“减少刚开始滴滤时的温度波动”这一限定，表达会更严谨。"
+      ],
+      "adjudication": {
+        "modelId": "doubao-seed-2-1-lite-260915",
+        "primaryScore": 86,
+        "primaryNeedsRepair": false,
+        "primaryFindings": []
+      }
+    },
+    "voice": {
+      "mode": "preset",
+      "modelId": "seed-audio-1.0",
+      "anchorHash": "eb6ab1ebe48ee34670102d7dfbd1981cbaedddfba3291ab4270e929e364c3a8c",
+      "revision": 0,
+      "tempo": 0.96655,
+      "spokenCharacters": 116,
+      "spokenSeconds": 28.75,
+      "charactersPerSecond": 4.035
+    }
+  },
+  "review": {
+    "status": "needs-review",
+    "score": 84,
+    "checks": [
+      {
+        "name": "实际时长",
+        "passed": true,
+        "detail": "文件30.050秒，方案30.05秒"
+      },
+      {
+        "name": "画幅与音轨",
+        "passed": true,
+        "detail": "预期720×1280，有音轨"
+      },
+      {
+        "name": "方案版本",
+        "passed": true,
+        "detail": "渲染清单哈希与当前方案比对"
+      },
+      {
+        "name": "字幕执行",
+        "passed": true,
+        "detail": "实际渲染指令包含19条字幕，0条叠字"
+      },
+      {
+        "name": "覆盖层执行",
+        "passed": true,
+        "detail": "渲染0条叠字"
+      },
+      {
+        "name": "推镜执行",
+        "passed": true,
+        "detail": "检查渲染方案的逐片段缩放"
+      },
+      {
+        "name": "转场执行",
+        "passed": true,
+        "detail": "检查实际渲染方案的入场叠化"
+      },
+      {
+        "name": "响度归一化执行",
+        "passed": true,
+        "detail": "渲染记录包含逐段和混音两遍测量/处理参数，仍须实测输出一致性"
+      },
+      {
+        "name": "教学目标时长",
+        "passed": true,
+        "detail": "目标30秒，实际30.050秒"
+      },
+      {
+        "name": "旁白语速执行",
+        "passed": true,
+        "detail": "实际每秒4.035字，规划每秒4字，允许3.52–4.64字；实际116字/28.75秒，字数不含标点，音频时长包含自然停顿。 根据实际编码时长和分镜转写核对。"
+      },
+      {
+        "name": "旁白停顿节奏",
+        "passed": true,
+        "detail": "停顿上限0.95秒；实际超限区间[]"
+      },
+      {
+        "name": "教学事实与来源",
+        "passed": true,
+        "detail": "独立脚本事实审查92/100；文献事实核对来源，数学定义与课堂演算独立核算"
+      },
+      {
+        "name": "教学HTML分镜执行",
+        "passed": true,
+        "detail": "实际3段HTML/GSAP分镜；核对画面、声音哈希及统一参考"
+      },
+      {
+        "name": "教学旁白与动画时间码",
+        "passed": true,
+        "detail": "字幕和重点动画来自生成音频的真实转写匹配，未用计划文案替代转写"
+      },
+      {
+        "name": "教学概念递进",
+        "passed": true,
+        "detail": "后章前置知识指向先前章节；实际讲解效果另经音频与图解审查"
+      },
+      {
+        "name": "字幕原话",
+        "passed": true,
+        "detail": "字幕与选中原声逐字稿比对"
+      },
+      {
+        "name": "字幕时间映射",
+        "passed": true,
+        "detail": "字幕时间与源字词到成片的映射比对，源时间仍为模型估计"
+      },
+      {
+        "name": "完整句子",
+        "passed": true,
+        "detail": "精剪片段必须覆盖所选完整原句"
+      },
+      {
+        "name": "人声响度",
+        "passed": true,
+        "detail": "综合响度-15.99 LUFS，峰值-1.82 dBTP"
+      },
+      {
+        "name": "分段人声响度一致性",
+        "passed": true,
+        "detail": "各段实际LUFS：chapter-1=-16.06；chapter-2=-16.06；chapter-3=-16.13。极差0.07 LU，限值2.5 LU；静音段无有效响度单独列出。"
+      },
+      {
+        "name": "段落衔接音量跳变",
+        "passed": true,
+        "detail": "相邻段综合响度最大差0.07 LU，限值2 LU；chapter-1→chapter-2@9.33s: 0 LU，头尾瞬时差1.2 LU；chapter-2→chapter-3@17.79s: 0.07 LU，头尾瞬时差2.2 LU。头尾瞬时差需听辨，不能将自然重音直接当作失败。"
+      },
+      {
+        "name": "段内音量稳定性",
+        "passed": true,
+        "detail": "有声窗P90−P10：chapter-1=6.7 LU；chapter-2=6.5 LU；chapter-3=6.8 LU，限值8 LU；忽略低能量停顿，保留自然语气。"
+      },
+      {
+        "name": "声音峰值与削波",
+        "passed": true,
+        "detail": "实际各段真峰值：chapter-1=-1.82 dBTP；chapter-2=-2.71 dBTP；chapter-3=-2.49 dBTP；编码后上限−1 dBTP，处理目标−1.5 dBTP。"
+      },
+      {
+        "name": "段落音色一致性",
+        "passed": true,
+        "detail": "passed：全片三段旁白的声线特征统一，均为无明显情绪起伏的平稳机械合成青年男声，无音高、共鸣、口音、咬字或是录音空间的差异，不存在声线漂移问题。；定性听辨，不是声纹认证"
+      },
+      {
+        "name": "成片语义审查",
+        "passed": false,
+        "detail": "chapter-1（成片6.01秒、6.899秒抽帧）：画面下方“最后风味还会受这些影响”区块中“豆子新鲜度”被拆成两行，仅“度”字孤字换行，排版局促且可读性差；要求将“豆子新鲜度”调整为单行显示，或改为“新鲜度”单独成块，避免孤字。；chapter-1（成片0.6秒至8.35秒稳定抽帧）：本应体现“清晨厨房、桌面手冲壶、滤纸、咖啡粉”的轻松实景示意全程未出现，实际页面为无厨房器具元素的抽象示意图标，未匹配用户明确要求的画面呈现；要求至少在chapter-1开场或稳定画面中加入手冲壶、滤杯、滤纸、咖啡粉的厨房桌面示意，或在旁白/画面明示本内容为纯流程示意。"
+      }
+    ],
+    "semantic": {
+      "score": 84,
+      "findings": [
+        "chapter-1（成片6.01秒、6.899秒抽帧）：画面下方“最后风味还会受这些影响”区块中“豆子新鲜度”被拆成两行，仅“度”字孤字换行，排版局促且可读性差；要求将“豆子新鲜度”调整为单行显示，或改为“新鲜度”单独成块，避免孤字。",
+        "chapter-1（成片0.6秒至8.35秒稳定抽帧）：本应体现“清晨厨房、桌面手冲壶、滤纸、咖啡粉”的轻松实景示意全程未出现，实际页面为无厨房器具元素的抽象示意图标，未匹配用户明确要求的画面呈现；要求至少在chapter-1开场或稳定画面中加入手冲壶、滤杯、滤纸、咖啡粉的厨房桌面示意，或在旁白/画面明示本内容为纯流程示意。"
+      ],
+      "suggestions": [
+        "可在chapter-2温壶示意图中补充小字说明“温度为示意”，进一步明确温度变化不是实测数值，降低新手误解。",
+        "三小步口诀可以在后续章节末尾停留稍长时间，方便用户记忆“润湿→倒水→放粉”的操作顺序。",
+        "可给抽象示意图添加少量清晨暖光氛围装饰，呼应轻松的晨间场景定位。"
+      ]
+    },
+    "audio": {
+      "limits": {
+        "targetLufs": -16,
+        "truePeakDb": -1.5,
+        "segmentSpreadLu": 2.5,
+        "adjacentJumpLu": 2,
+        "withinSpreadLu": 8
+      },
+      "segments": [
+        {
+          "id": "chapter-1",
+          "mode": "generated",
+          "start": 0,
+          "end": 9.58,
+          "integratedLufs": -16.06,
+          "truePeakDb": -1.82,
+          "voicedSpreadLu": 6.7,
+          "headLufs": -15.5,
+          "tailLufs": -15.6
+        },
+        {
+          "id": "chapter-2",
+          "mode": "generated",
+          "start": 9.33,
+          "end": 18.04,
+          "integratedLufs": -16.06,
+          "truePeakDb": -2.71,
+          "voicedSpreadLu": 6.5,
+          "headLufs": -14.4,
+          "tailLufs": -19.5
+        },
+        {
+          "id": "chapter-3",
+          "mode": "generated",
+          "start": 17.79,
+          "end": 30.05,
+          "integratedLufs": -16.13,
+          "truePeakDb": -2.49,
+          "voicedSpreadLu": 6.8,
+          "headLufs": -17.3,
+          "tailLufs": -15.4
+        }
+      ],
+      "segmentSpreadLu": 0.07,
+      "jumps": [
+        {
+          "from": "chapter-1",
+          "to": "chapter-2",
+          "time": 9.33,
+          "integratedDeltaLu": 0,
+          "boundaryDeltaLu": 1.2
+        },
+        {
+          "from": "chapter-2",
+          "to": "chapter-3",
+          "time": 17.79,
+          "integratedDeltaLu": 0.07,
+          "boundaryDeltaLu": 2.2
+        }
+      ],
+      "userReportedMismatch": false,
+      "voice": {
+        "method": "model-listening; not biometric verification",
+        "consistency": {
+          "status": "passed",
+          "detail": "全片三段旁白的声线特征统一，均为无明显情绪起伏的平稳机械合成青年男声，无音高、共鸣、口音、咬字或是录音空间的差异，不存在声线漂移问题。"
+        },
+        "segments": [
+          {
+            "id": "chapter-1",
+            "status": "passed",
+            "detail": "为本次审听的基准声线，属于机械感平缓的合成青年男声，无多余情绪，音色均匀无明显年龄感。"
+          },
+          {
+            "id": "chapter-2",
+            "status": "passed",
+            "detail": "与基准段声线特征完全一致，同为机械感平稳的合成青年男声，无音色、情绪或是录音质感的差异。"
+          },
+          {
+            "id": "chapter-3",
+            "status": "passed",
+            "detail": "与基准段声线特征完全一致，同为无情绪起伏的机械合成青年男声，未出现声线漂移。"
+          }
+        ]
+      }
+    },
+    "transport": {
+      "mode": "inline",
+      "requests": [
+        {
+          "stage": "voice",
+          "attempt": 1,
+          "bytes": 681928,
+          "durationMs": 5135,
+          "status": 200
+        },
+        {
+          "stage": "semantic",
+          "attempt": 1,
+          "bytes": 2322457,
+          "durationMs": 15899,
+          "status": 200
+        },
+        {
+          "stage": "semantic",
+          "attempt": 2,
+          "bytes": 2324212,
+          "durationMs": 13835,
+          "status": 200
+        }
+      ]
+    },
+    "limitations": [
+      "源字词时间码为模型估计，未做独立强制对齐。",
+      "历史与事实依据实际联网引用和独立脚本审查，未逐条读取原论文全文。",
+      "旁白是统一的合成教学声线，不代表用户本人；字词时间码由Seed 2.1 Lite估计。",
+      "教学旁白为合成声音；音色一致性由模型对实际分段做定性听辨，非声纹认证。",
+      "语义审查模型原始处置（原分和flag保留，不等同验收结果）：[{\"attempt\":2,\"score\":84,\"needsRepair\":true,\"findings\":[\"chapter-1（成片6.01秒、6.899秒抽帧）：画面下方“最后风味还会受这些影响”区块中“豆子新鲜度”被拆成两行，仅“度”字孤字换行，排版局促且可读性差；要求将“豆子新鲜度”调整为单行显示，或改为“新鲜度”单独成块，避免孤字。\",\"chapter-1（成片0.6秒至8.35秒稳定抽帧）：本应体现“清晨厨房、桌面手冲壶、滤纸、咖啡粉”的轻松实景示意全程未出现，实际页面为无厨房器具元素的抽象示意图标，未匹配用户明确要求的画面呈现；要求至少在chapter-1开场或稳定画面中加入手冲壶、滤杯、滤纸、咖啡粉的厨房桌面示意，或在旁白/画面明示本内容为纯流程示意。\"]}]",
+      "语义审查协议阶段诊断（不含模型正文）：[{\"attempt\":1,\"stage\":\"review-schema\",\"code\":\"SEMANTIC_REVIEW_SCHEMA_INVALID\",\"detail\":\"审查字段格式无效\",\"rawScore\":84,\"fields\":[{\"path\":\"findings[0]\",\"expected\":\"nonempty string or readable finding object\",\"actualType\":\"object\",\"missing\":false},{\"path\":\"findings[1]\",\"expected\":\"nonempty string or readable finding object\",\"actualType\":\"object\",\"missing\":false}]}]",
+      "语义审查覆盖完整音频和22张关键抽帧，未逐帧审阅整片。"
+    ],
+    "createdAt": "2026-11-05T04:26:41.575Z"
+  },
+  "request": "从零帮我生成一条30秒的新手冲咖啡小科普。就回答一个问题：手冲咖啡时为什么先把水倒在滤纸上润湿、顺便温一下分享壶，比干滤纸直接放粉冲更稳妥？用桌面手冲壶、滤纸、咖啡粉和清晨厨房的轻松画面说明，给一个好记的小动作，也提醒风味还会受到豆子和水温影响。\n做成30秒竖屏视频，配音和字幕，画面用动态示意，给我可以播放的成片。",
+  "drawing": {
+    "title": "先别急着放粉",
+    "nodes": [
+      {
+        "id": "main_card",
+        "kind": "card",
+        "x": 60,
+        "y": 240,
+        "w": 600,
+        "h": 500,
+        "text": "",
+        "tone": "paper",
+        "fontSize": 36,
+        "highlight": false
+      },
+      {
+        "id": "scene_label",
+        "kind": "text",
+        "x": 90,
+        "y": 265,
+        "w": 540,
+        "h": 56,
+        "text": "清晨台面准备（示意）",
+        "tone": "ink",
+        "fontSize": 24,
+        "highlight": false
+      },
+      {
+        "id": "kettle_body",
+        "kind": "path",
+        "x": 105,
+        "y": 365,
+        "w": 145,
+        "h": 165,
+        "text": "",
+        "tone": "blue",
+        "fontSize": 36,
+        "highlight": false,
+        "pathData": "M110 430 C110 380 145 360 180 360 C220 360 245 385 245 430 L240 500 C238 520 215 525 180 525 C145 525 112 520 110 500 Z"
+      },
+      {
+        "id": "kettle_spout",
+        "kind": "path",
+        "x": 225,
+        "y": 350,
+        "w": 80,
+        "h": 95,
+        "text": "",
+        "tone": "blue",
+        "fontSize": 36,
+        "highlight": false,
+        "pathData": "M238 390 C260 370 282 356 298 352 C303 351 306 358 302 362 C282 382 265 405 252 425 Z"
+      },
+      {
+        "id": "kettle_handle",
+        "kind": "path",
+        "x": 82,
+        "y": 370,
+        "w": 55,
+        "h": 105,
+        "text": "",
+        "tone": "blue",
+        "fontSize": 36,
+        "highlight": false,
+        "pathData": "M126 382 C92 382 82 414 92 448 C100 474 118 482 126 474"
+      },
+      {
+        "id": "kettle_label",
+        "kind": "text",
+        "x": 92,
+        "y": 535,
+        "w": 170,
+        "h": 56,
+        "text": "细口壶",
+        "tone": "ink",
+        "fontSize": 24,
+        "highlight": false
+      },
+      {
+        "id": "dripper",
+        "kind": "path",
+        "x": 355,
+        "y": 360,
+        "w": 160,
+        "h": 130,
+        "text": "",
+        "tone": "coral",
+        "fontSize": 36,
+        "highlight": true,
+        "pathData": "M360 365 L510 365 L455 485 L415 485 Z"
+      },
+      {
+        "id": "filter_paper",
+        "kind": "path",
+        "x": 382,
+        "y": 382,
+        "w": 106,
+        "h": 82,
+        "text": "",
+        "tone": "paper",
+        "fontSize": 36,
+        "highlight": false,
+        "pathData": "M389 386 L481 386 L444 462 Z"
+      },
+      {
+        "id": "dripper_label",
+        "kind": "text",
+        "x": 365,
+        "y": 505,
+        "w": 140,
+        "h": 87,
+        "text": "滤杯＋干滤纸",
+        "tone": "ink",
+        "fontSize": 24,
+        "highlight": false
+      },
+      {
+        "id": "carafe",
+        "kind": "path",
+        "x": 370,
+        "y": 505,
+        "w": 130,
+        "h": 105,
+        "text": "",
+        "tone": "blue",
+        "fontSize": 36,
+        "highlight": false,
+        "pathData": "M385 515 L485 515 L498 590 C500 605 486 612 470 612 L400 612 C384 612 371 605 374 590 Z"
+      },
+      {
+        "id": "water_pool",
+        "kind": "path",
+        "x": 392,
+        "y": 565,
+        "w": 86,
+        "h": 28,
+        "text": "",
+        "tone": "blue",
+        "fontSize": 36,
+        "highlight": false,
+        "pathData": "M394 580 C414 568 455 568 476 580 C458 591 414 591 394 580 Z"
+      },
+      {
+        "id": "coffee_bowl",
+        "kind": "path",
+        "x": 225,
+        "y": 585,
+        "w": 105,
+        "h": 65,
+        "text": "",
+        "tone": "coral",
+        "fontSize": 36,
+        "highlight": false,
+        "pathData": "M230 594 C235 638 320 638 325 594 Z M226 594 L329 594"
+      },
+      {
+        "id": "coffee_grounds",
+        "kind": "path",
+        "x": 240,
+        "y": 590,
+        "w": 75,
+        "h": 22,
+        "text": "",
+        "tone": "ink",
+        "fontSize": 36,
+        "highlight": false,
+        "pathData": "M245 600 C260 590 295 590 310 600 C294 610 262 610 245 600 Z"
+      },
+      {
+        "id": "coffee_label",
+        "kind": "text",
+        "x": 225,
+        "y": 655,
+        "w": 110,
+        "h": 56,
+        "text": "咖啡粉",
+        "tone": "ink",
+        "fontSize": 24,
+        "highlight": false
+      },
+      {
+        "id": "pour_line",
+        "kind": "line",
+        "x": 300,
+        "y": 358,
+        "w": 132,
+        "h": 82,
+        "text": "",
+        "tone": "coral",
+        "fontSize": 36,
+        "highlight": true
+      },
+      {
+        "id": "rinse_card",
+        "kind": "card",
+        "x": 60,
+        "y": 770,
+        "w": 290,
+        "h": 185,
+        "text": "",
+        "tone": "paper",
+        "fontSize": 36,
+        "highlight": true
+      },
+      {
+        "id": "rinse_title",
+        "kind": "text",
+        "x": 88,
+        "y": 795,
+        "w": 235,
+        "h": 56,
+        "text": "先做小动作",
+        "tone": "ink",
+        "fontSize": 24,
+        "highlight": true
+      },
+      {
+        "id": "rinse_detail",
+        "kind": "text",
+        "x": 88,
+        "y": 848,
+        "w": 235,
+        "h": 87,
+        "text": "热水润纸后，再放粉",
+        "tone": "ink",
+        "fontSize": 24,
+        "highlight": true
+      },
+      {
+        "id": "benefit_card",
+        "kind": "card",
+        "x": 370,
+        "y": 770,
+        "w": 290,
+        "h": 185,
+        "text": "",
+        "tone": "paper",
+        "fontSize": 36,
+        "highlight": false
+      },
+      {
+        "id": "benefit_title",
+        "kind": "text",
+        "x": 398,
+        "y": 795,
+        "w": 235,
+        "h": 56,
+        "text": "两个作用",
+        "tone": "ink",
+        "fontSize": 24,
+        "highlight": false
+      },
+      {
+        "id": "benefit_detail",
+        "kind": "text",
+        "x": 398,
+        "y": 848,
+        "w": 235,
+        "h": 80,
+        "text": "少纸味｜预热杯壶",
+        "tone": "ink",
+        "fontSize": 26,
+        "highlight": false
+      },
+      {
+        "id": "factor_note",
+        "kind": "card",
+        "x": 60,
+        "y": 941,
+        "w": 600,
+        "h": 69,
+        "text": "风味还会受豆子与水温影响",
+        "tone": "paper",
+        "fontSize": 34,
+        "highlight": false
+      }
+    ]
+  },
+  "authorInput": {
+    "chapterId": "chapter-1",
+    "modelId": "deepseek-v4-pro-ga-260813",
+    "backupFor": "doubao-seed-2-1-pro-260915",
+    "format": "9:16",
+    "narration": "做咖啡先别急着放粉。清晨台面备齐细口壶、滤杯、干滤纸和咖啡粉，先用热水润纸，少纸味。",
+    "visual": {
+      "kind": "comparison",
+      "takeaway": "台面备齐器具，先润纸，少一点纸味。",
+      "items": [
+        {
+          "label": "清晨厨房台面",
+          "detail": "暖光桌面依次出现细口手冲壶、滤杯、干滤纸和一碗咖啡粉。",
+          "cue": "清晨台面备齐",
+          "illustration": "desk"
+        },
+        {
+          "label": "干滤纸直接冲",
+          "detail": "干滤纸旁标注“可能带纸味”，只提示新手风险，不表现实测流速。",
+          "cue": "干滤纸",
+          "illustration": "coffee"
+        },
+        {
+          "label": "热水先润湿",
+          "detail": "细口壶向滤纸注入少量热水，纸味标识变淡；热水同时进入下方壶具。",
+          "cue": "先用热水润纸，少纸味",
+          "illustration": "steps"
+        }
+      ]
+    },
+    "feedback": "chapter-1（成片6.01秒、6.899秒抽帧）：画面下方“最后风味还会受这些影响”区块中“豆子新鲜度”被拆成两行，仅“度”字孤字换行，排版局促且可读性差；要求将“豆子新鲜度”调整为单行显示，或改为“新鲜度”单独成块，避免孤字。",
+    "layoutFeedback": "Error: HTML check 未通过：{\"errors\":[{\"code\":\"content_overlap\",\"selector\":\"#qj-author-dripper_label\",\"containerSelector\":\"#qj-author-carafe\",\"time\":1.591667,\"text\":\"滤杯＋干滤纸\",\"message\":\"An actual SVG stroke below a transparent label crosses loaded-font glyph ink and remains visible in nearby glyph gaps. Separate the complete label and graphic into readable zones; \"}],\"additionalErrorPairs\":0,\"fullReport\":\"check-report.json\"}；仅修复报告中的实际几何布局，保留完整原话、数值、来源与旁白。上一版布局：{\"title\":\"先别急着放粉\",\"nodes\":[{\"id\":\"main_card\",\"kind\":\"card\",\"x\":60,\"y\":240,\"w\":600,\"h\":500,\"text\":\"\",\"tone\":\"paper\",\"fontSize\":36,\"highlight\":false},{\"id\":\"scene_label\",\"kind\":\"text\",\"x\":90,\"y\":265,\"w\":540,\"h\":56,\"text\":\"清晨台面准备（示意）\",\"tone\":\"ink\",\"fontSize\":24,\"highlight\":false},{\"id\":\"kettle_body\",\"kind\":\"path\",\"x\":105,\"y\":365,\"w\":145,\"h\":165,\"text\":\"\",\"tone\":\"blue\",\"fontSize\":36,\"highlight\":false,\"pathData\":\"M110 430 C110 380 145 360 180 360 C220 360 245 385 245 430 L240 500 C238 520 215 525 180 525 C145 525 112 520 110 500 Z\"},{\"id\":\"kettle_spout\",\"kind\":\"path\",\"x\":225,\"y\":350,\"w\":80,\"h\":95,\"text\":\"\",\"tone\":\"blue\",\"fontSize\":36,\"highlight\":false,\"pathData\":\"M238 390 C260 370 282 356 298 352 C303 351 306 358 302 362 C282 382 265 405 252 425 Z\"},{\"id\":\"kettle_handle\",\"kind\":\"path\",\"x\":82,\"y\":370,\"w\":55,\"h\":105,\"text\":\"\",\"tone\":\"blue\",\"fontSize\":36,\"highlight\":false,\"pathData\":\"M126 382 C92 382 82 414 92 448 C100 474 118 482 126 474\"},{\"id\":\"kettle_label\",\"kind\":\"text\",\"x\":92,\"y\":535,\"w\":170,\"h\":56,\"text\":\"细口壶\",\"tone\":\"ink\",\"fontSize\":24,\"highlight\":false},{\"id\":\"dripper\",\"kind\":\"path\",\"x\":355,\"y\":360,\"w\":160,\"h\":130,\"text\":\"\",\"tone\":\"coral\",\"fontSize\":36,\"highlight\":true,\"pathData\":\"M360 365 L510 365 L455 485 L415 485 Z\"},{\"id\":\"filter_paper\",\"kind\":\"path\",\"x\":382,\"y\":382,\"w\":106,\"h\":82,\"text\":\"\",\"tone\":\"paper\",\"fontSize\":36,\"highlight\":false,\"pathData\":\"M389 386 L481 386 L444 462 Z\"},{\"id\":\"dripper_label\",\"kind\":\"text\",\"x\":365,\"y\":505,\"w\":140,\"h\":87,\"text\":\"滤杯＋干滤纸\",\"tone\":\"ink\",\"fontSize\":24,\"highlight\":false},{\"id\":\"carafe\",\"kind\":\"path\",\"x\":370,\"y\":505,\"w\":130,\"h\":105,\"text\":\"\",\"tone\":\"blue\",\"fontSize\":36,\"highlight\":false,\"pathData\":\"M385 515 L485 515 L498 590 C500 605 486 612 470 612 L400 612 C384 612 371 605 374 590 Z\"},{\"id\":\"water_pool\",\"kind\":\"path\",\"x\":392,\"y\":565,\"w\":86,\"h\":28,\"text\":\"\",\"tone\":\"blue\",\"fontSize\":36,\"highlight\":false,\"pathData\":\"M394 580 C414 568 455 568 476 580 C458 591 414 591 394 … [truncated]"
+  },
+  "liveModelRegression": {
+    "note": "Live configured backup model geometry regression, not a movie acceptance",
+    "result": {
+      "purpose": "live configured-model layout regression only; no movie acceptance",
+      "originalRevision": "4643ef38f2952da852ba25bc0007ae09ba817878",
+      "startedAt": "2026-11-05T05:07:26.642Z",
+      "passed": true,
+      "authorModelId": "deepseek-v4-pro-ga-260813",
+      "changedNodes": [
+        {
+          "id": "dripper_label",
+          "x": 360,
+          "y": 473,
+          "w": 165,
+          "h": 56,
+          "fontSize": 24
+        },
+        {
+          "id": "carafe",
+          "x": 370,
+          "y": 540,
+          "w": 130,
+          "h": 105,
+          "fontSize": 36
+        },
+        {
+          "id": "water_pool",
+          "x": 392,
+          "y": 600,
+          "w": 86,
+          "h": 28,
+          "fontSize": 36
+        }
+      ],
+      "wordsUnchanged": true,
+      "sourceHashes": {
+        "server/narrativeScenes.ts": "016cacdd6417c45bb53318ae7bf58c26af532178d73c8c66ae8d25b75fed0caa",
+        "server/visualRecovery.ts": "a4596757f14cbe9a64db65d13b98cb06b18ac6569e8947368d38cf54466cb242"
+      },
+      "finishedAt": "2026-11-05T05:08:04.700Z"
+    },
+    "fixedDrawing": {
+      "title": "先别急着放粉",
+      "nodes": [
+        {
+          "id": "main_card",
+          "kind": "card",
+          "x": 60,
+          "y": 240,
+          "w": 600,
+          "h": 500,
+          "text": "",
+          "tone": "paper",
+          "fontSize": 36,
+          "highlight": false
+        },
+        {
+          "id": "scene_label",
+          "kind": "text",
+          "x": 90,
+          "y": 265,
+          "w": 540,
+          "h": 56,
+          "text": "清晨台面准备（示意）",
+          "tone": "ink",
+          "fontSize": 24,
+          "highlight": false
+        },
+        {
+          "id": "kettle_body",
+          "kind": "path",
+          "x": 105,
+          "y": 365,
+          "w": 145,
+          "h": 165,
+          "text": "",
+          "tone": "blue",
+          "fontSize": 36,
+          "highlight": false,
+          "pathData": "M110 430 C110 380 145 360 180 360 C220 360 245 385 245 430 L240 500 C238 520 215 525 180 525 C145 525 112 520 110 500 Z"
+        },
+        {
+          "id": "kettle_spout",
+          "kind": "path",
+          "x": 225,
+          "y": 350,
+          "w": 80,
+          "h": 95,
+          "text": "",
+          "tone": "blue",
+          "fontSize": 36,
+          "highlight": false,
+          "pathData": "M238 390 C260 370 282 356 298 352 C303 351 306 358 302 362 C282 382 265 405 252 425 Z"
+        },
+        {
+          "id": "kettle_handle",
+          "kind": "path",
+          "x": 82,
+          "y": 370,
+          "w": 55,
+          "h": 105,
+          "text": "",
+          "tone": "blue",
+          "fontSize": 36,
+          "highlight": false,
+          "pathData": "M126 382 C92 382 82 414 92 448 C100 474 118 482 126 474"
+        },
+        {
+          "id": "kettle_label",
+          "kind": "text",
+          "x": 92,
+          "y": 535,
+          "w": 170,
+          "h": 56,
+          "text": "细口壶",
+          "tone": "ink",
+          "fontSize": 24,
+          "highlight": false
+        },
+        {
+          "id": "dripper",
+          "kind": "path",
+          "x": 355,
+          "y": 360,
+          "w": 160,
+          "h": 130,
+          "text": "",
+          "tone": "coral",
+          "fontSize": 36,
+          "highlight": true,
+          "pathData": "M360 365 L510 365 L455 485 L415 485 Z"
+        },
+        {
+          "id": "filter_paper",
+          "kind": "path",
+          "x": 382,
+          "y": 382,
+          "w": 106,
+          "h": 82,
+          "text": "",
+          "tone": "paper",
+          "fontSize": 36,
+          "highlight": false,
+          "pathData": "M389 386 L481 386 L444 462 Z"
+        },
+        {
+          "id": "dripper_label",
+          "kind": "text",
+          "x": 360,
+          "y": 473,
+          "w": 165,
+          "h": 56,
+          "text": "滤杯＋干滤纸",
+          "tone": "ink",
+          "fontSize": 24,
+          "highlight": false
+        },
+        {
+          "id": "carafe",
+          "kind": "path",
+          "x": 370,
+          "y": 540,
+          "w": 130,
+          "h": 105,
+          "text": "",
+          "tone": "blue",
+          "fontSize": 36,
+          "highlight": false,
+          "pathData": "M385 515 L485 515 L498 590 C500 605 486 612 470 612 L400 612 C384 612 371 605 374 590 Z"
+        },
+        {
+          "id": "water_pool",
+          "kind": "path",
+          "x": 392,
+          "y": 600,
+          "w": 86,
+          "h": 28,
+          "text": "",
+          "tone": "blue",
+          "fontSize": 36,
+          "highlight": false,
+          "pathData": "M394 580 C414 568 455 568 476 580 C458 591 414 591 394 580 Z"
+        },
+        {
+          "id": "coffee_bowl",
+          "kind": "path",
+          "x": 225,
+          "y": 585,
+          "w": 105,
+          "h": 65,
+          "text": "",
+          "tone": "coral",
+          "fontSize": 36,
+          "highlight": false,
+          "pathData": "M230 594 C235 638 320 638 325 594 Z M226 594 L329 594"
+        },
+        {
+          "id": "coffee_grounds",
+          "kind": "path",
+          "x": 240,
+          "y": 590,
+          "w": 75,
+          "h": 22,
+          "text": "",
+          "tone": "ink",
+          "fontSize": 36,
+          "highlight": false,
+          "pathData": "M245 600 C260 590 295 590 310 600 C294 610 262 610 245 600 Z"
+        },
+        {
+          "id": "coffee_label",
+          "kind": "text",
+          "x": 225,
+          "y": 655,
+          "w": 110,
+          "h": 56,
+          "text": "咖啡粉",
+          "tone": "ink",
+          "fontSize": 24,
+          "highlight": false
+        },
+        {
+          "id": "pour_line",
+          "kind": "line",
+          "x": 300,
+          "y": 358,
+          "w": 132,
+          "h": 82,
+          "text": "",
+          "tone": "coral",
+          "fontSize": 36,
+          "highlight": true
+        },
+        {
+          "id": "rinse_card",
+          "kind": "card",
+          "x": 60,
+          "y": 770,
+          "w": 290,
+          "h": 185,
+          "text": "",
+          "tone": "paper",
+          "fontSize": 36,
+          "highlight": true
+        },
+        {
+          "id": "rinse_title",
+          "kind": "text",
+          "x": 88,
+          "y": 795,
+          "w": 235,
+          "h": 56,
+          "text": "先做小动作",
+          "tone": "ink",
+          "fontSize": 24,
+          "highlight": true
+        },
+        {
+          "id": "rinse_detail",
+          "kind": "text",
+          "x": 88,
+          "y": 848,
+          "w": 235,
+          "h": 87,
+          "text": "热水润纸后，再放粉",
+          "tone": "ink",
+          "fontSize": 24,
+          "highlight": true
+        },
+        {
+          "id": "benefit_card",
+          "kind": "card",
+          "x": 370,
+          "y": 770,
+          "w": 290,
+          "h": 185,
+          "text": "",
+          "tone": "paper",
+          "fontSize": 36,
+          "highlight": false
+        },
+        {
+          "id": "benefit_title",
+          "kind": "text",
+          "x": 398,
+          "y": 795,
+          "w": 235,
+          "h": 56,
+          "text": "两个作用",
+          "tone": "ink",
+          "fontSize": 24,
+          "highlight": false
+        },
+        {
+          "id": "benefit_detail",
+          "kind": "text",
+          "x": 398,
+          "y": 848,
+          "w": 235,
+          "h": 80,
+          "text": "少纸味｜预热杯壶",
+          "tone": "ink",
+          "fontSize": 26,
+          "highlight": false
+        },
+        {
+          "id": "factor_note",
+          "kind": "card",
+          "x": 60,
+          "y": 941,
+          "w": 600,
+          "h": 69,
+          "text": "风味还会受豆子与水温影响",
+          "tone": "paper",
+          "fontSize": 34,
+          "highlight": false
+        }
+      ]
+    },
+    "replies": [
+      {
+        "status": 200,
+        "content": "{\n  \"nodes\": [\n    {\n    \"id\": \"carafe\",\n    \"y\": 535\n    },\n    {\n    \"id\": \"water_pool\",\n    \"y\": 595\n    },\n    {\n    \"id\": \"dripper_label\",\n    \"y\": 478,\n    \"w\": 140,\n    \"h\": 37,\n    \"fontSize\": 22\n    }\n  ]\n}"
+      },
+      {
+        "status": 200,
+        "content": "{\n  \"nodes\": [\n    {\n    \"id\": \"carafe\",\n    \"y\": 540\n    },\n    {\n    \"id\": \"water_pool\",\n    \"y\": 600\n    },\n    {\n    \"id\": \"dripper_label\",\n    \"x\": 360,\n    \"y\": 473,\n    \"w\": 165,\n    \"h\": 56,\n    \"fontSize\": 24\n    }\n  ]\n}"
+      }
+    ]
+  }
+}

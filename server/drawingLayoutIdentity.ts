@@ -90,7 +90,7 @@ export function assertDrawingLayoutIdentity(next:HtmlDrawing,prior:HtmlDrawing):
     }else if(node.pathData!==old.pathData)fail(old.id+'增加路径。');
     if(old.kind!=='card'&&old.kind!=='text'){
       if(old.kind!=='path'&&(['w','h','fontSize'].some(key=>(node as any)[key]!== (old as any)[key])||![node.x,node.y].every(Number.isFinite)))fail(old.id+'图形尺寸改变。');
-    }else if(![node.x,node.y,node.w,node.h,node.fontSize].every(Number.isFinite)||node.fontSize<24||node.fontSize>old.fontSize)fail();
+    }else if(![node.x,node.y,node.w,node.h,node.fontSize].every(Number.isFinite)||node.fontSize<24||node.fontSize>old.fontSize)fail(old.id+'坐标必须有限，字号必须在24到原字号'+old.fontSize+'之间；收到字号'+node.fontSize+'。空间不足时扩宽文字框并移动现有几何，不要缩成不可读字号。');
     // Keep labels and fixed graphics in their original semantic container.
     const parents=prior.nodes.filter(n=>n.id!==old.id&&n.kind==='card'&&originalContainer(n,old));
     // Preserve the observed relation, not a stronger invented relation. A

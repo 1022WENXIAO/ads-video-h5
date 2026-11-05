@@ -137,6 +137,13 @@ function narrationReferencedVisualFindings(report:LessonReport,review:RenderRevi
     const targets=findingChapterTargets(report,text);if(targets.length!==1)return [];
     const chapter=report.chapters.find(chapter=>chapter.id===targets[0])!,index=report.chapters.indexOf(chapter),scope=scopeText(text);
     if(!mentions(scope,chapter.id)&&!new RegExp(`第(?:${index+1}|${chapterOrdinals[index]})章`).test(scope))return [];
+    // An optional spoken-or-screen disclosure is a proposed alternative to
+    // fixing the visual, not evidence of wrong verified speech. This route
+    // remains behind every passed fact/audio/caption check above.
+    const primary=text.replace(/[，,；;]\s*或(?:者)?在(?:旁白\s*[\/、或和]\s*画面|画面\s*[\/、或和]\s*旁白)(?:中)?(?:明示|注明|说明|标明)(?:本(?:片|内容))?(?:为|是)?纯(?:流程|图解)示意[。；;\s]*$/,'');
+    if(primary!==text&&!spoken.test(primary)&&visualDefect(primary)&&!unsafeVisual(primary)&&!spokenFault(primary)){
+      allowed.add(text);return [];
+    }
     if(spokenFault(text)||!visualIssue(text))return [];
     const cited=quotes(text);if(cited.some(quote=>!compact(chapter.narration).includes(quote)))return [];
     return [{text,chapterId:chapter.id,cited}];

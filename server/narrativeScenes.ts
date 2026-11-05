@@ -167,9 +167,9 @@ export async function authorDrawing(config:ModelConfig,beat:ReconstructionBeat,f
         if(n.kind!=='line'&&n.kind!=='path'&&Number.isFinite(n.fontSize)){
         n.text=n.text.replace(/\\n/g,'\n');
         n.fontSize=Math.max(24,Math.min(64,Math.floor(n.fontSize)));
-        const units=[...n.text].reduce((v,c)=>v+(/[\u0000-\u007f]/.test(c)?.55:1),0),padding=numericDrawingText(n.text)&&n.kind==='text'?0:n.kind==='circle'?8:24;
+        const units=[...n.text].reduce((v,c)=>v+(/[\u0000-\u007f]/.test(c)?.55:1),0),padding=n.kind==='text'?0:n.kind==='circle'?8:24;
         const height=()=>Math.ceil(units*n.fontSize/Math.max(1,n.w-padding))*n.fontSize*1.3+padding;
-        if(!numericDrawingText(n.text)){
+        if(!options?.layoutRepair&&!numericDrawingText(n.text)){
           while(n.fontSize>24&&height()>n.h)n.fontSize--;
           if(height()>n.h)n.h=Math.ceil(height());
           const needed=Math.ceil(height());
