@@ -4,7 +4,7 @@ export type ArtifactKind = 'image' | 'audio' | 'video' | 'game';
 export type JobKind = 'plan' | 'image' | 'audio' | 'export' | 'music' | 'effect' | 'understanding' | 'review' | 'avatar';
 export type JobStatus = 'queued' | 'running' | 'stopping' | 'cancelled' | 'succeeded' | 'failed';
 export type ModelKind = 'text' | 'image' | 'audio' | 'understanding';
-export interface PublicUser { id: string; email: string; displayName: string; authProvider?: 'email' | 'wechat'; }
+export interface PublicUser { id: string; email: string; displayName: string; avatarUrl?: string; authProvider?: 'email' | 'wechat'; }
 
 export interface Shot {
   start: number;
@@ -358,6 +358,7 @@ export interface JobAttempt {
 }
 
 export interface Job {
+  interaction?: 'chat' | 'explore' | 'create';
   taskSpec?: import('./taskRuntime').TaskSpec;
   template?: import('./videoTemplates').TemplateSelection;
   capabilities?: import('./agentCapabilities').AgentCapabilities;
@@ -388,6 +389,8 @@ export interface Job {
 }
 
 export interface Session {
+  mode?: 'chat' | 'work';
+  archivedAt?: string | null;
   taskSpec?: import('./taskRuntime').TaskSpec;
   taskRevisions?: Record<string,number>;
   taskSpecsByTemplate?: Record<string,import('./taskRuntime').TaskSpec>;
@@ -424,6 +427,8 @@ export interface AppSettings {
 }
 
 export interface AppState {
+  account?: { id: string; displayName: string; avatarUrl?: string; authProvider?: 'email' | 'wechat' };
+  features?: { conversationModes: boolean; sessionManagement: boolean; schedules: boolean; accountAvatars?: boolean };
   limits?: { maxAttachments: number };
   templates?: import('./videoTemplates').VideoTemplate[];
   credits?: import('./creditTypes').CreditWallet;

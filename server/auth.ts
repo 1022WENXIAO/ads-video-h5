@@ -17,7 +17,7 @@ const releaseRevision = readFile(new URL('../dist/release.json', import.meta.url
   return typeof revision === 'string' && /^[a-f0-9]{40}$/.test(revision) ? revision : null;
 }).catch(() => null);
 
-export interface PublicUser { id: string; email: string; displayName: string; authProvider?: 'email' | 'wechat'; }
+export interface PublicUser { id: string; email: string; displayName: string; avatarUrl?: string; authProvider?: 'email' | 'wechat'; }
 interface UserRecord extends PublicUser { passwordHash?: string; createdAt: string; wechat?: WeChatIdentity; }
 interface LoginSession { userId: string; tokenHash: string; expiresAt: number; }
 interface VerificationRecord { email: string; hash: string; salt: string; expiresAt: number; sentAt: number; attempts: number; }
@@ -25,7 +25,7 @@ interface AuthStore { users: UserRecord[]; sessions: LoginSession[]; verificatio
 
 const normalizeEmail = (value: unknown) => typeof value === 'string' ? value.trim().toLowerCase() : '';
 const tokenHash = (value: string) => createHash('sha256').update(value).digest('hex');
-const safeUser = ({ id, email, displayName, authProvider }: UserRecord): PublicUser => ({ id, email, displayName, authProvider: authProvider ?? 'email' });
+const safeUser = ({ id, email, displayName, avatarUrl, authProvider }: UserRecord): PublicUser => ({ id, email, displayName, ...(avatarUrl ? { avatarUrl } : {}), authProvider: authProvider ?? 'email' });
 const passwordValid = (value: unknown): value is string => typeof value === 'string' && value.length >= 10 && value.length <= 256;
 const emailValid = (email: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) && email.length <= 254;
 const codeHash = async (code: string, salt: string) => (await scrypt(code, Buffer.from(salt, 'hex'), 32) as Buffer).toString('hex');
@@ -288,7 +288,15 @@ export function createAuth(dataDir: string, publicBase: string, options: { excha
     app.patch('/api/auth/password', mutationGuard, requireAuth, (request, response, next) => { void changePassword(request, response).catch(next); });
     app.use('/api', mutationGuard, requireAuth);
   }
-  return { load, mount, currentUser, listUsers: () => store.users.map(safeUser) };
+  async function setAvatar(userId: string, avatarUrl: string) {
+    const user = store.users.find(item => item.id === userId);
+    if (!user) throw new Error('账号不存在。');
+    const previous = user.avatarUrl;
+    user.avatarUrl = avatarUrl;
+    try { await save(); } catch (error) { user.avatarUrl = previous; throw error; }
+    return safeUser(user);
+  }
+  return { load, mount, currentUser, setAvatar, listUsers: () => store.users.map(safeUser) };
 }
 
 export function userOf(request: Request): PublicUser { return (request as Request & { user: PublicUser }).user; }

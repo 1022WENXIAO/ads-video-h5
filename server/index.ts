@@ -3,6 +3,9 @@ import {acquireFileLock} from './durableState';
 import {createTaskSpec,assertTaskRevision,priorTaskSpec} from './taskContract';
 import {withTaskExecution,captureTaskEnvironment,currentTaskExecution} from './taskRuntime';
 import express, { type ErrorRequestHandler, type Response } from 'express';
+import { mountAccountAvatar } from './account-avatar';
+import { reusableDraft, summarizeTitle } from './session-management';
+import { createScheduledTasks, mountScheduledTasks } from './scheduled-tasks';
 import multer from 'multer';
 import { randomUUID } from 'node:crypto';
 import {createJsonStateWriter} from './jsonStateWriter';
@@ -165,7 +168,7 @@ const extFor = (mime: string) => mime === 'image/jpeg' ? 'jpg' : mime === 'image
 async function publicState(user: PublicUser): Promise<AppState> {
   const [models, profile, wallet] = await Promise.all([listPublicModels(), profileOf(user), credits.snapshot(user.id)]);
   const textConfig = await getModelConfig('text', getSession(profile.activeSessionId, user.id)?.modelId);
-  return { limits: { maxAttachments: MAX_CHAT_ATTACHMENTS }, templates: videoTemplates.map(publicTemplate), credits: wallet, activeSessionId: profile.activeSessionId, sessions: state.sessions.filter((item) => owned(item, user.id)), media: state.media.filter((item) => owned(item, user.id)).map((item) => ({ ...item, ...(item.kind === 'image' ? { thumbnailUrl: publicUrl('/api/media/' + item.id + '/thumbnail') } : {}), url: item.character ? publicUrl(item.url) : assetUrl(user.id, 'media', item.id, item.url), shots: item.shots?.map((shot, index) => ({ ...shot, thumbnailUrl: assetUrl(user.id, 'shots', `${item.id}-${index}`, shot.thumbnailUrl) })) })), artifacts: state.artifacts.filter((item) => owned(item, user.id)).map((item) => ({ ...item, url: item.kind==='game'?publicUrl(item.url):assetUrl(user.id, item.kind === 'video' ? 'exports' : 'artifacts', item.id, item.url), downloadUrl: publicUrl(item.downloadUrl), ...(item.projectUrl ? { projectUrl: publicUrl(item.projectUrl) } : {}), ...(item.coverUrl ? { coverUrl: item.kind==='game'?publicUrl(item.coverUrl):assetUrl(user.id, 'covers', item.id, item.coverUrl) } : {}) })), jobs: state.jobs.filter((item) => owned(item, user.id)).map(publicJob), settings: profile.settings, models, mode: textConfig ? 'pi' : 'unconfigured' };
+  return { account: user, features: { conversationModes: true, sessionManagement: true, schedules: true, accountAvatars: true }, limits: { maxAttachments: MAX_CHAT_ATTACHMENTS }, templates: videoTemplates.map(publicTemplate), credits: wallet, activeSessionId: profile.activeSessionId, sessions: state.sessions.filter((item) => owned(item, user.id)), media: state.media.filter((item) => owned(item, user.id)).map((item) => ({ ...item, ...(item.kind === 'image' ? { thumbnailUrl: publicUrl('/api/media/' + item.id + '/thumbnail') } : {}), url: item.character ? publicUrl(item.url) : assetUrl(user.id, 'media', item.id, item.url), shots: item.shots?.map((shot, index) => ({ ...shot, thumbnailUrl: assetUrl(user.id, 'shots', `${item.id}-${index}`, shot.thumbnailUrl) })) })), artifacts: state.artifacts.filter((item) => owned(item, user.id)).map((item) => ({ ...item, url: item.kind==='game'?publicUrl(item.url):assetUrl(user.id, item.kind === 'video' ? 'exports' : 'artifacts', item.id, item.url), downloadUrl: publicUrl(item.downloadUrl), ...(item.projectUrl ? { projectUrl: publicUrl(item.projectUrl) } : {}), ...(item.coverUrl ? { coverUrl: item.kind==='game'?publicUrl(item.coverUrl):assetUrl(user.id, 'covers', item.id, item.coverUrl) } : {}) })), jobs: state.jobs.filter((item) => owned(item, user.id)).map(publicJob), settings: profile.settings, models, mode: textConfig ? 'pi' : 'unconfigured' };
 }
 
 function addReply(session: Session, job: Job, text: string, artifactId?: string) {
@@ -246,6 +249,16 @@ async function performJob(job: Job): Promise<void> {
     job.progress=Math.max(job.progress||0,Math.min(88,10+events.filter(e=>e.status==='succeeded').length*2));await saveState();
   };
   const basicProgress = workflowProgress;
+  if (job.interaction === 'chat' || job.interaction === 'explore') {
+    const config = await getModelConfig('text', session.modelId);
+    if (!config) throw new Error('文本模型尚未配置。');
+    const instruction = job.interaction === 'explore'
+      ? '你是轻喵的工作伙伴。帮助用户思考想实现什么产出：结合上下文逐步澄清目标、受众、交付形式、素材和约束。每轮最多问两个关键问题；信息足够时给出简洁工作简报和下一步建议。此阶段只讨论和写文字，不执行生成视频、图片、音频或发布。用户可点“开始创作”再执行。'
+      : '你是轻喵，友善自然地闲聊、解释问题和帮助思考。当前是对话区，只回复文字，不执行视频、图片、音频制作或发布。需要创作时提示用户切换到工作区。';
+    addReply(session, job, await answerForSessionWithPi({ prompt: instruction + '\n用户本轮消息：' + prompt, config, media, history, plan: session.plan, attached, progress: basicProgress, onSection: async (id, text) => { updateReply(session, job, text, 'commentary', id); await saveState(); } }));
+    return;
+  }
+
   if (job.template) {
     const template = videoTemplates.find(t=>t.id===job.template!.id);
     if (!template || template.skillHash!==job.template.skillHash) throw new Error('模板规则已变化，请重新发送制作要求以使用当前版本。');
@@ -786,7 +799,7 @@ async function enqueueAgentMessage(session: Session, text: string, attachmentIds
   job.authorAvatarId=state.profiles[session.ownerId!]?.settings.authorAvatarId||null;
   message.jobId = job.id;
   session.messages.push(message);
-  if (session.title === '新对话' || session.title === '新会话') session.title = text.slice(0, 24);
+  if (session.title === '新对话' || session.title === '新会话') session.title = summarizeTitle(text);
   session.updatedAt = createdAt;
   if(modelSnapshot)evaluationJobModels.set(job.id,modelSnapshot);
   state.jobs.push(job);
@@ -889,6 +902,7 @@ app.get('/api/effects/assets/:id', async (request, response) => {
   catch { response.status(404).json({ error: '素材文件不存在。' }); }
 });
 auth.mount(app, credits.readiness, user => credits.snapshot(user.id));
+await mountAccountAvatar(app, dataDir, publicBase, auth.setAvatar);
 mountCreditRoutes(app, credits);
 mountExtensionRoutes(app, extensions, { sessions: () => state.sessions, jobs: () => state.jobs, save: saveState, publicState, activate: async(user,session) => { (await profileOf(user)).activeSessionId = session.id; } });
 app.get('/api/creative/capabilities',async(_q,r)=>{const e=await defoldEnvironment();r.json({nodeKinds:['canvas','animation','game'],engines:[{id:'defold',available:e.available,version:e.version,setup:e.available?undefined:e.setup}],editing:['create','read','update','delete','search','history'],modelSelfCheck:true,effectLibraries:[await pixelfxLibrary()]});});
@@ -947,8 +961,54 @@ app.post('/api/music/24bit/download', async (request, response) => {
     response.type(file.mimeType).attachment(file.name).send(file.bytes);
   } catch (error) { musicErrorResponse(response, error); }
 });
+const scheduledTasks = await createScheduledTasks(path.join(dataDir, 'scheduled-tasks.json'), async task => {
+  const profile = state.profiles[task.ownerId];
+  if (!profile) throw new Error('账号信息不可用，请重新登录后创建任务。');
+  const session: Session = { ...newSession(profile.settings.defaultModelId), ownerId: task.ownerId, mode: task.interaction === 'chat' ? 'chat' : 'work', title: task.title };
+  const job = await enqueueAgentMessage(session, task.prompt, []);
+  job.interaction = task.interaction; if (task.interaction !== 'create') job.kind = 'plan';
+  state.sessions.unshift(session);
+  await saveState(); void processQueue();
+  return { sessionId: session.id, jobId: job.id };
+});
+mountScheduledTasks(app, scheduledTasks, (id, ownerId) => state.jobs.find(j => j.id === id && j.ownerId === ownerId)?.status || 'unavailable');
+const scheduleTimer = setInterval(() => { scheduledTasks.tick().catch(error => console.error('scheduled-tasks.tick:', error.message)); }, 15000);
+scheduleTimer.unref();
 app.get('/api/state', async (request, response) => response.json(await publicState(userOf(request))));
-app.post('/api/sessions', async (request, response) => { const user = userOf(request); const profile = await profileOf(user); const session = { ...newSession(profile.settings.defaultModelId), ownerId: user.id }; state.sessions.unshift(session); profile.activeSessionId = session.id; await saveState(); response.json(await publicState(user)); });
+app.post('/api/sessions', async (request, response) => {
+  const user = userOf(request), profile = await profileOf(user);
+  const mode = request.body?.mode === 'chat' ? 'chat' : 'work';
+  let session = request.body?.reuseEmpty ? reusableDraft(state.sessions, user.id, mode) : undefined;
+  if (session) session.mode = mode;
+  if (!session) { session = { ...newSession(profile.settings.defaultModelId), ownerId: user.id, mode }; state.sessions.unshift(session); }
+  profile.activeSessionId = session.id;
+  await saveState(); response.json(await publicState(user));
+});
+app.patch('/api/sessions/:id/archive', async (request, response) => {
+  const user = userOf(request), session = getSession(request.params.id, user.id);
+  if (!session) return response.status(404).json({ error: '对话不存在。' });
+  if (typeof request.body?.archived !== 'boolean') return response.status(400).json({ error: '归档状态无效。' });
+  if (state.jobs.some(j => j.sessionId === session.id && isActiveJob(j))) return response.status(409).json({ error: '请先停止或等待当前任务完成。' });
+  session.archivedAt = request.body.archived ? now() : null;
+  if (session.archivedAt) await replaceActiveSession(user, session);
+  await saveState(); response.json(await publicState(user));
+});
+async function replaceActiveSession(user: PublicUser, removed: Session) {
+  const profile = await profileOf(user);
+  if (profile.activeSessionId !== removed.id) return;
+  let replacement = state.sessions.find(s => owned(s, user.id) && s.id !== removed.id && !s.archivedAt);
+  if (!replacement) { replacement = { ...newSession(profile.settings.defaultModelId), ownerId: user.id, mode: removed.mode || 'work' }; state.sessions.unshift(replacement); }
+  profile.activeSessionId = replacement.id;
+}
+app.delete('/api/sessions/:id', async (request, response) => {
+  const user = userOf(request), session = getSession(request.params.id, user.id);
+  if (!session) return response.status(404).json({ error: '对话不存在。' });
+  if (state.jobs.some(j => j.sessionId === session.id && isActiveJob(j))) return response.status(409).json({ error: '请先停止或等待当前任务完成。' });
+  await replaceActiveSession(user, session);
+  state.sessions = state.sessions.filter(s => s !== session);
+  delete state.narrationBySession[session.id]; delete state.bgmBySession[session.id];
+  await saveState(); response.json(await publicState(user));
+});
 app.post('/api/sessions/:id/activate', async (request, response) => { const user = userOf(request); if (!getSession(request.params.id, user.id)) return response.status(404).json({ error: '对话不存在。' }); (await profileOf(user)).activeSessionId = request.params.id; await saveState(); response.json(await publicState(user)); });
 app.patch('/api/sessions/:id/model', async (request, response) => {
   const user = userOf(request);
@@ -976,13 +1036,17 @@ app.post('/api/chat', async (request, response) => {
   const user = userOf(request);
   const session = getSession(String(request.body?.sessionId || ''), user.id);
   if (!session) return response.status(404).json({ error: '对话不存在，请刷新后重试。' });
+  if (session.archivedAt) return response.status(409).json({ error: '请先取消归档，再继续对话。' });
   const text = typeof request.body?.message === 'string' ? request.body.message.trim().slice(0, 2000) : '';
   if (!text) return response.status(400).json({ error: '请输入想让轻剪完成的内容。' });
   try{resolveTemplateRequest(text,session,videoTemplates);}catch(error){return response.status(400).json({error:error instanceof Error?error.message:'请选择有效的视频模板。'});}
   const attachments = Array.isArray(request.body?.attachmentIds) ? request.body.attachmentIds : [];
   if (attachments.length > MAX_CHAT_ATTACHMENTS || attachments.some((id: unknown) => typeof id !== 'string' || !state.media.some((item) => item.id === id && owned(item, user.id)))) return response.status(400).json({ error: '附件不存在或一次添加过多。' });
   if (request.body?.voiceTicket !== undefined && (typeof request.body.voiceTicket !== 'string' || request.body.voiceTicket.length > 100)) return response.status(400).json({ error: '语音指令凭证格式无效。' });
-  await enqueueAgentMessage(session, text, attachments, request.body?.voiceTicket);
+  const interaction = request.body?.interaction;
+  if (interaction !== undefined && !['chat', 'explore', 'create'].includes(interaction)) return response.status(400).json({ error: '对话模式无效。' });
+  const acceptedJob = await enqueueAgentMessage(session, text, attachments, request.body?.voiceTicket);
+  if (interaction) { acceptedJob.interaction = interaction; if (interaction !== 'create') acceptedJob.kind = 'plan'; }
   await saveState(); response.json(await publicState(user)); void processQueue();
 });
 app.post('/api/media', upload.array('files', 6), async (request, response) => {
@@ -1145,6 +1209,8 @@ app.post('/api/jobs/:id/retry', async (request, response) => {
   const user = userOf(request);
   const job = state.jobs.find((item) => item.id === request.params.id && owned(item, user.id));
   if (!job) return response.status(404).json({ error: '任务不存在。' });
+  const retrySession = getSession(job.sessionId, user.id);
+  if (!retrySession || retrySession.archivedAt) return response.status(409).json({ error: '对话已删除或归档，请先恢复可用对话。' });
   if(job.cancelReason==='superseded')return response.status(409).json({error:'此任务已被后续要求替代，请继续最新任务，不能重试旧版本。'});
   const candidate=state.artifacts.find(a=>a.id===job.artifactId&&owned(a,user.id));
   const needsLessonRepair=job.status==='succeeded'&&candidate?.plan?.lesson&&candidate.review?.status==='needs-review';

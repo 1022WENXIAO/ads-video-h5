@@ -1,1 +1,1 @@
-.panel .section-title { margin-top: 0; }.setting-value { max-width: 390rpx; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; color: #a07c5d; font-size: 24rpx; text-align: right; }.settings-note { margin: 18rpx 0; }
+.panel .section-title { margin-top: 0; }.setting-value { max-width: 390rpx; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; color: var(--lm-muted); font-size: 24rpx; text-align: right; }.settings-note { margin: 18rpx 0; }

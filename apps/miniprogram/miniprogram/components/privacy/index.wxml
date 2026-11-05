@@ -1,8 +1,8 @@
 <view wx:if="{{visible}}" class="mask" catchtouchmove="noop">
   <view class="dialog">
     <view class="heading">使用素材与语音前</view>
-    <view class="copy">轻剪会将你主动选择的素材和录制的语音上传至轻剪服务，用于视频制作和语音识别。只有你操作时才会采集。</view>
-    <button class="policy" bindtap="policy">查看《用户隐私保护指引》</button>
-    <view class="actions"><button class="action" bindtap="disagree">暂不使用</button><button class="action agree" id="qingjian-privacy-agree" open-type="agreePrivacyAuthorization" bindagreeprivacyauthorization="agree">同意并继续</button></view>
+    <view class="copy">轻喵LightMao会将你主动选择的素材和录制的语音上传至轻喵LightMao服务，用于视频制作和语音识别。只有你操作时才会采集。</view>
+    <button size="mini" class="policy" bindtap="policy">查看《用户隐私保护指引》</button>
+    <view class="actions"><button size="mini" class="action" bindtap="disagree">暂不使用</button><button size="mini" class="action agree" id="qingjian-privacy-agree" open-type="agreePrivacyAuthorization" bindagreeprivacyauthorization="agree">同意并继续</button></view>
   </view>
 </view>

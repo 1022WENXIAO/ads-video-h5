@@ -1,5 +1,6 @@
 // The cookie belongs to this native client login. Never put it in URLs or send
 // it to object storage; authenticated files use wx.downloadFile instead.
+const { brandText } = require('./brand');
 function createClient(platform, config, onExpired) {
   const base = config.apiBase.replace(/\/$/, '');
   const match = /^(https?:\/\/[^/]+)(\/.*)?$/.exec(base);
@@ -10,7 +11,8 @@ function createClient(platform, config, onExpired) {
   const stored = platform.getStorageSync(storageKey);
   let cookie = typeof stored === 'string' && /^qingjian_session=[A-Za-z0-9_-]{32,120}$/.test(stored) ? stored : '', epoch = 0;
   const cache = new Map();
-  const clear = () => { cookie = ''; epoch++; cache.clear(); platform.removeStorageSync(storageKey); };
+  const downloads = new Map();
+  const clear = () => { cookie = ''; epoch++; cache.clear(); downloads.clear(); platform.removeStorageSync(storageKey); };
   function receiveCookie(response) {
     const headers = response.header || {};
     const key = Object.keys(headers).find(name => name.toLowerCase() === 'set-cookie');
@@ -34,7 +36,7 @@ function createClient(platform, config, onExpired) {
     if (typeof value === 'string') { try { value = JSON.parse(value); } catch { value = null; } }
     if (response.statusCode < 200 || response.statusCode >= 300) {
       if (response.statusCode === 401 && !route.startsWith('/api/auth/')) { clear(); if (onExpired) onExpired(); }
-      throw Object.assign(new Error(value && value.error || '请求失败，请稍后重试。'), { status: response.statusCode, code: value && value.code });
+      throw Object.assign(new Error(brandText(value && value.error) || '请求失败，请稍后重试。'), { status: response.statusCode, code: value && value.code });
     }
     if (!value || typeof value !== 'object') throw new Error('服务返回的内容无效，请稍后重试。');
     return value;
@@ -44,7 +46,7 @@ function createClient(platform, config, onExpired) {
     return new Promise((resolve, reject) => platform.request({ url, method: method || (data === undefined ? 'GET' : 'POST'), data,
       header: Object.assign({ 'Content-Type': 'application/json' }, cookie ? { Cookie: cookie } : {}), timeout: 20000,
       success: response => { try { resolve(body(response, route, requestEpoch)); } catch (error) { reject(error); } },
-      fail: () => reject(new Error('连接轻剪失败，请检查网络后重试。')),
+      fail: () => reject(new Error('连接轻喵LightMao失败，请检查网络后重试。')),
     }));
   }
   async function wechatLogin() {
@@ -84,21 +86,27 @@ function createClient(platform, config, onExpired) {
     if (!url) return Promise.reject(new Error('素材地址不可用，请刷新后重试。'));
     const own = url.startsWith(base + '/'), requestEpoch = epoch;
     if (cache.has(url)) return Promise.resolve(cache.get(url));
-    return new Promise((resolve, reject) => platform.downloadFile({ url, header: own && cookie ? { Cookie: cookie } : {}, timeout: 120000,
+    if (downloads.has(url)) return downloads.get(url);
+    const pending = new Promise((resolve, reject) => platform.downloadFile({ url, header: own && cookie ? { Cookie: cookie } : {}, timeout: 120000,
       success: response => {
         if (requestEpoch !== epoch) return reject(new Error('登录状态已改变，请重新操作。'));
         if (response.statusCode !== 200) {
           if (response.statusCode === 401 && own) { clear(); if (onExpired) onExpired(); }
           return reject(new Error('文件读取失败，请稍后重试。'));
         }
+        if (cache.size >= 100) cache.delete(cache.keys().next().value);
         cache.set(url, response.tempFilePath); resolve(response.tempFilePath);
       }, fail: () => reject(new Error('文件下载失败，请检查网络后重试。')),
     }));
+    downloads.set(url, pending);
+    const done = () => { if (downloads.get(url) === pending) downloads.delete(url); };
+    pending.then(done, done);
+    return pending;
   }
   const previewUrl = value => {
     const url = mediaUrl(value);
     return url && !url.startsWith(base + '/') ? url : '';
   };
-  return { request, wechatLogin, upload, download, mediaUrl, previewUrl, clear, hasSession: () => Boolean(cookie) };
+  return { request, wechatLogin, upload, download, mediaUrl, previewUrl, clear, hasSession: () => Boolean(cookie), cachedDownload: value => cache.get(mediaUrl(value)) || '', forgetDownload: value => cache.delete(mediaUrl(value)) };
 }
 module.exports = { createClient };

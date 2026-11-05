@@ -1,2 +1,9 @@
 @import '../library/index.wxss';
 .running-card { margin-top: 25rpx; }.running-card progress { margin: 18rpx 0 12rpx; }.empty .secondary { margin: 28rpx auto 0; width: 220rpx; }.media-info .row { margin-top: 8rpx; }
+.theme-surface .card-grid { flex-direction: column; }
+.theme-surface .media-tile { width: 100%; flex: 0 0 auto; }
+.theme-surface .media-cover { height: 475rpx; }
+.theme-surface .media-info { padding: 28.8rpx; }
+.theme-surface .media-placeholder .placeholder-sun { width: 211.5rpx; height: 211.5rpx; top: 67.3rpx; right: 92.3rpx; }
+.theme-surface .media-placeholder .placeholder-hill { height: 250rpx; bottom: -86.5rpx; }
+.theme-surface .placeholder-icon { width: 80.8rpx; height: 80.8rpx; }

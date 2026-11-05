@@ -1,1 +1,21 @@
-<view class="screen legal"><view class="page-heading"><text>{{privacy ? '隐私说明' : '用户协议'}}</text></view><view class="notice">测试版说明，正式条款需由运营方审核并配置。</view><block wx:if="{{privacy}}"><view class="section-title">账号与保存</view><view>小程序通过微信登录凭证创建微信账号，身份由微信服务端验证。微信账号独立保存素材、对话、任务、生成结果和积分，不与邮箱账号自动合并。可在「我的」中选填微信昵称，昵称不用于登录验证。小程序在本机保存自己的登录会话；退出登录会清除本机的会话。</view><view class="section-title">你选择的素材与语音</view><view>仅在你添加素材、长按录音或保存文件时申请对应权限。录音会上传至轻剪服务进行语音识别，识别成功后才会作为指令提交；不会在后台录音。</view><view class="section-title">模型处理</view><view>服务端会将指令和必要的素材信息发送给所配置的模型服务。生成图片时会发送描述及选定参考图；生成口播时会发送台词。模型密钥仅由服务端保存。</view><view class="section-title">删除</view><view>可在素材库删除文件。清除微信缓存或退出小程序不会删除服务端的账号数据；当前版本尚无批量删除全部账号数据的页面。</view><button class="secondary" bindtap="contract">查看微信小程序隐私保护指引</button></block><block wx:else><view class="section-title">使用与内容</view><view>请只上传有权使用的素材，并检查生成的文案、图片、音频与成片是否适合发布。生成结果可能不准确，需要人工核验。</view><view class="section-title">任务与文件</view><view>剪辑、渲染和模型生成需要时间。已提交的任务会在轻剪服务端继续处理，网络或模型服务异常时可能需要重试。</view><view class="section-title">积分</view><view>首次注册赠送 2,000 积分。每日签到点击领取后获得 1,000 积分；同一天只能领取一次。1 积分对应 0.001 元模型费用。已受理的任务会继续完成，积分不足时不能再提交新指令。</view></block></view><privacy-dialog id="privacy" />
+<view class="theme-surface theme-{{theme}}">
+<view class="screen legal">
+  <view class="page-heading"><text>{{voice ? '声纹授权协议' : privacy ? '隐私说明' : '用户协议'}}</text></view>
+  <block wx:if="{{voice}}">
+    <view class="notice">语音录入专用 · 版本 {{version}}。阅读本页不会授权；首次使用“按住说”时，在独立弹窗中选择是否同意。</view>
+    <view wx:for="{{sections}}" wx:key="title"><view class="section-title">{{index + 1}}. {{item.title}}</view><view>{{item.text}}</view></view>
+  </block>
+  <block wx:elif="{{privacy}}">
+    <view class="notice">以下说明小程序当前的数据处理方式，平台隐私指引可在本页底部查看。</view>
+    <view class="section-title">浏览与登录</view><view>未登录时可浏览功能页面、输入制作需求及阅读协议，不会自动进行微信登录。你选择登录后，小程序通过微信登录凭证创建微信账号，身份由微信服务端验证。微信账号独立保存素材、对话、任务、生成结果和积分，不与邮箱账号自动合并。可在「我的」中选填微信昵称，昵称不用于登录验证。退出登录会清除本机的登录会话与本次语音授权。</view>
+    <view class="section-title">个人头像</view><view>头像由你主动选择微信头像或上传自定义图片，仅用于个人资料和本人会话界面展示。头像单独保存，不会自动成为视频素材、作者形象或模型输入。替换头像后，旧头像会从头像存储中移除。</view>
+    <view class="section-title">你选择的素材与语音</view><view>仅在你添加素材、长按录音或保存文件时申请对应权限。语音录入前须单独同意《声纹授权协议》。录音上传至轻喵LightMao服务进行语音识别，识别成功后才会作为指令提交；不会在后台录音。拒绝或撤回语音授权不影响浏览及文字输入。</view>
+    <view class="section-title">模型处理</view><view>服务端会将指令和必要的素材信息发送给所配置的模型服务。生成图片时会发送描述及选定参考图；生成口播时会发送台词。模型密钥仅由服务端保存。</view>
+    <view class="section-title">删除与授权管理</view><view>可在素材库删除文件，在「我的 → 设置 → 语音授权」中撤回语音授权。清除微信缓存或退出小程序不会删除服务端的账号数据；当前版本尚无批量删除全部账号数据的页面。</view>
+    <button size="mini" class="secondary" bindtap="contract">查看微信小程序隐私保护指引</button>
+  </block>
+  <block wx:else>
+    <view class="section-title">使用与内容</view><view>请只上传有权使用的素材，并检查生成的文案、图片、音频与成片是否适合发布。生成结果可能不准确，需要人工核验。</view><view class="section-title">任务与文件</view><view>剪辑、渲染和模型生成需要时间。已提交的任务会在轻喵LightMao服务端继续处理，网络或模型服务异常时可能需要重试。</view><view class="section-title">积分</view><view>首次注册赠送 2,000 积分。每日签到点击领取后获得 1,000 积分；同一天只能领取一次。1 积分对应 0.001 元模型费用。已受理的任务会继续完成，积分不足时不能再提交新指令。</view>
+  </block>
+</view><privacy-dialog id="privacy" />
+</view>
