@@ -7,7 +7,7 @@ import type { Format } from '../src/types';
 import { drawingDimensions, drawingDomId, drawingHtml, hashBytes, svgCardLabelZones, validateDrawing, type HtmlDrawing } from './narrativeScenes';
 import {fitNumericDrawingSlots} from './drawingNumberLayout';
 import { currentJobSignal, throwIfJobCancelled } from './jobExecution';
-import { liftCardLabels, reflowCardDetails, stackIndependentCards } from './drawingCardLayout';
+import { liftCardLabels, reflowCardDetails, stackIndependentCards, reflowContainedSvgText } from './drawingCardLayout';
 import {AuthoredDrawingGeometryError} from './drawingGeometry';
 import {proposeIndependentTextLayout} from './drawingIndependentTextLayout';
 import {resolvedContrastRecovery} from './lessonContrastRecovery';
@@ -126,7 +126,7 @@ async function verifiedSvgCardLabelProposal(project:string,drawing:HtmlDrawing,r
 async function verifiedIndependentTextProposal(project:string,drawing:HtmlDrawing,report:LayoutReport,format:Format):Promise<HtmlDrawing|undefined>{
   if(report.ok!==false||report.runtime?.ok===false)return;
   try{validateDrawing(drawing,format);}catch{return;}
-  const proposal=proposeIndependentTextLayout(drawing,reportIssues(report),drawingDimensions(format),drawingDomId)||stackIndependentCards(drawing,reportIssues(report),format);if(!proposal)return;
+  const proposal=proposeIndependentTextLayout(drawing,reportIssues(report),drawingDimensions(format),drawingDomId)||stackIndependentCards(drawing,reportIssues(report),format)||reflowContainedSvgText(drawing,reportIssues(report),format);if(!proposal)return;
   try{validateDrawing(proposal,format);}catch{return;}
   const html=await readFile(path.join(project,'index.html'),'utf8');
   const find=(source:string,predicate:(node:any)=>boolean)=>{const found:any[]=[];const visit=(node:any)=>{if(predicate(node))found.push(node);for(const child of node.childNodes||[])visit(child);};visit(parse(source));return found;};

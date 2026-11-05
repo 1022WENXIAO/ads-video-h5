@@ -1,6 +1,7 @@
 import type { HtmlDrawing } from './narrativeScenes';
-import {drawingDomId} from './narrativeScenes';
+import {drawingDomId,svgCardLabelZones} from './narrativeScenes';
 import {drawingDateCopyId,drawingDateText} from './drawingDateText';
+import {assertDrawingLayoutIdentity} from './drawingLayoutIdentity';
 import type { Format } from '../src/types';
 
 type Node = HtmlDrawing['nodes'][number];
@@ -135,4 +136,36 @@ export function stackIndependentCards(drawing:HtmlDrawing,issues:Issue[],format:
   return next;
 }
 
-export const CARD_LAYOUT_RENDERER_SIGNATURE=[box,overlap,lines,textHeight,associated,drawingDomId,issueNodes,liftCardLabels,reflowCardDetails,stackIndependentCards].map(fn=>fn.toString()).join('\n');
+/** A measured label/diagram collision may use unused space below its own
+ * empty card. Keep the original label and every shape/font unchanged. This
+ * is a bounded proposal, never a replacement for the remaining browser check. */
+export function reflowContainedSvgText(drawing:HtmlDrawing,issues:Issue[],format:Format):HtmlDrawing|undefined {
+  if(!issues.length||issues.some(i=>!['text_occluded','content_overlap'].includes(i.code)))return;
+  const pairs=issues.map(i=>issueNodes(drawing,i));if(pairs.some(p=>!p))return;
+  const targets=[...new Set(pairs.map(p=>p![0]))];
+  if(targets.length!==1||targets[0].kind!=='text'||!targets[0].text.trim())return;
+  const text=targets[0],t=box(text);
+  const parents=drawing.nodes.filter(n=>{const b=box(n);return n.kind==='card'&&!n.text.trim()&&b.left<=t.left&&b.right>=t.right&&Math.max(0,Math.min(b.bottom,t.bottom)-Math.max(b.top,t.top))>=text.h*.5;});
+  if(parents.length!==1)return;const parent=parents[0],p=box(parent);
+  const inside=(n:Node)=>{const b=box(n);return b.left>=p.left&&b.right<=p.right&&b.top>=p.top&&b.bottom<=p.bottom;};
+  if(!pairs.some(pair=>pair![1].kind==='path')||pairs.some(pair=>pair![1]!==parent&&(pair![1].kind!=='path'||!inside(pair![1]))))return;
+  const height=format==='9:16'?1280:720,width=format==='16:9'?1280:720,bottom=height>width?1010:height-170;
+  // No other content may be swallowed by a growing background card.
+  const outsiders=drawing.nodes.filter(n=>n!==parent&&n!==text&&!inside(n));
+  for(let extra=0;extra<=Math.min(96,parent.h*.35);extra+=12){
+    if(p.bottom+extra>bottom)break;
+    const grown={...parent,h:parent.h+extra},strip={...grown,y:p.bottom,h:extra};
+    if(extra&&outsiders.some(n=>overlap(strip,n)))continue;
+    const next=structuredClone(drawing);next.nodes[next.nodes.findIndex(n=>n.id===parent.id)]=grown;
+    // Exclude only the label being moved when finding free zones. All other
+    // labels, connectors and diagram entities remain actual obstacles.
+    const zones=svgCardLabelZones({...next,nodes:next.nodes.filter(n=>n.id!==text.id)},grown);
+    for(const zone of zones){
+      if(textHeight(text,zone.w)>zone.h)continue;
+      const candidate=structuredClone(next);candidate.nodes[candidate.nodes.findIndex(n=>n.id===text.id)]={...text,...zone};
+      try{assertDrawingLayoutIdentity(candidate,drawing);return candidate;}catch{/* Ambiguous containment needs an authored repair. */}
+    }
+  }
+}
+
+export const CARD_LAYOUT_RENDERER_SIGNATURE=[box,overlap,lines,textHeight,associated,drawingDomId,issueNodes,liftCardLabels,reflowCardDetails,stackIndependentCards,reflowContainedSvgText].map(fn=>fn.toString()).join('\n');
