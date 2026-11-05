@@ -3,7 +3,6 @@ import assert from 'node:assert/strict';
 import {copyFile,mkdtemp,readFile,rm,writeFile} from 'node:fs/promises';
 import path from 'node:path';
 import {tmpdir} from 'node:os';
-import {NUMERIC_DRAWING_CSS} from '../server/drawingNumberLayout';
 import {drawingHtml,checkHtmlProject,validateDrawing,type HtmlDrawing} from '../server/narrativeScenes';
 
 const fixture=JSON.parse(await readFile(new URL('./fixtures/qa-numeric-circle-padding.json',import.meta.url),'utf8'));
@@ -18,7 +17,10 @@ test('captured year badges retain their original circles, numbers and fonts',()=
     assert.match(html,new RegExp('id="qj-author-'+id+'"[^>]*data-qj-number'));
   }
   assert.deepEqual(drawing,before);
-  assert.match(NUMERIC_DRAWING_CSS,/\.node\.circle\[data-qj-number\]\{padding:0\}/);
+  assert.match(html,/\.node\.circle\[data-qj-number\]\{padding:0\}/);
+  const ordinary=structuredClone(drawing);
+  for(const node of ordinary.nodes)if(node.kind==='circle')node.text='年份';
+  assert.doesNotMatch(drawingHtml(ordinary,10.05,'9:16'),/\.node\.circle\[data-qj-number\]\{padding:0\}/);
 });
 
 test('real year glyphs fail with the old padding, fit unchanged circles without it, and still reject genuinely narrow badges',

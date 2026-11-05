@@ -52,10 +52,7 @@ export function fitNumericDrawingSlots(drawing:HtmlDrawing,safe:{left:number;top
   return changed?next:undefined;
 }
 
-// Keep the complete number inside its unchanged shape. Circle badges already
-// have a border; extra text padding can reject glyphs that fit the real inner
-// diameter. The loaded-font check below still rejects actual ink overflow.
-export const NUMERIC_DRAWING_CSS = '.node[data-qj-number]{white-space:nowrap;overflow-wrap:normal;word-break:normal}.node.text[data-qj-number],.node.circle[data-qj-number]{padding:0}';
+export const NUMERIC_DRAWING_CSS = '.node[data-qj-number]{white-space:nowrap;overflow-wrap:normal;word-break:normal}.node.text[data-qj-number]{padding:0}';
 
 // The estimate above is only an early rejection. This uses actual loaded-font
 // glyphs and the real content box, so a narrow axis cannot pass by wrapping.
