@@ -222,7 +222,7 @@ function speechPointOffset(text:string,utf16:number):number{return utf16<0?-1:[.
 function speechPointIndexOf(text:string,phrase:string,from=0):number{return speechPointOffset(text,text.indexOf(phrase,[...text].slice(0,from).join('').length));}
 // Recognize equivalent heard quantities/ranges without treating every Chinese
 // numeral in ordinary prose as a number, or changing the original transcript.
-function speechNumberForms(){return /(?<=双)(?:十[一二]|1[12])(?![\d.点零〇一二两三四五六七八九十百千万亿])|[\d零〇一二两三四五六七八九十百千万亿]+点[\d零〇一二三四五六七八九]+|[\d零〇一二两三四五六七八九十][\d零〇一二两三四五六七八九十百千]*(?=[a-z%年月日号天元台家人岁个次万亿]|小时|品牌|批次|批|份|到|至)|[零〇一二三四五六七八九]{3,}/g;}
+function speechNumberForms(){return /(?<=双)(?:十[一二]|1[12])(?![\d.点零〇一二两三四五六七八九十百千万亿])|[\d零〇一二两三四五六七八九十百千万亿]+点[\d零〇一二三四五六七八九]+|[\d零〇一二两三四五六七八九十][\d零〇一二两三四五六七八九十百千]*(?=[a-z%年月日号天元台家人岁个次万亿]|小时|毫米|厘米|品牌|批次|批|份|到|至)|[零〇一二三四五六七八九]{3,}/g;}
 function canonicalSpeechNumber(text:string){return text.includes('点')?speechDecimalText(text):String(speechNumberValue(text));}
 // Cue matching must use an already validated numeric spelling in its unique
 // narration occurrence. No heard words, numeric grammar or time maps change.
