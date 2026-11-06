@@ -1,7 +1,8 @@
 import { jobFetch, throwIfJobCancelled } from './jobExecution';
 import { randomUUID } from 'node:crypto';
 import type { ModelConfig } from './modelRegistry';
-import { markAudioConnectTimeout, markAudioRateLimitRefusal, recoverAudioRequest, type AudioRecovery } from './audioRateLimit';
+import { markAudioConnectTimeout, markAudioRateLimitRefusal, markMediaTransientFailure, recoverAudioRequest, recoverMediaRequest, type AudioRecovery } from './audioRateLimit';
+import { safeErrorText } from './executionErrors';
 
 const IMAGE_URL = 'https://ark.cn-beijing.volces.com/api/v3/images/generations';
 const AUDIO_URL = 'https://openspeech.bytedance.com/api/v3/tts/create';
@@ -13,15 +14,19 @@ export type GeneratedMedia = { bytes: Buffer; mimeType: string; durationSec?: nu
 export type ImageReference = { bytes: Buffer; mimeType: string };
 
 export class ProviderError extends Error {
+  readonly requestId?: string;
+  readonly providerRequestId?: string;
   constructor(
     message: string,
     public readonly code: string,
     public readonly status?: number,
     public readonly retryable = false,
-    options?: ErrorOptions,
+    options?: ErrorOptions & { requestId?: string; providerRequestId?: string },
   ) {
     super(message, options);
     this.name = 'ProviderError';
+    this.requestId = options?.requestId;
+    this.providerRequestId = options?.providerRequestId;
   }
 }
 
@@ -58,6 +63,19 @@ function ensureConfig(config: ModelConfig, kind: 'image' | 'audio'): void {
 function asRecord(value: unknown): Record<string, unknown> | null {
   return value !== null && typeof value === 'object' && !Array.isArray(value)
     ? value as Record<string, unknown> : null;
+}
+
+function responseFailure(response:Response,result:Record<string,unknown>|null,key:string,requestId?:string):ProviderError {
+  const error=asRecord(result?.error);
+  const rawCode=error?.code??result?.code;
+  const code=(typeof rawCode==='string'||typeof rawCode==='number'&&Number.isFinite(rawCode)
+    ?safeErrorText(rawCode,[key]).replace(/[^a-zA-Z0-9_.-]/g,'').slice(0,80):'')||'UPSTREAM_ERROR';
+  const rawMessage=error?.message??result?.message??(typeof result?.error==='string'?result.error:undefined);
+  const detail=typeof rawMessage==='string'?safeErrorText(rawMessage,[key]).slice(0,320):'';
+  const safeId=(value:string|undefined|null)=>value?safeErrorText(value,[key]).replace(/[^a-zA-Z0-9_.:-]/g,'').slice(0,160):undefined;
+  const providerRequestId=safeId(response.headers.get('x-tt-logid')||response.headers.get('x-request-id')||response.headers.get('request-id'));
+  return new ProviderError(`模型服务请求失败（HTTP ${response.status}，${code}）。${detail?' '+detail:''}`,code,response.status,
+    response.status===408||response.status===429||response.status>=500,{requestId:safeId(requestId),providerRequestId});
 }
 
 async function readLimited(response: Response, limit: number): Promise<Buffer> {
@@ -105,30 +123,33 @@ async function postJson(url: string, key: string, body: object, kind: 'image' | 
   } catch (error) {
     throwIfJobCancelled();
     if (error instanceof Error && (error.name === 'TimeoutError' || error.name === 'AbortError')) {
-      throw new ProviderError('模型请求超时，请稍后重试。', 'TIMEOUT', undefined, true, {cause:error});
+      const failure=new ProviderError('模型请求超时，请稍后重试。', 'TIMEOUT', undefined, true, {cause:error});
+      markMediaTransientFailure(failure);throw failure;
     }
     const failure=new ProviderError('无法连接模型服务，请稍后重试。', 'NETWORK_ERROR', undefined, true, {cause:error});
-    // This catch covers only fetching response headers. A native TLS connect
-    // timeout proves no HTTP request was sent; body/read failures below must
-    // never acquire this authorization to replay a paid submission.
+    // Preserve the stronger pre-submission diagnosis when available. Other
+    // network failures share the explicitly authorized three-retry budget.
     if(kind==='audio')markAudioConnectTimeout(failure,error);
+    if(!(error instanceof TypeError&&/unexpected redirect|redirect count exceeded/i.test(String(error.cause))))markMediaTransientFailure(failure);
     throw failure;
   }
-  const raw = await readLimited(response, JSON_LIMIT);
+  let raw:Buffer;
+  try{raw=await readLimited(response,JSON_LIMIT);}catch(error){
+    throwIfJobCancelled();if(error instanceof ProviderError)throw error;
+    const failure=new ProviderError('读取模型响应时连接中断。','NETWORK_ERROR',response.status,true,{cause:error});
+    markMediaTransientFailure(failure);throw failure;
+  }
   let result: Record<string, unknown> | null = null;
   try { result = asRecord(JSON.parse(raw.toString('utf8'))); } catch { /* handled below */ }
   if (!response.ok) {
-    const error = asRecord(result?.error);
-    const rawCode = typeof error?.code === 'string' ? error.code : typeof result?.code === 'string' ? result.code : 'UPSTREAM_ERROR';
-    const code = rawCode.replace(/[^a-zA-Z0-9_.-]/g, '').slice(0, 80) || 'UPSTREAM_ERROR';
-    const retryable = response.status === 408 || response.status === 429 || response.status >= 500;
-    const failure=new ProviderError(`模型服务请求失败（HTTP ${response.status}，${code}）。`, code, response.status, retryable);
-    if(kind==='audio')markAudioRateLimitRefusal(failure,response,result);
+    const failure=responseFailure(response,result,key,requestId);
+    markAudioRateLimitRefusal(failure,response,result);
+    markMediaTransientFailure(failure,response,result);
     throw failure;
   }
   if (!result) throw new ProviderError('模型返回了无法解析的数据。', 'INVALID_RESPONSE', response.status);
   if (typeof result.code === 'number' && result.code !== 0) {
-    throw new ProviderError(`模型服务返回错误码 ${result.code}。`, String(result.code), response.status);
+    throw responseFailure(response,result,key,requestId);
   }
   return result;
 }
@@ -192,6 +213,7 @@ async function downloadVendorAudio(value: unknown): Promise<Buffer> {
 
 export async function generateImage(prompt: string, config: ModelConfig, reference?: ImageReference, options?: { size?: string; outputFormat?: 'png' | 'jpeg'; background?: 'transparent' | 'opaque' }): Promise<GeneratedMedia> {
   ensureConfig(config, 'image');
+  const key=config.apiKey;
   const url = endpoint(config, IMAGE_URL);
   const cleanPrompt = prompt.trim();
   if (!cleanPrompt || cleanPrompt.length > 3000) throw new ProviderError('图片提示词应为 1 到 3000 个字符。', 'INVALID_INPUT');
@@ -211,7 +233,7 @@ export async function generateImage(prompt: string, config: ModelConfig, referen
     }
     body.image = `data:${reference.mimeType};base64,${reference.bytes.toString('base64')}`;
   }
-  const result = await postJson(url, config.apiKey, body, 'image');
+  const {value:result}=await recoverMediaRequest('image',url,key,requestId=>postJson(url,key,body,'image',requestId));
   const first = Array.isArray(result.data) ? asRecord(result.data[0]) : null;
   if (first?.error) throw new ProviderError('图片生成失败，请调整描述后重试。', 'UPSTREAM_ERROR');
   const bytes = decodeBase64(first?.b64_json, IMAGE_LIMIT);

@@ -61,20 +61,20 @@ test('real native TLS-connect stall sends zero HTTP payload and safely recovers 
   });
 });
 
-test('native connect failures exhaust one three-attempt budget and preserve the exact original cause',async t=>{
+test('native connect failures exhaust the initial attempt plus three retries and preserve the exact original cause',async t=>{
   t.mock.timers.enable({apis:['Date','setTimeout'],now:Date.now()});let calls=0;const ids:string[]=[];
   const running=recoverAudioRequest('https://openspeech.bytedance.com/audio',randomUUID(),async id=>{calls++;ids.push(id);throw wrappedNative();}).catch(error=>error);
-  await tick();assert.equal(calls,1);t.mock.timers.tick(1000);await tick();assert.equal(calls,2);t.mock.timers.tick(2000);await tick();
-  const error=await running;assert.ok(error instanceof AudioConnectTimeoutError);assert.equal(calls,3);assert.equal(new Set(ids).size,1);assert.equal(error.attempts,3);assert.equal(error.retryExhausted,true);assert.equal(error.retryable,false);assert.equal(error.waitedMs,3000);assert.ok(error.cause instanceof ProviderError);assert.equal(error.cause.cause,nativeFailure());
+  await tick();assert.equal(calls,1);t.mock.timers.tick(1000);await tick();assert.equal(calls,2);t.mock.timers.tick(2000);await tick();assert.equal(calls,3);t.mock.timers.tick(4000);await tick();
+  const error=await running;assert.ok(error instanceof AudioConnectTimeoutError);assert.equal(calls,4);assert.equal(new Set(ids).size,1);assert.equal(error.attempts,4);assert.equal(error.retryExhausted,true);assert.equal(error.retryable,false);assert.equal(error.waitedMs,7000);assert.ok(error.cause instanceof ProviderError);assert.equal(error.cause.cause,nativeFailure());
 });
 
 test('connect and explicit 429 refusals share the same attempt limit and one aggregate mixed diagnostic',async t=>{
   t.mock.timers.enable({apis:['Date','setTimeout'],now:Date.now()});let calls=0;
   const running=runWithJobSignal(new AbortController().signal,async()=>{
-    await assert.rejects(()=>recoverAudioRequest('https://openspeech.bytedance.com/audio',randomUUID(),async()=>{calls++;if(calls!==2)throw wrappedNative();const error=new ProviderError('Rejected','RateLimit',429,true);markAudioRateLimitRefusal(error,new Response(JSON.stringify(refusal),{status:429,headers:{'Retry-After':'0'}}),refusal);throw error;}),error=>error instanceof AudioConnectTimeoutError&&error.attempts===3);
-    const aggregate=getJobTransportDiagnostics().find(d=>d.recoveryKind==='audio-mixed');assert.equal(aggregate?.attempts,3);assert.equal(aggregate?.outcome,'failed');
+    await assert.rejects(()=>recoverAudioRequest('https://openspeech.bytedance.com/audio',randomUUID(),async()=>{calls++;if(calls!==2)throw wrappedNative();const error=new ProviderError('Rejected','RateLimit',429,true);markAudioRateLimitRefusal(error,new Response(JSON.stringify(refusal),{status:429,headers:{'Retry-After':'0'}}),refusal);throw error;}),error=>error instanceof AudioConnectTimeoutError&&error.attempts===4);
+    const aggregate=getJobTransportDiagnostics().find(d=>d.recoveryKind==='audio-mixed');assert.equal(aggregate?.attempts,4);assert.equal(aggregate?.outcome,'failed');
   });
-  await tick();assert.equal(calls,1);t.mock.timers.tick(1000);await tick();await running;assert.equal(calls,3);
+  await tick();assert.equal(calls,1);t.mock.timers.tick(1000);await tick();assert.equal(calls,3);t.mock.timers.tick(4000);await tick();await running;assert.equal(calls,4);
 });
 
 test('connect waits and Retry-After share the existing cumulative thirty-second wait budget',async t=>{
@@ -90,10 +90,10 @@ test('code-only, same-name, nested, reset, headers, read-body, abort and retryab
   for(const failure of errors){let calls=0;const wrapped=new ProviderError('Controlled unknown failure','NETWORK_ERROR',undefined,true,{cause:failure});markAudioConnectTimeout(wrapped,failure);await assert.rejects(()=>recoverAudioRequest('https://openspeech.bytedance.com/audio',randomUUID(),async()=>{calls++;throw wrapped;}),error=>error===wrapped);assert.equal(calls,1);}
 });
 
-test('a body failure after response headers cannot gain connect recovery even if its error mimics the genuine native cause',async()=>{
+test('a body failure uses the media retry budget without being misclassified as an unsent connect failure',async()=>{
   const original=globalThis.fetch;let calls=0;
   globalThis.fetch=async()=>{calls++;return new Response(new ReadableStream({start(controller){controller.error(nativeFailure());}}),{status:200,headers:{'content-type':'application/json'}});};
-  try{await assert.rejects(()=>generateAudio('No body replay',model()),error=>error===nativeFailure());assert.equal(calls,1);}finally{globalThis.fetch=original;}
+  try{await assert.rejects(()=>generateAudio('Bounded body replay',model()),(error:any)=>error.code==='MEDIA_RETRY_EXHAUSTED'&&error.attempts===4&&error.cause?.cause===nativeFailure());assert.equal(calls,4);}finally{globalThis.fetch=original;}
 });
 
 test('same-key generation stays queued during connect recovery and cancellation prevents a second connection',async()=>{
@@ -112,7 +112,7 @@ test('the actual audio POST refuses redirects and cannot retry a downstream conn
   try{await assert.rejects(()=>generateAudio('Never follow a paid POST',model()),error=>error instanceof ProviderError&&error.code==='NETWORK_ERROR'&&error.cause instanceof TypeError);assert.equal(fetches,1);assert.equal(posts,1);assert.equal(redirected,0);}finally{globalThis.fetch=original;server.closeAllConnections();await new Promise<void>(resolve=>server.close(()=>resolve()));}
 });
 
-test('image generation remains single-attempt for the same real native connect failure',async()=>{
+test('image generation also uses the initial attempt plus three retries for native connect failures',async()=>{
   const original=globalThis.fetch;let calls=0;globalThis.fetch=async()=>{calls++;throw nativeFailure();};
-  try{await assert.rejects(()=>generateImage('No image replay',{...model(),kind:'image',modelId:'doubao-seedream-5-0-flash-260915',baseUrl:'https://ark.cn-beijing.volces.com'}),error=>error instanceof ProviderError&&error.cause===nativeFailure());assert.equal(calls,1);}finally{globalThis.fetch=original;}
+  try{await assert.rejects(()=>generateImage('Bounded image replay',{...model(),kind:'image',modelId:'doubao-seedream-5-0-flash-260915',baseUrl:'https://ark.cn-beijing.volces.com'}),(error:any)=>error.code==='MEDIA_RETRY_EXHAUSTED'&&error.attempts===4&&error.cause?.cause===nativeFailure());assert.equal(calls,4);}finally{globalThis.fetch=original;}
 });

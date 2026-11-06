@@ -2,11 +2,32 @@ import { createHash, randomUUID } from 'node:crypto';
 import { currentJobSignal, JobCancelledError, jobDelay, recordJobTransportDiagnostic, throwIfJobCancelled } from './jobExecution';
 import { executionFailure } from './executionErrors';
 
-const MAX_ATTEMPTS=3, MAX_RECOVERY_WAIT_MS=30_000, MAX_QUEUE_WAIT_MS=300_000;
-export interface AudioRecoveryEvent { at:string; kind:'queued'|'attempt'|'rate-limited'|'connect-timeout'|'wait'|'response'|'failed'; attempt:number; delayMs?:number; status?:number; code?:string; }
+const MAX_ATTEMPTS=4, MAX_RECOVERY_WAIT_MS=30_000, MAX_QUEUE_WAIT_MS=300_000;
+export interface AudioRecoveryEvent { at:string; kind:'queued'|'attempt'|'rate-limited'|'connect-timeout'|'transient-error'|'wait'|'response'|'failed'; attempt:number; delayMs?:number; status?:number; code?:string; }
 export interface AudioRecovery { requestId:string; attempts:number; queueWaitMs:number; retryDelaysMs:number[]; events:AudioRecoveryEvent[]; }
-type Refusal={kind:'rate-limit'|'connect-timeout';retryAfterMs?:number;replayAllowed:boolean};
+type Refusal={kind:'rate-limit'|'connect-timeout'|'transient';retryAfterMs?:number;replayAllowed:boolean};
 const refusals=new WeakMap<object,Refusal>();
+
+// Media retries are explicitly authorized: initial submission + at most three
+// retries. Accepted asynchronous tasks must still be polled, never resubmitted.
+export function markMediaTransientFailure(error:object,response?:Response,body?:unknown):void {
+  if(response){
+    if(![408,500,502,503,504].includes(response.status)||accepted(body))return;
+    if([...response.headers].some(([name,value])=>value&&/^(?:location|x-(?:api-)?(?:task|job|operation)-id)$/i.test(name)))return;
+    const header=response.headers.get('retry-after'),delay=retryAfter(header);
+    if(header?.trim()&&delay===undefined)return;
+    refusals.set(error,{kind:'transient',retryAfterMs:delay,replayAllowed:response.headers.get('x-should-retry')?.trim().toLowerCase()!=='false'});
+  }else if(!refusals.has(error))refusals.set(error,{kind:'transient',replayAllowed:true});
+}
+
+export class MediaRetryError extends Error {
+  readonly code='MEDIA_RETRY_EXHAUSTED';readonly retryable=false;readonly retryExhausted=true;
+  readonly status?:number;
+  constructor(readonly mediaKind:'audio'|'image',readonly requestId:string,readonly attempts:number,reason:string,cause:unknown){
+    super(`${mediaKind==='audio'?'配音':'图片'}服务暂时不可用，已自动重试${Math.max(0,attempts-1)}次（共${attempts}次请求）：${reason}`,{cause});
+    this.name='MediaRetryError';this.status=(cause as {status?:number})?.status;
+  }
+}
 type Waiter={grant:()=>void};
 type Slot={active:boolean;waiters:Waiter[];cooldownUntil:number};
 const slots=new Map<string,Slot>();
@@ -16,7 +37,7 @@ function accepted(value:unknown,depth=0):boolean {
   if(Array.isArray(value))return value.some(item=>accepted(item,depth+1));
   // Vendors sometimes report an accepted task only in prose. An HTTP error
   // wrapper does not make that safe to replay as another paid generation.
-  if(typeof value==='string')return /\b(?:accepted|processing|queued|pending|running|submitted|poll(?:ing)?)\b|已受理|已接受|已提交|排队中|处理中|生成中|查询(?:原|已有|该)(?:始)?(?:请求|任务)/i.test(value);
+  if(typeof value==='string')return /\b(?:accepted|submitted|poll(?:ing)?)\b|\b(?:task|request|job)\s+(?:is\s+|was\s+|already\s+)?(?:queued|pending|running|processing)\b|已受理|已接受|已提交|排队中|处理中|生成中|查询(?:原|已有|该)(?:始)?(?:请求|任务)/i.test(value);
   if(!value||typeof value!=='object')return false;
   return Object.entries(value).some(([key,item])=>{
     const name=key.replace(/[-_]/g,'').toLowerCase();
@@ -56,7 +77,7 @@ export function markAudioRateLimitRefusal(error:object,response:Response,body:un
 /** Called only by the HTTP client before a Response exists. Node's native
  * Undici connector reports this branded error before secureConnect hands the
  * socket to HTTP. Codes, messages and retryable flags alone are insufficient.
- * All other socket/timeout/abort failures remain ambiguous and are not replayed. */
+ * Other network failures use the separately authorized media retry policy. */
 export function markAudioConnectTimeout(error:object,failure:unknown):void {
   if(!(failure instanceof TypeError)||failure.name!=='TypeError'||failure.message!=='fetch failed')return;
   const cause=failure.cause;
@@ -102,15 +123,15 @@ async function acquire(slot:Slot):Promise<()=>void>{
 
 /** Serializes only one credential's audio generation. A stable request ID is
  * correlation, not an assumption of vendor idempotency. */
-export async function recoverAudioRequest<T>(url:string,key:string,submit:(requestId:string)=>Promise<T>):Promise<{value:T;recovery:AudioRecovery}>{
+export async function recoverMediaRequest<T>(kind:'audio'|'image',url:string,key:string,submit:(requestId:string)=>Promise<T>):Promise<{value:T;recovery:AudioRecovery}>{
   const started=Date.now(),requestId=randomUUID(),bucket=createHash('sha256').update(new URL(url).origin+'\0'+key).digest('hex');
-  let slot=slots.get(bucket);if(!slot){slot={active:false,waiters:[],cooldownUntil:0};slots.set(bucket,slot);}
+  let slot=kind==='audio'?slots.get(bucket):undefined;if(!slot){slot={active:false,waiters:[],cooldownUntil:0};if(kind==='audio')slots.set(bucket,slot);}
   const recovery:AudioRecovery={requestId,attempts:0,queueWaitMs:0,retryDelaysMs:[],events:[]};
   const event=(kind:AudioRecoveryEvent['kind'],extra:Partial<AudioRecoveryEvent>={})=>recovery.events.push({at:new Date().toISOString(),kind,attempt:recovery.attempts,...extra});
   let release:(()=>void)|undefined,lastRefusal:unknown,lastKind:Refusal['kind']|undefined,waitedMs=0;
   const kinds=new Set<Refusal['kind']>();
-  const exhausted=(reason:string,cause=lastRefusal)=>lastKind==='connect-timeout'?new AudioConnectTimeoutError(requestId,recovery.attempts,waitedMs,reason,cause):new AudioRateLimitError(requestId,recovery.attempts,waitedMs,reason,cause);
-  const diagnostic=(outcome:'failed'|'recovered',failure:unknown)=>recordJobTransportDiagnostic({at:new Date().toISOString(),origin:new URL(url).origin,path:new URL(url).pathname,attempts:recovery.attempts,durationMs:Date.now()-started,outcome,failure:executionFailure(failure,[key]),status:(failure as {status?:number})?.status,requestId,...(kinds.size?{recoveryKind:kinds.size>1?'audio-mixed' as const:lastKind==='connect-timeout'?'audio-connect-timeout' as const:'audio-rate-limit' as const}:{}),retryDelaysMs:[...recovery.retryDelaysMs],queueWaitMs:recovery.queueWaitMs});
+  const exhausted=(reason:string,cause=lastRefusal)=>kind==='image'||lastKind==='transient'?new MediaRetryError(kind,requestId,recovery.attempts,reason,cause):lastKind==='connect-timeout'?new AudioConnectTimeoutError(requestId,recovery.attempts,waitedMs,reason,cause):new AudioRateLimitError(requestId,recovery.attempts,waitedMs,reason,cause);
+  const diagnostic=(outcome:'failed'|'recovered',failure:unknown)=>recordJobTransportDiagnostic({at:new Date().toISOString(),origin:new URL(url).origin,path:new URL(url).pathname,attempts:recovery.attempts,durationMs:Date.now()-started,outcome,failure:executionFailure(failure,[key]),status:(failure as {status?:number})?.status,requestId,...(kinds.size?{recoveryKind:kind==='image'||kinds.has('transient')?'media-transient' as const:kinds.size>1?'audio-mixed' as const:lastKind==='connect-timeout'?'audio-connect-timeout' as const:'audio-rate-limit' as const}:{}),retryDelaysMs:[...recovery.retryDelaysMs],queueWaitMs:recovery.queueWaitMs});
   try{
     if(slot.active||slot.waiters.length)event('queued');
     release=await acquire(slot);recovery.queueWaitMs=Date.now()-started;
@@ -129,8 +150,8 @@ export async function recoverAudioRequest<T>(url:string,key:string,submit:(reque
         const refusal=error&&typeof error==='object'?refusals.get(error):undefined;
         if(!refusal)throw error;
         kinds.add(refusal.kind);lastKind=refusal.kind;
-        if(refusal.kind==='rate-limit')event('rate-limited',{status:429});else event('connect-timeout',{code:'UND_ERR_CONNECT_TIMEOUT'});
-        const retryDelay=refusal.retryAfterMs??Math.min(2000,1000*recovery.attempts);
+        if(refusal.kind==='rate-limit')event('rate-limited',{status:429});else if(refusal.kind==='connect-timeout')event('connect-timeout',{code:'UND_ERR_CONNECT_TIMEOUT'});else event('transient-error',{status:(error as {status?:number})?.status});
+        const retryDelay=refusal.retryAfterMs??Math.min(4000,1000*2**(recovery.attempts-1));
         slot.cooldownUntil=Math.max(slot.cooldownUntil,Date.now()+retryDelay);
         if(!refusal.replayAllowed)throw error;
         lastRefusal=error;
@@ -140,3 +161,5 @@ export async function recoverAudioRequest<T>(url:string,key:string,submit:(reque
   }catch(error){if(!release)recovery.queueWaitMs=Date.now()-started;event('failed',{status:(error as {status?:number})?.status});diagnostic('failed',error);throw error;}
   finally{release?.();if(!slot.active&&!slot.waiters.length&&slot.cooldownUntil<=Date.now()&&slots.get(bucket)===slot)slots.delete(bucket);}
 }
+
+export const recoverAudioRequest=<T>(url:string,key:string,submit:(requestId:string)=>Promise<T>)=>recoverMediaRequest('audio',url,key,submit);
