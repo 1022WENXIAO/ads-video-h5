@@ -64,7 +64,7 @@ for(const status of [401,429,500])test(`HTTP ${status} never becomes output-limi
   await assert.rejects(transcribeWindow(file,0,9.22,config,directory),new RegExp(`HTTP ${status}`));
   // Understanding calls retain the shared text-transport retry policy. No
   // ASR output repair or smaller-window submission may follow that policy.
-  assert.deepEqual(durations,Array(status===401?1:3).fill(9.22));
+  assert.deepEqual(durations,Array(status===401?1:4).fill(9.22));
   assert.equal((await readdir(directory)).filter(name=>name.startsWith('failure-')).length,1);
 });
 
