@@ -193,8 +193,15 @@ export function validateTimeline(plan: EditPlan, media: MediaItem[]): EditPlan {
   return { ...candidate, targetSeconds: +duration.toFixed(3), captions: validateTexts(plan.captions, true), overlays: validateTexts(plan.overlays, false), audio };
 }
 
-export function applyTimelineRequest(plan: EditPlan, prompt: string, media: MediaItem[]): EditPlan {
+export function applyTimelineRequest(plan: EditPlan, prompt: string, media: MediaItem[], options:{sourceWitnesses?:readonly {sourceId:string;sourceHash:string;time:number}[]}={}): EditPlan {
   const next = structuredClone(plan);
+  const requested = /(?:约|大约|控制在|改成|改为|剪成|时长)?\s*(\d+(?:\.\d+)?)\s*(?:秒|seconds?|sec)/i.exec(prompt);
+  const requestedSeconds=requested?Number(requested[1]):0;
+  const witnesses=options.sourceWitnesses||[];
+  for(const witness of witnesses){
+    const source=media.find(m=>m.id===witness.sourceId);
+    if(source?.analysis?.status!=='ready'||source.analysis.sourceHash!==witness.sourceHash||!Number.isFinite(witness.time)||witness.time<0||witness.time>=source.analysis.duration)throw new Error('原画面见证与当前源哈希或时间范围不一致。');
+  }
   if (next.fineCut) next.clips.forEach((clip, index) => {
     if (index === 0 || clip.transition?.kind !== 'fade') return;
     const gap = (side: typeof clip, leading: boolean) => {
@@ -227,6 +234,46 @@ export function applyTimelineRequest(plan: EditPlan, prompt: string, media: Medi
     clip.start = +Math.max(prior, 0, Math.min(clip.start, first.start - Math.max(incoming, 0.1))).toFixed(3);
     clip.end = +Math.min(following, source!.duration!, last.end + 0.35, Math.max(clip.end, last.end + Math.max(outgoing, tail))).toFixed(3);
   });
+  if(next.fineCut&&!next.clips.some(c=>c.transition?.kind==='fade'))for(const witness of witnesses){
+    if(next.clips.some(c=>c.sourceId===witness.sourceId&&witness.time>=c.start&&witness.time<c.end))continue;
+    // A source observation may lie in the short quiet edge after its complete
+    // sentence. Preserve that actual source video within the existing 350ms
+    // sentence-edge allowance; later validators still reject half-sentences.
+    const source=media.find(m=>m.id===witness.sourceId)!;
+    const candidates=next.clips.filter(c=>c.sourceId===source.id).flatMap(clip=>{
+      const selected=clip.sentenceIds?.map(id=>source.analysis!.sentences.find(s=>s.id===id));
+      if(!selected?.length||selected.some(s=>!s?.complete))return [];
+      const start=Math.ceil(Math.max(0,selected[0]!.start-.35)*1000)/1000,end=Math.floor(Math.min(source.duration!,selected.at(-1)!.end+.35)*1000)/1000;
+      return witness.time>=start&&witness.time<end?[{clip,start,end,cost:Math.max(0,clip.start-witness.time,witness.time-clip.end)}]:[];
+    }).sort((a,b)=>a.cost-b.cost);
+    const candidate=candidates[0];
+    if(candidate){if(witness.time<candidate.clip.start)candidate.clip.start=candidate.start;else candidate.clip.end=candidate.end;}
+  }
+  // Optional cut-edge padding must not make an otherwise complete selection
+  // exceed its budget. Retain every original sentence boundary and bound
+  // source observation, sharing any remaining padding proportionally;
+  // never shorten speech, internal pauses or crossfade safety margins.
+  if(next.fineCut&&requestedSeconds>0&&requestedSeconds<=60&&!next.clips.some(c=>c.transition?.kind==='fade')){
+    const excess=timelineDuration(next)-requestedSeconds-Math.max(2,requestedSeconds*.1);
+    if(excess>0){
+      const margins=next.clips.map(clip=>{
+        const source=media.find(m=>m.id===clip.sourceId),selected=clip.sentenceIds?.map(id=>source?.analysis?.sentences.find(s=>s.id===id));
+        if(source?.analysis?.status!=='ready'||!selected?.length||selected.some(s=>!s?.complete)||clip.start>selected[0]!.start||clip.end<selected.at(-1)!.end)return;
+        const bound=witnesses.filter(w=>w.sourceId===clip.sourceId&&w.time>=clip.start&&w.time<clip.end);
+        return{clip,lead:bound.some(w=>w.time<selected[0]!.start)?0:Math.max(0,selected[0]!.start-clip.start),tail:bound.some(w=>w.time>=selected.at(-1)!.end)?0:Math.max(0,clip.end-selected.at(-1)!.end)};
+      });
+      if(margins.every(Boolean)){
+        const edges=margins.flatMap(m=>[{clip:m!.clip,key:'start' as const,capacity:Math.floor(m!.lead*1000+1e-7)},{clip:m!.clip,key:'end' as const,capacity:Math.floor(m!.tail*1000+1e-7)}]);
+        let remaining=Math.ceil(excess*1000),available=edges.reduce((sum,edge)=>sum+edge.capacity,0);
+        if(available>=remaining)for(const edge of edges){
+          if(remaining<=0)break;
+          const take=Math.min(edge.capacity,Math.ceil(remaining*edge.capacity/available));
+          edge.clip[edge.key]=+(edge.clip[edge.key]+(edge.key==='start'?take:-take)/1000).toFixed(3);
+          remaining-=take;available-=edge.capacity;
+        }
+      }
+    }
+  }
   if (/关键词|叠字/.test(prompt) && /覆盖.{0,6}(?:对比|比较)(?:段落)?/.test(prompt)) {
     const comparison = next.clips.findIndex((c) => c.purpose === 'comparison');
     if (comparison >= 0) {
@@ -248,7 +295,6 @@ export function applyTimelineRequest(plan: EditPlan, prompt: string, media: Medi
   if (/响度|音量均衡|音量统一|normalize/i.test(prompt)) next.audio = { ...(next.audio || { originalVolume: 1, bgmVolume: 0.12, narrationVolume: 1 }), normalize: true };
   if (excludesBgm(prompt)) next.audio = { ...(next.audio || { originalVolume:1,narrationVolume:1,normalize:false }), bgmVolume:0 };
   const validated = validateTimeline(next, media);
-  const requested = /(?:约|大约|控制在|改成|改为|剪成|时长)?\s*(\d+(?:\.\d+)?)\s*(?:秒|seconds?|sec)/i.exec(prompt);
   if (requested) {
     const target = Number(requested[1]);
     if (target > 0 && target <= 60 && Math.abs(validated.targetSeconds - target) > (validated.fineCut ? Math.max(2, target * 0.1) : 0.5)) throw new Error(`剪辑方案时长${validated.targetSeconds}秒不符合用户要求${target}秒，请重新选择片段。`);

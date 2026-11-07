@@ -112,7 +112,7 @@ export async function runEditorialWorkflow(o: WorkflowOptions) {
     try{
       const selected=selectScenes(splitSceneSelections(selections,o.sources),o.sources);
       const candidate:EditPlan={format:prior.format,summary:'仅核算原句、时长与已绑定画面见证',targetSeconds:0,fineCut:true,audio:prior.audio,clips:selected.map(scene=>({sceneId:scene.id,sourceId:scene.sourceId,start:scene.start,end:scene.end,sentenceIds:scene.sentenceIds,purpose:scene.purpose,zoom:editFrameZoom(prior.clips[0]?.zoom||1,o.prompt),transition:{kind:'cut',duration:0}}))};
-      const checked=applyTimelineRequest(validatePlan(candidate,o.sources),o.prompt+' 同步字幕',o.sources);
+      const checked=applyTimelineRequest(validatePlan(candidate,o.sources),o.prompt+' 同步字幕',o.sources,{sourceWitnesses:planningWitnesses});
       return editProposalNarrativeFeedback(checked,o.sources).length?undefined:checked;
     }catch(error){
       // These are the pure validators above. Unknown/typed/IO failures are not
@@ -144,7 +144,7 @@ export async function runEditorialWorkflow(o: WorkflowOptions) {
               feedback+=' 已独立复听同一原声并保存新的真实句界；旧选句失效，请从新目录重选完整原话，不得用叙事理由声称增加不存在的片段。';throw e;
             }
           }
-          const hint=arrangeCandidate?editSentenceBudgetHint(arrangeCandidate,o.prompt,o.sources,candidate=>applyTimelineRequest(validatePlan(candidate,o.sources),o.prompt+' 同步字幕',o.sources),scenes):'';
+          const hint=arrangeCandidate?editSentenceBudgetHint(arrangeCandidate,o.prompt,o.sources,candidate=>applyTimelineRequest(validatePlan(candidate,o.sources),o.prompt+' 同步字幕',o.sources,{sourceWitnesses:planningWitnesses}),scenes):'';
           feedback+=' 保留已完成的素材转写、完整性核验及同一原句的画面分析；重新选择完整原句组，不能截断原话或修改目标时长。'+(hint?'\n'+hint:'');
           rejectedSelections.set(selectionKey(scenes),feedback);decision='select_scenes';invalidate();
         }else if(name==='arrange_timeline'&&/叠化附近没有足够的原声间隙|转场类型或时长无效/.test(feedback))manualArrange=true;
@@ -190,7 +190,7 @@ export async function runEditorialWorkflow(o: WorkflowOptions) {
     const ordered=script.beats.map((b)=>scenes.find((s)=>s.id===b.sceneId)!);
     const base:EditPlan={format:a.format,summary:script.premise,targetSeconds:0,fineCut:true,clips:ordered.map((s,i)=>({sceneId:s.id,sourceId:s.sourceId,start:s.start,end:s.end,sentenceIds:s.sentenceIds,purpose:s.purpose,zoom:editFrameZoom(a.zoom,o.prompt),transition:i&&a.fade?{kind:'fade',duration:a.fade}:{kind:'cut',duration:0}})),audio:{originalVolume:1,bgmVolume:.12,narrationVolume:1,normalize:true}};
     arrangeCandidate=base;
-    const candidate=applyTimelineRequest(validatePlan(base,o.sources),o.prompt+' 同步字幕',o.sources);
+    const candidate=applyTimelineRequest(validatePlan(base,o.sources),o.prompt+' 同步字幕',o.sources,{sourceWitnesses:planningWitnesses});
     if(planningWitnesses?.some(w=>!candidate.clips.some(c=>c.sourceId===w.sourceId&&w.time>=c.start&&w.time<c.end)))throw new Error('选段必须覆盖已绑定的原画面见证，包含待消除不确定性的源时刻并保留已满足见证；不能只改理由或重复原选段。');
     const offsets=timelineOffsets(candidate);
     candidate.motions=script.beats.flatMap((b,i)=>b.graphic==='none'?[]:[{sceneId:b.sceneId,kind:b.graphic,label:b.label,zone:ordered[i].visual!.safeZone,start:+(offsets[i]+.15).toFixed(3),end:+(offsets[i]+candidate.clips[i].end-candidate.clips[i].start-.1).toFixed(3)}]);
