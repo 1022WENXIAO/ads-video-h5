@@ -10,7 +10,7 @@ import { produceLessonScene } from '../server/lessonScenes';
 import { runFFmpeg } from '../server/core';
 import { newsPublicationScoringFixture } from './fixtures/newsPublicationScoring';
 import type { AudioAnalysis } from '../shared/types';
-import {DrawingLayoutIdentityError,assertDrawingLayoutIdentity} from '../server/drawingLayoutIdentity';
+import {DrawingLayoutIdentityError,assertDrawingLayoutIdentity,applyDrawingLayoutPatch} from '../server/drawingLayoutIdentity';
 
 const geometryReport={ok:false,layout:{findings:[{code:'content_overlap',severity:'error',selector:'#one',containerSelector:'#two'}]}};
 const drawing=(version:number):HtmlDrawing=>({title:'原布局'+version,nodes:[
@@ -56,6 +56,22 @@ test('a full redraw still failing the actual browser check cannot become a compl
     const state=JSON.parse(await readFile(path.join(f.project,'html-recovery.json'),'utf8'));
     assert.equal(authors,3);assert.equal(f.counts().produces,2);assert.equal(state.attempts,2);assert.equal(state.failed.length,2);assert.equal(state.completed,undefined);assert.equal(state.native.status,'failed');
     await assert.rejects(recoverLessonHtml(options),/原生恢复已failed/);assert.equal(authors,3);
+  }finally{await rm(f.project,{recursive:true,force:true});}
+});
+
+test('duplicate local patch IDs are rejected and recover through one eligible redraw without accepting the patch',async()=>{
+  const f=await setup();let authors=0,checks=0;const original=drawing(1);
+  const options={...f.options,author:async(_feedback:string,prior?:HtmlDrawing)=>{
+    authors++;if(authors===1)return original;
+    if(authors===2){assert.deepEqual(prior,original);return applyDrawingLayoutPatch({nodes:[{id:'one',x:90},{id:'one',y:410}]},prior!);}
+    assert.equal(authors,3);assert.equal(prior,undefined);return drawing(2);
+  },produce:async(value:HtmlDrawing)=>{
+    checks++;if(checks===1)return f.options.produce(value);
+    const file=path.join(f.project,'controlled-schema-redraw-not-a-movie');await writeFile(file,'Controlled second layout check only');return{file,analysis:{sourceHash:hashBytes(await readFile(file))}};
+  }};
+  try{
+    await recoverLessonHtml(options);const state=JSON.parse(await readFile(path.join(f.project,'html-recovery.json'),'utf8'));
+    assert.equal(authors,3);assert.equal(checks,2);assert.equal(state.failed.length,1);assert.deepEqual(state.failed[0].drawing,original);assert.equal(state.fullRedrawClaimed,true);assert.equal(f.counts().natives,0);
   }finally{await rm(f.project,{recursive:true,force:true});}
 });
 

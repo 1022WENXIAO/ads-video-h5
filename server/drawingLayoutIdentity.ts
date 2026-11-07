@@ -50,7 +50,7 @@ function sameTranslatedPath(next:string|undefined,prior:string|undefined):boolea
 }
 /** Geometry patch responses cannot express new audience content. */
 export function applyDrawingLayoutPatch(value:unknown,prior:HtmlDrawing):HtmlDrawing{
-  const fail=(detail:string):never=>{throw Error('局部布局修复仅接受现有节点的几何补丁：'+detail);};
+  const fail=(detail:string):never=>{throw new DrawingLayoutIdentityError('局部布局修复仅接受现有节点的几何补丁：'+detail);};
   const patch=value as any;
   if(!patch||Object.keys(patch).join(',')!=='nodes'||!Array.isArray(patch.nodes)||!patch.nodes.length||patch.nodes.length>prior.nodes.length)fail('返回{nodes:[{id,x?,y?,w?,h?,fontSize?,translate?:{x,y}}]}，不返回标题、文字、图形或样式。');
   const result=structuredClone(prior),seen=new Set<string>();
@@ -65,7 +65,7 @@ export function applyDrawingLayoutPatch(value:unknown,prior:HtmlDrawing):HtmlDra
     if(Object.hasOwn(edit,'translate')){
       const t=edit.translate;
       if(node!.kind!=='path'||!t||Object.keys(t).sort().join(',')!=='x,y'||typeof t.x!=='number'||typeof t.y!=='number')fail(edit.id+'的translate仅用于原SVG路径整体平移。');
-      node!.pathData=translateDrawingPath(node!.pathData!,t.x,t.y);
+      try{node!.pathData=translateDrawingPath(node!.pathData!,t.x,t.y);}catch(error){if(error instanceof Error)fail(error.message);throw error;}
     }
   }
   assertDrawingLayoutIdentity(result,prior);

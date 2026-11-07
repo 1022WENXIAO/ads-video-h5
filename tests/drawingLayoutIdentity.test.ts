@@ -22,6 +22,17 @@ test('three rejected provider patches retain their typed contract failure and ra
   assert.equal(calls,3);
 });
 
+test('malformed patch IDs, schema and JSON retain a bounded recovery error after three real author responses',async t=>{
+  const original=globalThis.fetch;t.after(()=>{globalThis.fetch=original;});
+  const config={...TEXT_MODEL_PRESETS[0],kind:'text' as const,provider:'ark',baseUrl:ARK_BASE_URL,enabled:true,apiKey:'controlled-patch-schema'};
+  const cases=[{nodes:[{x:90}]},{nodes:[{id:'bad_card',x:90},{id:'bad_card',y:410}]},{nodes:[{id:'unknown',x:90}]},{nodes:[{id:'bad_card',text:'invented'}]},{nodes:[{id:'bad_card',x:prior.nodes.find(n=>n.id==='bad_card')!.x}]},{nodes:[{id:prior.nodes.find(n=>n.kind==='path')!.id,translate:{x:20000,y:0}}]}];
+  for(const raw of [...cases.map(value=>JSON.stringify(value)),'{"nodes":']){
+    let calls=0;globalThis.fetch=async()=>{calls++;return Response.json({choices:[{message:{content:raw}}]});};
+    await assert.rejects(authorDrawing(config,{title:prior.title,line:'Controlled malformed patch response',visualBrief:'{}'} as any,'9:16',{layoutRepair:prior}),error=>{assert.ok(error instanceof DrawingLayoutIdentityError);assert.equal(error.rawProposal,raw);return true;});
+    assert.equal(calls,3);
+  }
+});
+
 test('actual failed repair added six nodes; geometry-only recovery preserves all source words and diagrams',()=>{
   assert.equal(prior.nodes.length,23);assert.equal(fixture.last.nodes.length,29);
   assert.throws(()=>assertDrawingLayoutIdentity(fixture.last,prior),/局部布局修复/);
