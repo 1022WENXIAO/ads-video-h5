@@ -1,4 +1,9 @@
 import type {HtmlDrawing} from './narrativeScenes';
+
+export class DrawingLayoutIdentityError extends Error {
+  readonly code='DRAWING_LAYOUT_IDENTITY';readonly retryable=false;
+  constructor(message:string,readonly rawProposal?:string){super(message);this.name='DrawingLayoutIdentityError';}
+}
 type Segment={command:string;values:number[]};
 function segments(source:string):Segment[]{
   const tokens=source.match(/[MmZzLlHhVvCcSsQqTtAa]|[-+]?(?:\d*\.\d+|\d+\.?\d*)(?:[eE][-+]?\d+)?/g)||[];
@@ -80,7 +85,7 @@ const originalContainer=(a:HtmlDrawing['nodes'][number],b:HtmlDrawing['nodes'][n
  * competing copy or rewrites the diagram. It is still only a proposal: the
  * complete browser check and fresh movie review remain mandatory. */
 export function assertDrawingLayoutIdentity(next:HtmlDrawing,prior:HtmlDrawing):void{
-  const fail=(detail='')=>{throw Error('局部布局修复必须保留原标题、节点顺序/ID、完整文字、颜色、强调与原图形；只调整几何布局及有界字号，路径仅可整体平移，不得新增、删除、复制或改写节点。'+detail);};
+  const fail=(detail='')=>{throw new DrawingLayoutIdentityError('局部布局修复必须保留原标题、节点顺序/ID、完整文字、颜色、强调与原图形；只调整几何布局及有界字号，路径仅可整体平移，不得新增、删除、复制或改写节点。'+detail);};
   if(!next||next.title!==prior.title||(next.motion||'corporate')!==(prior.motion||'corporate')||!Array.isArray(next.nodes)||next.nodes.length!==prior.nodes.length||next.serverCardLabels!==undefined)fail();
   for(const [i,old] of prior.nodes.entries()){
     const node=next.nodes[i];

@@ -22,7 +22,7 @@ import {addSvgTextPaintReport} from './svgPaintOcclusion';
 import {addDrawingTextLayoutReport} from './drawingTextLayout';
 import type {DrawingCueTimes} from './lessonDrawingCues';
 import {drawingTextHasGraphicRelation} from './drawingIndependentTextLayout';
-import {assertDrawingLayoutIdentity,applyDrawingLayoutPatch} from './drawingLayoutIdentity';
+import {assertDrawingLayoutIdentity,applyDrawingLayoutPatch,DrawingLayoutIdentityError} from './drawingLayoutIdentity';
 
 export const hashBytes = (v: string | Buffer) => createHash('sha256').update(v).digest('hex');
 const escape = (s:string) => s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]!));
@@ -182,7 +182,7 @@ export async function authorDrawing(config:ModelConfig,beat:ReconstructionBeat,f
       return result;
     }catch(e){
       const reason=e instanceof Error?e.message:'Invalid layout';
-      if(attempt===2){const message='HTML layout rejected: '+reason.replaceAll(config.apiKey,'[redacted]').slice(0,650);if(e instanceof AuthoredDrawingGeometryError)throw new AuthoredDrawingGeometryError(e.draft,e.format,e.issues,message,content);throw new Error(message);}
+      if(attempt===2){const message='HTML layout rejected: '+reason.replaceAll(config.apiKey,'[redacted]').slice(0,650);if(e instanceof DrawingLayoutIdentityError)throw new DrawingLayoutIdentityError(message,content.replaceAll(config.apiKey,'[redacted]'));if(e instanceof AuthoredDrawingGeometryError)throw new AuthoredDrawingGeometryError(e.draft,e.format,e.issues,message,content);throw new Error(message);}
       messages.push({role:'assistant',content},{role:'user',content:'Fix the following exact error while keeping useful content: '+reason});
     }
   }

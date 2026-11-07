@@ -11,6 +11,7 @@ import { liftCardLabels, reflowCardDetails, stackIndependentCards, reflowContain
 import {AuthoredDrawingGeometryError} from './drawingGeometry';
 import {proposeIndependentTextLayout} from './drawingIndependentTextLayout';
 import {resolvedContrastRecovery} from './lessonContrastRecovery';
+import {DrawingLayoutIdentityError} from './drawingLayoutIdentity';
 
 type EvidenceFile = {path:string;sha256:string};
 type LayoutIssue = { code: string; severity?: string; selector?: string; containerSelector?: string; source?:string;htmlHash?:string;text?:string;time?:number;coveredFraction?:number;evidence?:EvidenceFile };
@@ -147,6 +148,8 @@ interface HtmlState<R> {
   blocked?: boolean;
   failed: Array<{ hash: string; feedback: string; drawing?: HtmlDrawing; report?: LayoutReport; evidence?: AttemptEvidence }>;
   pendingDrawing?: HtmlDrawing;
+  fullRedrawClaimed?:boolean;
+  fullRedrawClaimHash?:string;
   native?: NativeState;
   completed?: { drawing?: HtmlDrawing; rendererKind?: 'native'; result: R; fileHash: string };
 }
@@ -156,6 +159,8 @@ function parseHtmlState<R>(stored:string):HtmlState<R>{
   if (!saved || saved.version !== 1 || typeof saved.contextHash !== 'string' || !saved.contextHash || !Number.isInteger(saved.attempts) || saved.attempts < 0 || saved.attempts > 2 || !Array.isArray(saved.failed) || saved.failed.length > saved.attempts || saved.failed.some(failure => !failure || !/^[a-f0-9]{64}$/.test(failure.hash) || typeof failure.feedback !== 'string') || saved.blocked !== undefined && typeof saved.blocked !== 'boolean') throw new Error('HTML局部恢复状态版本或内容无效，保留原文件并停止。');
   if(saved.failed.some(f=>f.evidence?.kind!==undefined&&f.evidence.kind!=='authored-proposal'))throw new Error('HTML恢复证据类型无效，保留原文件并停止。');
   if(saved.native&&(!['running','failed','cancelled','completed'].includes(saved.native.status)||!/^[a-f0-9]{64}$/.test(saved.native.claimHash)||saved.native.terminalHash!==undefined&&!/^[a-f0-9]{64}$/.test(saved.native.terminalHash)||saved.native.reason!==undefined&&!['geometry','static-sweep','authored-geometry','resolved-contrast'].includes(saved.native.reason)||saved.attempts!==2||saved.failed.length!==2))throw new Error('HTML原生恢复状态无效，保留原文件并停止。');
+  if(saved.fullRedrawClaimed!==undefined&&typeof saved.fullRedrawClaimed!=='boolean')throw new Error('HTML重新构图状态损坏，保留原文件并停止。');
+  if(saved.fullRedrawClaimed&&(!saved.fullRedrawClaimHash||!/^[a-f0-9]{64}$/.test(saved.fullRedrawClaimHash)))throw new Error('HTML重新构图启动绑定缺失，保留原文件并停止。');
   return saved;
 }
 export class LessonHtmlLayoutError extends Error { code = 'HTML_LAYOUT_EXHAUSTED'; }
@@ -369,6 +374,15 @@ export async function recoverLessonHtml<R extends SceneResult>(options: {
       const record=JSON.parse(terminal.toString());if(record.status!==state.native.status||record.claimHash!==state.native.claimHash||record.reason!==state.native.reason||JSON.stringify(record.completed)!==JSON.stringify(state.completed)||JSON.stringify(record.evidence)!==JSON.stringify(state.native.evidence))throw new Error('HTML原生恢复终态内容不一致，保留原文件并停止。');
     }
   }else if(state.native)throw new Error('HTML原生恢复启动证据缺失，保留原文件并停止。');
+  const redrawClaimFile=path.join(options.project,'rejected-layout-patch-'+hashBytes(options.contextHash)+'.json');
+  let redrawClaim:Buffer|undefined;
+  try{redrawClaim=await readFile(redrawClaimFile);}catch(error){if((error as NodeJS.ErrnoException).code!=='ENOENT')throw error;}
+  if(Boolean(redrawClaim)!==Boolean(state.fullRedrawClaimed))throw new Error('HTML重新构图启动证据与状态不一致，不能重新提交。');
+  if(redrawClaim){
+    const claim=JSON.parse(redrawClaim.toString()),prior=state.failed[0];
+    if(hashBytes(redrawClaim)!==state.fullRedrawClaimHash||claim.accepted!==false||claim.priorDrawingHash!==prior?.hash||
+      await verifyAttemptEvidence(options.project,prior?.evidence,options.contextHash,options.format,prior?.hash)!=='geometry')throw new Error('HTML重新构图启动证据SHA或原始检查绑定无效。');
+  }
   if (state.completed) {
     try { if (hashBytes(await readFile(state.completed.result.file)) === state.completed.fileHash && state.completed.fileHash === state.completed.result.analysis.sourceHash) return state.completed.result; } catch {}
     throw new LessonHtmlLayoutError(options.chapterId + '：已核验分镜文件已改变或缺失，不能复用或原样重试。');
@@ -377,13 +391,27 @@ export async function recoverLessonHtml<R extends SceneResult>(options: {
   if(state.native)throw new LessonHtmlLayoutError(options.chapterId+'：原生恢复已'+state.native.status+'，不能自动再次执行。');
   while (state.attempts < 2 && !state.blocked) {
     throwIfJobCancelled();
+    if(state.fullRedrawClaimed&&!state.pendingDrawing)throw exhausted();
     const prior = state.failed.at(-1);let drawing:HtmlDrawing;
     try{
       const proposed=state.pendingDrawing || await options.author(prior?.feedback || '',prior?.report&&prior.drawing&&!prior.drawing.serverCardLabels?structuredClone(prior.drawing):undefined),[width,height]=drawingDimensions(options.format);
       drawing=validateDrawing(fitNumericDrawingSlots(proposed,{left:40,top:height>width?220:160,right:width-40,bottom:height>width?1010:height-170})||proposed,options.format);
     }
     catch(error){
-      throwIfJobCancelled();if(!(error instanceof AuthoredDrawingGeometryError))throw error;
+      throwIfJobCancelled();
+      // Only a task already eligible for independent native composition may
+      // abandon an invalid local patch. Bind this decision to the archived
+      // actual browser rejection; never treat the rejected patch as passed.
+      if(error instanceof DrawingLayoutIdentityError&&options.nativeFallback&&state.attempts===1&&!state.fullRedrawClaimed&&prior?.drawing&&prior.report&&
+        await verifyAttemptEvidence(options.project,prior.evidence,options.contextHash,options.format,prior.hash)==='geometry'){
+        const claim=JSON.stringify({version:1,priorDrawingHash:prior.hash,error:error.message,rawProposal:error.rawProposal,accepted:false});
+        await immutableWrite(redrawClaimFile,claim);
+        state.fullRedrawClaimed=true;state.fullRedrawClaimHash=hashBytes(claim);await persist();
+        throwIfJobCancelled();
+        const replacement=await options.author(prior.feedback+'；局部几何补丁连续违反原图包含关系，已拒绝。现在重新设计完整构图，不再提交几何补丁。仅以已核验的创作简报为依据，保留所有要求、事实、数值和旁白，解决已测得的遮挡。新的完整画面仍须通过实际浏览器检查和成片复核。',undefined);
+        state.pendingDrawing=validateDrawing(replacement,options.format);await persist();continue;
+      }
+      if(!(error instanceof AuthoredDrawingGeometryError))throw error;
       verifyRejectedProposal(error,options.format);
       state.pendingDrawing=undefined;state.attempts++;await persist();
       const hash=hashBytes(JSON.stringify(error.draft)),feedback=String(error)+'；被拒的是绘图提案，尚未通过HTML检查；仅修复上述实际几何，保留已核验脚本、旁白和用户要求。';
