@@ -82,7 +82,7 @@ test('review request diagnostics measure failures without storing credentials, p
       assert.equal(((error as Error).cause as Error).name, 'TimeoutError');
       return true;
     });
-    assert.equal(requests,3,'one bounded transport retry budget, retaining the original timeout cause');
+    assert.equal(requests,4,'initial request plus three retries in one transport budget, retaining the original timeout cause');
     assert.equal(metrics[0].error, 'TextTransportError'); assert.equal(metrics[0].bytes, Buffer.byteLength(JSON.stringify(payload)));
     assert.doesNotMatch(JSON.stringify(metrics), /private-test-key|private-media|private timeout description/);
     globalThis.fetch = async () => new Response(JSON.stringify({ result: 'actual judgment' }));

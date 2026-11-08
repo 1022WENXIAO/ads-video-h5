@@ -14,7 +14,7 @@ setDefaultAutoSelectFamilyAttemptTimeout(integerSetting('QINGJIAN_CONNECT_ATTEMP
 
 export const providerTransportSettings = () => ({
   connectAttemptTimeoutMs: getDefaultAutoSelectFamilyAttemptTimeout(),
-  textMaxRetries: integerSetting('QINGJIAN_TEXT_MAX_RETRIES', 2, 0, 3),
+  textMaxRetries: integerSetting('QINGJIAN_TEXT_MAX_RETRIES', 3, 0, 3),
 });
 
 export interface TransportDiagnostic {
@@ -27,7 +27,7 @@ export interface TransportDiagnostic {
   failure: ExecutionFailure;
   status?: number;
   requestId?: string;
-  recoveryKind?: 'audio-rate-limit' | 'audio-connect-timeout' | 'audio-mixed';
+  recoveryKind?: 'audio-rate-limit' | 'audio-connect-timeout' | 'audio-mixed' | 'media-transient';
   retryDelaysMs?: number[];
   queueWaitMs?: number;
 }
@@ -64,12 +64,12 @@ export async function fetchWithTextRecovery(
 ): Promise<Response> {
   const url = new URL(input instanceof Request ? input.url : String(input));
   const method = (init?.method ?? (input instanceof Request ? input.method : 'GET')).toUpperCase();
-  // Never replay an image, audio, video or other paid submission. Retrying a
-  // model decision happens before response headers; stream/tool execution is
-  // outside this loop, so completed tools and recorded usage cannot replay.
+  // Media submissions have their own four-attempt budget in recoverMediaRequest.
+  // Keep them outside this loop so nested transport retries cannot multiply it.
   const text = method === 'POST' && /\/(?:chat\/completions|responses)\/?$/.test(url.pathname);
+  const read = method === 'GET' || method === 'HEAD';
   const replayable = !init?.body || typeof init.body === 'string';
-  const maxRetries = text && replayable ? providerTransportSettings().textMaxRetries : 0;
+  const maxRetries = text && replayable ? providerTransportSettings().textMaxRetries : read ? 3 : 0;
   const signal = init?.signal ?? (input instanceof Request ? input.signal : undefined);
   const headers = new Headers(init?.headers ?? (input instanceof Request ? input.headers : undefined));
   const secrets = [...headers].filter(([name]) => /authorization|api.?key|token|secret/i.test(name)).flatMap(([, value]) => [value, value.replace(/^Bearer\s+/i, '')]);
@@ -90,7 +90,7 @@ export async function fetchWithTextRecovery(
     catch (error) {
       abort(signal);
       lastFailure = error;
-      const retryable = text && replayable && isTransientExecutionError(error);
+      const retryable = (text || read) && replayable && isTransientExecutionError(error);
       if (!retryable || attempt > maxRetries) {
         const failure = retryable ? new TextTransportError(attempt, error, secrets) : error;
         report(attempt, 'failed', failure);
@@ -122,7 +122,7 @@ export async function fetchWithTextRecovery(
     }
     const failure = Object.assign(new Error(`模型服务 HTTP ${response.status}`), { status: response.status });
     const delay = retryDelay(response, attempt);
-    const retryable = text && replayable && ![401, 403].includes(response.status)
+    const retryable = (text || read) && replayable && ![401, 403].includes(response.status)
       && response.headers.get('x-should-retry') !== 'false' && [408, 429, 500, 502, 503, 504].includes(response.status);
     if (!retryable || attempt > maxRetries || delay === undefined) {
       // Exhaustion is carried across SDK normalization, preventing an outer

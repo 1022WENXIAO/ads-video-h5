@@ -1,4 +1,9 @@
 import type {HtmlDrawing} from './narrativeScenes';
+
+export class DrawingLayoutIdentityError extends Error {
+  readonly code='DRAWING_LAYOUT_IDENTITY';readonly retryable=false;
+  constructor(message:string,readonly rawProposal?:string){super(message);this.name='DrawingLayoutIdentityError';}
+}
 type Segment={command:string;values:number[]};
 function segments(source:string):Segment[]{
   const tokens=source.match(/[MmZzLlHhVvCcSsQqTtAa]|[-+]?(?:\d*\.\d+|\d+\.?\d*)(?:[eE][-+]?\d+)?/g)||[];
@@ -45,7 +50,7 @@ function sameTranslatedPath(next:string|undefined,prior:string|undefined):boolea
 }
 /** Geometry patch responses cannot express new audience content. */
 export function applyDrawingLayoutPatch(value:unknown,prior:HtmlDrawing):HtmlDrawing{
-  const fail=(detail:string):never=>{throw Error('局部布局修复仅接受现有节点的几何补丁：'+detail);};
+  const fail=(detail:string):never=>{throw new DrawingLayoutIdentityError('局部布局修复仅接受现有节点的几何补丁：'+detail);};
   const patch=value as any;
   if(!patch||Object.keys(patch).join(',')!=='nodes'||!Array.isArray(patch.nodes)||!patch.nodes.length||patch.nodes.length>prior.nodes.length)fail('返回{nodes:[{id,x?,y?,w?,h?,fontSize?,translate?:{x,y}}]}，不返回标题、文字、图形或样式。');
   const result=structuredClone(prior),seen=new Set<string>();
@@ -60,7 +65,7 @@ export function applyDrawingLayoutPatch(value:unknown,prior:HtmlDrawing):HtmlDra
     if(Object.hasOwn(edit,'translate')){
       const t=edit.translate;
       if(node!.kind!=='path'||!t||Object.keys(t).sort().join(',')!=='x,y'||typeof t.x!=='number'||typeof t.y!=='number')fail(edit.id+'的translate仅用于原SVG路径整体平移。');
-      node!.pathData=translateDrawingPath(node!.pathData!,t.x,t.y);
+      try{node!.pathData=translateDrawingPath(node!.pathData!,t.x,t.y);}catch(error){if(error instanceof Error)fail(error.message);throw error;}
     }
   }
   assertDrawingLayoutIdentity(result,prior);
@@ -80,7 +85,7 @@ const originalContainer=(a:HtmlDrawing['nodes'][number],b:HtmlDrawing['nodes'][n
  * competing copy or rewrites the diagram. It is still only a proposal: the
  * complete browser check and fresh movie review remain mandatory. */
 export function assertDrawingLayoutIdentity(next:HtmlDrawing,prior:HtmlDrawing):void{
-  const fail=(detail='')=>{throw Error('局部布局修复必须保留原标题、节点顺序/ID、完整文字、颜色、强调与原图形；只调整几何布局及有界字号，路径仅可整体平移，不得新增、删除、复制或改写节点。'+detail);};
+  const fail=(detail='')=>{throw new DrawingLayoutIdentityError('局部布局修复必须保留原标题、节点顺序/ID、完整文字、颜色、强调与原图形；只调整几何布局及有界字号，路径仅可整体平移，不得新增、删除、复制或改写节点。'+detail);};
   if(!next||next.title!==prior.title||(next.motion||'corporate')!==(prior.motion||'corporate')||!Array.isArray(next.nodes)||next.nodes.length!==prior.nodes.length||next.serverCardLabels!==undefined)fail();
   for(const [i,old] of prior.nodes.entries()){
     const node=next.nodes[i];

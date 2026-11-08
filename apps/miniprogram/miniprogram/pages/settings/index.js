@@ -1,22 +1,26 @@
-const { notify, withSession, hide } = require('../../utils/page');
+const { appearanceData } = require('../../utils/appearance');
+const { shareAppMessage } = require("../../utils/share");
+const { withSession, hide, requireLogin } = require('../../utils/page');
+const { hasVoiceConsent } = require('../../utils/voice-consent');
 Page({
-  data: { models: [], index: 0, current: '', default: '', busy: false, author: '' },
-  onShow() { withSession(this, this.render); }, onHide() { hide(this); }, onUnload() { hide(this); },
+  onShareAppMessage: shareAppMessage,
+  data: Object.assign(appearanceData(), {version: require('../../utils/version'),  author: '' }),
+  onShow() { withSession(this, this.render); this.setData({ voiceAuthorized: hasVoiceConsent(getApp()) }); }, onHide() { hide(this); }, onUnload() { hide(this); },
   render(state) {
-    const models = state.models.filter(model => model.enabled && model.kind === 'text').map(model => ({ id: model.id, name: model.name }));
-    const session = state.sessions.find(item => item.id === state.activeSessionId);
-    const current = models.find(model => model.id === (session && session.modelId)) || models.find(model => model.id === state.settings.defaultModelId);
     const author = state.media.find(item => item.id === state.settings.authorAvatarId);
-    this.setData({ models, index: Math.max(0, models.findIndex(model => model.id === (current && current.id))), current: current && current.name || '由服务端选择', default: (models.find(model => model.id === state.settings.defaultModelId) || {}).name || '由服务端选择', author: author && author.name || '暂未设置' });
+    this.setData({ author: author && author.name || '暂未设置' });
   },
-  async change(event) {
-    if (this.data.busy) return;
-    const model = this.data.models[Number(event.detail.value)]; if (!model) return;
-    this.setData({ busy: true });
-    try { await getApp().mutate('/api/settings', { defaultModelId: model.id, applyToCurrentSession: true }, 'PATCH'); wx.showToast({ title: '设置已同步', icon: 'success' }); }
-    catch (error) { notify(error); } finally { this.setData({ busy: false }); }
+  changeTheme(event) {
+    const theme = event.currentTarget.dataset.theme;
+    if (getApp().setAppearance(theme)) {
+      this.setData(require('../../utils/appearance').appearanceData(theme));
+      wx.showToast({ title: '已切换为' + this.data.themeName, icon: 'none' });
+    }
   },
-  credits() { wx.navigateTo({ url: '/pages/credits/index' }); },
+  feedback() { wx.navigateTo({ url: '/pages/feedback/index' }); },
+  about() { wx.navigateTo({ url: '/pages/about/index' }); },
+  credits() { if (requireLogin()) wx.navigateTo({ url: '/pages/credits/index' }); },
+  revokeVoice() { getApp().voiceConsent = null; this.setData({ voiceAuthorized: false }); wx.showToast({ title: '语音授权已撤回', icon: 'none' }); },
   legal(event) { wx.navigateTo({ url: '/pages/legal/index?type=' + event.currentTarget.dataset.type }); },
   h5() { wx.setClipboardData({ data: require('../../config').webBase }); },
 });

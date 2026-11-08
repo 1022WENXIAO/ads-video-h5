@@ -1,1 +1,21 @@
-<view class="screen"><view class="page-heading"><text>设置</text></view><view class="panel"><view class="section-title">创作偏好</view><picker mode="selector" range="{{models}}" range-key="name" value="{{index}}" bindchange="change" disabled="{{busy || !models.length}}"><view class="link-row"><text>对话模型</text><view class="setting-value">{{current}} <text class="arrow">⌄</text></view></view></picker><view class="muted settings-note">新会话与当前会话都会使用所选模型。任务制作中请等待完成后再切换。</view><view class="link-row"><text>作者形象</text><text class="setting-value">{{author}}</text></view><view class="quiet">自动沿用账号在 H5 中设置的作者形象。</view></view><view class="panel"><button class="link-row" bindtap="credits"><text>积分与签到</text><text class="arrow">›</text></button><button class="link-row" bindtap="legal" data-type="privacy"><text>隐私说明</text><text class="arrow">›</text></button><button class="link-row" bindtap="legal" data-type="terms"><text>用户协议</text><text class="arrow">›</text></button><button class="link-row" bindtap="h5"><text>复制轻剪 H5 地址</text><text class="arrow">›</text></button></view><view class="quiet">微信小程序测试版 · 小程序展示名称暂用「AI了吗」<view>精细时间线编辑与作者形象配置可在 H5 中完成。</view></view></view><privacy-dialog id="privacy" />
+<view class="theme-surface theme-{{theme}}">
+<view class="screen">
+  <view class="page-heading"><text>设置</text></view>
+  <view class="panel appearance-panel"><view class="section-title">外观主题</view><view class="theme-options"><button size="mini" class="theme-option {{theme === 'fresh' ? 'chosen' : ''}}" bindtap="changeTheme" data-theme="fresh" aria-label="切换到橙光珐琅"><view class="theme-swatch swatch-fresh"/><view>橙光珐琅</view><text class="quiet">清爽奶油橙</text><text wx:if="{{theme === 'fresh'}}" class="theme-check">已选</text></button><button size="mini" class="theme-option {{theme === 'rich' ? 'chosen' : ''}}" bindtap="changeTheme" data-theme="rich" aria-label="切换到橘焰琥珀"><view class="theme-swatch swatch-rich"/><view>橘焰琥珀</view><text class="quiet">浓郁琥珀棕</text><text wx:if="{{theme === 'rich'}}" class="theme-check">已选</text></button></view><view class="quiet">默认橙光珐琅，选择后会在这台设备上记住。</view></view>
+  <view class="panel">
+    <view class="section-title">创作偏好</view>
+    <view class="link-row"><text>作者形象</text><text class="setting-value">{{author}}</text></view><view class="quiet">自动沿用账号在 H5 中设置的作者形象。</view>
+  </view>
+  <view class="panel">
+    <view class="section-title">语音授权</view>
+    <view class="muted">{{voiceAuthorized ? '已同意本次运行的声纹授权协议。' : '尚未授权。首次使用语音时，可单独选择是否同意。'}}</view>
+    <button size="mini" wx:if="{{voiceAuthorized}}" class="link-row" bindtap="revokeVoice"><text>撤回语音授权</text><text class="arrow">›</text></button>
+    <view class="quiet">拒绝或撤回后，仍可浏览并使用文字输入。退出登录或重新启动小程序后，再次使用语音需重新授权。</view>
+  </view>
+  <view class="panel">
+    <button size="mini" class="link-row" bindtap="credits"><image class="ui-icon" src="{{icons.credits}}" mode="aspectFit"/><text>积分与签到</text><text class="arrow">›</text></button><button size="mini" class="link-row" bindtap="feedback"><image class="ui-icon" src="{{icons.newChat}}" mode="aspectFit"/><text>意见反馈</text><text class="arrow">›</text></button><button size="mini" class="link-row" bindtap="about"><image class="ui-icon" src="{{icons.profile}}" mode="aspectFit"/><text>关于轻喵LightMao</text><text class="setting-value">{{version}}</text><text class="arrow">›</text></button><button size="mini" class="link-row" bindtap="h5"><image class="ui-icon" src="{{icons.share}}" mode="aspectFit"/><text>复制轻喵LightMao H5 地址</text><text class="arrow">›</text></button>
+  </view>
+  <view class="panel"><view class="section-title">协议与隐私</view><button size="mini" class="link-row" bindtap="legal" data-type="privacy"><image class="ui-icon" src="{{icons.privacy}}" mode="aspectFit"/><text>隐私说明</text><text class="arrow">›</text></button><button size="mini" class="link-row" bindtap="legal" data-type="voice"><image class="ui-icon" src="{{icons.voice}}" mode="aspectFit"/><text>声纹授权说明</text><text class="arrow">›</text></button><button size="mini" class="link-row" bindtap="legal" data-type="terms"><image class="ui-icon" src="{{icons.privacy}}" mode="aspectFit"/><text>用户协议</text><text class="arrow">›</text></button></view>
+  <view class="quiet">轻喵LightMao · {{version}}<view>精细时间线编辑与作者形象配置可在 H5 中完成。</view></view>
+</view><privacy-dialog id="privacy" />
+</view>

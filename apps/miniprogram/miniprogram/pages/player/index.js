@@ -1,7 +1,11 @@
+const { appearanceData } = require('../../utils/appearance');
+const { shareAppMessage } = require("../../utils/share");
 const { notify, withSession, hide, privacy } = require('../../utils/page');
 const { beijingTime } = require('../../utils/view');
+const { brandText } = require('../../utils/brand');
 Page({
-  data: { item: null, isMedia: false, src: '', loading: false, saving: false, error: '', playing: false, elapsed: 0, duration: 0, analysis: '', analyzing: false },
+  onShareAppMessage: shareAppMessage,
+  data: Object.assign(appearanceData(), { item: null, isMedia: false, src: '', loading: false, saving: false, error: '', playing: false, elapsed: 0, duration: 0, analysis: '', analyzing: false }),
   onLoad(query) { this._id = query.id; this._type = query.type === 'artifact' ? 'artifact' : 'media'; this.setData({ isMedia: this._type === 'media' }); },
   onShow() { withSession(this, this.render); },
   onHide() { hide(this); if (this._audio) this._audio.pause(); },
@@ -11,7 +15,7 @@ Page({
     const item = all.find(value => value.id === this._id);
     if (!item) { this.setData({ error: '文件不存在，可能已被删除。', item: null }); return; }
     this._item = item;
-    this.setData({ item: { id: item.id, name: item.name, kind: item.kind, date: beijingTime(item.createdAt), duration: item.duration ? Math.round(item.duration) + ' 秒' : '' }, analysis: item.analysis && item.analysis.transcript || '' });
+    this.setData({ item: { id: item.id, name: this._type === 'artifact' ? brandText(item.name) : item.name, kind: item.kind, date: beijingTime(item.createdAt), duration: item.duration ? Math.round(item.duration) + ' 秒' : '' }, analysis: item.analysis && item.analysis.transcript || '' });
     if (!this.data.src && !this.data.loading) this.load();
   },
   async load() {

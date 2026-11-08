@@ -74,6 +74,10 @@ export function jobFailureMessage(error: unknown, stage: string | undefined, sec
   if (failures.some(value => value.status === 401 || value.status === 403 || /(?:\bHTTP\s*|\bstatus(?:\s+code)?\s*[:=]?\s*)(?:401|403)\b/i.test(value.message))) return `服务授权验证失败，任务停在「${where}」。请联系管理员检查服务配置。`;
   if (failures.some(value => value.code === 'AUDIO_CONNECT_TIMEOUT')) return `配音服务连接超时，有限自动恢复后仍未成功。任务停在「${where}」，稍后可以重试；已完成的步骤会保留。`;
   if (failures.some(value => value.status === 429 || /\bHTTP\s*429\b/i.test(value.message))) return `服务请求受到限流（HTTP 429）${failure.retryExhausted ? '，自动恢复后仍未成功' : ''}。任务停在「${where}」，稍后可以重试；已完成的步骤会保留。`;
+  const exhaustedMedia=failures.find(value=>value.code==='MEDIA_RETRY_EXHAUSTED');
+  if(exhaustedMedia)return `${exhaustedMedia.message.split('：')[0]}。任务停在「${where}」。已完成的步骤会保留，请稍后重试。`;
+  const audioFailure=failures.find(value=>value.name==='ProviderError'&&Number(value.status)>=500&&/^(?:synthesize_voice_anchor|synthesize_chapter|synthesize_narration)$/.test(value.origin?.tool||failure.origin?.tool||''));
+  if(audioFailure)return `配音服务返回异常（HTTP ${audioFailure.status}），任务停在「${where}」。已完成的步骤会保留，请稍后重试。`;
   if (isTransientExecutionError(error) || failure.retryExhausted) return `服务连接暂时中断${failure.retryExhausted ? '，自动恢复后仍未成功' : ''}。任务停在「${where}」，可以重试；已生成的作品会保留。`;
   const message = failure.message.replace(/TEXT_TRANSPORT_FINAL/g, '').trim();
   if (/API Key|模型尚未配置|会话或消息|素材|剪辑方案|Pi Agent|对话回复|图片描述|口播文案|BGM|Pixabay|音频|语义分句|字幕|分句|特效|工作流未完成|研究|教学视频|形象|动画|旁白|校验|预算|来源|审查/.test(message)) return message;

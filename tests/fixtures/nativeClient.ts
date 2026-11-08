@@ -68,9 +68,15 @@ export async function loadNativeApp(platform: any) {
 export async function capturePage(name: string, app: any, platform: any) {
   let page: any;
   const file = path.join(miniRoot, 'pages', name, 'index.js');
+  // Native helpers share the page's wx/getApp environment, as they do in WeChat.
+  const nativePageModule: any = { exports: {} };
+  const helperFile = path.join(miniRoot, 'utils/page.js');
+  runInNewContext(await readFile(helperFile, 'utf8'), { module: nativePageModule, wx: platform, getApp: () => app }, { filename: helperFile });
+  const nodeRequire = createRequire(file);
   runInNewContext(await readFile(file, 'utf8'), { Page: (definition: any) => { page = definition; }, getApp: () => app, wx: platform,
-    require: createRequire(file), setTimeout, clearTimeout, setInterval, clearInterval }, { filename: file });
+    require: (id: string) => id === '../../utils/page' ? nativePageModule.exports : nodeRequire(id), setTimeout, clearTimeout, setInterval, clearInterval }, { filename: file });
   page.data = structuredClone(page.data); page.setData = (patch: any, callback?: () => void) => { Object.assign(page.data, patch); callback?.(); };
+  page.selectComponent = () => null;
   return page;
 }
 

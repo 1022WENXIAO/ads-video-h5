@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {createServer,type IncomingMessage,type ServerResponse} from 'node:http';
 import {randomUUID} from 'node:crypto';
 import {generateAudio,generateImage,ProviderError} from '../server/providers';
-import {AudioRateLimitError,markAudioRateLimitRefusal,recoverAudioRequest} from '../server/audioRateLimit';
+import {AudioRateLimitError,MediaRetryError,markAudioRateLimitRefusal,recoverAudioRequest} from '../server/audioRateLimit';
 import {getJobTransportDiagnostics,JobCancelledError,runWithJobSignal} from '../server/jobExecution';
 import type {ModelConfig} from '../server/modelRegistry';
 
@@ -15,7 +15,7 @@ type Request={at:number;body:any;requestId:string;key:string};
 const respond=(res:ServerResponse,status:number,body:unknown,headers:Record<string,string>={})=>{res.writeHead(status,{'Content-Type':'application/json',...headers});res.end(typeof body==='string'?body:JSON.stringify(body));};
 async function fixture(handler:(req:IncomingMessage,res:ServerResponse,request:Request,requests:Request[])=>void|Promise<void>,run:(requests:Request[])=>Promise<void>,timeoutMs?:number){
   const requests:Request[]=[],original=globalThis.fetch;
-  const server=createServer(async(req,res)=>{let body='';for await(const chunk of req)body+=chunk;const request={at:Date.now(),body:JSON.parse(body||'{}'),requestId:String(req.headers['x-api-request-id']||''),key:String(req.headers['x-api-key']||'')};requests.push(request);try{await handler(req,res,request,requests);}catch{if(!res.destroyed)res.destroy();}});
+  const server=createServer(async(req,res)=>{let body='';for await(const chunk of req)body+=chunk;const request={at:Date.now(),body:JSON.parse(body||'{}'),requestId:String(req.headers['x-api-request-id']||''),key:String(req.headers['x-api-key']||req.headers.authorization?.replace(/^Bearer\s+/i,'')||'')};requests.push(request);try{await handler(req,res,request,requests);}catch{if(!res.destroyed)res.destroy();}});
   await new Promise<void>(resolve=>server.listen(0,'127.0.0.1',resolve));const port=(server.address() as {port:number}).port;
   globalThis.fetch=(input,init)=>{assert.ok(['https://openspeech.bytedance.com','https://ark.cn-beijing.volces.com'].includes(new URL(String(input)).origin),'fixture must never issue an external provider request');return original(`http://127.0.0.1:${port}/audio`,{...init,...(timeoutMs?{signal:AbortSignal.timeout(timeoutMs)}:{})});};
   try{await run(requests);}finally{globalThis.fetch=original;server.closeAllConnections();await new Promise<void>((resolve,reject)=>{const timer=setTimeout(()=>reject(new Error('Local audio HTTP fixture close timed out')),2000);server.close(()=>{clearTimeout(timer);resolve();});});}
@@ -36,10 +36,10 @@ test('real HTTP 429 rejection recovers with one logical ID and an aggregate job 
     });
   });
 });
-test('real repeated refusals stop after three POSTs and retain the original failure cause',async()=>{
+test('real repeated refusals stop after the initial POST plus three retries and retain the original failure cause',async()=>{
   await fixture((_req,res)=>respond(res,429,refusal,{'Retry-After':'0'}),async requests=>{
-    await assert.rejects(()=>generateAudio('Controlled fixture',config()),error=>{assert.ok(error instanceof AudioRateLimitError);assert.equal(error.attempts,3);assert.equal(error.retryExhausted,true);assert.ok(error.cause instanceof ProviderError);assert.equal(error.cause.status,429);return true;});
-    assert.equal(requests.length,3);assert.equal(new Set(requests.map(request=>request.requestId)).size,1);
+    await assert.rejects(()=>generateAudio('Controlled fixture',config()),error=>{assert.ok(error instanceof AudioRateLimitError);assert.equal(error.attempts,4);assert.equal(error.retryExhausted,true);assert.ok(error.cause instanceof ProviderError);assert.equal(error.cause.status,429);return true;});
+    assert.equal(requests.length,4);assert.equal(new Set(requests.map(request=>request.requestId)).size,1);
   });
 });
 test('long Retry-After fails without an early replay or a false claim that recovery was exhausted',async()=>{
@@ -73,17 +73,76 @@ test('unsafe or unrecognized 429 bodies and explicit no-retry never authorize a 
     for(let i=0;i<cases.length;i++){await assert.rejects(()=>generateAudio('Controlled fixture '+i,config()),error=>error instanceof ProviderError&&error.status===429);assert.equal(requests.length,i+1);}
   });
 });
-test('real HTTP auth, timeout-status, 5xx and socket failures are never replayed',async()=>{
-  const statuses=[401,403,408,500,502];let index=0;
-  await fixture((req,res)=>{if(index===statuses.length){index++;req.socket.destroy();}else respond(res,statuses[index++],{error:{code:'NotRetryableAudio'}});},async requests=>{
-    for(let i=0;i<statuses.length+1;i++){await assert.rejects(()=>generateAudio('Controlled fixture '+i,config()),error=>error instanceof ProviderError);assert.equal(requests.length,i+1);}
+test('parameter and authorization failures stop without retry',async()=>{
+  const statuses=[400,401,403,404,413,422];let index=0;
+  await fixture((_req,res)=>respond(res,statuses[index++],{error:{code:'InvalidInput'}}),async requests=>{
+    for(let i=0;i<statuses.length;i++){await assert.rejects(()=>generateAudio('Controlled fixture '+i,config()),error=>error instanceof ProviderError);assert.equal(requests.length,i+1);}
   });
 });
-test('an ambiguous in-flight timeout makes only one actual HTTP submission',async()=>{
-  await fixture(()=>{},async requests=>{await assert.rejects(()=>generateAudio('Controlled fixture',config()),error=>error instanceof ProviderError&&error.code==='TIMEOUT');assert.equal(requests.length,1);},60);
+
+test('exhausted audio retries retain numeric provider codes, sanitized detail and both request IDs',async()=>{
+  const model=config();
+  await fixture((_req,res)=>respond(res,500,{code:55000000,message:`Synthesis failed for API Key=${model.apiKey}; see https://vendor.example/error?token=private-token`},{'X-Tt-Logid':'vendor-failure-123','Retry-After':'0'}),async requests=>{
+    await runWithJobSignal(new AbortController().signal,async()=>{
+      await assert.rejects(()=>generateAudio('Controlled fixture',model),error=>{
+        assert.ok(error instanceof MediaRetryError);assert.equal(error.attempts,4);assert.equal(error.retryExhausted,true);
+        assert.ok(error.cause instanceof ProviderError);const detail=error.cause;assert.equal(detail.status,500);assert.equal(detail.code,'55000000');
+        assert.match(detail.message,/Synthesis failed/);assert.doesNotMatch(detail.message,new RegExp(model.apiKey));assert.doesNotMatch(detail.message,/private-token/);
+        assert.equal(detail.requestId,requests[0].requestId);assert.equal(detail.providerRequestId,'vendor-failure-123');return true;
+      });
+      const diagnostic=getJobTransportDiagnostics().at(-1)!;
+      assert.equal(diagnostic.failure.code,'MEDIA_RETRY_EXHAUSTED');assert.equal(diagnostic.failure.causes?.[0].code,'55000000');
+      assert.equal(diagnostic.failure.causes?.[0].requestId,requests[0].requestId);assert.equal(diagnostic.failure.causes?.[0].providerRequestId,'vendor-failure-123');
+      assert.equal(requests.length,4);
+    });
+  });
 });
-test('image generation retains its single-submission behavior for HTTP 429',async()=>{
-  await fixture((_req,res)=>respond(res,429,refusal,{'Retry-After':'0'}),async requests=>{await assert.rejects(()=>generateImage('Controlled fixture',{...config(),kind:'image',baseUrl:'https://ark.cn-beijing.volces.com',modelId:'doubao-seedream-5-0-flash-260915'}),error=>error instanceof ProviderError&&error.status===429);assert.equal(requests.length,1);});
+
+test('audio JSON errors on HTTP 200 retain the actual provider failure without replay',async()=>{
+  await fixture((_req,res)=>respond(res,200,{code:45000001,message:'Unsupported reference audio'}),async requests=>{
+    await assert.rejects(()=>generateAudio('Controlled fixture',config()),error=>{assert.ok(error instanceof ProviderError);assert.equal(error.code,'45000001');assert.match(error.message,/Unsupported reference audio/);return true;});
+    assert.equal(requests.length,1);
+  });
+});
+test('in-flight timeouts stop after three authorized retries',async()=>{
+  await fixture(()=>{},async requests=>{await assert.rejects(()=>generateAudio('Controlled fixture',config()),error=>error instanceof MediaRetryError&&error.attempts===4);assert.equal(requests.length,4);},60);
+});
+test('image rate limits also stop after the initial POST plus three retries',async()=>{
+  await fixture((_req,res)=>respond(res,429,refusal,{'Retry-After':'0'}),async requests=>{await assert.rejects(()=>generateImage('Controlled fixture',{...config(),kind:'image',baseUrl:'https://ark.cn-beijing.volces.com',modelId:'doubao-seedream-5-0-flash-260915'}),error=>error instanceof MediaRetryError&&error.status===429&&error.attempts===4);assert.equal(requests.length,4);});
+});
+
+test('audio mixed 500, 429 and 503 failures recover on the third retry with one logical request and identical payload',async()=>{
+  const statuses=[500,429,503,200];
+  await fixture((_req,res,_request,requests)=>{const status=statuses[requests.length-1];assert.ok(status);respond(res,status,status===200?success:status===500?{code:55000000,message:'Audio processing failed'}:refusal,{'Retry-After':'0'});},async requests=>{
+    await runWithJobSignal(new AbortController().signal,async()=>{
+      const result=await generateAudio('Only read these words',config());assert.deepEqual(result.bytes,bytes);assert.equal(result.audioRecovery?.attempts,4);
+      assert.equal(requests.length,4);assert.equal(new Set(requests.map(r=>r.requestId)).size,1);
+      for(const request of requests)assert.deepEqual(request.body,requests[0].body);
+      const aggregate=getJobTransportDiagnostics().find(r=>r.recoveryKind==='media-transient');assert.equal(aggregate?.attempts,4);assert.equal(aggregate?.outcome,'recovered');
+    });
+  });
+});
+
+test('image 500 recovers using a frozen credential and payload without replaying image decoding',async()=>{
+  const png=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/ScLttAAAAABJRU5ErkJggg==','base64');
+  const model={...config(),kind:'image' as const,baseUrl:'https://ark.cn-beijing.volces.com',modelId:'doubao-seedream-5-0-flash-260915'},key=model.apiKey;
+  await fixture((_req,res,_request,requests)=>{if(requests.length===1){model.apiKey='changed-key';respond(res,500,{code:55000000,message:'Temporary synthesis failure'},{'Retry-After':'0'});}else respond(res,200,{data:[{b64_json:png.toString('base64')}]});},async requests=>{
+    const result=await generateImage('Controlled image',model);assert.deepEqual(result.bytes,png);assert.equal(requests.length,2);assert.ok(requests.every(r=>r.key===key));assert.deepEqual(requests[0].body,requests[1].body);
+  });
+});
+
+test('accepted tasks and explicit no-retry headers never trigger a duplicate media submission',async()=>{
+  const cases:[unknown,Record<string,string>][]=[[{status:'processing',task_id:'existing-task'},{}],[{message:'Audio already accepted; poll the original request'},{}],[{code:55000000,message:'Busy'},{'x-should-retry':'false'}]];let index=0;
+  await fixture((_req,res)=>{const [body,headers]=cases[index++];respond(res,500,body,{'Retry-After':'0',...headers});},async requests=>{
+    for(let i=0;i<cases.length;i++){await assert.rejects(()=>generateAudio('Controlled request',config()),error=>error instanceof ProviderError&&error.status===500);assert.equal(requests.length,i+1);}
+  });
+});
+
+test('cancelling the 500 retry delay prevents another media submission',async()=>{
+  await fixture((_req,res)=>respond(res,500,{code:55000000,message:'Temporary failure'},{'Retry-After':'20'}),async requests=>{
+    const abort=new AbortController(),running=runWithJobSignal(abort.signal,()=>generateAudio('Controlled cancellation',config())).catch(error=>error);
+    await until(()=>requests.length===1);await pause(30);abort.abort();assert.ok(await running instanceof JobCancelledError);assert.equal(requests.length,1);
+  });
 });
 test('same-key audio uses FIFO single concurrency while different credentials remain independent',async()=>{
   let active=0,peak=0;

@@ -10,6 +10,7 @@ import { produceLessonScene } from '../server/lessonScenes';
 import { runFFmpeg } from '../server/core';
 import { newsPublicationScoringFixture } from './fixtures/newsPublicationScoring';
 import type { AudioAnalysis } from '../shared/types';
+import {DrawingLayoutIdentityError,assertDrawingLayoutIdentity,applyDrawingLayoutPatch} from '../server/drawingLayoutIdentity';
 
 const geometryReport={ok:false,layout:{findings:[{code:'content_overlap',severity:'error',selector:'#one',containerSelector:'#two'}]}};
 const drawing=(version:number):HtmlDrawing=>({title:'原布局'+version,nodes:[
@@ -26,6 +27,87 @@ async function setup(){
   };
   return{project,options,counts:()=>({authors,produces,natives})};
 }
+
+test('a rejected local repair uses one eligible full redraw and the remaining actual check, retaining content and failed evidence',async()=>{
+  const f=await setup();let authors=0,checks=0;
+  const original=drawing(1);
+  const options={...f.options,author:async(_feedback?:string,prior?:HtmlDrawing)=>{
+    authors++;if(authors===1)return original;
+    if(authors===2){assert.deepEqual(prior,original);const invalid=structuredClone(original);invalid.nodes[0].text='removed source';assertDrawingLayoutIdentity(invalid,original);}
+    assert.equal(authors,3);assert.equal(prior,undefined);const redesigned=drawing(2);redesigned.nodes[1].y=410;return redesigned;
+  },produce:async(value:HtmlDrawing)=>{
+    checks++;assert.deepEqual(value.nodes.map(n=>n.text),original.nodes.map(n=>n.text));
+    if(checks===1)return f.options.produce(value);
+    const file=path.join(f.project,'controlled-redraw-not-a-movie');await writeFile(file,'Controlled second-check result, not real movie acceptance');return{file,analysis:{sourceHash:hashBytes(await readFile(file))}};
+  }};
+  try{
+    const result=await recoverLessonHtml(options),state=JSON.parse(await readFile(path.join(f.project,'html-recovery.json'),'utf8'));
+    assert.equal(authors,3);assert.equal(checks,2);assert.equal(state.attempts,2);assert.equal(state.fullRedrawClaimed,true);assert.equal(state.failed.length,1);assert.equal(f.counts().natives,0);
+    assert.ok((await readdir(f.project)).some(n=>n.startsWith('rejected-layout-patch-')));
+    assert.deepEqual(await recoverLessonHtml(options),result);assert.equal(authors,3);
+  }finally{await rm(f.project,{recursive:true,force:true});}
+});
+
+test('a full redraw still failing the actual browser check cannot become a completed HTML scene',async()=>{
+  const f=await setup();let authors=0;
+  const options={...f.options,author:async()=>{authors++;if(authors===2)throw new DrawingLayoutIdentityError('Rejected containment change');return drawing(authors);},nativeFallback:async()=>{throw Error('Controlled native render also rejected');}};
+  try{
+    await assert.rejects(recoverLessonHtml(options),/Controlled native render also rejected/);
+    const state=JSON.parse(await readFile(path.join(f.project,'html-recovery.json'),'utf8'));
+    assert.equal(authors,3);assert.equal(f.counts().produces,2);assert.equal(state.attempts,2);assert.equal(state.failed.length,2);assert.equal(state.completed,undefined);assert.equal(state.native.status,'failed');
+    await assert.rejects(recoverLessonHtml(options),/原生恢复已failed/);assert.equal(authors,3);
+  }finally{await rm(f.project,{recursive:true,force:true});}
+});
+
+test('duplicate local patch IDs are rejected and recover through one eligible redraw without accepting the patch',async()=>{
+  const f=await setup();let authors=0,checks=0;const original=drawing(1);
+  const options={...f.options,author:async(_feedback:string,prior?:HtmlDrawing)=>{
+    authors++;if(authors===1)return original;
+    if(authors===2){assert.deepEqual(prior,original);return applyDrawingLayoutPatch({nodes:[{id:'one',x:90},{id:'one',y:410}]},prior!);}
+    assert.equal(authors,3);assert.equal(prior,undefined);return drawing(2);
+  },produce:async(value:HtmlDrawing)=>{
+    checks++;if(checks===1)return f.options.produce(value);
+    const file=path.join(f.project,'controlled-schema-redraw-not-a-movie');await writeFile(file,'Controlled second layout check only');return{file,analysis:{sourceHash:hashBytes(await readFile(file))}};
+  }};
+  try{
+    await recoverLessonHtml(options);const state=JSON.parse(await readFile(path.join(f.project,'html-recovery.json'),'utf8'));
+    assert.equal(authors,3);assert.equal(checks,2);assert.equal(state.failed.length,1);assert.deepEqual(state.failed[0].drawing,original);assert.equal(state.fullRedrawClaimed,true);assert.equal(f.counts().natives,0);
+  }finally{await rm(f.project,{recursive:true,force:true});}
+});
+
+test('a full redraw claim cannot be replayed after failure or restart',async()=>{
+  const f=await setup();let authors=0;
+  const options={...f.options,author:async()=>{authors++;if(authors===1)return drawing(1);if(authors===2)throw new DrawingLayoutIdentityError('Rejected containment change');throw Error('HTTP 503 during full redraw');}};
+  try{
+    await assert.rejects(recoverLessonHtml(options),/HTTP 503/);assert.equal(authors,3);
+    await assert.rejects(recoverLessonHtml(options),/局部恢复已停止/);assert.equal(authors,3);
+  }finally{await rm(f.project,{recursive:true,force:true});}
+});
+
+test('an orphan or changed redraw claim stops without another author request',async()=>{
+  for(const mode of ['orphan','changed']as const){
+    const f=await setup();let authors=0;
+    const options={...f.options,author:async()=>{authors++;if(authors===1)return drawing(1);if(authors===2)throw new DrawingLayoutIdentityError('Rejected containment change');throw Error('Controlled stop after claim');}};
+    try{
+      await assert.rejects(recoverLessonHtml(options),/Controlled stop/);
+      const stateFile=path.join(f.project,'html-recovery.json'),state=JSON.parse(await readFile(stateFile,'utf8'));
+      if(mode==='orphan'){delete state.fullRedrawClaimed;delete state.fullRedrawClaimHash;await writeFile(stateFile,JSON.stringify(state));}
+      else await writeFile(path.join(f.project,'rejected-layout-patch-'+hashBytes(f.options.contextHash)+'.json'),'{}');
+      await assert.rejects(recoverLessonHtml(options),/启动证据/);assert.equal(authors,3);
+    }finally{await rm(f.project,{recursive:true,force:true});}
+  }
+});
+
+test('a rejected local repair cannot authorize full redraw without task eligibility or intact browser evidence',async()=>{
+  for(const mode of ['ineligible','corrupt']as const){
+    const f=await setup();let authors=0;
+    const options={...f.options,...(mode==='ineligible'?{nativeFallback:undefined}:{}),author:async()=>{authors++;if(authors===1)return drawing(1);
+      if(mode==='corrupt'){const directory=path.join(f.project,'html-recovery-evidence',hashBytes(f.options.contextHash),'authored-1');await writeFile(path.join(directory,'index.html'),'changed evidence');}
+      throw new DrawingLayoutIdentityError('Rejected containment change');}};
+    try{await assert.rejects(recoverLessonHtml(options),mode==='corrupt'?/SHA/:DrawingLayoutIdentityError);assert.equal(authors,2);assert.equal(f.counts().natives,0);}
+    finally{await rm(f.project,{recursive:true,force:true});}
+  }
+});
 
 test('two saved real-layout reports allow exactly one independent native attempt, immutable evidence and cache reuse',async()=>{
   const f=await setup();

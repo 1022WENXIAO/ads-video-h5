@@ -1,8 +1,14 @@
 {
   "name": "@qingjian/miniprogram",
   "private": true,
-  "version": "0.2.0",
+  "version": "0.2.7",
   "type": "commonjs",
-  "scripts": { "build": "node ../../tooling/build-miniprogram.mjs" },
-  "devDependencies": { "miniprogram-api-typings": "5.2.3", "miniprogram-simulate": "1.6.2", "jsdom": "26.1.0" }
+  "scripts": {
+    "build": "node ../../tooling/build-miniprogram.mjs"
+  },
+  "devDependencies": {
+    "miniprogram-api-typings": "5.2.3",
+    "miniprogram-simulate": "1.6.2",
+    "jsdom": "26.1.0"
+  }
 }

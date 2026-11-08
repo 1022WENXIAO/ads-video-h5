@@ -24,6 +24,8 @@ export interface ExecutionFailure {
   message: string;
   code?: string;
   status?: number;
+  requestId?: string;
+  providerRequestId?: string;
   retryable: boolean;
   retryExhausted: boolean;
   origin?: ExecutionOrigin;
@@ -92,6 +94,8 @@ export function executionFailure(value: unknown, secrets: string[] = [], depth =
     message: safeErrorText(error.message ?? value, secrets),
     ...(typeof error.code === 'string' ? { code: safeErrorText(error.code, secrets) } : {}),
     ...(Number.isInteger(status) && status >= 100 && status <= 599 ? { status } : {}),
+    ...Object.fromEntries(['requestId','providerRequestId'].flatMap(key=>typeof error[key]==='string'?
+      [[key,safeErrorText(error[key],secrets).replace(/[^a-zA-Z0-9_.:-]/g,'').slice(0,160)]]:[])),
     retryable: isTransientExecutionError(value), retryExhausted: retryBudgetExhausted(value),
     ...(origin ? { origin: { tool: safeErrorText(origin.tool, secrets), stage: safeErrorText(origin.stage, secrets), callId: safeErrorText(origin.callId, secrets) } } : {}),
     ...(depth < 3 && children.length ? { causes: children.map(v => executionFailure(v, secrets, depth + 1, seen)) } : {}),

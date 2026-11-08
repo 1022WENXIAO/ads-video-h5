@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {readFile,mkdtemp,copyFile,writeFile,rm} from 'node:fs/promises';
 import path from 'node:path';
 import {tmpdir} from 'node:os';
-import {assertDrawingLayoutIdentity,applyDrawingLayoutPatch,translateDrawingPath} from '../server/drawingLayoutIdentity';
+import {assertDrawingLayoutIdentity,applyDrawingLayoutPatch,translateDrawingPath,DrawingLayoutIdentityError} from '../server/drawingLayoutIdentity';
 import {authorDrawing,validateDrawing,drawingHtml,checkHtmlProject,type HtmlDrawing} from '../server/narrativeScenes';
 import {recoverLessonHtml} from '../server/lessonHtmlRecovery';
 import {hashBytes} from '../server/narrativeScenes';
@@ -12,6 +12,26 @@ const fixture=JSON.parse(await readFile(new URL('./fixtures/qa-650-layout-identi
 const prior=fixture.first as HtmlDrawing;
 function clear(){const d=structuredClone(prior);Object.assign(d.nodes.find(n=>n.id==='bad_card')!,{h:285});Object.assign(d.nodes.find(n=>n.id==='bad_label_neck')!,{x:90,y:460,w:110,h:55});Object.assign(d.nodes.find(n=>n.id==='bad_label_arm')!,{x:85,y:605,w:240,h:55});return d;}
 const clearPatch={nodes:[{id:'bad_card',h:285},{id:'bad_label_neck',x:90,y:460,w:110,h:55},{id:'bad_label_arm',x:85,y:605,w:240,h:55}]};
+
+test('three rejected provider patches retain their typed contract failure and raw response for bounded redraw',async t=>{
+  const original=globalThis.fetch;t.after(()=>{globalThis.fetch=original;});let calls=0;
+  const patch={nodes:[{id:'bad_label_neck',x:600}]},raw=JSON.stringify(patch);
+  globalThis.fetch=async()=>{calls++;return Response.json({choices:[{message:{content:raw}}]});};
+  const config={...TEXT_MODEL_PRESETS[0],kind:'text' as const,provider:'ark',baseUrl:ARK_BASE_URL,enabled:true,apiKey:'controlled-layout-only'};
+  await assert.rejects(authorDrawing(config,{title:prior.title,line:'Controlled contract failure',visualBrief:'{}'} as any,'9:16',{layoutRepair:prior}),error=>{assert.ok(error instanceof DrawingLayoutIdentityError);assert.equal(error.rawProposal,raw);assert.match(error.message,/包含关系/);return true;});
+  assert.equal(calls,3);
+});
+
+test('malformed patch IDs, schema and JSON retain a bounded recovery error after three real author responses',async t=>{
+  const original=globalThis.fetch;t.after(()=>{globalThis.fetch=original;});
+  const config={...TEXT_MODEL_PRESETS[0],kind:'text' as const,provider:'ark',baseUrl:ARK_BASE_URL,enabled:true,apiKey:'controlled-patch-schema'};
+  const cases=[{nodes:[{x:90}]},{nodes:[{id:'bad_card',x:90},{id:'bad_card',y:410}]},{nodes:[{id:'unknown',x:90}]},{nodes:[{id:'bad_card',text:'invented'}]},{nodes:[{id:'bad_card',x:prior.nodes.find(n=>n.id==='bad_card')!.x}]},{nodes:[{id:prior.nodes.find(n=>n.kind==='path')!.id,translate:{x:20000,y:0}}]}];
+  for(const raw of [...cases.map(value=>JSON.stringify(value)),'{"nodes":']){
+    let calls=0;globalThis.fetch=async()=>{calls++;return Response.json({choices:[{message:{content:raw}}]});};
+    await assert.rejects(authorDrawing(config,{title:prior.title,line:'Controlled malformed patch response',visualBrief:'{}'} as any,'9:16',{layoutRepair:prior}),error=>{assert.ok(error instanceof DrawingLayoutIdentityError);assert.equal(error.rawProposal,raw);return true;});
+    assert.equal(calls,3);
+  }
+});
 
 test('actual failed repair added six nodes; geometry-only recovery preserves all source words and diagrams',()=>{
   assert.equal(prior.nodes.length,23);assert.equal(fixture.last.nodes.length,29);

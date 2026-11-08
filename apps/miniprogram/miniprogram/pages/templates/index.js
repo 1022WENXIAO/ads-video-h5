@@ -1,9 +1,13 @@
+const { shareAppMessage } = require('../../utils/share');
+const { appearanceData } = require('../../utils/appearance');
 const { galleryCards } = require('../../utils/templates');
 
 Page({
-  data: { cards: [], query: '', onlySamples: false, preview: null, loading: false, error: '', videoError: false, returning: false },
+  onShareAppMessage: shareAppMessage,
+  data: Object.assign(appearanceData(), { cards: [], query: '', onlySamples: false, preview: null, loading: false, error: '', videoError: false, returning: false }),
   onShow() {
     const app = getApp();
+    if (app.applyAppearance) app.applyAppearance(this);
     if (!app.client.hasSession()) { app.expired(); return; }
     this._visible = true;
     if (this._catalog) this.filter();

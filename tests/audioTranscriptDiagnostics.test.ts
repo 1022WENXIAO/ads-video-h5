@@ -57,7 +57,7 @@ test('repeated missing fields and wrong bounds fail after the unchanged two call
 
 test('HTTP authorization, exhausted transport and cancellation keep existing retry strategies separate from schema feedback',async t=>{
   const w=await waveform(),originalFetch=globalThis.fetch;t.after(()=>{globalThis.fetch=originalFetch;return rm(w.dir,{recursive:true,force:true});});
-  for(const status of [401,403,503]){let calls=0;globalThis.fetch=async()=>{calls++;return new Response('',{status,headers:{'retry-after':'0'}});};await assert.rejects(transcribeWindow(w.file,0,4.86,config,w.dir),new RegExp('HTTP '+status));assert.equal(calls,status===503?3:1,'no schema retry or recursive split for HTTP failures');}
+  for(const status of [401,403,503]){let calls=0;globalThis.fetch=async()=>{calls++;return new Response('',{status,headers:{'retry-after':'0'}});};await assert.rejects(transcribeWindow(w.file,0,4.86,config,w.dir),new RegExp('HTTP '+status));assert.equal(calls,status===503?4:1,'initial request plus three retries, with no schema retry or recursive split for HTTP failures');}
   let calls=0;const controller=new AbortController();globalThis.fetch=async()=>{calls++;controller.abort();return response(worker());};
   await assert.rejects(runWithJobSignal(controller.signal,()=>transcribeWindow(w.file,0,4.86,config,w.dir)),{name:'JobCancelledError'});assert.equal(calls,1);
 });

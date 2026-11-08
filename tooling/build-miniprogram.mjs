@@ -15,6 +15,10 @@ const appid = process.env.QINGJIAN_MINI_APPID || config.appid;
 if (appid !== 'touristappid' && !/^wx[a-f0-9]{16}$/.test(appid)) throw new Error('AppID 必须为 wx 开头的真实公开标识。');
 if (!config.setting.urlCheck || config.compileType !== 'miniprogram') throw new Error('必须启用合法域名校验，使用原生小程序项目。');
 const clientConfig = req('./miniprogram/config.js');
+const version = JSON.parse(await readFile(path.join(project, 'package.json'), 'utf8')).version;
+const releases = req('./miniprogram/utils/releases.js');
+if (!releases.length || releases[0].version !== version) throw new Error('请先为当前版本补充 utils/releases.js 的功能介绍。');
+await writeFile(path.join(source, 'utils/version.js'), '// Synchronized with apps/miniprogram/package.json by the local build.\nmodule.exports = ' + JSON.stringify(version) + ';\n');
 if (!/^https:\/\/[^/]+\/.*api$/.test(clientConfig.apiBase) || clientConfig.allowLocal) throw new Error('发布包必须使用 HTTPS 正式接口。');
 for (const page of app.pages) for (const extension of ['js', 'json', 'wxml', 'wxss']) await readFile(path.join(source, page + '.' + extension));
 for (const tab of app.tabBar.list) for (const field of ['iconPath', 'selectedIconPath']) await readFile(path.join(source, tab[field]));
@@ -43,16 +47,25 @@ if (!wxss.includes('app.wxss')) throw new Error('WXSS 编译没有生成全局�
 let revision = null;
 try { revision = execFileSync('git', ['rev-parse', 'HEAD'], { cwd: repo, encoding: 'utf8' }).trim(); } catch { /* Exported project. */ }
 const destination = path.join(project, 'release/qingjian-wechat');
-await rm(destination, { recursive: true, force: true }); await mkdir(destination, { recursive: true });
+// Windows IDEs may keep a handle to the project directory. Replace its
+// generated contents without removing the directory itself.
+await mkdir(destination, { recursive: true });
+for (const name of await readdir(destination)) {
+  const target = path.resolve(destination, name);
+  if (path.dirname(target) !== path.resolve(destination)) throw new Error('Unexpected release output path.');
+  await rm(target, { recursive: true, force: true });
+}
 await cp(source, path.join(destination, 'miniprogram'), { recursive: true });
 await writeFile(path.join(destination, 'project.config.json'), JSON.stringify({ ...config, appid }, null, 2) + '\n');
 await cp(path.join(project, 'README.md'), path.join(destination, 'README.md'));
 await cp(path.join(project, 'TESTING.md'), path.join(destination, 'TESTING.md'));
-const manifest = { version: JSON.parse(await readFile(path.join(project, 'package.json'), 'utf8')).version, sourceRevision: revision, sourceSha256: digest.digest('hex'), appid,
+await cp(path.join(project, 'LOCAL-0.2.7.md'), path.join(destination, 'LOCAL-0.2.7.md'));
+const manifest = { version, sourceRevision: revision, sourceSha256: digest.digest('hex'), appid,
   binding: appid === 'touristappid' ? 'awaiting-appid' : 'bound', publication: 'not-uploaded', apiBase: clientConfig.apiBase, bytes, files: files.length,
   checks: { javascript: 'parsed', json: 'parsed', wxml: 'official-compiler', wxss: 'official-compiler' }, generatedAt: new Date().toISOString() };
 await writeFile(path.join(destination, 'build-manifest.json'), JSON.stringify(manifest, null, 2) + '\n');
 const archive = path.join(project, 'release/qingjian-wechat-test.zip'); await rm(archive, { force: true });
-execFileSync('zip', ['-q', '-r', archive, 'qingjian-wechat'], { cwd: path.dirname(destination) });
+if (process.platform === 'win32') execFileSync('tar', ['-a', '-c', '-f', archive, 'qingjian-wechat'], { cwd: path.dirname(destination) });
+else execFileSync('zip', ['-q', '-r', archive, 'qingjian-wechat'], { cwd: path.dirname(destination) });
 console.log(JSON.stringify({ project: destination, archive, ...manifest }, null, 2));
 if (appid === 'touristappid') console.log('未绑定 AppID：这是可导入的开发测试包，尚未上传或发布微信体验版。');

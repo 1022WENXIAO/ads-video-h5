@@ -1,0 +1,308 @@
+{
+  "source": "Recorded failed release QA calendar; no movie acceptance implied",
+  "duration": 8,
+  "format": "9:16",
+  "issues": [
+    {
+      "code": "text_occluded",
+      "severity": "error",
+      "time": 0.522,
+      "selector": "#qj-author-year_2027",
+      "message": "Text is hidden beneath an opaque element.",
+      "rect": {
+        "left": 444.05,
+        "top": 606.26,
+        "right": 585.94,
+        "bottom": 685.39,
+        "width": 141.89,
+        "height": 79.13
+      },
+      "containerSelector": "#qj-author-calendar_card",
+      "text": "2027年假期",
+      "fixHint": "Give the text its own zone, raise its stacking order above the covering element, or mark intentional layering with data-layout-allow-occlusion.",
+      "coveredFraction": 0.17,
+      "dataAttributes": {
+        "data-drawing-id": "year_2027"
+      },
+      "sourceFile": "index.html",
+      "bbox": {
+        "x": 444.05,
+        "y": 606.26,
+        "width": 141.89,
+        "height": 79.13
+      },
+      "firstSeen": 0.522,
+      "lastSeen": 8.878,
+      "occurrences": 9,
+      "heldMs": 0
+    },
+    {
+      "code": "text_occluded",
+      "severity": "error",
+      "time": 1.566667,
+      "selector": "#qj-author-year_2027",
+      "containerSelector": "#qj-author-calendar_shape",
+      "text": "2027年假期",
+      "coveredFraction": 0.299283,
+      "message": "Actual SVG fill/stroke is painted above loaded-font text ink. Move the graphic and label into separate readable zones.",
+      "affectedGlyphs": [
+        {
+          "char": "2",
+          "utf16Start": 0,
+          "utf16End": 1,
+          "coveredInkSamples": 22,
+          "totalInkSamples": 59,
+          "coveredFraction": 0.372881,
+          "paths": [
+            "#qj-author-calendar_shape"
+          ],
+          "rect": {
+            "left": 438.46875,
+            "top": 593.40625,
+            "right": 460.734375,
+            "bottom": 631.40625,
+            "width": 22.265625,
+            "height": 38
+          }
+        },
+        {
+          "char": "0",
+          "utf16Start": 1,
+          "utf16End": 2,
+          "coveredInkSamples": 23,
+          "totalInkSamples": 70,
+          "coveredFraction": 0.328571,
+          "paths": [
+            "#qj-author-calendar_shape"
+          ],
+          "rect": {
+            "left": 460.734375,
+            "top": 593.40625,
+            "right": 483,
+            "bottom": 631.40625,
+            "width": 22.265625,
+            "height": 38
+          }
+        },
+        {
+          "char": "2",
+          "utf16Start": 2,
+          "utf16End": 3,
+          "coveredInkSamples": 22,
+          "totalInkSamples": 59,
+          "coveredFraction": 0.372881,
+          "paths": [
+            "#qj-author-calendar_shape"
+          ],
+          "rect": {
+            "left": 483,
+            "top": 593.40625,
+            "right": 505.265625,
+            "bottom": 631.40625,
+            "width": 22.265625,
+            "height": 38
+          }
+        },
+        {
+          "char": "7",
+          "utf16Start": 3,
+          "utf16End": 4,
+          "coveredInkSamples": 24,
+          "totalInkSamples": 47,
+          "coveredFraction": 0.510638,
+          "paths": [
+            "#qj-author-calendar_shape"
+          ],
+          "rect": {
+            "left": 505.265625,
+            "top": 593.40625,
+            "right": 527.53125,
+            "bottom": 631.40625,
+            "width": 22.265625,
+            "height": 38
+          }
+        },
+        {
+          "char": "年",
+          "utf16Start": 4,
+          "utf16End": 5,
+          "coveredInkSamples": 31,
+          "totalInkSamples": 86,
+          "coveredFraction": 0.360465,
+          "paths": [
+            "#qj-author-calendar_shape"
+          ],
+          "rect": {
+            "left": 527.53125,
+            "top": 593.40625,
+            "right": 559.53125,
+            "bottom": 631.40625,
+            "width": 32,
+            "height": 38
+          }
+        },
+        {
+          "char": "假",
+          "utf16Start": 5,
+          "utf16End": 6,
+          "coveredInkSamples": 45,
+          "totalInkSamples": 105,
+          "coveredFraction": 0.428571,
+          "paths": [
+            "#qj-author-calendar_shape"
+          ],
+          "rect": {
+            "left": 559.53125,
+            "top": 593.40625,
+            "right": 591.53125,
+            "bottom": 631.40625,
+            "width": 32,
+            "height": 38
+          }
+        }
+      ],
+      "rect": {
+        "left": 438.46875,
+        "top": 593.40625,
+        "right": 591.53125,
+        "bottom": 673,
+        "width": 153.0625,
+        "height": 79.59375
+      },
+      "source": "server-svg-paint",
+      "htmlHash": "27a466220d4aacefcc5495b04400620634e784a5a6c977ffa0412b7a68898b07",
+      "evidence": {
+        "path": "svg-paint-evidence/27a466220d4aacefcc5495b04400620634e784a5a6c977ffa0412b7a68898b07/233128e82ab93b264b10a17f7c2bf54f5b4a20f5961b5113e5bc8ee02577a1bc-508cd336-206c-49d0-9930-f907f33370d3/server-svg-paint-report.json",
+        "sha256": "fc47f64e864f2a9d5bf767c1ec121c5d50b5442328760956ed3c00c0e74753e7"
+      }
+    }
+  ],
+  "drawing": {
+    "title": "发布日不是假期开始",
+    "motion": "corporate",
+    "nodes": [
+      {
+        "id": "takeaway",
+        "kind": "card",
+        "x": 60,
+        "y": 235,
+        "w": 600,
+        "h": 110,
+        "text": "11月5日发布安排，假期在2027年",
+        "tone": "coral",
+        "fontSize": 38,
+        "highlight": true
+      },
+      {
+        "id": "doc_card",
+        "kind": "card",
+        "x": 72,
+        "y": 395,
+        "w": 270,
+        "h": 250,
+        "text": "",
+        "tone": "paper",
+        "fontSize": 34,
+        "highlight": false
+      },
+      {
+        "id": "doc_sheet",
+        "kind": "path",
+        "x": 122,
+        "y": 425,
+        "w": 170,
+        "h": 190,
+        "pathData": "M122 425 H252 L292 465 V615 H122 Z M252 425 V465 H292 M145 495 H269 M145 535 H269 M145 575 H230",
+        "tone": "ink",
+        "fontSize": 36,
+        "highlight": false,
+        "text": ""
+      },
+      {
+        "id": "doc_label",
+        "kind": "text",
+        "x": 92,
+        "y": 655,
+        "w": 230,
+        "h": 48,
+        "text": "国务院办公厅通知",
+        "tone": "ink",
+        "fontSize": 28,
+        "highlight": false
+      },
+      {
+        "id": "calendar_card",
+        "kind": "card",
+        "x": 378,
+        "y": 395,
+        "w": 270,
+        "h": 250,
+        "text": "",
+        "tone": "paper",
+        "fontSize": 34,
+        "highlight": false
+      },
+      {
+        "id": "calendar_shape",
+        "kind": "path",
+        "x": 420,
+        "y": 430,
+        "w": 186,
+        "h": 175,
+        "pathData": "M420 460 H606 V605 H420 Z M420 460 V440 H450 V460 M576 460 V440 H606 V460 M445 500 H490 V545 H445 Z M510 500 H555 V545 H510 Z M575 500 H590 V545 H575 Z M445 560 H490 V590 H445 Z M510 560 H555 V590 H510 Z",
+        "tone": "blue",
+        "fontSize": 36,
+        "highlight": false,
+        "text": ""
+      },
+      {
+        "id": "year_2027",
+        "kind": "text",
+        "x": 430,
+        "y": 610,
+        "w": 170,
+        "h": 48,
+        "text": "2027年假期",
+        "tone": "ink",
+        "fontSize": 32,
+        "highlight": true
+      },
+      {
+        "id": "connector",
+        "kind": "line",
+        "x": 342,
+        "y": 520,
+        "w": 36,
+        "h": 0,
+        "text": "",
+        "tone": "ink",
+        "fontSize": 36,
+        "highlight": false
+      },
+      {
+        "id": "nature_card",
+        "kind": "card",
+        "x": 72,
+        "y": 720,
+        "w": 576,
+        "h": 130,
+        "text": "通知内容：2027年部分节假日安排",
+        "tone": "blue",
+        "fontSize": 38,
+        "highlight": false
+      },
+      {
+        "id": "not_now_card",
+        "kind": "card",
+        "x": 72,
+        "y": 880,
+        "w": 576,
+        "h": 110,
+        "text": "不是2026年11月5日开始放假",
+        "tone": "coral",
+        "fontSize": 38,
+        "highlight": true
+      }
+    ]
+  }
+}

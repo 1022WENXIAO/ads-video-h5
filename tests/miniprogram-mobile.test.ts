@@ -1,0 +1,144 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { capturePage, recorderFixture, miniRequire } from './fixtures/nativeClient';
+
+async function fixture(loggedIn = true) {
+  let window = { screenHeight: 844, statusBarHeight: 44, windowHeight: 673, windowWidth: 390 };
+  const calls: any[] = [], recorder = recorderFixture();
+  const state: any = { activeSessionId: 'old', sessions: [{ id: 'old', messages: [{ id: 'm', role: 'user', text: '旧对话', createdAt: '2026-11-01T00:00:00Z' }] }], jobs: [], media: [], artifacts: [], credits: null };
+  const platform: any = { getWindowInfo: () => window, getRecorderManager: () => recorder,
+    onWindowResize(fn: any) { this.resize = fn; }, offWindowResize(fn: any) { assert.equal(fn, this.resize); this.resize = null; },
+    // Keyboard events must only be bound on the textarea, not registered twice.
+    onKeyboardHeightChange: assert.fail,
+    navigateTo: (o: any) => calls.push(['navigate', o.url]), showToast: (o: any) => calls.push(['toast', o.title]) };
+  const app: any = { state, client: { hasSession: () => loggedIn, previewUrl: () => '' }, subscribe: () => () => {}, refresh: async () => state,
+    async mutate() { throw new Error('replace in test'); } };
+  const page = await capturePage('chat', app, platform);
+  page.onLoad(); page.onShow();
+  return { page, platform, app, calls, state, window: (next: Partial<typeof window>) => { window = { ...window, ...next }; } };
+}
+
+test('queued replies have a single assistant progress placeholder, replaced by the actual reply on completion', () => {
+  const { chatView } = miniRequire('./miniprogram/utils/view');
+  const state: any = { activeSessionId: 's', sessions: [{ id: 's', messages: [{ id: 'u', role: 'user', text: '你好', jobId: 'job' }] }], jobs: [{ id: 'job', sessionId: 's', status: 'queued', progress: 0 }], artifacts: [] };
+  const client = { previewUrl: () => '' };
+  const pending = chatView(state, client, {});
+  assert.equal(pending.messages.filter((m: any) => m.role === 'assistant').length, 1);
+  assert.equal(pending.messages[1].job.progress, 0);
+  state.sessions[0].messages.push({ id: 'a', role: 'assistant', text: '你好呀', jobId: 'job', parts: [{ id: 'part', phase: 'commentary', text: '完成回复' }] });
+  state.jobs[0].status = 'succeeded';
+  const completed = chatView(state, client, {});
+  assert.equal(completed.messages.length, 2); assert.equal(completed.messages[1].text, '你好呀');
+  assert.equal(completed.messages[1].job.progress, 100); assert.equal(completed.messages[1].recordCount, 1);
+});
+
+test('sidebar filters compact history and opens cached messages immediately without leaving chat', async () => {
+  const f = await fixture(), p = f.page;
+  f.state.sessions.push({ id: 'draft', title: '新会话', mode: 'chat', messages: [], updatedAt: '2026-11-05T00:00:00Z' });
+  f.state.sessions[0].title = '已有工作'; p.render(f.state); p.openSidebar();
+  assert.equal(p.data.sidebarOpen, true);
+  p.sidebarSearch({ detail: { value: '已有' } });
+  assert.equal(p.data.sidebarGroups.flatMap((g: any) => g.items).length, 1);
+  let finish: any; f.app.mutate = () => new Promise(resolve => { finish = resolve; });
+  f.app.apply = (state: any) => { f.app.state = state; p.render(state); return state; };
+  p.sidebarActivate({ currentTarget: { dataset: { id: 'draft' } } });
+  assert.equal(f.app.state.activeSessionId, 'draft'); assert.equal(p.data.sidebarOpen, false); assert.equal(p.data.empty, true);
+  finish(f.app.state); await Promise.resolve(); p.onUnload();
+});
+
+test('a stale avatar download cannot replace the avatar of a changed account', async () => {
+  const { hydrateAccountAvatar } = miniRequire('./miniprogram/utils/account-avatar');
+  const page: any = { data: {}, setData(patch: any) { Object.assign(this.data, patch); } };
+  const pending: any = {};
+  const app: any = { _generation: 1, client: { cachedDownload: () => '', download: (url: string) => new Promise(resolve => { pending[url] = resolve; }) } };
+  hydrateAccountAvatar(page, { account: { displayName: '甲', avatarUrl: '/old' } }, app);
+  app._generation++; hydrateAccountAvatar(page, { account: { displayName: '乙', avatarUrl: '/new' } }, app);
+  pending['/old']('old-file'); await Promise.resolve(); assert.equal(page.data.userAvatar, '');
+  pending['/new']('new-file'); await Promise.resolve(); assert.equal(page.data.userAvatar, 'new-file'); assert.equal(page.data.userInitial, '乙');
+});
+
+test('native iOS focus does not request focus again; duplicate keyboard heights cannot trigger scroll or bridge loops', async () => {
+  const f = await fixture(false), p = f.page, writes: any[] = [];
+  const setData = p.setData;
+  p.setData = (patch: any, cb?: any) => { writes.push(patch); setData(patch, cb); };
+  p.focusEditor({ detail: { height: 346 } });
+  assert.equal(p.data.focus, false, 'native focus is not echoed as a new focus request');
+  assert.equal(p.data.viewportHeight, 410);
+  const count = writes.length;
+  for (let i = 0; i < 20; i++) p.keyboardChange({ detail: { height: 346 } });
+  assert.equal(writes.length, count, 'identical events produce no setData writes');
+  assert.ok(writes.every(x => !('scrollTarget' in x) && !('focus' in x)));
+  p.input({ detail: { value: '文字', cursor: 1 } });
+  assert.equal(p.data.editorCursor, -1, 'typing does not force the native caret position');
+  p.blur({ detail: { cursor: 1 } }); p.keyboardChange({ detail: { height: 0 } });
+  assert.equal(p.data.viewportHeight, 673); assert.equal(p.data.focus, false);
+  p.onUnload(); assert.equal(f.platform.resize, null);
+});
+
+test('resize before keyboard-height event preserves full baseline and restored viewport after closing', async () => {
+  const f = await fixture(false), p = f.page;
+  p.focusEditor({ detail: {} });
+  f.window({ windowHeight: 410 }); f.platform.resize({ size: { windowHeight: 410, windowWidth: 390 } });
+  assert.equal(p._windowBaseline.windowHeight, 673);
+  p.keyboardChange({ detail: { height: 346 } });
+  assert.equal(p.data.viewportHeight, 410); assert.equal(p.data.keyboardOffset, 0);
+  p.blur({ detail: {} }); p.keyboardChange({ detail: { height: 0 } });
+  f.window({ windowHeight: 673 }); f.platform.resize({ size: { windowHeight: 673, windowWidth: 390 } });
+  assert.equal(p.data.viewportHeight, 673);
+  p.onHide(); const height = p.data.viewportHeight;
+  p.keyboardChange({ detail: { height: 346 } }); assert.equal(p.data.viewportHeight, height, 'hidden pages ignore late keyboard events');
+  p.onUnload();
+});
+
+test('welcome stays at the top; new conversation renders the returned session without a subscription and rejects duplicate taps', async () => {
+  const f = await fixture(), p = f.page;
+  p.setData({ prompt: '草稿', attached: [{ id: 'a' }], attachmentIds: ['a'] }); p._offset = 50;
+  let resolve: any, requests = 0;
+  f.app.mutate = (route: string) => { assert.equal(route, '/api/sessions'); requests++; return new Promise(r => { resolve = r; }); };
+  const creating = p.newSession();
+  assert.equal(p.data.creatingSession, true); await p.newSession(); assert.equal(requests, 1);
+  await p.send(); p.pick(); await p.voiceStart();
+  assert.equal(requests, 1, 'creation cannot race with submission or recording'); assert.equal(p.data.pick, false);
+  resolve({ ...f.state, activeSessionId: 'new', sessions: [{ id: 'new', messages: [] }, ...f.state.sessions] });
+  await creating;
+  assert.equal(p.data.sessionId, 'new'); assert.equal(p.data.empty, true); assert.equal(p.data.messages.length, 0);
+  assert.equal(p.data.prompt, ''); assert.equal(p.data.attachmentIds.length, 0); assert.equal(p._offset, 0);
+  assert.equal(p.data.scrollTarget, 'thread-start'); assert.equal(p.data.creatingSession, false);
+  // Network failure keeps the existing draft and makes the button retryable.
+  f.app.state.sessions.find((s: any) => s.id === 'new').messages.push({ id: 'sent', role: 'user', text: '已提交的内容', createdAt: '2026-11-05T00:00:00Z' });
+  p.setData({ prompt: '保留草稿' });
+  f.app.mutate = async () => { throw new Error('网络暂时不可用'); };
+  await p.newSession();
+  assert.equal(p.data.prompt, '保留草稿'); assert.equal(p.data.creatingSession, false);
+  assert.equal(p.data.error, '网络暂时不可用'); assert.equal(f.calls.at(-1)[0], 'toast');
+  p.onUnload();
+});
+
+test('composer model switch targets the displayed session, preserves the draft, saves the next-session default and blocks sending while saving', async () => {
+  const f = await fixture(), p = f.page, requests: any[] = [];
+  f.state.models = [{ id: 'a', name: '模型 A', enabled: true, kind: 'text' }, { id: 'b', name: '模型 B', enabled: true, kind: 'text' }];
+  f.state.settings = { defaultModelId: 'a' }; f.state.sessions[0].modelId = 'a'; p.render(f.state);
+  p.setData({ prompt: '保留这段草稿' }); let finish: any;
+  f.app.mutate = async (route: string, body: any, method: string) => {
+    requests.push({ route, body, method });
+    if (route.endsWith('/model')) { await new Promise(resolve => { finish = resolve; }); f.state.sessions[0].modelId = body.modelId; }
+    else f.state.settings.defaultModelId = body.defaultModelId;
+    return f.state;
+  };
+  const selecting = p.changeModel({ detail: { value: 1 } });
+  await p.send(); await p.newSession(); assert.equal(requests.length, 1);
+  finish(); await selecting;
+  assert.equal(requests[0].route, '/api/sessions/old/model'); assert.equal(requests[1].route, '/api/settings');
+  assert.equal(p.data.modelName, '模型 B'); assert.equal(p.data.prompt, '保留这段草稿'); assert.equal(p.data.modelChanging, false);
+  assert.equal(f.state.settings.defaultModelId, 'b');
+  p.setData({ running: true }); await p.changeModel({ detail: { value: 0 } }); assert.equal(requests.length, 2);
+  p.onUnload();
+});
+
+test('new conversation tells busy users why it cannot create and guests explicitly enter login', async () => {
+  const f = await fixture(), p = f.page;
+  p.setData({ uploading: true }); await p.newSession(); assert.equal(f.calls.at(-1)[0], 'toast');
+  p.onUnload();
+  const guest = await fixture(false); await guest.page.newSession();
+  assert.deepEqual(guest.calls, [['navigate', '/pages/auth/index']]); guest.page.onUnload();
+});

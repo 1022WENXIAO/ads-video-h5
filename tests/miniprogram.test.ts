@@ -188,7 +188,7 @@ test('binary media admission rejects scripts/playlists and recognizes only suppo
 test('chat submission double taps, cursor newline, attachment isolation and zero points are enforced by the native page', async () => {
   let finish: any, calls = 0, sent: any;
   const state = { activeSessionId: 's', sessions: [{ id: 's', messages: [] }], media: [{ id: 'own', name: '素材', kind: 'video' }, { id: 'author', name: '形象', kind: 'image', character: { role: 'reference' } }], artifacts: [], jobs: [], credits: { balance: 2000 } };
-  const app: any = { state, client: { previewUrl: () => '' }, mutate: (_route: string, body: any) => { calls++; sent = body; return new Promise(resolve => { finish = resolve; }); } };
+  const app: any = { state, client: { hasSession: () => true, previewUrl: () => '' }, mutate: (_route: string, body: any) => { calls++; sent = body; return new Promise(resolve => { finish = resolve; }); } };
   const page = await capturePage('chat', app, { getRecorderManager: recorderFixture }); page._expanded = {}; page._count = 50; page._offset = 0; page._visible = true;
   page.render(state); page.setData({ attachmentIds: ['own', 'author'], prompt: '第一行第二行', cursor: 3 }); page.render(state); page.newline();
   assert.equal(page.data.prompt, '第一行\n第二行'); assert.deepEqual([...page.data.attachmentIds], ['own']); assert.equal(calls, 0);
@@ -220,13 +220,22 @@ test('every native WXML page renders with the official component compiler and ha
   const chat = simulate.render(chatId); chat.attach(document.createElement('div')); chat.instance.onLoad(); chat.instance._visible = true;
   chat.setData({ prompt: '第一行第二行', cursor: 3 }); chat.querySelector('.newline').dispatchEvent('tap'); await simulate.sleep(0);
   assert.equal(chat.data.prompt, '第一行\n第二行'); assert.equal(platform.calls.filter((call: any) => call.url?.endsWith('/chat')).length, 0);
+  const declined = chat.instance.requestVoiceConsent(); await simulate.sleep(0);
+  assert.match(chat.dom.textContent, /声纹授权协议/);
+  chat.querySelector('.voice-consent-cancel').dispatchEvent('tap');
+  assert.equal(await declined, false); assert.equal(app.voiceConsent, undefined);
+  const accepted = chat.instance.requestVoiceConsent(); await simulate.sleep(0);
+  chat.querySelector('.voice-consent-agree').dispatchEvent('tap');
+  assert.equal(await accepted, true); assert.ok(app.voiceConsent.agreedAt);
+  await simulate.sleep(0); assert.equal(chat.querySelector('.voice-consent-mask'), undefined, 'agreement closes the actual rendered overlay');
+  assert.equal(platform.recorder.starts.length, 0, 'agreement never starts recording by itself');
   // Exercise the actual compiled gallery controls and native page handoff.
   const samplePath = '/api/templates/video-style-interface/sample/';
   const galleryTemplate = { id: 'video-style-interface', name: '界面动效', description: '产品演示',
     defaults: { seconds: 12 }, sample: { title: '灵感整理器', source: { author: '@creator' },
       videoUrl: samplePath + 'video', posterUrl: samplePath + 'poster' } };
   const old = { id: 'video-style-pixel', name: '像素游戏', defaults: { seconds: 12 }, description: '游戏风格' };
-  app.state = { ...state, activeSessionId: 'gallery-session', sessions: [{ id: 'gallery-session', messages: [] }], templates: [old, galleryTemplate] };
+  app.state = { ...state, activeSessionId: 'gallery-session', sessions: [{ id: 'gallery-session', mode: 'chat', messages: [] }], templates: [old, galleryTemplate] };
   app.user = { id: 'test-owner' };
   const realClient = createClient(platform, { apiBase: 'https://example.test/qingjian/api' });
   assert.equal(realClient.templateAssetUrl(samplePath + 'video'), 'https://example.test/qingjian' + samplePath + 'video');
@@ -245,6 +254,7 @@ test('every native WXML page renders with the official component compiler and ha
     pageScrollTo() {},
   });
   chat.instance.render(app.state);
+  assert.equal(chat.instance.interaction(), 'chat');
   chat.setData({ prompt: '@像素游戏 保留我已有的文字' });
   chat.querySelector('.gallery-entry').dispatchEvent('tap');
   await simulate.sleep(0);
@@ -268,9 +278,11 @@ test('every native WXML page renders with the official component compiler and ha
   chat.instance.onShow();
   assert.equal(chat.data.prompt, '@界面动效 保留我已有的文字');
   assert.equal(chat.data.templateName, '界面动效');
+  assert.equal(chat.instance.interaction(), 'create');
   chat.querySelector('.remove-template').dispatchEvent('tap');
   await simulate.sleep(0);
   assert.equal(chat.data.prompt, '保留我已有的文字');
+  assert.equal(chat.instance.interaction(), 'chat');
   assert.deepEqual(catalogCalls, ['/api/templates']);
   gallery.instance.onUnload();
   gallery.detach();
@@ -280,6 +292,8 @@ test('every native WXML page renders with the official component compiler and ha
   privacy.instance.open((result: any) => receipts.push(result)); privacy.instance.open((result: any) => receipts.push(result));
   privacy.querySelector('#qingjian-privacy-agree').dispatchEvent('agreeprivacyauthorization'); await simulate.sleep(0);
   assert.equal(receipts.length, 2); assert.equal(receipts.every(value => value.event === 'agree' && value.buttonId === 'qingjian-privacy-agree'), true); privacy.detach();
-  const files = await readdir(path.join(miniRoot, 'assets')); assert.equal(files.filter(value => value.endsWith('.png')).length, 8);
+  const files = await readdir(path.join(miniRoot, 'assets'));
+  assert.equal(files.filter(value => value.endsWith('.png') && value !== 'lightmao-logo.png').length, 8);
+  assert.ok(files.includes('lightmao-logo.png'));
   dom.window.close();
 });

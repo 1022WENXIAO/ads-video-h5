@@ -30,7 +30,18 @@ const call = (name: string, id: string, args: unknown = {}) => new Response(
 
 test('connection attempt waiting is sufficient by default and text retry budget is bounded', () => {
   assert.equal(providerTransportSettings().connectAttemptTimeoutMs, 1500);
-  assert.equal(providerTransportSettings().textMaxRetries, 2);
+  assert.equal(providerTransportSettings().textMaxRetries, 3);
+});
+
+test('video and image resource reads share three retries while other POST requests are not replayed here',async()=>{
+  const original=globalThis.fetch;let requests=0;
+  globalThis.fetch=async()=>{requests++;if(requests===1)return new Response('',{status:500});if(requests===2)throw socketFailure();if(requests===3)return new Response('',{status:503});return new Response('video-bytes');};
+  try{
+    assert.equal(await(await jobFetch('https://media.example.test/clip.mp4')).text(),'video-bytes');assert.equal(requests,4);
+    requests=0;globalThis.fetch=async()=>{requests++;return new Response('',{status:500});};
+    await assert.rejects(jobFetch('https://media.example.test/image.png'),/TEXT_TRANSPORT_FINAL/);assert.equal(requests,4);
+    requests=0;assert.equal((await jobFetch('https://media.example.test/other-task',{method:'POST',body:'{}'})).status,500);assert.equal(requests,1);
+  }finally{globalThis.fetch=original;}
 });
 
 test('actual Pi required tool recovers a failed first connection and executes the submission once', async () => {
@@ -62,11 +73,11 @@ test('exhausted Pi connections retain typed causes beyond the job context and do
     })), error => {
       assert.match(String(error), new RegExp(TEXT_TRANSPORT_FINAL));
       const diagnostic = jobErrorDiagnostics(error);
-      assert.equal(diagnostic.length, 1); assert.equal(diagnostic[0].attempts, 3); assert.equal(diagnostic[0].failure.retryExhausted, true);
+      assert.equal(diagnostic.length, 1); assert.equal(diagnostic[0].attempts, 4); assert.equal(diagnostic[0].failure.retryExhausted, true);
       assert.match(JSON.stringify(diagnostic), /ETIMEDOUT/); assert.doesNotMatch(JSON.stringify(diagnostic), /private-transport-credential/);
       return true;
     });
-    assert.equal(requests, 4, 'one successful decision plus exactly three transport attempts');
+    assert.equal(requests, 5, 'one successful decision plus an initial request and three transport retries');
     assert.equal(prepared, 1, 'completed tool cannot be replayed'); assert.equal(written, false);
   } finally { globalThis.fetch = original; }
 });
@@ -115,7 +126,7 @@ test('completed tools and provider usage are recorded once when a later model tu
   } finally { globalThis.fetch = original; }
 });
 
-test('response-body failure is not replayed after headers, and media submissions never auto retry', async () => {
+test('interrupted model streams are not replayed and media retries remain owned by the media client', async () => {
   const original = globalThis.fetch; let requests = 0;
   globalThis.fetch = async () => {
     requests++;
@@ -166,7 +177,7 @@ test('an explicit decision token budget is forwarded to the real Pi payload', as
 test('semantic review does not multiply an exhausted connection budget with output-format retries', async () => {
   const original = globalThis.fetch; let requests = 0;
   globalThis.fetch = async () => { requests++; throw socketFailure(); };
-  try { await assert.rejects(requestSemanticReview(config(), [{ role: 'user', content: '检查成片' }]), /TEXT_TRANSPORT_FINAL/); assert.equal(requests, 3); }
+  try { await assert.rejects(requestSemanticReview(config(), [{ role: 'user', content: '检查成片' }]), /TEXT_TRANSPORT_FINAL/); assert.equal(requests, 4); }
   finally { globalThis.fetch = original; }
 });
 
@@ -175,9 +186,9 @@ test('conversational reply does not create a new agent after transport recovery 
   globalThis.fetch = async () => { requests++; throw socketFailure(); };
   try {
     await assert.rejects(runWithJobSignal(new AbortController().signal, () => answerForSessionWithPi({ prompt: '没有素材能做视频吗？只解释。', config: config(), media: [], history: [], plan: null, attached: [] })), error => {
-      assert.equal(jobErrorDiagnostics(error)[0].attempts, 3); assert.equal(executionFailure(error).retryExhausted, true); return true;
+      assert.equal(jobErrorDiagnostics(error)[0].attempts, 4); assert.equal(executionFailure(error).retryExhausted, true); return true;
     });
-    assert.equal(requests, 3);
+    assert.equal(requests, 4);
   } finally { globalThis.fetch = original; }
 });
 
@@ -190,7 +201,7 @@ test('audio windows never retry or recursively split authentication and transpor
   try {
     globalThis.fetch = async () => { requests++; throw socketFailure(); };
     await assert.rejects(transcribeWindow(file, 0, 12, config(), directory), /TEXT_TRANSPORT_FINAL/);
-    assert.equal(requests, 3, 'an unavailable provider must not create more audio windows');
+    assert.equal(requests, 4, 'an unavailable provider must not create more audio windows');
     requests = 0; globalThis.fetch = async () => { requests++; return new Response('', { status: 403 }); };
     await assert.rejects(transcribeWindow(file, 0, 12, config(), directory), /HTTP 403/); assert.equal(requests, 1);
     requests = 0; globalThis.fetch = async () => {
@@ -213,7 +224,7 @@ test('voice audit retains the exhausted provider cause and makes no second logic
   globalThis.fetch = async () => { requests++; throw socketFailure(); };
   try {
     await assert.rejects(inspectVoice(file, { clips: [{ sourceId: 'speech', sceneId: 'ch1', start: 0, end: 1 }], lesson: {} } as EditPlan, undefined, directory, config()), /TEXT_TRANSPORT_FINAL/);
-    assert.equal(requests, 3);
+    assert.equal(requests, 4);
   } finally { globalThis.fetch = original; }
 });
 

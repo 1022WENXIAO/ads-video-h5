@@ -8,6 +8,9 @@ import {compactSpeech,lessonPacing,lessonScriptBudget} from '../server/lessonSpe
 import {hashBytes} from '../server/narrativeScenes';
 import {withModelSnapshot} from '../server/modelContext';
 import type {LessonChapter,LessonReport,WorkflowEvent} from '../shared/types';
+import {ProviderError} from '../server/providers';
+import {executionFailure,recordExecutionOrigin} from '../server/executionErrors';
+import {jobFailureMessage} from '../server/jobAttempts';
 
 const prompt='制作45秒横屏知识图解视频，节奏紧凑，解释服务状态与核验边界，先给脚本';
 const config={id:'controlled-text',name:'Controlled text',provider:'controlled',kind:'text' as const,modelId:'controlled-model',baseUrl:'https://provider.example.invalid',apiKey:'controlled-no-live-credential',enabled:true};
@@ -41,6 +44,24 @@ async function controlled<T>(fixture:Awaited<ReturnType<typeof setup>>,handle:(b
   finally{globalThis.fetch=original;await rm(fixture.directory,{recursive:true,force:true});}
 }
 const accepted=(events:WorkflowEvent[])=>events.filter(e=>['write_lesson_script','revise_lesson_script'].includes(e.tool)&&e.status==='succeeded').map(e=>(e.output as any).details.acceptedScriptVersions);
+
+test('a fatal narration error survives the real Agent finishTurn boundary without losing its chapter or cause',async()=>{
+  const f=await setup(true);let decisions=0;
+  const failure=new ProviderError('模型服务请求失败（HTTP 500，55000000）。','55000000',500,true);
+  recordExecutionOrigin(failure,{tool:'synthesize_chapter',stage:'合成旁白 · 第一章',callId:'failed-first-chapter'});
+  await controlled(f,body=>{
+    if(!body.stream)return Response.json({choices:[{message:{content:JSON.stringify(passed)}}]});
+    decisions++;return response(body.tool_choice.function.name,f.full(),decisions);
+  },async options=>{
+    await assert.rejects(runLessonWorkflow({...options,stage:async label=>{if(label==='制作统一教学旁白')throw failure;}}),error=>{
+      const diagnostic=executionFailure(error);assert.equal(diagnostic.origin?.callId,'failed-first-chapter');
+      assert.ok(JSON.stringify(diagnostic).includes('55000000'));
+      assert.match(jobFailureMessage(error,'检查旁白停顿 · 第二章'),/配音服务.*HTTP 500.*合成旁白 · 第一章/);
+      assert.doesNotMatch(jobFailureMessage(error,'检查旁白停顿 · 第二章'),/第二章|连接暂时中断/);return true;
+    });
+    assert.equal(decisions,1);assert.equal(f.mediaCalls(),0);
+  });
+});
 
 test('P16 parameter-error sequence leaves the real factual revision allowance available',async()=>{
   const f=await setup(),budget=lessonScriptBudget(45,lessonPacing(prompt),3);assert.equal(budget.perChapterMaximum,77);let decisions=0,reviews=0;

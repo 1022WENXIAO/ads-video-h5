@@ -10,43 +10,46 @@
     "pages/settings/index",
     "pages/player/index",
     "pages/templates/index",
-    "pages/legal/index"
+    "pages/legal/index",
+    "pages/feedback/index",
+    "pages/about/index",
+    "pages/tasks/index"
   ],
   "window": {
-    "navigationBarTitleText": "AI了吗",
-    "navigationBarBackgroundColor": "#fffdf9",
-    "navigationBarTextStyle": "black",
-    "backgroundColor": "#fffdf9"
+    "navigationBarTitleText": "轻喵LightMao",
+    "navigationBarBackgroundColor": "#c9612f",
+    "navigationBarTextStyle": "white",
+    "backgroundColor": "#fff9ee"
   },
   "tabBar": {
-    "color": "#8c8986",
-    "selectedColor": "#dd7456",
-    "backgroundColor": "#fffdf9",
+    "color": "#947052",
+    "selectedColor": "#b8582b",
+    "backgroundColor": "#fffaf0",
     "borderStyle": "white",
     "list": [
       {
         "pagePath": "pages/chat/index",
         "text": "创作",
-        "iconPath": "assets/chat.png",
-        "selectedIconPath": "assets/chat-active.png"
+        "iconPath": "assets/ui/fresh/idle/create.png",
+        "selectedIconPath": "assets/ui/fresh/active/create.png"
       },
       {
         "pagePath": "pages/library/index",
         "text": "素材",
-        "iconPath": "assets/library.png",
-        "selectedIconPath": "assets/library-active.png"
+        "iconPath": "assets/ui/fresh/idle/library.png",
+        "selectedIconPath": "assets/ui/fresh/active/library.png"
       },
       {
         "pagePath": "pages/films/index",
         "text": "成片",
-        "iconPath": "assets/films.png",
-        "selectedIconPath": "assets/films-active.png"
+        "iconPath": "assets/ui/fresh/idle/films.png",
+        "selectedIconPath": "assets/ui/fresh/active/films.png"
       },
       {
         "pagePath": "pages/profile/index",
         "text": "我的",
-        "iconPath": "assets/profile.png",
-        "selectedIconPath": "assets/profile-active.png"
+        "iconPath": "assets/ui/fresh/idle/profile.png",
+        "selectedIconPath": "assets/ui/fresh/active/profile.png"
       }
     ]
   },

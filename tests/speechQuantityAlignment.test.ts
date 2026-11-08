@@ -22,6 +22,27 @@ function verify(value:LessonChapter,raw:AudioAnalysis,passes=true){
   return aligned;
 }
 
+test('measured length ranges at the actual speech tail accept equal numeral spellings without changing heard words',()=>{
+  for(const unit of ['毫米','厘米'])for(const chunk of [1,2,4]){
+    const value=chapter('20至30'+unit);
+    value.narration='这段只核对实际测量范围为20至30'+unit;
+    value.visual.items[1].cue='实际测量范围';
+    const raw=audio(value.narration.replace('30'+unit,'三十'+unit),chunk);
+    assert.equal(verify(value,raw)!.similarity,1);
+    assert.equal(compactSpeech(raw.transcript),compactSpeech(value.narration));
+  }
+});
+
+test('length unit normalization still rejects wrong endpoints, units, missing text and extra speech',()=>{
+  const value=chapter('20至30毫米');
+  value.narration='这段只核对实际测量范围为20至30毫米';value.visual.items[1].cue='实际测量范围';
+  for(const replacement of ['20至三十一毫米','21至三十毫米','20至三毫米','20至三十厘米','20至三十','20至三十毫米左右']){
+    verify(value,audio(value.narration.replace('20至30毫米',replacement)),false);
+  }
+  verify(value,audio(value.narration.replace('范围','围').replace('30毫米','三十毫米')),false);
+  assert.equal(compactSpeech('三思之后再判断'),'三思之后再判断');
+});
+
 test('both actual P21 same-wave ASR grids align 15品牌/58批/210份 without expected-word substitution',()=>{
   for(const record of actual.records){
     const raw:AudioAnalysis={status:'ready',modelId:'archived-public-projection',createdAt:'',warnings:[],pauses:[],timing:'model-estimated',...structuredClone(record.analysis)},aligned=verify(actual.chapter,raw)!;

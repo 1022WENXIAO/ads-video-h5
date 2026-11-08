@@ -1,6 +1,10 @@
+const { appearanceData } = require('../../utils/appearance');
+const { shareAppMessage } = require("../../utils/share");
 Page({
-  data: { busy: false, error: '' },
+  onShareAppMessage: shareAppMessage,
+  data: Object.assign(appearanceData(), { busy: false, error: '' }),
   async onShow() {
+    if (getApp().applyAppearance) getApp().applyAppearance(this);
     const app = getApp(); app._redirecting = false;
     if (app.client.hasSession()) {
       try {
@@ -20,5 +24,6 @@ Page({
     } catch (error) { this.setData({ error: error.message }); }
     finally { this.setData({ busy: false }); }
   },
+  browse() { wx.switchTab({ url: '/pages/chat/index' }); },
   legal(event) { wx.navigateTo({ url: '/pages/legal/index?type=' + event.currentTarget.dataset.type }); },
 });

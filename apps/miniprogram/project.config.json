@@ -1,10 +1,19 @@
 {
   "appid": "wxf5dfb5d144bcd684",
-  "projectname": "AI了吗-轻剪",
-  "description": "轻剪微信小程序开发测试版，共用 H5 账号与视频制作服务",
+  "projectname": "轻喵LightMao",
+  "description": "轻喵LightMao微信小程序，提供视频创作、素材管理与作品预览服务",
   "compileType": "miniprogram",
   "miniprogramRoot": "miniprogram/",
   "libVersion": "latest",
-  "setting": { "urlCheck": true, "es6": true, "enhance": true, "minified": true, "postcss": true, "compileHotReLoad": true },
-  "packOptions": { "ignore": [] }
+  "setting": {
+    "urlCheck": true,
+    "es6": true,
+    "enhance": true,
+    "minified": true,
+    "postcss": true,
+    "compileHotReLoad": true
+  },
+  "packOptions": {
+    "ignore": []
+  }
 }

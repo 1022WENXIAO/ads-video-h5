@@ -1,4 +1,4 @@
-<view class="screen template-gallery">
+<view class="screen template-gallery theme-surface theme-{{theme}}">
   <view wx:if="{{preview}}" class="template-detail">
     <button class="gallery-back" bindtap="closePreview">‹ 返回模板列表</button>
     <video wx:if="{{!videoError}}" class="sample-player" src="{{preview.sample.video}}" poster="{{preview.sample.poster}}"

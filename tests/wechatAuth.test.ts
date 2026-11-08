@@ -177,7 +177,7 @@ test('native retry gets a fresh code, clear cancels pending login, and non-WeCha
   await page.onShow(); assert.equal(reset, 1); assert.equal(navigations, 0);
   platform.request = (options: any) => options.success({ statusCode: 200, cookies: ['qingjian_session=' + 'c'.repeat(43)], data: { user: { authProvider: 'email' } } });
   const wrongProvider = client.wechatLogin(); finishLogin.success({ code: 'fresh' }); await assert.rejects(wrongProvider, /验证未完成/); assert.equal(client.hasSession(), false);
-  const saved: any[] = [], profileApp = { user: { id: 'verified', displayName: '微信创作者', email: '', authProvider: 'wechat' }, client: { async request(route: string, body: any, method: string) { saved.push({ route, body, method }); return { user: { ...profileApp.user, displayName: body.displayName } }; } } };
+  const saved: any[] = [], profileApp = { user: { id: 'verified', displayName: '微信创作者', email: '', authProvider: 'wechat' }, client: { hasSession: () => true, async request(route: string, body: any, method: string) { saved.push({ route, body, method }); return { user: { ...profileApp.user, displayName: body.displayName } }; } } };
   const profile = await capturePage('profile', profileApp, { showToast() {} });
   profile.nickname({ detail: { value: '选中的微信昵称' } });
   profile.render({ sessions: [], artifacts: [], media: [], credits: { balance: 2000 } });

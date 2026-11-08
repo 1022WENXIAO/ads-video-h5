@@ -1,8 +1,11 @@
+<view class="theme-surface theme-{{theme}}">
 <view class="screen auth-screen">
-  <view class="brand">轻剪<text class="brand-dot">.</text></view><view class="subtitle">好视频，从一句话开始。</view>
-  <view class="auth-intro"><view class="auth-title">用微信，开始创作</view><view class="subtitle">登录后自动创建你的轻剪微信账号。</view></view>
+  <view class="auth-brand"><image class="auth-logo" src="/assets/lightmao-logo.png" mode="aspectFit" aria-label="轻喵LightMao"/><text>轻喵LightMao</text></view><view class="subtitle">好视频，从一句话开始。</view>
+  <view class="auth-intro"><view class="auth-title">用微信，开始创作</view><view class="subtitle">登录后自动创建你的轻喵LightMao微信账号。</view></view>
   <view class="welcome-card"><view class="welcome-points">2,000<text class="welcome-unit">积分</text></view><view class="welcome-label">首次登录赠送</view><view class="welcome-detail">每天签到，再领 1,000 积分。</view></view>
-  <view wx:if="{{error}}" class="error">{{error}}</view><button class="primary wechat-login" loading="{{busy}}" disabled="{{busy}}" bindtap="submit">{{busy ? '正在连接微信…' : '微信登录，开始创作'}}</button>
+  <view wx:if="{{error}}" class="error">{{error}}</view><button size="mini" class="primary wechat-login" loading="{{busy}}" disabled="{{busy}}" bindtap="submit"><image class="ui-icon" src="{{onPrimary.profile}}" mode="aspectFit"/>{{busy ? '正在连接微信…' : '微信登录，开始创作'}}</button>
   <view class="quiet auth-hint">无需邮箱和密码。昵称可在「我的」中选填。</view>
-  <view class="quiet">微信账号独立保存素材、作品和积分；制作请求会发送到所配置的模型服务。</view><view class="row auth-legal"><button class="auth-legal-link" bindtap="legal" data-type="terms">用户协议</button><button class="auth-legal-link" bindtap="legal" data-type="privacy">隐私说明</button></view>
+  <button size="mini" class="secondary" bindtap="browse"><image class="ui-icon" src="{{icons.back}}" mode="aspectFit"/>暂不登录，先浏览</button>
+  <view class="quiet">微信账号独立保存素材、作品和积分；制作请求会发送到所配置的模型服务。</view><view class="row auth-legal"><button size="mini" class="auth-legal-link" bindtap="legal" data-type="terms">用户协议</button><button size="mini" class="auth-legal-link" bindtap="legal" data-type="privacy">隐私说明</button></view>
 </view><privacy-dialog id="privacy" />
+</view>
