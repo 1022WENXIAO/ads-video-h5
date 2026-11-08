@@ -938,6 +938,13 @@ app.get('/api/effects/assets/:id', async (request, response) => {
   try { response.type(asset.mimeType).sendFile(await effects.ensureAsset(asset)); }
   catch { response.status(404).json({ error: '素材文件不存在。' }); }
 });
+// Packaged sample assets are public. Native image and video players do not use the API session cookie.
+app.get('/api/templates/:id/sample/:kind', (request, response) => {
+  const template = videoTemplates.find(item => item.id === request.params.id && item.sample);
+  const asset = request.params.kind === 'video' ? 'sample.mp4' : request.params.kind === 'poster' ? 'poster.png' : undefined;
+  if (!template || !asset) return response.status(404).json({ error: '样片不存在。' });
+  return response.sendFile(asset, { root: path.join(template.directory, 'assets'), maxAge: '1h' });
+});
 auth.mount(app, credits.readiness, user => credits.snapshot(user.id));
 mountCreditRoutes(app, credits);
 mountExtensionRoutes(app, extensions, { sessions: () => state.sessions, jobs: () => state.jobs, save: saveState, publicState, activate: async(user,session) => { (await profileOf(user)).activeSessionId = session.id; } });
@@ -945,12 +952,6 @@ app.get('/api/creative/capabilities',async(_q,r)=>{const e=await defoldEnvironme
 app.get('/api/creative/effects',async(q,r)=>{try{r.json(await findPixelEffects(String(q.query.query||''),Math.min(12,Math.max(1,Number(q.query.limit)||6))));}catch(e){r.status(400).json({error:e instanceof Error?e.message:'特效检索失败。'});}});
 app.get('/api/artifacts/:id/play',(q,r)=>{const a=state.artifacts.find(a=>a.id===q.params.id&&owned(a,userOf(q).id)&&a.kind==='game');if(!a)return r.status(404).json({error:'游戏不存在。'});r.json({url:creativePreviews.issue(path.join(exportDir,`${a.id}-game`),'index.html',a.creative?.artifactHash)});});
 app.get('/api/templates',(_request,response)=>response.json({templates:videoTemplates.map(publicTemplate)}));
-app.get('/api/templates/:id/sample/:kind', (request, response) => {
-  const template = videoTemplates.find(item => item.id === request.params.id && item.sample);
-  const asset = request.params.kind === 'video' ? 'sample.mp4' : request.params.kind === 'poster' ? 'poster.png' : undefined;
-  if (!template || !asset) return response.status(404).json({ error: '样片不存在。' });
-  return response.sendFile(asset, { root: path.join(template.directory, 'assets'), maxAge: '1h' });
-});
 mountVoiceInputRoutes(app, tmpDir, undefined, credits);
 mountAvatarRoutes(app,{
   media:()=>state.media,mediaDir,tmpDir,save:saveState,publicState,

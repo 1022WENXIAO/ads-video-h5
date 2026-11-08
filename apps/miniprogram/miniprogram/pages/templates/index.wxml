@@ -1,0 +1,40 @@
+<view class="screen template-gallery">
+  <view wx:if="{{preview}}" class="template-detail">
+    <button class="gallery-back" bindtap="closePreview">‹ 返回模板列表</button>
+    <video wx:if="{{!videoError}}" class="sample-player" src="{{preview.sample.video}}" poster="{{preview.sample.poster}}"
+      controls="{{true}}" show-center-play-btn="{{true}}" object-fit="contain" binderror="playbackError" />
+    <view wx:else class="sample-error"><text>样片暂时无法播放。</text><button class="secondary" bindtap="retryVideo">重新加载</button></view>
+    <view class="detail-copy">
+      <text class="tag">{{preview.name}} · 样片</text>
+      <view class="detail-title">{{preview.sample.title}}</view>
+      <view class="subtitle">{{preview.description}}</view>
+      <view class="muted">原作 {{preview.sample.author}}</view>
+    </view>
+    <button class="primary sample-use" bindtap="use" data-id="{{preview.id}}" disabled="{{returning}}">使用模板</button>
+    <view wx:if="{{error}}" class="error">{{error}}</view>
+  </view>
+  <block wx:else>
+    <view class="gallery-heading"><view class="gallery-mark">▤</view><text>先看样片，再选风格。</text></view>
+    <input class="gallery-search" placeholder="搜索模板" value="{{query}}" bindinput="input" />
+    <view class="gallery-filters">
+      <button class="filter {{onlySamples ? '' : 'selected'}}" bindtap="chooseFilter" data-sample="no">全部模板</button>
+      <button class="filter {{onlySamples ? 'selected' : ''}}" bindtap="chooseFilter" data-sample="yes">有样片</button>
+    </view>
+    <view wx:if="{{loading}}" class="empty muted">正在加载模板…</view>
+    <view wx:elif="{{error}}" class="empty"><view class="error">{{error}}</view><button class="secondary" bindtap="load">重新加载</button></view>
+    <view wx:elif="{{!cards.length}}" class="empty muted">没有找到匹配的模板。</view>
+    <view wx:else class="gallery-list">
+      <view wx:for="{{cards}}" wx:key="id" class="gallery-card">
+        <button wx:if="{{item.sample}}" class="sample-cover sample-preview-button" bindtap="preview" data-id="{{item.id}}" aria-label="看样片 · {{item.name}}">
+          <image src="{{item.sample.poster}}" mode="aspectFill" lazy-load />
+          <text class="sample-play">▶</text><text class="sample-time">{{item.seconds}} 秒</text>
+        </button>
+        <view wx:else class="sample-cover no-sample"><text>▤  制作规则</text></view>
+        <view class="card-copy">
+          <view class="card-title">{{item.name}}</view><view class="subtitle">{{item.description}}</view>
+          <view class="row spread"><text class="tag">{{item.format}}</text><button class="card-use" bindtap="use" data-id="{{item.id}}" disabled="{{returning}}">使用模板</button></view>
+        </view>
+      </view>
+    </view>
+  </block>
+</view>

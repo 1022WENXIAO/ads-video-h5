@@ -220,6 +220,60 @@ test('every native WXML page renders with the official component compiler and ha
   const chat = simulate.render(chatId); chat.attach(document.createElement('div')); chat.instance.onLoad(); chat.instance._visible = true;
   chat.setData({ prompt: '第一行第二行', cursor: 3 }); chat.querySelector('.newline').dispatchEvent('tap'); await simulate.sleep(0);
   assert.equal(chat.data.prompt, '第一行\n第二行'); assert.equal(platform.calls.filter((call: any) => call.url?.endsWith('/chat')).length, 0);
+  // Exercise the actual compiled gallery controls and native page handoff.
+  const samplePath = '/api/templates/video-style-interface/sample/';
+  const galleryTemplate = { id: 'video-style-interface', name: '界面动效', description: '产品演示',
+    defaults: { seconds: 12 }, sample: { title: '灵感整理器', source: { author: '@creator' },
+      videoUrl: samplePath + 'video', posterUrl: samplePath + 'poster' } };
+  const old = { id: 'video-style-pixel', name: '像素游戏', defaults: { seconds: 12 }, description: '游戏风格' };
+  app.state = { ...state, activeSessionId: 'gallery-session', sessions: [{ id: 'gallery-session', messages: [] }], templates: [old, galleryTemplate] };
+  app.user = { id: 'test-owner' };
+  const realClient = createClient(platform, { apiBase: 'https://example.test/qingjian/api' });
+  assert.equal(realClient.templateAssetUrl(samplePath + 'video'), 'https://example.test/qingjian' + samplePath + 'video');
+  assert.equal(realClient.templateAssetUrl('/api/artifacts/private'), '');
+  assert.equal(realClient.templateAssetUrl('https://outside.test/video.mp4'), '');
+  const catalogCalls: string[] = [];
+  app.client = { ...realClient, hasSession: () => true, request: async (route: string) => {
+    catalogCalls.push(route);
+    assert.equal(route, '/api/templates');
+    return { templates: app.state.templates };
+  } };
+  let opened: any, backCount = 0;
+  Object.assign((globalThis as any).wx, {
+    navigateTo: (options: unknown) => { opened = options; },
+    navigateBack: () => { backCount++; },
+    pageScrollTo() {},
+  });
+  chat.instance.render(app.state);
+  chat.setData({ prompt: '@像素游戏 保留我已有的文字' });
+  chat.querySelector('.gallery-entry').dispatchEvent('tap');
+  await simulate.sleep(0);
+  assert.equal(opened.url, '/pages/templates/index');
+  const galleryId = simulate.load(path.join(miniRoot, 'pages/templates/index'), { compiler: 'official', rootPath: miniRoot });
+  const gallery = simulate.render(galleryId);
+  gallery.attach(document.createElement('div'));
+  gallery.instance.getOpenerEventChannel = () => ({ emit: (name: string, data: unknown) => opened.events[name](data) });
+  gallery.instance.onShow();
+  await simulate.sleep(0);
+  assert.equal(gallery.data.cards.length, 2);
+  assert.equal(gallery.data.preview, null);
+  gallery.querySelector('.sample-preview-button').dispatchEvent('tap');
+  await simulate.sleep(0);
+  assert.equal(gallery.data.preview.sample.video, 'https://example.test/qingjian' + samplePath + 'video');
+  assert.equal(chat.data.prompt, '@像素游戏 保留我已有的文字');
+  assert.ok(gallery.querySelector('.sample-player'));
+  gallery.querySelector('.sample-use').dispatchEvent('tap');
+  await simulate.sleep(0);
+  assert.equal(backCount, 1);
+  chat.instance.onShow();
+  assert.equal(chat.data.prompt, '@界面动效 保留我已有的文字');
+  assert.equal(chat.data.templateName, '界面动效');
+  chat.querySelector('.remove-template').dispatchEvent('tap');
+  await simulate.sleep(0);
+  assert.equal(chat.data.prompt, '保留我已有的文字');
+  assert.deepEqual(catalogCalls, ['/api/templates']);
+  gallery.instance.onUnload();
+  gallery.detach();
   chat.instance.onUnload(); chat.detach();
   const privacyId = simulate.load(path.join(miniRoot, 'components/privacy/index'), { compiler: 'official', rootPath: miniRoot });
   const privacy = simulate.render(privacyId); privacy.attach(document.createElement('div')); const receipts: any[] = [];

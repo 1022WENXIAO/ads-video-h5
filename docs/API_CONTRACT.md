@@ -191,7 +191,7 @@ HTML 特效的管理、草稿预览、渲染和下载接口见 [HTML 特效说�
 
 - `GET /api/templates`：当前用户可用的模板目录，只返回展示信息、默认参数和可选样片地址。
 - `/api/chat` 支持 `@动态图科普视频 制作一个LLM Prompt的原理视频`；未知模板、仅有模板名或多个不同模板会明确报错。已选模板会写入任务快照（ID、版本、内容哈希），后续导出或修改时需再次选择同一模板。未选择时走主 Agent；只要方案时不会渲染。
-- `GET /api/templates/:id/sample/:kind`：已登录用户可读取样片和封面，`kind` 为 `video` 或 `poster`。样片支持 HTTP Range。
+- `GET /api/templates/:id/sample/:kind`：读取随应用发布的公开样片和封面，`kind` 为 `video` 或 `poster`。样片支持 HTTP Range。
 - `style-video` 执行器提供三幕程序动画，默认 12 秒横屏、无口播和配乐。Agent 读取对应样片的分镜时间表，支持视觉的模型也会收到从 MP4 抽取的关键帧。
 - 动态图科普模板独立执行资料核对、可编程场景与确定性状态模型、结果断言、逐帧布局、1080×1920/30fps渲染、媒体验证。默认无口播，单页循环BGM。结果的 `artifact.template.userAccepted` 保持 `false`，直到用户实际审阅。
 - `GET /api/artifacts/:id/project`：经当前用户所有权校验后下载可编辑工程 ZIP；包含网页、配置、状态/绘图代码、原始 Skill、来源与检查记录。成片与封面沿用原有下载接口。

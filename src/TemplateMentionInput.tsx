@@ -1,6 +1,6 @@
 import { useRef, useState, type RefObject } from 'react';
 import { AtSign, ArrowLeft, Layers3, Play, X } from 'lucide-react';
-import { templateMentions, type VideoTemplate } from '../shared/videoTemplates';
+import { templateMentions, withoutTemplateMentions, type VideoTemplate } from '../shared/videoTemplates';
 import './templates.css';
 
 const mentionAtCaret = /(?:^|\s)[@＠]([^\s@＠，。！？,;；:：]*)$/u;
@@ -27,16 +27,6 @@ export default function TemplateMentionInput({ templates, value, onChange, input
   const mentioned = templateMentions(value).map(mention => templates.find(t => t.id === mention.name || t.name === mention.name));
   const current = mentioned[0];
 
-  function withoutTemplates(text: string) {
-    for (const mention of templateMentions(text).reverse()) {
-      if (templates.some(t => t.id === mention.name || t.name === mention.name)) {
-        const end = text[mention.end] === ' ' ? mention.end + 1 : mention.end;
-        text = text.slice(0, mention.start) + text.slice(end);
-      }
-    }
-    return text.trimStart();
-  }
-
   function close() {
     setOpen(false);
     setPreviewId(undefined);
@@ -55,7 +45,7 @@ export default function TemplateMentionInput({ templates, value, onChange, input
     const cursor = input?.selectionStart ?? value.length;
     const partial = mentionAtCaret.exec(value.slice(0, cursor));
     const raw = partial ? value.slice(0, cursor - partial[1].length - 1) + value.slice(cursor) : value;
-    const next = `@${template.name} ${withoutTemplates(raw)}`;
+    const next = `@${template.name} ${withoutTemplateMentions(raw, templates)}`;
     if (next.length > 3000) return;
     onChange(next);
     close();
@@ -98,7 +88,7 @@ export default function TemplateMentionInput({ templates, value, onChange, input
       {current ? <span className="template-chip">
         <span>已选 {current.name}</span>
         <button type="button" aria-label="移除制作模板" disabled={disabled}
-          onClick={() => { onChange(withoutTemplates(value)); close(); inputRef.current?.focus(); }}><X size={13}/></button>
+          onClick={() => { onChange(withoutTemplateMentions(value, templates)); close(); inputRef.current?.focus(); }}><X size={13}/></button>
       </span> : <small>未启用模板</small>}
     </div>
     {open ? <div className="template-options" id="video-template-options" role="region" aria-label="制作模板">

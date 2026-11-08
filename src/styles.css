@@ -1987,3 +1987,7 @@ details[open] > summary .disclosure-chevron {
 .hot-fact blockquote { margin: 8px 0; padding: 8px 12px; border-left: 3px solid #dfc9b3; background: #f7f3ec; font-size: 12px; line-height: 1.65; }
 .hot-research-card a { color: #287887; font-size: 12px; overflow-wrap: anywhere; }
 .hot-limitations summary { cursor: pointer; font-size: 12px; color: #77766f; }
+
+.top-chat-actions { display: flex; align-items: center; gap: clamp(8px, 2vw, 16px); }
+.top-chat-actions .top-gallery-link { color: #8e4b35; }
+@media (max-width: 350px) { .top-chat-actions svg { display: none; } }
