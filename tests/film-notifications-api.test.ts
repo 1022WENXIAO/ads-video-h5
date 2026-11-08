@@ -22,6 +22,13 @@ test('real uploaded film becomes reviewed scenes and one reusable archived file,
     await runFFmpeg(['-v','error','-y','-f','lavfi','-i','color=c=red:s=160x240:r=10:d=1.2','-f','lavfi','-i','color=c=blue:s=160x240:r=10:d=1.2','-filter_complex','[0:v][1:v]concat=n=2:v=1:a=0,format=yuv420p[v]','-map','[v]','-c:v','libx264',file]);
     const uploaded=await client.upload('/api/media',file,'files'),sourceId=uploaded.uploadedMediaIds[0];
     assert.equal(uploaded.features.filmAnalysis,true);assert.ok(uploaded.media.find((m:any)=>m.id===sourceId).thumbnailUrl);
+    const videoThumbnail=uploaded.media.find((m:any)=>m.id===sourceId).thumbnailUrl;
+    assert.equal((await fetch(f.base+videoThumbnail)).status,401);
+    assert.equal((await f.request(other,videoThumbnail)).status,404);
+    const videoPreview=await f.request(cookie,videoThumbnail);assert.equal(videoPreview.status,200);
+    assert.match(videoPreview.headers.get('content-type')||'',/image\/jpeg/);
+    assert.equal(videoPreview.headers.get('cache-control'),'private, no-store');
+    assert.deepEqual(Buffer.from(await videoPreview.arrayBuffer()).subarray(0,2),Buffer.from([255,216]));
     const work:any=await(await f.request(cookie,'/api/sessions',{mode:'work',reuseEmpty:true})).json(),sessionId=work.activeSessionId;
     const admitted:any=await(await f.request(cookie,`/api/media/${sourceId}/film`,{sessionId})).json(),jobId=admitted.jobs.at(-1).id;
     await Promise.race([started,new Promise((_,reject)=>{const timer=setTimeout(()=>reject(Error('Film did not reach the fixture model')),10000);timer.unref();})]);

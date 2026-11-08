@@ -1253,6 +1253,7 @@ app.get('/api/media/:id/thumbnail', async (request, response) => {
           const source = path.join(mediaDir, item.id), tmp = path.join(mediaDir, `${item.id}-preview-${randomUUID()}.jpg`);
           try {
             await oss?.ensure(user.id, 'media', item.id, source);
+            if (!existsSync(source)) throw Object.assign(new Error('素材文件不存在。'), { code: 'ENOENT' });
             await runFFmpeg(['-hide_banner', '-loglevel', 'error', '-y', ...(item.kind==='video'?['-ss',String(Math.min(1,(item.duration||1)/2))]:[]), '-i', source, '-frames:v', '1', '-vf', 'scale=320:320:force_original_aspect_ratio=decrease', '-q:v', '4', tmp], 30_000);
             if (!state.media.some(media => media.id === item.id && owned(media, user.id))) throw new Error('素材已删除。');
             await rename(tmp, target);
@@ -1265,7 +1266,10 @@ app.get('/api/media/:id/thumbnail', async (request, response) => {
       await pending;
     }
     response.set('Cache-Control', 'private, no-store').type('image/jpeg').sendFile(target);
-  } catch { response.status(502).json({ error: '缩略图暂时无法生成，请重试。' }); }
+  } catch (error) {
+    const missing = (error as NodeJS.ErrnoException).code === 'ENOENT';
+    response.status(missing ? 404 : 502).json({ error: missing ? '素材文件不存在。' : '缩略图暂时无法生成，请重试。' });
+  }
 });
 app.get('/api/media/:id', async (request, response) => {
   const item = state.media.find((media) => media.id === request.params.id && owned(media, userOf(request).id));
