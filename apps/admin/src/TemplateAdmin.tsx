@@ -1,7 +1,7 @@
 import CreativeGamePreview from '../../../src/CreativeGamePreview';
 import { useCallback, useEffect, useState } from 'react';
 import { Download, Layers3, Play, Square } from 'lucide-react';
-import type { AdminVideoTemplate, TemplateTestRun } from '../../../shared/videoTemplates';
+import type { AdminVideoTemplateEntry, TemplateTestRun } from '../../../shared/videoTemplates';
 import { api,apiPath } from './api';
 import { WorkflowTrace } from '../../../src/WorkflowTrace';
 import './templates.css';
@@ -23,20 +23,38 @@ async function fetchAsset(token:string,id:string,kind:string,signal?:AbortSignal
   if(!response.ok)throw new Error('测试文件读取失败，请刷新登录或稍后重试。');
   return response.blob();
 }
+function TemplateRules({ id, token }: { id: string; token: string }) {
+  const [rules, setRules] = useState<{ instructions: string; skillHash: string }>();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  return <details onToggle={event => {
+    if (!event.currentTarget.open || rules || loading) return;
+    setLoading(true);
+    setError('');
+    void api<{ instructions: string; skillHash: string }>(`/api/admin/templates/${id}/skill`, token)
+      .then(setRules)
+      .catch(error => setError(error.message))
+      .finally(() => setLoading(false));
+  }}>
+    <summary>查看 Skill 制作规则</summary>
+    {rules ? <><pre>{rules.instructions}</pre><small>规则版本 {rules.skillHash.slice(0, 12)}</small></> : <small>{error || '正在读取规则…'}</small>}
+  </details>;
+}
+
 export default function TemplateAdmin({token,models}:{token:string;models:Array<{id:string;name:string;kind:string;enabled:boolean;hasApiKey:boolean}>}) {
-  const [templates,setTemplates]=useState<AdminVideoTemplate[]>([]),[runs,setRuns]=useState<TemplateTestRun[]>([]);
+  const [templates,setTemplates]=useState<AdminVideoTemplateEntry[]>([]),[runs,setRuns]=useState<TemplateTestRun[]>([]);
   const [modelId,setModelId]=useState(''),[busy,setBusy]=useState(false),[error,setError]=useState(''),[selected,setSelected]=useState('');
   const refresh=useCallback(async(signal?:AbortSignal)=>{
     const result=await api<{runs:TemplateTestRun[]}>('/api/admin/template-tests',token,{signal});setRuns(result.runs);
   },[token]);
-  useEffect(()=>{const c=new AbortController();void Promise.all([api<{templates:AdminVideoTemplate[]}>('/api/admin/templates',token,{signal:c.signal}),refresh(c.signal)]).then(([data])=>setTemplates(data.templates)).catch(e=>{if(!c.signal.aborted)setError(e.message);});return()=>c.abort();},[token,refresh]);
+  useEffect(()=>{const c=new AbortController();void Promise.all([api<{templates:AdminVideoTemplateEntry[]}>('/api/admin/templates',token,{signal:c.signal}),refresh(c.signal)]).then(([data])=>setTemplates(data.templates)).catch(e=>{if(!c.signal.aborted)setError(e.message);});return()=>c.abort();},[token,refresh]);
   const running=runs.some(active);
   useEffect(()=>{
     if(!running)return;const c=new AbortController();let timer:ReturnType<typeof setTimeout>;
     const tick=async()=>{try{await refresh(c.signal);}catch(e){if(!c.signal.aborted)setError(e instanceof Error?e.message:'测试状态读取失败。');}finally{if(!c.signal.aborted)timer=setTimeout(()=>void tick(),1500);}};
     timer=setTimeout(()=>void tick(),1500);return()=>{c.abort();clearTimeout(timer);};
   },[running,refresh]);
-  async function start(t:AdminVideoTemplate,caseId:string){
+  async function start(t:AdminVideoTemplateEntry,caseId:string){
     setBusy(true);setError('');
     try{const {run}=await api<{run:TemplateTestRun}>(`/api/admin/templates/${t.id}/tests/${caseId}/run`,token,{method:'POST',body:JSON.stringify(modelId?{modelId}:{})});setRuns(v=>[run,...v]);setSelected(run.id);}
     catch(e){setError(e instanceof Error?e.message:'启动失败。');}finally{setBusy(false);}
@@ -49,8 +67,8 @@ export default function TemplateAdmin({token,models}:{token:string;models:Array<
     {error?<div className="admin-alert" role="alert">{error}</div>:null}
     <div className="template-admin-grid"><div className="template-catalog">{templates.map(t=><article className="template-admin-card" key={t.id}>
       <div className="template-card-heading"><Layers3 size={21}/><h2>{t.name}</h2><small>v{t.version}</small></div><p>{t.description}</p>
-      <div className="template-facts"><span>{t.defaults.width} × {t.defaults.height}</span><span>{t.defaults.fps} fps</span>{t.output==='game'?<span>游戏场景 · 动画节点</span>:<><span>{t.defaults.panels}图同屏</span><span>无口播 · 循环配乐</span></>}</div>
-      <details><summary>查看 Skill 制作规则</summary><pre>{t.instructions}</pre><small>规则版本 {t.skillHash.slice(0,12)}</small></details>
+      <div className="template-facts"><span>{t.defaults.width} × {t.defaults.height}</span><span>{t.defaults.fps} fps</span>{t.output==='game'?<span>游戏场景 · 动画节点</span>:<><span>{t.defaults.panels ? `${t.defaults.panels}图同屏` : `${t.defaults.seconds} 秒样片`}</span><span>{t.defaults.bgm ? "无口播 · 循环配乐" : "无口播"}</span></>}</div>
+      <TemplateRules id={t.id} token={token}/>
       <div className="template-test-case"><h3>预置测试</h3><label>测试模型<select aria-label="模板测试模型" value={modelId} onChange={e=>setModelId(e.target.value)} disabled={busy||running}><option value="">当前默认文本模型</option>{models.filter(m=>m.kind==='text'&&m.enabled&&m.hasApiKey).map(m=><option key={m.id} value={m.id}>{m.name}</option>)}</select></label>
       {t.testCases.map(test=><div key={test.id}><strong>{test.name}</strong><blockquote>{test.prompt}</blockquote><button className="admin-primary" disabled={busy||running} onClick={()=>void start(t,test.id)}><Play size={15}/>{running?'测试正在运行':'一键运行测试'}</button></div>)}
       <small>运行完整制作流程，将调用已配置的模型；生成结果仅管理员可见。</small></div>

@@ -7,13 +7,13 @@ import os from 'node:os';
 import path from 'node:path';
 import { createAdminAuth } from '../server/adminAuth';
 import { mountTemplateTestRoutes } from '../server/templateTestRoutes';
-import { loadVideoTemplates } from '../server/videoTemplates';
+import { loadVideoTemplateCatalog } from '../server/videoTemplates';
 import type { Job } from '../shared/types';
 
 test('admin one-click template tests require admin auth, serialize execution and retain restart-readable job references',async()=>{
   const directory=await mkdtemp(path.join(os.tmpdir(),'qj-template-routes-')),jobs:Job[]=[];
   const app=express();app.use(express.json());const auth=createAdminAuth(directory,{initialPassword:'QA-template-initial-123'});await auth.load();auth.mount(app);
-  const templates=await loadVideoTemplates();let dispatched=0;
+  const templates=await loadVideoTemplateCatalog();let dispatched=0;
   await mountTemplateTestRoutes(app,{dataDir:directory,templates,adminAuth:auth,
     start:async(id,prompt)=>{const session={id:'s-'+id,ownerId:'evaluation:template:'+id,title:prompt,modelId:null,createdAt:new Date().toISOString(),updatedAt:new Date().toISOString(),messages:[],plan:null};const job:Job={id:'j-'+id,sessionId:session.id,messageId:'m-'+id,ownerId:session.ownerId,kind:'export',status:'queued',createdAt:session.createdAt,updatedAt:session.updatedAt};jobs.push(job);return {session,job};},
     job:id=>jobs.find(j=>j.id===id),artifact:()=>undefined,asset:()=>undefined,
@@ -26,6 +26,10 @@ test('admin one-click template tests require admin auth, serialize execution and
     const first=await call('/auth/login',{username:'admin',password:'QA-template-initial-123'});
     const changed=await fetch(base+'/auth/password',{method:'PUT',headers:{'Content-Type':'application/json',Authorization:'Bearer '+first.body.token},body:JSON.stringify({password:'QA-template-initial-123',newPassword:'QA-template-personal-456'})});assert.equal(changed.status,200);const {token}=await changed.json() as any;
     const catalog=await call('/templates',undefined,token);assert.equal(catalog.status,200);assert.equal(catalog.body.templates[0].testCases[0].prompt,'@动态图科普视频 制作一个LLM Prompt的原理视频');assert.ok(!JSON.stringify(catalog).includes(directory));
+    assert.equal('instructions' in catalog.body.templates[0], false);
+    const rules = await call('/templates/video-style-interface/skill', undefined, token);
+    assert.equal(rules.status, 200);
+    assert.match(rules.body.instructions, /触发、反馈、结果/);
     assert.equal((await call('/templates/animated-science-video/tests/unknown/run',{},token)).status,404);assert.equal(jobs.length,0);
     const start=await call('/templates/animated-science-video/tests/llm-prompt/run',{},token);assert.equal(start.status,202);assert.equal(start.body.run.status,'queued');assert.equal(dispatched,1);
     assert.equal((await call('/templates/animated-science-video/tests/llm-prompt/run',{},token)).status,409);assert.equal(jobs.length,1);

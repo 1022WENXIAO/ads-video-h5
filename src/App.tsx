@@ -505,7 +505,7 @@ function ArtifactCard({
         {artifact.plan.reconstruction.limitations.map((s,i)=><small key={i}>{s}</small>)}
       </details> : null}
       {artifact.template ? <details className="template-delivery">
-        <summary>{artifact.template.name} · {artifact.template.panels}图同屏 · 待审阅</summary>
+        <summary>{artifact.template.name} · {artifact.template.panels ? `${artifact.template.panels}图同屏` : "三幕动画"} · 待审阅</summary>
         <p>{artifact.template.boundary}</p>
         <small>模板 v{artifact.template.version} · {artifact.template.technicalPassed ? '技术检查通过' : '待检查'} · 用户验收待确认</small>
         {artifact.projectUrl ? <a href={artifact.projectUrl} download>下载可编辑工程 ZIP</a> : null}
@@ -1296,7 +1296,7 @@ export default function App({ user, onLogout }: { user: PublicUser; onLogout: ()
                     })}
                   </div>
                 ) : null}
-                <TemplateMentionInput key={session?.id} templates={state?.templates||[]} value={prompt} onChange={setPrompt} inputRef={composerInput} disabled={voiceBusy} placeholder={t.input} rows={Math.min(5, Math.max(attachments.length ? 2 : 1, prompt.split("\n").length))} onSubmit={()=>void send()} selectedTemplateId={session?.templateId}/>
+                <TemplateMentionInput key={session?.id} templates={state?.templates||[]} value={prompt} onChange={setPrompt} inputRef={composerInput} disabled={voiceBusy} placeholder={t.input} rows={Math.min(5, Math.max(attachments.length ? 2 : 1, prompt.split("\n").length))} onSubmit={()=>void send()}/>
                 <div className="composer-actions">
                   <button
                     type="button"

@@ -1,0 +1,33 @@
+{
+  "id": "video-style-diagram",
+  "name": "原理拆解",
+  "description": "用节点与流动路径解释一个机制，适合科普和流程说明。",
+  "version": "1.0.0",
+  "workflow": "style-video",
+  "style": "diagram",
+  "contextFiles": [],
+  "defaults": {
+    "width": 960,
+    "height": 540,
+    "fps": 30,
+    "seconds": 12,
+    "panels": 0,
+    "narration": false,
+    "bgm": false
+  },
+  "sample": {
+    "title": "一条消息的旅程",
+    "source": {
+      "author": "@LinearUncle",
+      "url": "https://x.com/LinearUncle/status/2103128559174971663",
+      "galleryUrl": "https://skillry.dev/ai-videos/opus-5-5/linearuncle-971663"
+    }
+  },
+  "testCases": [
+    {
+      "id": "style-demo",
+      "name": "样片风格复用",
+      "prompt": "@原理拆解 解释一条消息如何通过网络到达接收方，12秒横屏，无口播无配乐。"
+    }
+  ]
+}

@@ -1,5 +1,13 @@
+export interface VideoTemplateSample {
+  title: string;
+  videoUrl: string;
+  posterUrl: string;
+  source: { author: string; url: string; galleryUrl: string };
+}
+
 export interface VideoTemplate {
   output?: 'game';
+  sample?: VideoTemplateSample;
   id: string;
   name: string;
   description: string;
@@ -15,6 +23,7 @@ export interface AdminVideoTemplate extends VideoTemplate {
   instructions: string;
   testCases: TemplateTestCase[];
 }
+export type AdminVideoTemplateEntry = Omit<AdminVideoTemplate, 'skillHash' | 'instructions'>;
 export interface TemplateTestRun {
   id: string;
   template: TemplateSelection;

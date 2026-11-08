@@ -1,0 +1,33 @@
+{
+  "id": "video-style-spatial",
+  "name": "空间发布",
+  "description": "层叠结构与旋转镜头，适合产品结构和功能揭晓。",
+  "version": "1.0.0",
+  "workflow": "style-video",
+  "style": "spatial",
+  "contextFiles": [],
+  "defaults": {
+    "width": 960,
+    "height": 540,
+    "fps": 30,
+    "seconds": 12,
+    "panels": 0,
+    "narration": false,
+    "bgm": false
+  },
+  "sample": {
+    "title": "折叠桌面音响",
+    "source": {
+      "author": "@twoclipping",
+      "url": "https://x.com/twoclipping/status/2102554209166000267",
+      "galleryUrl": "https://skillry.dev/ai-videos/opus-5-5/twoclipping-000267"
+    }
+  },
+  "testCases": [
+    {
+      "id": "style-demo",
+      "name": "样片风格复用",
+      "prompt": "@空间发布 制作一款模块化桌面音响的发布短片，12秒横屏，无口播无配乐。"
+    }
+  ]
+}

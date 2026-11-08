@@ -20,7 +20,7 @@ import type { AnimationMotion } from '../shared/animationMotion';
 const sha = (b:Buffer|string) => createHash('sha256').update(b).digest('hex');
 export { scienceHtml } from './scienceHtml';
 import { scienceHtml } from './scienceHtml';
-async function scienceBrowser() {
+export async function scienceBrowser() {
   const require=createRequire(createRequire(import.meta.url).resolve('hyperframes/package.json'));
   const [{default:puppeteer},browsers]=await Promise.all([import(require.resolve('puppeteer-core')),import(require.resolve('@puppeteer/browsers'))]);
   const explicit=process.env.QINGJIAN_CHROMIUM_PATH||process.env.HYPERFRAMES_BROWSER_PATH||process.env.PRODUCER_HEADLESS_SHELL_PATH;
@@ -120,7 +120,7 @@ export async function inspectScienceLayout(page:Page) {
   return inspected;
 }
 
-async function capture(command:string,args:string[],maxBytes=4_000_000):Promise<Buffer> {
+export async function capture(command:string,args:string[],maxBytes=4_000_000):Promise<Buffer> {
   return new Promise((resolve,reject)=>{
     const child=spawnForJob(command,args,{stdio:['ignore','pipe','pipe']}),chunks:Buffer[]=[];let size=0,error='';
     child.stdout!.on('data',(b:Buffer)=>{size+=b.length;if(size>maxBytes){child.kill('SIGKILL');reject(new Error('媒体验证输出超过限制。'));}else chunks.push(b);});

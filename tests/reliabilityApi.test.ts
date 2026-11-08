@@ -26,7 +26,7 @@ test('real chat queue binds its delivery plan and cancels a superseded task befo
   const record=await call('/api/jobs/'+firstId+'/runtime');assert.equal(record.status,200);assert(record.body.plan.every((step:any)=>step.status==='passed'));assert(record.body.evidence.requirementsReviewed);assert.equal(record.body.evidence.userAccepted,false);assert.equal((await fetch(origin+'/api/jobs/'+firstId+'/runtime')).status,401);
   const slow=await call('/api/chat',{sessionId,message:'@Defold游戏 制作一个慢速默认接落球游戏，不要口播。'}),oldId=slow.body.jobs.at(-1).id;
   await poll(()=>access(path.join(data,'provider-held')).then(()=>true,()=>undefined));
-  const changed=await call('/api/chat',{sessionId,message:'修改为默认接落球游戏，保持不要口播。'}),newId=changed.body.jobs.at(-1).id,last=await done(newId);assert.equal(last.status,'succeeded',last.error);
+  const changed=await call('/api/chat',{sessionId,message:'@Defold游戏 修改为默认接落球游戏，保持不要口播。'}),newId=changed.body.jobs.at(-1).id,last=await done(newId);assert.equal(last.status,'succeeded',last.error);
   const old=(await call('/api/jobs/'+oldId)).body;assert.equal(old.status,'cancelled');assert.equal(old.cancelReason,'superseded');assert.equal(old.artifactId,undefined);assert.equal(last.taskSpec.revision,2);assert.equal((await call('/api/jobs/'+oldId+'/retry',{})).status,409);
   const report={passed:true,provider:'local deterministic fixture',paidRequests:0,nativeDefold:true,initialJob:firstId,revisedJob:newId,supersededJob:oldId,allPlanStepsPassed:true,artifactDigestBound:true,oldRunCannotPublishOrRetry:true,privateRuntimeAnonymous:401};
   await mkdir(output,{recursive:true});await writeFile(path.join(output,'api-integration.json'),JSON.stringify(report,null,2));

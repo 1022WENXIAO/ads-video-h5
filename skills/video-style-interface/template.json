@@ -1,0 +1,33 @@
+{
+  "id": "video-style-interface",
+  "name": "界面动效",
+  "description": "按钮、加载和完成状态连续变化，适合产品演示。",
+  "version": "1.0.0",
+  "workflow": "style-video",
+  "style": "interface",
+  "contextFiles": [],
+  "defaults": {
+    "width": 960,
+    "height": 540,
+    "fps": 30,
+    "seconds": 12,
+    "panels": 0,
+    "narration": false,
+    "bgm": false
+  },
+  "sample": {
+    "title": "灵感整理器",
+    "source": {
+      "author": "@twoclipping",
+      "url": "https://x.com/twoclipping/status/2103273003555402193",
+      "galleryUrl": "https://skillry.dev/ai-videos/opus-5-5/twoclipping-402193"
+    }
+  },
+  "testCases": [
+    {
+      "id": "style-demo",
+      "name": "样片风格复用",
+      "prompt": "@界面动效 演示一个将灵感整理为任务的产品流程，12秒横屏，无口播无配乐。"
+    }
+  ]
+}

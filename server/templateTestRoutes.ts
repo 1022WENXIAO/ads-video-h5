@@ -5,12 +5,12 @@ import path from 'node:path';
 import type { Job, Session, Artifact } from '../shared/types';
 import type { TemplateTestRun, TemplateSelection } from '../shared/videoTemplates';
 import type { AdminAuth } from './adminAuth';
-import { adminTemplate, templateSelection, type LoadedVideoTemplate } from './videoTemplates';
+import { adminTemplate, loadVideoTemplate, templateSelection, type VideoTemplateEntry } from './videoTemplates';
 import { createJsonStateWriter } from './jsonStateWriter';
 
 interface StoredRun { id:string;template:TemplateSelection;caseId:string;prompt:string;createdAt:string;sessionId:string;jobId:string }
 interface Options {
-  dataDir:string;templates:LoadedVideoTemplate[];adminAuth:AdminAuth;
+  dataDir:string;templates:VideoTemplateEntry[];adminAuth:AdminAuth;
   start:(id:string,prompt:string,modelId?:string)=>Promise<{session:Session;job:Job}>;
   job:(id:string)=>Job|undefined;
   artifact:(job:Job)=>Artifact|undefined;
@@ -34,6 +34,12 @@ export async function mountTemplateTestRoutes(app:Express,o:Options) {
   const respond=async(response:Response,action:()=>unknown|Promise<unknown>,status=200)=>{try{response.status(status).json(await action());}catch(error){response.status((error as {status?:number}).status||400).json({error:error instanceof Error?error.message:'模板操作失败。'});}};
   const router=Router();router.use(o.adminAuth.requireAdmin);
   router.get('/templates',(_q,r)=>r.json({templates:o.templates.map(adminTemplate)}));
+  router.get('/templates/:id/skill', (q, r) => respond(r, async () => {
+    const entry = o.templates.find(template => template.id === q.params.id);
+    if (!entry) throw Object.assign(new Error('模板不存在。'), { status: 404 });
+    const { context: instructions, skillHash } = await loadVideoTemplate(entry);
+    return { instructions, skillHash };
+  }));
   router.get('/template-tests',(_q,r)=>r.json({runs:runs.slice(-100).reverse().map(publicRun)}));
   let starting=false;
   router.post('/templates/:id/tests/:caseId/run',(q,r)=>respond(r,async()=>{
@@ -44,7 +50,7 @@ export async function mountTemplateTestRoutes(app:Express,o:Options) {
     starting=true;
     try {
       const id=randomUUID(),{session,job}=await o.start(id,test.prompt,q.body?.modelId);
-      const run:StoredRun={id,template:templateSelection(template),caseId:test.id,prompt:test.prompt,createdAt:new Date().toISOString(),sessionId:session.id,jobId:job.id};
+      const run:StoredRun={id,template:job.template ?? templateSelection(await loadVideoTemplate(template)),caseId:test.id,prompt:test.prompt,createdAt:new Date().toISOString(),sessionId:session.id,jobId:job.id};
       runs.push(run);
       try{await persist();}catch(error){runs=runs.filter(r=>r.id!==run.id);await o.stop(session.id,job.ownerId!);throw error;}
       o.dispatch();return {run:publicRun(run)};
