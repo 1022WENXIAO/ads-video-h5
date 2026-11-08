@@ -28,13 +28,15 @@ export interface TaskExecution {
 }
 export async function captureTaskEnvironment(root:string,extra:unknown){
  const files=['server/index.ts','package.json','pnpm-lock.yaml','server/core.ts','server/taskRuntime.ts','server/taskContract.ts','server/requiredTool.ts','server/creativeReview.ts','server/scienceRender.ts','server/defoldRuntime.ts','server/defoldInspect.ts','server/defoldVisual.ts','server/artifactIntegrity.ts','server/durableState.ts','server/creativeWorkspace.ts','server/creativeTools.ts','server/templateWorkflow.ts','server/scienceCoding.ts','server/defoldCoding.ts','server/defoldProject.ts','server/pixelfx.ts','server/pixelfxDefold.ts','server/pixelfxTools.ts','tooling/creative/render-pixelfx.mjs','third_party/pixelfx/vendor.lock.json','skills/defold-game/assets/pixelfx.lua','server/jobExecution.ts','server/creditUsage.ts','shared/taskRuntime.ts','server/taskDrafts.ts','server/scienceWorkspace.ts'];
+ files.push('server/questionResearch.ts','server/deepQuestionResearch.ts','server/narrativeResearch.ts','server/searxSearch.ts','server/openWebSearch.ts','server/publicResearch.ts','server/jobQueue.ts');
+ if((extra as any)?.film)files.push('server/filmAnalysis.ts','shared/film.ts');
  const engineDirectory=path.join(process.env.QINGJIAN_ENGINE_CACHE||path.join(homedir(),'.cache/qingjian-engines'),'defold/1.14.0');
  const installed=await readFile(path.join(engineDirectory,'runtime.json'),'utf8').then(JSON.parse,()=>({}));
  const engineFiles=(extra as any)?.template?.id==='defold-game'?[process.env.QINGJIAN_DEFOLD_BOB||installed.bob||path.join(engineDirectory,'bob.jar'),process.env.QINGJIAN_JAVA_PATH||installed.java,process.env.QINGJIAN_DEFOLD_WORKER].filter((f):f is string=>Boolean(f)):[];
  const binaries=await Promise.all([process.env.QINGJIAN_CHROMIUM_PATH||'/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',...engineFiles].map(async file=>[file,await fileDigest(file).catch(()=>null)]));
  return stateHash({node:process.version,platform:process.platform,binaries,extra,files:await Promise.all(files.map(async f=>[f,stateHash(await readFile(path.join(root,f),'utf8'))]))});
 }
-export async function withTaskExecution<T>(o:{spec:TaskSpec;directory:string;environmentHash:string;assertCurrent:()=>void;assertEnvironment?:()=>Promise<void>;maxCalls?:number;maxCredits?:number;timeoutMs?:number;ledgerDirectory?:string},action:()=>Promise<T>){
+export async function withTaskExecution<T>(o:{spec:TaskSpec;directory:string;environmentHash:string;assertCurrent:()=>void;assertEnvironment?:()=>Promise<void>;maxCalls?:number;maxCredits?:number;timeoutMs?:number|null;ledgerDirectory?:string},action:()=>Promise<T>){
  if(o.maxCredits!==undefined&&(!Number.isFinite(o.maxCredits)||o.maxCredits<0))throw Error('任务积分预算必须是非负数。');
  await mkdir(o.directory,{recursive:true});const file=path.join(o.directory,'run.json'),contractHash=taskSpecHash(o.spec);
  const update=async<R>(fn:(s:DurableRun)=>R|Promise<R>)=>withoutJobSignal(()=>withFileLock(file,async()=>{
@@ -76,8 +78,8 @@ export async function withTaskExecution<T>(o:{spec:TaskSpec;directory:string;env
   receipts:async()=>{const actual=await effects(actions=>actions.map(({result:_result,...a})=>a));await syncActions(actual.actions);return actual.result;},
   accept:async evidence=>{guard();await o.assertEnvironment?.();if(!evidence.technicalPassed||!evidence.requirementsReviewed)throw Error('技术验收或需求审查未完成，不能交付。');await update(s=>{const target=s.plan.find(p=>p.id==='deliver')!;for(const dependency of target.dependsOn){const parent=s.plan.find(p=>p.id===dependency);if(parent?.status!=='passed'||parent.projectHash!==evidence.projectHash)throw Error('交付计划尚未完成或工程版本不一致：'+dependency);}Object.assign(target,{status:'passed',projectHash:evidence.projectHash});});const receipt:TaskEvidence={...evidence,contractHash,environmentHash:o.environmentHash,userAccepted:false};await update(s=>{s.evidence=receipt;});return receipt;},
  };
- deadlineAt=await update(s=>s.deadlineAt??=Date.now()+(o.timeoutMs||1800000));
+ deadlineAt=await update(s=>s.deadlineAt??=(o.timeoutMs===null?0:Date.now()+(o.timeoutMs||1800000)));
  const initialEffects=await effects(actions=>actions);await syncActions(initialEffects.actions);
- guard();return context.run(execution,()=>withExecutionDeadline(Math.max(1,deadlineAt-Date.now()),action));
+ guard();return context.run(execution,()=>deadlineAt?withExecutionDeadline(Math.max(1,deadlineAt-Date.now()),action):action());
 }
 export function scopedWorkspace(kind:string,fallback:string){return currentTaskExecution()?path.join(currentTaskExecution()!.directory,'workspaces',kind):fallback;}

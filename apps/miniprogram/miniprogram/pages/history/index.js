@@ -2,7 +2,7 @@ const { appearanceData } = require('../../utils/appearance');
 const { shareAppMessage } = require("../../utils/share");
 const { beijingTime, active } = require('../../utils/view');
 const { notify, withSession, hide, requireLogin, guestState } = require('../../utils/page');
-const { modeOf, selectSession, openDraft } = require('../../utils/sessions');
+const { modeOf, activateSession, openDraft } = require('../../utils/sessions');
 Page({
   onShareAppMessage: shareAppMessage,
   data: Object.assign(appearanceData(), { sessions: [], more: false, busy: false, filter: 'all', query: '', archived: false, managementAvailable: false }),
@@ -28,11 +28,7 @@ Page({
       if (session.archivedAt) throw new Error('请先取消归档，再继续对话。');
       // History already holds the messages. Render locally before waiting
       // for a server receipt, which can take seconds on a mobile connection.
-      selectSession(app, state, id);
-      const generation = app._generation;
-      app.mutate('/api/sessions/' + encodeURIComponent(id) + '/activate', {}).catch(() => {
-        if (app._generation === generation && app._selectedSessionId === id) notify(new Error('已打开对话，云端同步暂未完成，请稍后重试。'));
-      });
+      activateSession(app, id, () => notify(new Error('已打开对话，历史选择暂未同步，请稍后重试。')));
       await new Promise((resolve, reject) => wx.switchTab({ url: '/pages/chat/index', success: resolve, fail: () => reject(new Error('打开对话失败，请重试。')) }));
     } catch (error) { notify(error); } finally { this.setData({ busy: false }); }
   },

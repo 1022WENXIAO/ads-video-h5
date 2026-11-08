@@ -142,3 +142,82 @@ test('new conversation tells busy users why it cannot create and guests explicit
   const guest = await fixture(false); await guest.page.newSession();
   assert.deepEqual(guest.calls, [['navigate', '/pages/auth/index']]); guest.page.onUnload();
 });
+
+const tapped = (id: string) => ({ currentTarget: { dataset: { id } } });
+function selectable(f: Awaited<ReturnType<typeof fixture>>) {
+  f.state.features = { conversationModes: true, researchModes: true };
+  f.state.credits = { balance: 1000 };
+  f.state.sessions[0].mode = 'chat';
+  f.state.sessions.push({ id: 'b', mode: 'chat', messages: [] }, { id: 'c', mode: 'chat', messages: [] });
+  f.app._generation = 0;
+  f.app.client.request = async () => ({ id: f.app.state.activeSessionId });
+  f.app.apply = (state: any) => { f.app.state = state; f.page.render(state); return state; };
+  f.page.render(f.state);
+}
+
+test('pending submission does not lock other conversations or clear their drafts after a late receipt', async () => {
+  const f = await fixture(), p = f.page; selectable(f);
+  let finish!: (state: any) => void, body: any;
+  f.app.mutate = (route: string, value: any) => { assert.equal(route, '/api/chat'); body = value; return new Promise(resolve => { finish = resolve; }); };
+  p.setData({ prompt: '搜索原问题', researchMode: 'web' });
+  const sending = p.send(); assert.equal(p.data.sending, true);
+  p.sidebarActivate(tapped('b'));
+  assert.equal(p.data.sessionId, 'b'); assert.equal(p.data.sending, false); assert.equal(p.data.prompt, '');
+  p.setData({ prompt: '乙窗口草稿', researchMode: 'deep' });
+  finish(f.app.state); await sending;
+  assert.equal(body.sessionId, 'old'); assert.equal(body.researchMode, 'web');
+  assert.equal(p.data.sessionId, 'b'); assert.equal(p.data.prompt, '乙窗口草稿');
+  p.sidebarActivate(tapped('old')); assert.equal(p.data.prompt, ''); assert.equal(p.data.sending, false);
+  p.sidebarActivate(tapped('b')); assert.equal(p.data.prompt, '乙窗口草稿'); assert.equal(p.data.researchMode, 'deep');
+  p.onUnload();
+});
+
+test('running background jobs and a failed admission cannot lock or overwrite the selected window', async () => {
+  const f = await fixture(), p = f.page; selectable(f);
+  f.app.state.jobs.push({ id: 'j', sessionId: 'old', status: 'running', progress: 42 }); p.render(f.app.state);
+  assert.equal(p.data.running, true);
+  let reject!: (e: Error) => void;
+  f.app.mutate = () => new Promise((_resolve, fail) => { reject = fail; });
+  p.setData({ prompt: '请回复' }); const sending = p.send();
+  p.sidebarActivate(tapped('b')); p.setData({ prompt: '不受影响' });
+  assert.equal(p.data.running, false); assert.equal(p.data.sending, false);
+  reject(new Error('网络暂时不可用')); await sending;
+  assert.equal(p.data.error, ''); assert.equal(p.data.prompt, '不受影响');
+  p.sidebarActivate(tapped('old')); assert.equal(p.data.prompt, '请回复'); assert.equal(p.data.error, '网络暂时不可用');
+  assert.equal(p.data.running, true); p.onUnload();
+});
+
+test('rapid selection uses cached state immediately and coalesces cloud synchronization to the last choice', async () => {
+  const f = await fixture(), p = f.page; selectable(f);
+  const requests: any[] = []; let finish!: () => void;
+  f.app.client.request = (route: string, body: any) => { requests.push({ route, body }); return requests.length === 1 ? new Promise<void>(r => { finish = r; }) : Promise.resolve({}); };
+  p.sidebarActivate(tapped('b')); p.sidebarActivate(tapped('c')); p.sidebarActivate(tapped('old'));
+  assert.equal(p.data.sessionId, 'old'); assert.equal(requests.length, 1);
+  const sync = f.app._activationSync; finish(); await sync;
+  assert.deepEqual(requests.map(r => r.route), ['/api/sessions/b/activate', '/api/sessions/old/activate']);
+  assert.equal(requests[0].body.receiptOnly, true);
+  p.onUnload();
+});
+
+test('late draft creation preserves a newer selection and unsupported research is not submitted', async () => {
+  const f = await fixture(), p = f.page; selectable(f);
+  f.app.state.sessions[0].mode = 'work'; f.app.state.sessions.splice(1, 2);
+  f.app.state.sessions.push({ id: 'b', mode: 'work', messages: [{ id: 'b-message', text: '已有内容', role: 'user' }] }); p.render(f.app.state);
+  let finish!: (s: any) => void; f.app.mutate = () => new Promise(r => { finish = r; });
+  const creating = p.newSession('chat');
+  p.sidebarActivate(tapped('b')); p.setData({ prompt: '不要被清空' });
+  finish({ ...f.app.state, activeSessionId: 'new', sessions: [...f.app.state.sessions, { id: 'new', mode: 'chat', messages: [] }] }); await creating;
+  assert.equal(p.data.sessionId, 'b'); assert.equal(p.data.prompt, '不要被清空'); assert.equal(p.data.creatingSession, false);
+  f.app.state.features.researchModes = false; f.app.state.sessions.find((s: any) => s.id === 'b').mode = 'chat'; p.render(f.app.state);
+  p.setData({ researchMode: 'deep' }); f.app.mutate = assert.fail;
+  await p.send(); assert.match(p.data.error, /0.2.8 本地后端/);
+  p.onUnload();
+});
+
+test('account changes clear local draft state even if the server reuses the same session identifier', async () => {
+  const f = await fixture(), p = f.page; selectable(f);
+  p.setData({ prompt: '旧账号内容', researchMode: 'deep' });
+  f.app._generation++; f.app._pendingMessageSessions = new Set(); p.render(f.app.state);
+  assert.equal(p.data.prompt, ''); assert.equal(p.data.researchMode, 'auto'); assert.equal(p.data.sending, false);
+  p.onUnload();
+});

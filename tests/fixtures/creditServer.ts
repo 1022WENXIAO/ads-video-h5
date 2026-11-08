@@ -12,7 +12,7 @@ import { disposeOwnedFixture, waitForOwnedFixtureReady } from './ownedProcess';
 
 // Real Express/queue/Pi transport, disposable local users and a controllable
 // token provider. No production credentials or external services are used.
-export async function startCreditServer(options: { wechat?: boolean; onProviderRequest?: (body: any) => Promise<void> } = {}) {
+export async function startCreditServer(options: { wechat?: boolean; onProviderRequest?: (body: any) => Promise<void>; structuredReply?: (body:any)=>unknown } = {}) {
   const directory = await mkdtemp(path.join(tmpdir(), 'qj-credit-service-'));
   const password = 'Credit-QA-user-123', adminPassword = 'Credit-QA-admin-123';
   const providerState = { calls: 0, outputTokens: 100, delay: 0, multiTurn: false, fail: false, wechatCalls: 0 };
@@ -35,7 +35,7 @@ export async function startCreditServer(options: { wechat?: boolean; onProviderR
     if (response.destroyed) return;
     const audioRequest = body.messages.some((message: any) => Array.isArray(message.content) && message.content.some((part: any) => part.type === 'input_audio'));
     const usage = { prompt_tokens: 1000, completion_tokens: providerState.outputTokens, prompt_tokens_details: { cached_tokens: 500, ...(audioRequest ? { audio_tokens: 1000, audio_cached_tokens: 500 } : {}) } };
-    if (!body.stream) { response.writeHead(200, { 'Content-Type': 'application/json' }); response.end(JSON.stringify({ id, usage, choices: [{ message: { content: '{"text":"用一句话介绍功能"}' } }] })); return; }
+    if (!body.stream) { response.writeHead(200, { 'Content-Type': 'application/json' }); response.end(JSON.stringify({ id, usage, choices: [{ message: { content: JSON.stringify(options.structuredReply?.(body)??{text:'用一句话介绍功能'}) } }] })); return; }
     const reply = !providerState.multiTurn || body.messages.some((m: any) => m.role === 'assistant');
     const delta = reply ? { role: 'assistant', tool_calls: [{ index: 0, id: 'call-' + id, type: 'function', function: { name: 'reply', arguments: JSON.stringify({ sections: [], summary: '测试任务已完成。' }) } }] } : { role: 'assistant', content: '继续完成指令。' };
     const base = { id, object: 'chat.completion.chunk', model: body.model, created: 1 };
@@ -70,7 +70,7 @@ export async function startCreditServer(options: { wechat?: boolean; onProviderR
   const port = (reserve.address() as { port: number }).port; await new Promise<void>(r => reserve.close(() => r()));
   const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
   const imports = options.wechat ? ['--import', './tests/fixtures/wechatFetch.ts'] : [];
-  child = spawn(process.execPath, ['--import', 'tsx', ...imports, 'server/index.ts'], { cwd: root, env: { ...process.env, QINGJIAN_DATA_DIR: directory, PORT: String(port), PUBLIC_BASE_PATH: '', QINGJIAN_ADMIN_PASSWORD: adminPassword,
+  child = spawn(process.execPath, ['--import', 'tsx', ...imports, 'server/index.ts'], { cwd: root, env: { ...process.env, QINGJIAN_WECHAT_NOTICE_TEMPLATES:'[]', QINGJIAN_DATA_DIR: directory, PORT: String(port), PUBLIC_BASE_PATH: '', QINGJIAN_ADMIN_PASSWORD: adminPassword,
     ...(options.wechat ? { QINGJIAN_TEST_WECHAT_PROVIDER: providerBase, QINGJIAN_WECHAT_APP_ID: 'wxf5dfb5d144bcd684', QINGJIAN_WECHAT_APP_SECRET: 'fixture-wechat-secret' } : {}),
   }, stdio: ['ignore', 'pipe', 'pipe'] });
   let spawnError: Error | undefined, spawned = false;
@@ -79,10 +79,12 @@ export async function startCreditServer(options: { wechat?: boolean; onProviderR
   child.once('error', error => { spawnError = error; });
   let logs = ''; child.stdout!.on('data', bytes => { logs += bytes; }); child.stderr!.on('data', bytes => { logs += bytes; });
   const base = `http://127.0.0.1:${port}`;
+  // A cold TypeScript import graph can exceed 15 seconds on Windows. This
+  // bounds fixture boot only; request, job and evaluator deadlines stay intact.
   const ready = await waitForOwnedFixtureReady(async signal => {
     if (spawnError || child.exitCode !== null || child.signalCode !== null) throw new Error('QA server failed: ' + (spawnError?.message || logs));
     try { return (await fetch(base + '/api/health', { signal: AbortSignal.any([signal, AbortSignal.timeout(1000)]) })).ok; } catch { return false; }
-  });
+  }, process.platform === 'win32' ? 30000 : 15000);
   if (!ready) throw new Error(`QA server did not start: ${JSON.stringify({ spawned, elapsedMs: Date.now() - startupStarted, exitCode: child.exitCode, signalCode: child.signalCode })}; output: ${logs || '(no startup stdout/stderr)'}`);
   async function login(email = users[0].email) {
     const response = await fetch(base + '/api/auth/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, password }), signal: AbortSignal.timeout(10000) });

@@ -125,12 +125,12 @@ test('ASR failures and empty recognition never dispatch instructions; successful
   const voice = createVoice({ getRecorderManager: () => recorder }, { onState() {}, authorize: async () => {}, onError: (error: any) => errors.push(error), onAccepted: () => accepted++,
     client: { upload: async (...args: any[]) => { requests.push(['asr', ...args]); if (response instanceof Error) throw response; return response; } }, submit: async (...args: any[]) => { requests.push(['chat', ...args]); return {}; } });
   for (const result of [new Error('识别失败'), { text: '' }, { text: '先写分镜', creditTicket: 'admitted-ticket' }]) {
-    response = result; const snapshot = { sessionId: 'frozen-session', prefix: '不要生成成片', attachmentIds: ['own-media'] };
-    voice.hold(); await voice.start(snapshot); snapshot.prefix = 'later edited'; snapshot.attachmentIds.push('later-media'); voice.release();
+    response = result; const snapshot = { sessionId: 'frozen-session', interaction: 'chat', researchMode: 'deep', prefix: '不要生成成片', attachmentIds: ['own-media'] };
+    voice.hold(); await voice.start(snapshot); snapshot.prefix = 'later edited'; snapshot.researchMode = 'off'; snapshot.attachmentIds.push('later-media'); voice.release();
     await recorder.stopped({ tempFilePath: '/own-recording', duration: 1000, fileSize: 100 });
   }
   assert.equal(errors.length, 2); assert.equal(accepted, 1); assert.equal(requests.filter(value => value[0] === 'chat').length, 1);
-  const chat = requests.find(value => value[0] === 'chat'); assert.deepEqual(chat[2], { sessionId: 'frozen-session', message: '不要生成成片\n先写分镜', attachmentIds: ['own-media'], voiceTicket: 'admitted-ticket' });
+  const chat = requests.find(value => value[0] === 'chat'); assert.deepEqual(chat[2], { sessionId: 'frozen-session', interaction: 'chat', researchMode: 'deep', message: '不要生成成片\n先写分镜', attachmentIds: ['own-media'], voiceTicket: 'admitted-ticket' });
   assert.deepEqual(requests[0].slice(1), ['/api/voice/transcribe', '/own-recording', 'audio', { prefix: '不要生成成片' }]); voice.dispose();
 });
 

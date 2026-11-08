@@ -296,7 +296,7 @@ export function createAuth(dataDir: string, publicBase: string, options: { excha
     try { await save(); } catch (error) { user.avatarUrl = previous; throw error; }
     return safeUser(user);
   }
-  return { load, mount, currentUser, setAvatar, listUsers: () => store.users.map(safeUser) };
+  return { load, mount, currentUser, setAvatar, listUsers: () => store.users.map(safeUser), wechatIdentity: (id:string) => { const user=store.users.find(u=>u.id===id),identity=user?.authProvider==='wechat'?user.wechat:undefined; return identity?{...identity}:undefined; } };
 }
 
 export function userOf(request: Request): PublicUser { return (request as Request & { user: PublicUser }).user; }

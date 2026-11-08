@@ -1,5 +1,6 @@
 import { jobFetch, throwIfJobCancelled } from './jobExecution';
 import type { ModelConfig } from './modelRegistry';
+import {searchSearx} from './searxSearch';
 import type { ResearchReference } from '../src/types';
 import type { ResearchResult } from './researchTypes';
 import { openWebBase, searchOpenWeb } from './openWebSearch';
@@ -60,6 +61,10 @@ export function mergeResearch(previous:ResearchResult|undefined,next:ResearchRes
 }
 
 async function searchWithPrimary(config: ModelConfig, topic: string, gaps: string[], purpose:'short'|'lesson'|'news'|'question'='short', newsContext?: NewsSearchContext,skipOpen=false,deadline=Date.now()+120000,channelFailures:unknown[]=[]):Promise<ResearchResult> {
+  if(!skipOpen&&process.env.QINGJIAN_SEARXNG_URL)try{
+    const found=await searchSearx(topic);const references=purpose==='news'?found.references.filter(ref=>!newsSourceRejection(ref.url)):found.references;
+    if(!references.length)throw Error('SearXNG 没有可核验正文候选。');return{...found,references};
+  }catch(error){throwIfJobCancelled();channelFailures.push({provider:'searxng',status:'failed',reason:error instanceof Error?error.message:'搜索不可用'});}
   let base:string|undefined,fallback='';
   try{base=skipOpen?undefined:openWebBase();}catch(error){fallback=error instanceof Error?error.message:'本机搜索配置无效';}
   const now=new Date().toISOString();
@@ -111,8 +116,8 @@ async function searchWithPrimary(config: ModelConfig, topic: string, gaps: strin
 }
 
 /** Same evidence contract across search tools/models; failures remain visible. */
-export async function researchGaps(config:ModelConfig,topic:string,gaps:string[],purpose:'short'|'lesson'|'news'|'question'='short',newsContext?:NewsSearchContext):Promise<ResearchResult>{
-  const attempts:ReadOnlyFallbackAttempt[]=[],channelFailures:unknown[]=[],deadline=Date.now()+120000,context=purpose==='news'?(newsContext||createNewsSearchContext(topic,false,Date.now())):undefined;let index=0;
+export async function researchGaps(config:ModelConfig,topic:string,gaps:string[],purpose:'short'|'lesson'|'news'|'question'='short',newsContext?:NewsSearchContext,outerDeadline=Date.now()+120000):Promise<ResearchResult>{
+  const attempts:ReadOnlyFallbackAttempt[]=[],channelFailures:unknown[]=[],deadline=Math.min(outerDeadline,Date.now()+120000),context=purpose==='news'?(newsContext||createNewsSearchContext(topic,false,Date.now())):undefined;let index=0;
   const result=await withReadOnlyTextFallback(config,model=>searchWithPrimary(model,topic,gaps,purpose,context,index++>0,deadline,channelFailures),{deadline,recoverable:error=>error instanceof SyntaxError,observe:attempt=>{attempts.push(attempt);}});
   return {...result,queries:[...channelFailures,...result.queries,...(attempts.length>1?attempts.map(attempt=>({provider:'text-backup',...attempt})):[])]};
 }

@@ -13,6 +13,9 @@ export interface Shot {
 }
 
 export interface MediaItem {
+  filmAnalysis?: import('./film').FilmIndex;
+  libraryCollection?: 'library' | 'production';
+  archive?: {sourceId:string;sourceHash:string;reportId:string;shotId:string;start:number;end:number;tags:string[]};
   thumbnailUrl?: string;
   ownerId?: string;
   id: string;
@@ -358,6 +361,8 @@ export interface JobAttempt {
 }
 
 export interface Job {
+  filmTask?: import('./film').FilmTask;
+  researchMode?: 'auto' | 'off' | 'web' | 'deep';
   interaction?: 'chat' | 'explore' | 'create';
   taskSpec?: import('./taskRuntime').TaskSpec;
   template?: import('./videoTemplates').TemplateSelection;
@@ -427,8 +432,9 @@ export interface AppSettings {
 }
 
 export interface AppState {
+  notifications?: import('./notifications').NoticeInbox;
   account?: { id: string; displayName: string; avatarUrl?: string; authProvider?: 'email' | 'wechat' };
-  features?: { conversationModes: boolean; sessionManagement: boolean; schedules: boolean; accountAvatars?: boolean };
+  features?: { conversationModes: boolean; sessionManagement: boolean; schedules: boolean; accountAvatars?: boolean; researchModes?: boolean; notifications?: boolean; filmAnalysis?: boolean };
   limits?: { maxAttachments: number };
   templates?: import('./videoTemplates').VideoTemplate[];
   credits?: import('./creditTypes').CreditWallet;

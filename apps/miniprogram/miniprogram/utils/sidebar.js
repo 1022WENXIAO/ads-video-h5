@@ -9,7 +9,7 @@ function sidebarView(state, filter, query, archived, limit) {
   for (const s of sessions.slice(0, limit || 40)) {
     const date = beijingTime(s.updatedAt).slice(0, 10);
     const group = date === today ? groups[0] : date === yesterday ? groups[1] : groups[2];
-    group.items.push({ id: s.id, title: s.title || '新对话', mode: modeOf(s), selected: s.id === state.activeSessionId, archived: Boolean(s.archivedAt) });
+    group.items.push({ id: s.id, title: s.title || '新对话', mode: modeOf(s), selected: s.id === state.activeSessionId, archived: Boolean(s.archivedAt), unread: Boolean(state.notifications && state.notifications.unreadBySession && state.notifications.unreadBySession[s.id]) });
   }
   return { sidebarGroups: groups.filter(g => g.items.length), sidebarMore: sessions.length > (limit || 40) };
 }

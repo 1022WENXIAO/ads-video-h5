@@ -26,7 +26,7 @@ function createVoice(platform, options) {
       if (options.onRecognized) options.onRecognized(message, current, recognized.creditTicket);
       state('sending');
       const accepted = await options.submit('/api/chat', { sessionId: current.sessionId, message, attachmentIds: current.attachmentIds,
-        ...(current.interaction ? { interaction: current.interaction } : {}),
+        ...(current.interaction ? { interaction: current.interaction } : {}), ...(current.researchMode ? { researchMode: current.researchMode } : {}),
         ...(recognized.creditTicket ? { voiceTicket: recognized.creditTicket } : {}) });
       state('idle'); options.onAccepted(accepted, message, current);
     } catch (error) { fail(error); }
@@ -36,7 +36,7 @@ function createVoice(platform, options) {
     hold() { if (!disposed && phase === 'idle') held = true; },
     async start(value) {
       if (disposed || phase !== 'idle' || !held) return;
-      snapshot = { sessionId: value.sessionId, interaction: value.interaction, prefix: value.prefix || '', attachmentIds: (value.attachmentIds || []).slice() };
+      snapshot = { sessionId: value.sessionId, interaction: value.interaction, researchMode: value.researchMode, prefix: value.prefix || '', attachmentIds: (value.attachmentIds || []).slice() };
       cancelled = false; const attempt = ++serial; state('authorizing');
       try {
         await options.authorize();

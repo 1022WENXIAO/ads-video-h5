@@ -47,6 +47,44 @@ test('empty drafts are reused and explicit history selection wins over an incorr
   await assert.rejects(openDraft({ state: initial.sessions, mutate: assert.fail }, 'chat'), /尚未启用/);
 });
 
+test('a pending submission is excluded from draft reuse on both sides and empty clicks still reuse one window', async () => {
+  const initial:any={activeSessionId:'pending',features:{conversationModes:true},sessions:[{id:'pending',mode:'chat',messages:[]}]};
+  let body:any,creates=0;
+  const app:any={state:initial,_pendingMessageSessions:new Set(['pending']),async mutate(route:string,value:any){assert.equal(route,'/api/sessions');creates++;body=value;app.state={...initial,activeSessionId:'new',sessions:[...initial.sessions,{id:'new',mode:'chat',messages:[]}]};return app.state;},client:{request:async()=>({})}};
+  const first=await openDraft(app,'chat');assert.equal(first.activeSessionId,'new');assert.deepEqual(body.excludeSessionIds,['pending']);
+  await openDraft(app,'chat');assert.equal(creates,1);
+});
+
+test('a blocked chat does not delay a second conversation of the same user, and activation uses a lightweight owner-scoped receipt', async t => {
+  let release!:()=>void, began!:()=>void;
+  const blocked=new Promise<void>(r=>{release=r;}),started=new Promise<void>(r=>{began=r;});
+  const f=await creditFixture({onProviderRequest:async body=>{if(JSON.stringify(body.messages).includes('CHAT-A-BLOCK')){began();await blocked;}}});
+  t.after(f.close);
+  try{
+    const cookie=await f.login(),foreign=await f.login('shikanon@example.test');
+    const a:any=await(await f.request(cookie,'/api/sessions',{mode:'chat'})).json();
+    const first:any=await(await f.request(cookie,'/api/chat',{sessionId:a.activeSessionId,message:'你好 CHAT-A-BLOCK',interaction:'chat'})).json();
+    const aJob=first.jobs.at(-1).id;
+    await Promise.race([started,new Promise((_,reject)=>{const timer=setTimeout(()=>reject(Error('Chat did not reach fixture provider')),10000);timer.unref();})]);
+    const b:any=await(await f.request(cookie,'/api/sessions',{mode:'chat',reuseEmpty:true})).json();
+    assert.notEqual(a.activeSessionId,b.activeSessionId);assert.equal(b.features.researchModes,true);
+    assert.equal((await f.request(foreign,`/api/sessions/${a.activeSessionId}/activate`,{receiptOnly:true})).status,404);
+    const activation=await f.request(cookie,`/api/sessions/${a.activeSessionId}/activate`,{receiptOnly:true});
+    assert.deepEqual(await activation.json(),{activeSessionId:a.activeSessionId});
+    const second:any=await(await f.request(cookie,'/api/chat',{sessionId:b.activeSessionId,message:'简短问候',interaction:'chat',researchMode:'off'})).json();
+    const bJob=second.jobs.at(-1).id;assert.equal(second.jobs.at(-1).researchMode,'off');
+    await waitFor(async()=>{const s:any=await(await f.request(cookie,'/api/state')).json();return s.jobs.find((j:any)=>j.id===bJob)?.status==='succeeded';});
+    const still:any=await(await f.request(cookie,'/api/state')).json();assert.equal(still.jobs.find((j:any)=>j.id===aJob).status,'running');
+    assert.equal((await f.request(cookie,'/api/chat',{sessionId:b.activeSessionId,message:'测试',interaction:'chat',researchMode:'invented'})).status,400);
+    assert.equal((await f.request(cookie,'/api/chat',{sessionId:b.activeSessionId,message:'测试',interaction:'create',researchMode:'deep'})).status,400);
+    release();await waitFor(async()=>{const s:any=await(await f.request(cookie,'/api/state')).json();return s.jobs.find((j:any)=>j.id===aJob)?.status==='succeeded';});
+    const blank:any=await(await f.request(cookie,'/api/sessions',{mode:'chat',reuseEmpty:true})).json();
+    const fresh:any=await(await f.request(cookie,'/api/sessions',{mode:'chat',reuseEmpty:true,excludeSessionIds:[blank.activeSessionId]})).json();
+    assert.notEqual(fresh.activeSessionId,blank.activeSessionId);
+    assert.equal((await f.request(cookie,'/api/sessions',{reuseEmpty:true,excludeSessionIds:[42]})).status,400);
+  }finally{release();}
+});
+
 test('history supports filtering, confirmed deletion and cancelling without touching stored conversations', async () => {
   let deleted = 0, confirm = false;
   const state: any = { activeSessionId: 'a', features: { sessionManagement: true }, jobs: [], sessions: [{ id: 'a', title: '旅行', mode: 'chat', messages: [] }, { id: 'b', title: '视频', mode: 'work', messages: [], archivedAt: '2026-11-05' }] };

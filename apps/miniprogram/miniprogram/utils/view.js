@@ -17,11 +17,12 @@ function jobView(job, showWorkflow) {
   return job ? { id: job.id, label: labels[job.status] || job.status, active: active(job), failed: job.status === 'failed', progress: Math.max(0, Math.min(100, job.status === 'succeeded' ? 100 : job.progress || 0)), stage: brandText(job.stage) || '', error: brandText(job.error) || '', workflow: (showWorkflow ? job.workflow || [] : []).slice(-40).map((step, index) => ({ id: step.callId || index, tool: step.tool, stage: step.stage, status: labels[step.status] || step.status, detail: String(brandText(step.detail) || '').slice(0, 1200), seconds: step.durationMs === undefined ? '' : (step.durationMs / 1000).toFixed(1) })) } : null;
 }
 function artifactView(item, client) {
-  return { id: item.id, name: brandText(item.name), kind: item.kind, date: beijingTime(item.createdAt), source: item.url, coverSource: item.kind === 'image' ? item.url : item.coverUrl || '', cover: client.previewUrl(item.kind === 'image' ? item.url : item.coverUrl), version: item.version || 1, duration: item.duration ? Math.round(item.duration) + ' 秒' : '', status: item.review && item.review.status === 'needs-review' ? '需复核' : '已完成' };
+  const coverSource = item.kind === 'image' ? item.url : item.coverUrl || '';
+  return { id: item.id, name: brandText(item.name), kind: item.kind, date: beijingTime(item.createdAt), source: item.url, coverSource, cover: client.cachedDownload && client.cachedDownload(coverSource) || client.previewUrl(coverSource), version: item.version || 1, duration: item.duration ? Math.round(item.duration) + ' 秒' : '', status: item.review && item.review.status === 'needs-review' ? '需复核' : '已完成' };
 }
 function mediaView(item, client) {
-  const coverSource = item.kind === 'image' ? item.thumbnailUrl || item.url : item.shots && item.shots[0] && item.shots[0].thumbnailUrl || '';
-  return { id: item.id, name: item.name, kind: item.kind, source: item.url, coverSource, cover: client.previewUrl(coverSource), duration: item.duration ? Math.round(item.duration) + ' 秒' : '', date: beijingTime(item.createdAt), author: Boolean(item.character), status: item.analysis ? '原声已分析' : '' };
+  const coverSource = item.kind === 'image' ? item.thumbnailUrl || item.url : item.thumbnailUrl || item.shots && item.shots[0] && item.shots[0].thumbnailUrl || '';
+  return { id: item.id, name: item.name, kind: item.kind, source: item.url, coverSource, cover: client.cachedDownload && client.cachedDownload(coverSource) || client.previewUrl(coverSource), duration: item.duration ? Math.round(item.duration) + ' 秒' : '', date: beijingTime(item.createdAt), author: Boolean(item.character), status: item.analysis ? '原声已分析' : '' };
 }
 function chatView(state, client, expanded, count, offset) {
   const session = state.sessions.find(item => item.id === state.activeSessionId);

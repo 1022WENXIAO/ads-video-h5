@@ -1,0 +1,22 @@
+<view class="theme-surface theme-{{theme}}"><view class="screen">
+  <view class="page-heading"><text>拉片与镜头归档</text></view>
+  <view class="muted">从真实原片整理场景、人物描述、景别与复用建议，选中有用的镜头后归档。</view>
+  <view wx:if="{{!supported}}" class="notice">当前连接的服务暂未启用拉片分析。</view>
+  <view wx:if="{{!sources.length}}" class="empty"><view class="title">先添加一部原片</view><button size="mini" class="primary" bindtap="library">到素材库添加影片</button></view>
+  <view wx:else>
+    <picker range="{{sources}}" range-key="name" value="{{sourceIndex}}" bindchange="sourceChange" disabled="{{busy}}"><view class="panel source-choice">{{sources[sourceIndex].name}} <text>⌄</text></view></picker>
+    <view class="row film-actions"><button size="mini" class="primary" bindtap="analyze" loading="{{busy}}" disabled="{{!supported || busy || running}}">{{count ? '继续 / 重新分析' : '开始拉片分析'}}</button><button size="mini" class="small-button" bindtap="stop" wx:if="{{running}}">停止任务</button><button size="mini" class="small-button" bindtap="clips">镜头归档</button></view>
+    <view class="quiet">画面理解和原声转写调用模型，按实际用量扣积分；已有分析会复用。镜头剪出归档不新增模型调用。</view>
+    <view wx:if="{{running}}" class="notice">{{stage || '任务处理中'}} · {{progress}}%</view><view wx:if="{{error}}" class="error">{{error}}</view>
+    <view wx:if="{{previewSrc}}" class="film-preview"><view class="quiet">原片预览，从 {{previewStart}} 秒播放</view><video id="film-preview" src="{{previewSrc}}" initial-time="{{previewStart}}" controls object-fit="contain"/></view>
+    <view wx:if="{{count}}" class="film-summary"><text>已分析 {{done}} / {{count}} 个自动检测镜头</text><picker range="{{scenes}}" value="{{sceneIndex}}" bindchange="sceneChange"><view>{{scenes[sceneIndex]}} ⌄</view></picker></view>
+    <view wx:for="{{warnings}}" wx:key="*this" class="quiet">{{item}}</view>
+    <view wx:for="{{shots}}" wx:for-item="shot" wx:key="id" class="panel shot-card">
+      <image wx:if="{{shot.cover}}" class="shot-cover" src="{{shot.cover}}" mode="aspectFill" data-id="{{shot.id}}" binderror="coverError"/><view class="shot-heading">镜头 {{shot.index + 1}} · {{shot.start}}–{{shot.end}} 秒</view>
+      <view wx:if="{{shot.status === 'ready'}}"><view class="title">{{shot.summary}}</view><view class="muted">{{shot.scene}} · {{shot.shotType}}</view><view class="quiet">{{shot.movement}}</view><view class="shot-tags"><text wx:for="{{shot.people}}" wx:key="*this">{{item}} </text><text wx:for="{{shot.tags}}" wx:key="*this">{{item}} </text></view><view wx:if="{{shot.quote}}" class="quote">原话：{{shot.quote}}</view><view class="usage">复用建议：{{shot.usage}}</view><view class="row"><button size="mini" class="small-button" bindtap="preview" data-id="{{shot.id}}">预览原片</button><button size="mini" class="secondary" bindtap="editArchive" data-id="{{shot.id}}" disabled="{{shot.archived || busy}}">{{shot.archived ? '已归档' : '归档此镜头'}}</button></view></view>
+      <view wx:elif="{{shot.status === 'failed'}}" class="error">{{shot.error || '分析未完成，可重试继续'}}</view><view wx:else class="quiet">等待分析</view>
+    </view><button size="mini" class="small-button" bindtap="more" wx:if="{{more}}">显示更多镜头</button>
+  </view>
+</view><privacy-dialog id="privacy"/>
+<view wx:if="{{archiveEditor}}" class="film-mask" bindtap="cancelArchive"><view class="film-sheet" catchtap="noop"><view class="title">归档原片镜头</view><input class="input" value="{{clipName}}" bindinput="name" maxlength="80" placeholder="镜头名称"/><input class="input" value="{{clipTags}}" bindinput="tags" maxlength="300" placeholder="检索标签，用逗号分隔"/><view class="quiet">保留原片来源和时间范围，剪出独立文件后可用于创作。</view><button class="primary" bindtap="archive" loading="{{busy}}" disabled="{{busy}}">确认归档</button><button class="small-button" bindtap="cancelArchive" disabled="{{busy}}">取消</button></view></view>
+</view>

@@ -12,7 +12,8 @@
     "pages/legal/index",
     "pages/feedback/index",
     "pages/about/index",
-    "pages/tasks/index"
+    "pages/tasks/index",
+    "pages/film/index"
   ],
   "window": {
     "navigationBarTitleText": "轻喵LightMao",

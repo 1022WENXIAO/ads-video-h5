@@ -114,3 +114,20 @@ test('unavailable live evidence produces an explicit limited answer and never as
   try{const text=await answerWithPi('今天有什么新消息？',primary,[],[],undefined,undefined,{research:async()=>({...sources,references:[],failures:['no readable body']})});assert.match(text,/没有取得可核对的原文/);assert.doesNotMatch(text,/已核实|刚刚发布/);}
   finally{globalThis.fetch=saved;}
 });
+
+test('role instructions do not contaminate the search query and explicit offline mode suppresses research',async()=>{
+  const saved=globalThis.fetch;const queries:string[]=[];
+  globalThis.fetch=async()=>stream({sections:[],summary:'答案来自实际正文。',sourceIds:['ref-1']});
+  try{
+    const actual='查一下最新工具版本';
+    const text=await answerWithPi('你是轻喵，不能生成视频。用户本轮消息：'+actual,primary,[],[],undefined,undefined,{
+      researchPrompt:actual,research:async(_config,query)=>{queries.push(query);return structuredClone(sources);},
+    });
+    assert.deepEqual(queries,[actual]);assert.match(text,/official.example.org/);
+    globalThis.fetch=async()=>stream({sections:[],summary:'这是已有知识，未核验实时状态。'});
+    const offline=await answerWithPi('搜索最新版本，但不用搜索，只解释版本是什么',primary,[],[],undefined,undefined,{
+      mode:'deep',research:async()=>assert.fail('offline must not search'),deepResearch:async()=>assert.fail('offline must not explore'),
+    });
+    assert.equal(offline,'这是已有知识，未核验实时状态。');
+  }finally{globalThis.fetch=saved;}
+});

@@ -15,7 +15,8 @@ import { runRequiredTool } from './requiredTool';
 import { canRetryWorkflowError, safeErrorText } from './executionErrors';
 import {frozenTextFallbacks} from './modelContext';
 import {withReadOnlyTextFallback,ReadOnlyCapabilityError} from './readOnlyFallback';
-import {questionNeedsResearch,researchQuestion,questionSourceContext,type QuestionResearch} from './questionResearch';
+import {questionNeedsResearch,resolveResearchMode,researchQuestion,questionSourceContext,questionWorkingReferences,type QuestionResearch} from './questionResearch';
+import {researchDeepQuestion} from './deepQuestionResearch';
 import {recoverToolDecision} from './workflowDriver';
 import { applyEditAudioPolicy, editProposalNarrativeFeedback, editProposalTimingFeedback, editSentenceBudgetHint, normalizeEditProposal } from './editProposal';
 import { currentAgentRuntime, limitParallelTools, runtimeParallelLimit } from './agentRuntime';
@@ -63,13 +64,13 @@ export async function probeAudio(file: string): Promise<number> {
   return duration;
 }
 
-export async function detectShots(file: string, duration: number, mediaId: string): Promise<Shot[]> {
+export async function detectShots(file: string, duration: number, mediaId: string, options:{full?:boolean}={}): Promise<Shot[]> {
   const log = await runFFmpeg(['-hide_banner', '-nostats', '-i', file, '-vf', "select='gt(scene,0.25)',showinfo", '-an', '-f', 'null', '-'], 120_000);
   const cuts = [...log.matchAll(/pts_time:([\d.]+)/g)]
     .map((match) => Number(match[1]))
     .filter((time) => Number.isFinite(time) && time > 0.5 && time < duration - 0.5);
   const unique = cuts.filter((time, index) => index === 0 || time - cuts[index - 1] >= 0.5);
-  const selected = unique.length <= 7 ? unique : Array.from({ length: 7 }, (_, index) => unique[Math.round(index * (unique.length - 1) / 6)]);
+  const selected = options.full || unique.length <= 7 ? unique : Array.from({ length: 7 }, (_, index) => unique[Math.round(index * (unique.length - 1) / 6)]);
   const points = [0, ...selected, duration];
   return points.slice(0, -1).map((start, index) => ({
     start: +start.toFixed(2), end: +points[index + 1].toFixed(2), thumbnailUrl: `/api/media/${mediaId}/shots/${index}`,
@@ -310,18 +311,23 @@ export async function createMusicQueryWithPi(prompt: string, config: ModelConfig
   return query;
 }
 
-export function answerForSessionWithPi(options:{prompt:string;config:ModelConfig;media:MediaItem[];history:ChatMessage[];plan:EditPlan|null;attached:MediaItem[];onSection?:(id:string,text:string)=>Promise<void>;progress?:(events:WorkflowEvent[])=>Promise<void>}):Promise<string> {
+export function answerForSessionWithPi(options:{prompt:string;instruction?:string;researchMode?:'auto'|'off'|'web'|'deep';onResearch?:(evidence:QuestionResearch)=>Promise<void>;config:ModelConfig;media:MediaItem[];history:ChatMessage[];plan:EditPlan|null;attached:MediaItem[];onSection?:(id:string,text:string)=>Promise<void>;progress?:(events:WorkflowEvent[])=>Promise<void>}):Promise<string> {
   const {prompt,config,media,history,plan,attached,onSection,progress}=options;
-  return answerWithPi(prompt,config,sessionSources(prompt,media,attached,plan,history),history,onSection,progress);
+  return answerWithPi((options.instruction?options.instruction+'\n用户本轮消息：':'')+prompt,config,sessionSources(prompt,media,attached,plan,history),history,onSection,progress,{researchPrompt:prompt,mode:options.researchMode,onResearch:options.onResearch});
 }
 
-export async function answerWithPi(prompt:string,config:ModelConfig,media:MediaItem[],history:ChatMessage[],onSection?:(id:string,text:string)=>Promise<void>,progress?:(events:WorkflowEvent[])=>Promise<void>,dependencies:{research?:typeof researchQuestion}={}):Promise<string>{
-  const secrets=[config,...frozenTextFallbacks(config)].map(model=>model.apiKey),trace=createToolTrace(progress||(async()=>{}),secrets),deadline=Date.now()+150000;
+export async function answerWithPi(prompt:string,config:ModelConfig,media:MediaItem[],history:ChatMessage[],onSection?:(id:string,text:string)=>Promise<void>,progress?:(events:WorkflowEvent[])=>Promise<void>,dependencies:{research?:typeof researchQuestion;deepResearch?:typeof researchDeepQuestion;researchPrompt?:string;onResearch?:(evidence:QuestionResearch)=>Promise<void>;mode?:'auto'|'off'|'web'|'deep'}={}):Promise<string>{
+  const secrets=[config,...frozenTextFallbacks(config)].map(model=>model.apiKey),trace=createToolTrace(progress||(async()=>{}),secrets),deadline=resolveResearchMode(dependencies.researchPrompt||prompt,dependencies.mode)==='deep'?Infinity:Date.now()+150000;
   let research:QuestionResearch|undefined;
-  if(questionNeedsResearch(prompt)){
-    research=await trace.run('research_question','联网查证问题',{prompt},()=>(dependencies.research||researchQuestion)(config,prompt));
+  const query=dependencies.researchPrompt||prompt,mode=resolveResearchMode(query,dependencies.mode);
+  if(mode!=='off'&&(mode==='web'||mode==='deep'||questionNeedsResearch(query))){
+    research=await trace.run('research_question',mode==='deep'?'深度探索与交叉核验':'联网查证问题',{query,mode},()=>mode==='deep'?(dependencies.deepResearch||researchDeepQuestion)(config,query,{onSnapshot:dependencies.onResearch,onRound:(round,q)=>trace.run('research_round','深度探索 · 第'+round+'轮',{query:q},async()=>({round,query:q})).then(()=>undefined)}):(dependencies.research||researchQuestion)(config,query));
+    await dependencies.onResearch?.(research);
     if(!research.references.length)return '本次联网查证没有取得可核对的原文，暂时无法确认这个问题的最新结论。搜索摘要和模型记忆不能替代当前事实；可提供官方页面继续核验。';
   }
+  if(mode==='deep')prompt+='\n本轮为深度探索：按问题、关键发现、不同观点与限制、结论组织完整研究答复，逐项引用真实来源。不要把多轮检索当作充分证明；如实说明失败和证据缺口。';
+  if(mode==='off')prompt+='\n用户关闭本轮联网，仅基于已有知识与提供的材料作答，不声称核验了实时信息。';
+  else prompt+='\n轻喵支持按需联网搜索和深度探索，用户可在输入框选择。仅凭本轮实际检索判断是否已联网，不要笼统声称无法上网。';
   let attempt=0;
   return withReadOnlyTextFallback(config,model=>{
     const run=()=>answerUsingModel(prompt,model,media,history,onSection,progress,research,deadline,trace.events);
@@ -332,15 +338,16 @@ export async function answerWithPi(prompt:string,config:ModelConfig,media:MediaI
 async function answerUsingModel(prompt: string, config: ModelConfig, media: MediaItem[], history: ChatMessage[], onSection?: (id:string,text:string)=>Promise<void>,progress?:(events:WorkflowEvent[])=>Promise<void>,research?:QuestionResearch,outerDeadline=Date.now()+60000,events:WorkflowEvent[]=[]): Promise<string> {
   let reply = '',turns=0;
   const trace=createToolTrace(progress||(async()=>{}),[config.apiKey],events);
-  const schema = Type.Object({ sections: Type.Array(Type.String(),{maxItems:8}), summary: Type.String(),...(research?{sourceIds:Type.Array(Type.String(),{minItems:1,maxItems:6,description:'本次实际原文的ref ID，只能选提供的reference.id'})}:{}) });
+  const availableReferences=research?questionWorkingReferences(research):[];
+  const schema = Type.Object({ sections: Type.Array(Type.String(),{maxItems:8}), summary: Type.String(),...(research?{sourceIds:Type.Array(Type.String(),{minItems:1,maxItems:availableReferences.length,description:'本次实际原文的ref ID，只能选提供的reference.id'})}:{}) });
   const tool: AgentTool<typeof schema> = {
     name: 'reply', label: '回复用户', description: '回复用户的问题或澄清需求。', parameters: schema,
     execute: async (_id, args) => {
-      const summary = args.summary.trim().replace(/^(?:总结|小结|Summary)[：:]\s*/i,'').slice(0, 2000);
+      const summary = args.summary.trim().replace(/^(?:总结|小结|Summary)[：:]\s*/i,'').slice(0, research?.mode==='deep'?8000:2000);
       if (!summary) throw new Error('回复内容为空，请在 summary 中给出独立完整的答复。');
       const ids=(args as typeof args&{sourceIds?:string[]}).sourceIds||[];
-      if(research&&(!ids.length||ids.some(id=>!research.references.some(ref=>ref.id===id))))throw new Error('回答需引用本次实际读取的来源ID：'+research.references.map(ref=>ref.id).join('、'));
-      const sources=research?.references.filter(ref=>ids.includes(ref.id))||[];
+      if(research&&(!ids.length||ids.some(id=>!availableReferences.some(ref=>ref.id===id))))throw new Error('回答需引用本次提供的来源ID：'+availableReferences.map(ref=>ref.id).join('、'));
+      const sources=availableReferences.filter(ref=>ids.includes(ref.id));
       for(const [index,text] of args.sections.entries())if(text.trim())await onSection?.(`answer-${index}`,text.trim());
       reply = summary+(sources.length?'\n\n核对来源：'+sources.map(ref=>'['+ref.title.replace(/[\[\]\r\n]/g,'')+'](<'+ref.url+'>)').join('；'):'');
       return { content: [{ type: 'text', text: '已准备回复。' }], details: { characters: reply.length } };
@@ -353,7 +360,7 @@ async function answerUsingModel(prompt: string, config: ModelConfig, media: Medi
   let idle=0,structured=false;
   while(!reply&&turns<3&&Date.now()<deadline){
     const previousTurns=turns;
-    const agent=getAgent(config,trace.wrap([tool]),systemPrompt,true);
+    const agent=getAgent(config,trace.wrap([tool]),systemPrompt+(research?.mode==='deep'?' 本轮深度研究：summary给出可独立阅读的完整报告，包括证据、不同观点、局限和来源，不把正文藏在sections。':''),true);
     let providerError='',expired=false;
     agent.finishTurn=async turn=>{
       if(turn.message.stopReason==='error')providerError=turn.message.errorMessage||'模型服务请求失败。';

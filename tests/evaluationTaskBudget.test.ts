@@ -7,7 +7,7 @@ import { taskTimeoutMs } from '../server/evaluationTaskBudget';
 import { createEvaluations } from '../server/evaluations';
 import { createTaskSpec } from '../server/taskContract';
 import { withTaskExecution } from '../server/taskRuntime';
-import { jobDelay, JobDeadlineError, runWithJobSignal } from '../server/jobExecution';
+import { jobDelay, JobDeadlineError, JobCancelledError, runWithJobSignal } from '../server/jobExecution';
 import type { ModelSnapshot } from '../server/modelContext';
 
 test('evaluation budgets share the remaining case deadline without extending ordinary user jobs', async t => {
@@ -45,4 +45,19 @@ test('the real evaluator forwards its case deadline through durable execution in
   assert.equal(manager.get(run.id).results[0].error, 'budget-test-complete-without-video');
   const stored = JSON.parse(await readFile(path.join(directory, 'durable', 'run.json'), 'utf8'));
   assert.ok(Math.abs(stored.deadlineAt - observedDeadline) < 1000);
+});
+
+test('unbounded research execution retains user cancellation and cannot erase an existing durable deadline', async t => {
+  const directory = await mkdtemp(path.join(os.tmpdir(), 'research-budget-'));
+  t.after(() => rm(directory, { recursive: true, force: true }));
+  const spec = createTaskSpec([{ role: 'user', text: '研究' }], '研究');
+  const options = { spec, directory, environmentHash: 'test', assertCurrent() {}, timeoutMs: null };
+  const controller = new AbortController();
+  await assert.rejects(runWithJobSignal(controller.signal, () => withTaskExecution(options, async () => {
+    const stored = JSON.parse(await readFile(path.join(directory, 'run.json'), 'utf8')); assert.equal(stored.deadlineAt, 0);
+    controller.abort(); await jobDelay(1000);
+  })), JobCancelledError);
+  const timed = { ...options, directory: path.join(directory, 'timed'), timeoutMs: 15 };
+  await assert.rejects(withTaskExecution(timed, () => jobDelay(50)), JobDeadlineError);
+  await assert.rejects(withTaskExecution({ ...timed, timeoutMs: null }, async () => {}), JobDeadlineError);
 });

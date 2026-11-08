@@ -3,7 +3,13 @@
 function loadThumbnails(page, field, client) {
   const generation = page._thumbnailGeneration = (page._thumbnailGeneration || 0) + 1;
   if (client.cachedDownload) {
-    page.setData({ [field]: page.data[field].map(item => Object.assign({}, item, { cover: item.cover || client.cachedDownload(item.coverSource) })) });
+    let changed = false;
+    const items = page.data[field].map(item => {
+      const cover = item.cover || client.cachedDownload(item.coverSource);
+      if (!cover || cover === item.cover) return item;
+      changed = true; return Object.assign({}, item, { cover });
+    });
+    if (changed) page.setData({ [field]: items });
   }
   const pending = (page.data[field] || []).filter(item => item.coverSource && !item.cover);
   let next = 0;
@@ -12,7 +18,7 @@ function loadThumbnails(page, field, client) {
       const item = pending[next++];
       if (!page._visible || page._thumbnailGeneration !== generation) return;
       let cover = '', failed = false;
-      try { cover = await client.download(item.coverSource); } catch { failed = true; }
+      try { cover = await client.download(item.coverSource, { persistent: true }); } catch { failed = true; }
       if (!page._visible || page._thumbnailGeneration !== generation) return;
       const index = page.data[field].findIndex(value => value.id === item.id && value.coverSource === item.coverSource);
       if (index < 0) continue;

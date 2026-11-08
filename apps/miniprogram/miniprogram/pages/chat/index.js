@@ -8,18 +8,20 @@ const { attachmentLimit } = require('../../utils/media-limits');
 const { loadThumbnails, coverError } = require('../../utils/thumbnails');
 const { createVoice } = require('../../utils/voice');
 const { keyboardLayout } = require('../../utils/keyboard-layout');
-const { openDraft, modeOf, selectSession } = require('../../utils/sessions');
+const { openDraft, modeOf, activateSession } = require('../../utils/sessions');
 const { sidebarView } = require('../../utils/sidebar');
 const { hydrateAccountAvatar } = require('../../utils/account-avatar');
+const { markSessionRead } = require('../../utils/session-notifications');
 const voiceLabels = { idle: '长按说话，松开发送', authorizing: '等待麦克风授权', starting: '准备录音…', recording: '正在录音 · 松开发送，上滑取消', finishing: '整理录音…', transcribing: '正在识别语音…', sending: '识别完成，正在发送…' };
 Page({
   onShareAppMessage: shareAppMessage,
   onShareTimeline: shareTimeline,
   data: Object.assign(appearanceData(), { messages: [], empty: true, running: false, title: '新会话', prompt: '', attachmentIds: [], attached: [], pick: false, sources: [], sending: false, creatingSession: false, uploading: false, uploadText: '', error: '', voice: 'idle', voiceLabel: voiceLabels.idle, voiceReady: false, cursor: 0, editorCursor: -1, focus: false, scrollTarget: '', balance: '0.00', insufficient: false, hasOlder: false, voiceConsentVisible: false, voiceConsentVersion: version, voiceConsentSections: sections }),
   onLoad() {
+    this._drafts = {}; this._draftGeneration = getApp()._generation; this._pendingSends = getApp()._pendingMessageSessions || (getApp()._pendingMessageSessions = new Set());
     this._sidebarLimit = 40;
     this.setData({ sidebarOpen: false, sidebarFilter: 'all', sidebarQuery: '', sidebarArchived: false, sidebarGroups: [], sidebarMore: false, sidebarBusy: false });
-    this.setData({ mode: 'chat', models: [], modelIndex: 0, modelName: '选择模型', modelChanging: false });
+    this.setData({ mode: 'chat', researchMode: 'auto', models: [], modelIndex: 0, modelName: '选择模型', modelChanging: false });
     // The textarea owns keyboard events. A second global listener used to
     // reapply the same native layout while iOS was still animating its keyboard.
     this._windowListener = event => { if (this._visible) this.windowResize(event); };
@@ -93,8 +95,11 @@ Page({
     if (this._visible) wx.showToast({ title: '已授权，请重新按住说话', icon: 'none' });
   },
   render(state) {
+    this.setData({researchAvailable:Boolean(state.features && state.features.researchModes)});
+    const accountChanged = this._draftGeneration !== getApp()._generation;
+    if (accountChanged) { this._drafts = {}; this._draftGeneration = getApp()._generation; this._pendingSends = getApp()._pendingMessageSessions || new Set(); }
     this._sidebarState = state;
-    this.renderSidebar(state);
+    if (this.data.sidebarOpen) this.renderSidebar(state);
     hydrateAccountAvatar(this, state, getApp());
     const session = state.sessions.find(s => s.id === state.activeSessionId);
     if (session) {
@@ -106,10 +111,18 @@ Page({
     const modelIndex = models.findIndex(m => m.id === modelId);
     this.setData({ models, modelIndex: Math.max(0, modelIndex), modelName: modelIndex >= 0 ? models[modelIndex].name : '选择模型' });
     const view = chatView(state, getApp().client, this._expanded, this._count, this._offset);
-    const changed = this.data.sessionId && this.data.sessionId !== view.sessionId;
+    const changed = accountChanged || this.data.sessionId && this.data.sessionId !== view.sessionId;
     const ids = changed ? [] : this.data.attachmentIds.filter(id => state.media.some(item => item.id === id && !item.character));
-    const attached = ids.map(id => mediaView(state.media.find(item => item.id === id), getApp().client));
-    this.setData(Object.assign(view, { attachmentIds: ids, attached, voiceReady: Boolean(this.voiceTicket()) }, changed ? { prompt: '', cursor: 0 } : {}));
+    if (changed && !accountChanged) {
+      (this._drafts || (this._drafts = {}))[this.data.sessionId] = { prompt: this.data.prompt, cursor: this.data.cursor, attachmentIds: this.data.attachmentIds, error: this.data.error, researchMode: this.data.researchMode || 'auto' };
+    }
+    const draft = changed && this._drafts && this._drafts[view.sessionId];
+    const restoredIds = draft ? draft.attachmentIds.filter(id => state.media.some(m => m.id === id)) : ids;
+    const patch = Object.assign(view, { attachmentIds: restoredIds, attached: restoredIds.map(id => mediaView(state.media.find(m => m.id === id), getApp().client)), voiceReady: Boolean(this.voiceTicket()), sending: Boolean(this._pendingSends && this._pendingSends.has(view.sessionId)), modelChanging: this._modelChangingId === view.sessionId }, changed ? { prompt: draft ? draft.prompt : '', cursor: draft ? draft.cursor : 0, researchMode: draft ? draft.researchMode : 'auto', error: draft ? draft.error : '', focus: false } : {});
+    const cache = this._renderCache || (this._renderCache = {}), delta = {};
+    for (const key of Object.keys(patch)) { const encoded = JSON.stringify(patch[key]); if (cache[key] !== encoded || JSON.stringify(this.data[key]) !== encoded) { cache[key] = encoded; delta[key] = patch[key]; } }
+    if (Object.keys(delta).length) this.setData(delta);
+    if (this._visible && !this.data.sidebarOpen && getApp()._foreground !== false && !getApp()._pendingNotice && !getApp()._openingNotice) markSessionRead(getApp(), view.sessionId);
     if (this._lastCount !== view.messages.length || this._lastSession !== view.sessionId) { this._lastCount = view.messages.length; this._lastSession = view.sessionId; this.scroll(); }
   },
   scroll() { if (this._visible) this.setData({ scrollTarget: '' }, () => this.setData({ scrollTarget: this.data.empty ? 'thread-start' : 'thread-end' })); },
@@ -130,10 +143,20 @@ Page({
     if (!message) { this.setData({ error: this.data.mode === 'chat' ? '写下一句话，我们开始聊聊。' : '说说你想实现什么。' }); return; }
     if (!requireLogin()) return;
     if (!this.checkMode()) return;
+    const app = getApp(), sessionId = this.data.sessionId, generation = app._generation;
+    const pending = this._pendingSends || (this._pendingSends = new Set()); pending.add(sessionId);
     this.setData({ sending: true, error: '', focus: false });
-    try { const state = await getApp().mutate('/api/chat', { sessionId: this.data.sessionId, message, interaction: this.interaction(), attachmentIds: this.data.attachmentIds, ...(ticket ? { voiceTicket: ticket } : {}) }); this._offset = 0; this._recognized = null; this.setData({ prompt: '', cursor: 0, attachmentIds: [], attached: [], voiceReady: false }); this.render(state); this.scroll(); }
-    catch (error) { this.setData({ error: error.message }); if (error.code === 'INVALID_VOICE_TICKET') { this._recognized = null; this.setData({ voiceReady: false }); getApp().refresh().catch(() => {}); } }
-    finally { this.setData({ sending: false }); }
+    try {
+      const state = await app.mutate('/api/chat', { sessionId, message, interaction: this.interaction(), researchMode: this.data.mode === 'chat' ? this.data.researchMode || 'auto' : 'auto', attachmentIds: this.data.attachmentIds, ...(ticket ? { voiceTicket: ticket } : {}) });
+      if (generation !== app._generation) return;
+      if (this.data.sessionId === sessionId) { this._offset = 0; this._recognized = null; this.setData({ prompt: '', cursor: 0, attachmentIds: [], attached: [], voiceReady: false }); }
+      else if (this._drafts && this._drafts[sessionId] && this._drafts[sessionId].prompt.trim() === message) this._drafts[sessionId] = { prompt: '', cursor: 0, attachmentIds: [], error: '', researchMode: this._drafts[sessionId].researchMode };
+      this.render(app.state || state);
+    } catch (error) {
+      if (generation !== app._generation) return;
+      if (this.data.sessionId === sessionId) { this.setData({ error: error.message }); if (error.code === 'INVALID_VOICE_TICKET') { this._recognized = null; this.setData({ voiceReady: false }); app.refresh().catch(() => {}); } }
+      else if (this._drafts && this._drafts[sessionId]) this._drafts[sessionId].error = error.message;
+    } finally { pending.delete(sessionId); if (generation === app._generation && this.data.sessionId === sessionId) this.setData({ sending: false }); }
   },
   suggestion(event) {
     this.setData({ prompt: event.currentTarget.dataset.text, cursor: event.currentTarget.dataset.text.length, editorCursor: event.currentTarget.dataset.text.length, focus: true });
@@ -146,7 +169,7 @@ Page({
     if (!requireLogin()) return;
     const app = getApp(), model = this.data.models[Number(event.detail.value)], id = this.data.sessionId;
     if (!model || !id) return;
-    this.setData({ modelChanging: true });
+    this._modelChangingId = id; this.setData({ modelChanging: true });
     let currentUpdated = false;
     try {
       const selected = await app.mutate('/api/sessions/' + encodeURIComponent(id) + '/model', { modelId: model.id }, 'PATCH');
@@ -155,29 +178,26 @@ Page({
       this.render(saved); wx.showToast({ title: '已切换模型', icon: 'none' });
     } catch (error) {
       notify(currentUpdated ? new Error('当前会话已切换，新会话默认模型未保存，请重试。') : error);
-    } finally { this.setData({ modelChanging: false }); }
+    } finally { if (this._modelChangingId === id) this._modelChangingId = null; if (this.data.sessionId === id) this.setData({ modelChanging: false }); }
   },
   openSidebar() { this.setData({ sidebarOpen: true, focus: false }); if (wx.hideKeyboard) wx.hideKeyboard(); this.renderSidebar(); },
-  closeSidebar() { this.setData({ sidebarOpen: false }); },
+  closeSidebar(skipRead) { this.setData({ sidebarOpen: false }); if (skipRead !== true && this._visible && getApp()._foreground !== false) markSessionRead(getApp(), this.data.sessionId); },
   renderSidebar(state) { const current = state || this._sidebarState; if (current) this.setData(sidebarView(current, this.data.sidebarFilter || 'all', this.data.sidebarQuery, this.data.sidebarArchived, this._sidebarLimit)); },
   sidebarSearch(event) { this._sidebarLimit = 40; this.setData({ sidebarQuery: event.detail.value }); this.renderSidebar(); },
   sidebarFilter(event) { this._sidebarLimit = 40; this.setData({ sidebarFilter: event.currentTarget.dataset.filter }); this.renderSidebar(); },
   sidebarArchiveFilter() { this._sidebarLimit = 40; this.setData({ sidebarArchived: !this.data.sidebarArchived }); this.renderSidebar(); },
   sidebarMore() { this._sidebarLimit += 40; this.renderSidebar(); },
-  async sidebarNew(event) { this.closeSidebar(); await this.newSession(event.currentTarget.dataset.mode); },
-  history() { this.setData({ sidebarOpen: true, sidebarQuery: '', sidebarArchived: false }); this.renderSidebar(); },
-  tasks() { this.closeSidebar(); wx.navigateTo({ url: '/pages/tasks/index' }); },
-  profile() { this.closeSidebar(); wx.switchTab({ url: '/pages/profile/index' }); },
+  async sidebarNew(event) { this.closeSidebar(true); await this.newSession(event.currentTarget.dataset.mode); },
+  tasks() { this.closeSidebar(true); wx.navigateTo({ url: '/pages/tasks/index' }); },
+  profile() { this.closeSidebar(true); wx.switchTab({ url: '/pages/profile/index' }); },
   avatarError() { this.setData({ userAvatar: '' }); },
   sidebarActivate(event) {
     if (this.data.sidebarBusy || !requireLogin()) return;
-    if (this.data.sending || this.data.uploading || this.data.creatingSession || this.data.voice !== 'idle') { notify(new Error('请等待当前发送、上传或语音操作完成后再切换。')); return; }
+    if (this.data.uploading || this.data.voice !== 'idle') { notify(new Error('请等待上传或语音操作完成后再切换。')); return; }
     const app = getApp(), state = app.state || this._sidebarState, id = event.currentTarget.dataset.id;
     const session = state && state.sessions.find(s => s.id === id);
     if (!session || session.archivedAt) { notify(new Error('请先取消归档，再打开对话。')); return; }
-    selectSession(app, state, id); this.closeSidebar();
-    const generation = app._generation;
-    app.mutate('/api/sessions/' + encodeURIComponent(id) + '/activate', {}).catch(() => { if (app._generation === generation && app._selectedSessionId === id) notify(new Error('已打开对话，云端同步暂未完成。')); });
+    this.closeSidebar(true); activateSession(app, id);
   },
   async sidebarActions(event) {
     if (this.data.sidebarBusy || !requireLogin()) return;
@@ -197,7 +217,9 @@ Page({
     } catch (error) { notify(error); } finally { this.setData({ sidebarBusy: false }); }
   },
   interaction() { return this.data.mode === 'chat' ? 'chat' : 'create'; },
+  research(event) { if (this.data.sending || this.data.voice !== 'idle') return; if(!this.data.researchAvailable){notify(new Error('此功能需要连接 0.2.8 本地后端，正式后端尚未更新。'));return;}const mode = event.currentTarget.dataset.mode; this.setData({ researchMode: this.data.researchMode === mode ? 'auto' : mode }); },
   checkMode() {
+    if (this.data.mode === 'chat' && this.data.researchMode && this.data.researchMode !== 'auto' && !this.data.researchAvailable) { this.setData({error:'请连接 0.2.8 本地后端后再使用联网搜索或深度探索。'}); return false; }
     if (this.interaction() === 'create' || getApp().state && getApp().state.features && getApp().state.features.conversationModes) return true;
     this.setData({ error: '新版对话功能尚在本地开发，当前连接的版本暂不可用。' });
     return false;
@@ -205,18 +227,19 @@ Page({
   async switchMode(event) {
     const mode = event.currentTarget.dataset.mode;
     if (mode === this.data.mode) return;
-    if (this.data.modelChanging || this.data.sending || this.data.uploading || this.data.creatingSession || this.data.voice !== 'idle') { notify(new Error('请等待当前操作完成后再切换。')); return; }
+    if (this.data.uploading || this.data.creatingSession || this.data.voice !== 'idle') { notify(new Error('请等待当前操作完成后再切换。')); return; }
     if (!getApp().client.hasSession()) { this.setData({ mode }); return; }
     await this.newSession(mode);
   },
   async newSession(requestedMode) {
     if (this.data.creatingSession) return;
-    if (this.data.modelChanging || this.data.sending || this.data.uploading || this.data.voice !== 'idle') { notify(new Error('请等待当前发送、上传或语音操作完成后再新建对话。')); return; }
+    if (this.data.modelChanging || this.data.uploading || this.data.voice !== 'idle') { notify(new Error('请等待当前上传或语音操作完成后再新建对话。')); return; }
     if (!requireLogin()) return;
     this.setData({ creatingSession: true, error: '', focus: false });
     try {
       const mode = typeof requestedMode === 'string' ? requestedMode : this.data.mode;
       const state = await openDraft(getApp(), mode);
+      if (!state._openedDraftId || getApp().state.activeSessionId !== state._openedDraftId) return;
       this._count = 50; this._offset = 0; this._expanded = {}; this._recognized = null;
       this.setData({ prompt: '', cursor: 0, editorCursor: -1, attachmentIds: [], attached: [], voiceReady: false, pick: false });
       // Render the receipt directly; the button must work even if a page's
@@ -277,7 +300,7 @@ Page({
     if (this.data.insufficient) { notify(new Error('积分不足，请先签到领取。')); return; }
     if (this.data.modelChanging || this.data.creatingSession || this.data.sending || this.data.uploading) return;
     if (!hasVoiceConsent(getApp())) { await this.requestVoiceConsent(); return; }
-    this._voiceError = ''; this.setData({ error: '', focus: false }); this._voice.start({ sessionId: this.data.sessionId, interaction: this.interaction(), prefix: this.data.prompt, attachmentIds: this.data.attachmentIds });
+    this._voiceError = ''; this.setData({ error: '', focus: false }); this._voice.start({ sessionId: this.data.sessionId, interaction: this.interaction(), researchMode: this.data.mode === 'chat' ? this.data.researchMode || 'auto' : 'auto', prefix: this.data.prompt, attachmentIds: this.data.attachmentIds });
   },
   requestVoiceConsent() {
     if (hasVoiceConsent(getApp())) return Promise.resolve(true);

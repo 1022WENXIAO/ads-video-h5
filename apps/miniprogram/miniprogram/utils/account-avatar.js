@@ -8,7 +8,7 @@ function hydrateAccountAvatar(page, state, app) {
   const cached = source && app.client.cachedDownload ? app.client.cachedDownload(source) : '';
   page.setData({ userAvatar: cached || '' });
   if (!source || cached || typeof app.client.download !== 'function') return;
-  app.client.download(source).then(file => {
+  app.client.download(source, { persistent: true }).then(file => {
     if (page._accountAvatarSource === source && app._generation === generation) page.setData({ userAvatar: file });
   }).catch(() => {});
 }

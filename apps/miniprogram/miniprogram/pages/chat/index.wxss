@@ -53,5 +53,7 @@
 @media (max-width:350px) { .theme-surface .chat-brandbar { padding-left:16rpx; padding-right:16rpx; gap:8rpx; }.theme-surface .chat-brandbar .brand-logo { width:44rpx; flex-basis:44rpx; }.brand-mode-tabs button { width:76rpx; } }
 
 /* Match user and assistant bubble colors; alignment and avatars identify roles. */
+.research-options { display:flex; gap:14rpx; padding:8rpx 4rpx; }.research-options .research-option { margin:0; padding:0 20rpx; height:56rpx; line-height:56rpx; border-radius:28rpx; background:var(--lm-paper); color:var(--lm-ink); border:1rpx solid var(--lm-line); }.research-options .research-option.selected { background:var(--lm-accent); color:var(--lm-on-primary,#fff); }.research-note { padding:0 8rpx 8rpx; font-size:22rpx; }
 .theme-surface .message.user .message-bubble { background:var(--lm-paper); border-color:var(--lm-line); color:var(--lm-ink); }
+.sidebar-unread { width:12rpx; height:12rpx; flex:0 0 12rpx; margin-right:8rpx; border-radius:50%; background:var(--lm-accent); box-shadow:0 0 8rpx var(--lm-gold); }
 .theme-surface .sidebar-drawer button.sidebar-account { display:flex; flex-direction:row; align-items:center; justify-content:flex-start; min-height:90rpx; height:auto; border-radius:0; line-height:1.4; padding:20rpx 26rpx; gap:16rpx; }.sidebar-account-name { flex:1; min-width:0; text-align:left; }.sidebar-account .sidebar-account-arrow { flex:0 0 20rpx; margin-left:auto; }

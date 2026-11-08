@@ -13,11 +13,11 @@ function withSession(page, refresh) {
   const app = getApp();
   if (app.applyAppearance) app.applyAppearance(page);
   const loggedIn = app.client.hasSession();
-  page.setData({ guest: !loggedIn });
+  page.setData({ guest: !loggedIn, restoring: Boolean(app._restored), loadingState: loggedIn && !app.state, stateSyncError: Boolean(app._refreshFailed) });
   if (!loggedIn) { refresh.call(page, guestState()); return false; }
-  page._unsubscribe = app.subscribe(() => { if (page._visible) refresh.call(page, app.state); });
+  page._unsubscribe = app.subscribe(() => { if (page._visible) { page.setData({ restoring: Boolean(app._restored), loadingState: false, stateSyncError: false }); refresh.call(page, app.state); } });
   if (app.state) refresh.call(page, app.state);
-  app.refresh().catch(notify);
+  app.refresh({ maxAgeMs: 2000 }).catch(error => { if (page._visible) { page.setData({ loadingState: false, stateSyncError: true }); notify(error); } });
   return true;
 }
 function hide(page) { page._visible = false; if (page._unsubscribe) page._unsubscribe(); page._unsubscribe = null; }

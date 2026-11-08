@@ -21,4 +21,6 @@ button[disabled] { color: var(--lm-muted); background: var(--lm-soft); }
 
 @import "./styles/theme.wxss";
 
+.startup-status { flex:0 0 auto; padding:8rpx 28rpx; color:var(--lm-muted); background:var(--lm-paper); font-size:21rpx; line-height:1.6; }
+
 /* LightMao 0.2.6: explicit native control sizes and percentage-based mobile columns. */

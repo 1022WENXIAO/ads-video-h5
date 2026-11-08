@@ -4,7 +4,7 @@ import path from 'node:path';
 import { creditFetch } from './creditUsage';
 import { fetchWithTextRecovery, type TransportDiagnostic } from './providerTransport';
 
-const execution = new AsyncLocalStorage<{ signal: AbortSignal; transport: TransportDiagnostic[] }>();
+const execution = new AsyncLocalStorage<{ signal: AbortSignal; transport: TransportDiagnostic[] } | undefined>();
 const failureTransport = new WeakMap<object, TransportDiagnostic[]>();
 
 export class JobDeadlineError extends Error {constructor(){super('任务及子阶段已达到共享执行时限。');this.name='JobDeadlineError';}}
@@ -18,7 +18,7 @@ export const currentJobSignal = () => execution.getStore()?.signal;
 // the signal of the request/release task that dispatched them. A child job
 // installs its own context through runWithJobSignal; the caller is restored
 // immediately after this callback, including when it returns a promise.
-export function withoutJobSignal<T>(action: () => T): T { return execution.exit(action); }
+export function withoutJobSignal<T>(action: () => T): T { return execution.run(undefined, action); }
 export const getJobTransportDiagnostics = (): TransportDiagnostic[] => execution.getStore()?.transport.map(diagnostic => structuredClone(diagnostic)) ?? [];
 export function recordJobTransportDiagnostic(diagnostic: TransportDiagnostic): void {
   const transport = execution.getStore()?.transport;

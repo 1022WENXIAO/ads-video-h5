@@ -74,7 +74,7 @@ test('settings exposes feedback and version history, and permanent legal links a
   const version = miniRequire('./miniprogram/utils/version'), releases = miniRequire('./miniprogram/utils/releases');
   const pkg = JSON.parse(await readFile('apps/miniprogram/package.json', 'utf8'));
   assert.equal(settings.data.version, pkg.version); assert.equal(version, pkg.version); assert.equal(releases[0].version, pkg.version);
-  assert.ok(releases[0].features.some((value: string) => value.includes('意见反馈')));
+  assert.ok(releases.some((release: any) => release.features.some((value: string) => value.includes('意见反馈'))), 'feedback remains documented in its original release');
   const about = await capturePage('about', f.app, f.platform); about.onLoad({ version }); assert.equal(about.data.selected.version, version);
   about.onLoad({ version: '<untrusted>' }); assert.equal(about.data.selected, null);
   const profile = await readFile(path.join(miniRoot, 'pages/profile/index.wxml'), 'utf8'); assert.equal(profile.includes('bindtap="legal"'), false);

@@ -1,6 +1,8 @@
 // The cookie belongs to this native client login. Never put it in URLs or send
 // it to object storage; authenticated files use wx.downloadFile instead.
 const { brandText } = require('./brand');
+const { createStartupCache } = require('./startup-cache');
+const { createImageCache } = require('./image-cache');
 function createClient(platform, config, onExpired) {
   const base = config.apiBase.replace(/\/$/, '');
   const match = /^(https?:\/\/[^/]+)(\/.*)?$/.exec(base);
@@ -12,7 +14,8 @@ function createClient(platform, config, onExpired) {
   let cookie = typeof stored === 'string' && /^qingjian_session=[A-Za-z0-9_-]{32,120}$/.test(stored) ? stored : '', epoch = 0;
   const cache = new Map();
   const downloads = new Map();
-  const clear = () => { cookie = ''; epoch++; cache.clear(); downloads.clear(); platform.removeStorageSync(storageKey); };
+  const startup = createStartupCache(platform, base, () => cookie), images = createImageCache(platform, base, () => cookie);
+  const clear = () => { cookie = ''; epoch++; cache.clear(); downloads.clear(); startup.clear(); images.clear(); platform.removeStorageSync(storageKey); };
   function receiveCookie(response) {
     const headers = response.header || {};
     const key = Object.keys(headers).find(name => name.toLowerCase() === 'set-cookie');
@@ -22,7 +25,9 @@ function createClient(platform, config, onExpired) {
       if (!found) continue;
       if (!found[1] || /max-age=0(?:;|$)/i.test(String(raw))) { clear(); continue; }
       if (!/^[A-Za-z0-9_-]{32,120}$/.test(found[1])) continue;
-      cookie = 'qingjian_session=' + found[1]; platform.setStorageSync(storageKey, cookie);
+      const next = 'qingjian_session=' + found[1];
+      if (cookie && cookie !== next) { epoch++; cache.clear(); downloads.clear(); startup.clear(); images.clear(); }
+      cookie = next; platform.setStorageSync(storageKey, cookie);
     }
   }
   function endpoint(route) {
@@ -81,21 +86,30 @@ function createClient(platform, config, onExpired) {
     if (!mediaOrigin || /[\r\n]/.test(url)) return '';
     return mediaOrigin[1] === origin || (config.publicMediaOrigins || []).includes(mediaOrigin[1]) ? url : '';
   }
-  function download(value) {
+  function cachedDownload(value) {
+    const url = mediaUrl(value), saved = images.get(url), memory = cache.get(url);
+    if (saved) return saved;
+    if (memory && !images.owns(memory)) return memory;
+    cache.delete(url); return '';
+  }
+  function download(value, options) {
     const url = mediaUrl(value);
     if (!url) return Promise.reject(new Error('素材地址不可用，请刷新后重试。'));
     const own = url.startsWith(base + '/'), requestEpoch = epoch;
-    if (cache.has(url)) return Promise.resolve(cache.get(url));
+    const saved = cachedDownload(value);
+    if (saved) return Promise.resolve(saved);
     if (downloads.has(url)) return downloads.get(url);
     const pending = new Promise((resolve, reject) => platform.downloadFile({ url, header: own && cookie ? { Cookie: cookie } : {}, timeout: 120000,
-      success: response => {
+      success: async response => {
         if (requestEpoch !== epoch) return reject(new Error('登录状态已改变，请重新操作。'));
         if (response.statusCode !== 200) {
           if (response.statusCode === 401 && own) { clear(); if (onExpired) onExpired(); }
           return reject(new Error('文件读取失败，请稍后重试。'));
         }
+        const file = options && options.persistent ? await images.put(url, response.tempFilePath, () => requestEpoch === epoch) : response.tempFilePath;
+        if (requestEpoch !== epoch) return reject(new Error('登录状态已改变，请重新操作。'));
         if (cache.size >= 100) cache.delete(cache.keys().next().value);
-        cache.set(url, response.tempFilePath); resolve(response.tempFilePath);
+        cache.set(url, file); resolve(file);
       }, fail: () => reject(new Error('文件下载失败，请检查网络后重试。')),
     }));
     downloads.set(url, pending);
@@ -107,6 +121,7 @@ function createClient(platform, config, onExpired) {
     const url = mediaUrl(value);
     return url && !url.startsWith(base + '/') ? url : '';
   };
-  return { request, wechatLogin, upload, download, mediaUrl, previewUrl, clear, hasSession: () => Boolean(cookie), cachedDownload: value => cache.get(mediaUrl(value)) || '', forgetDownload: value => cache.delete(mediaUrl(value)) };
+  return { request, wechatLogin, upload, download, mediaUrl, previewUrl, clear, hasSession: () => Boolean(cookie), restoreState: startup.read, rememberState: startup.write,
+    cachedDownload, forgetDownload: value => { const url = mediaUrl(value); cache.delete(url); images.forget(url); } };
 }
 module.exports = { createClient };

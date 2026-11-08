@@ -7,12 +7,16 @@ Page({
   onShareAppMessage: shareAppMessage,
   onShareTimeline: shareTimeline,
   data: Object.assign(appearanceData(), {version: require('../../utils/version'),  user: null, nickname: '', savingName: false, balance: '0.00', dailyReward: '1,000', canCheckIn: false, sessions: 0, films: 0, media: 0, loggingOut: false }),
-  onShow() { if (withSession(this, this.render)) this.me().catch(notify); },
-  onHide() { hide(this); }, onUnload() { hide(this); },
-  async me() { const app = getApp(), revision = app._revision, generation = app._generation; const result = await app.client.request('/api/auth/me'); if (app._revision !== revision || app._generation !== generation) return; app.user = result.user; this.setData({ user: result.user, ...(!this._editingNickname ? { nickname: result.user.displayName } : {}) }); hydrateAccountAvatar(this, { account: result.user }, app); },
-  async chooseAvatar(event) { if (event.detail && event.detail.avatarUrl) await this.saveAvatar(event.detail.avatarUrl); },
+  onShow() { withSession(this, this.render); },
+  onHide() { hide(this); this.closeEditors(); }, onUnload() { hide(this); },
+  editAvatar() { if (!requireLogin()) return; if (!this.data.canAvatar) { notify(new Error('当前服务暂不支持修改头像。')); return; } if (!this.data.savingAvatar) this.setData({ avatarEditor: true }); },
+  editName() { if (!requireLogin() || this.data.savingName) return; this._editingNickname = true; this.setData({ nameEditor: true, nickname: this.data.user && this.data.user.displayName || '' }); },
+  closeEditors() { if (this.data.savingName || this.data.savingAvatar) return; this._editingNickname = false; this.setData({ avatarEditor: false, nameEditor: false }); },
+  noop() {},
+  async chooseAvatar(event) { this.setData({ avatarEditor: false }); if (event.detail && event.detail.avatarUrl) await this.saveAvatar(event.detail.avatarUrl); },
   async customAvatar() {
     if (this.data.savingAvatar || !requireLogin()) return;
+    this.setData({ avatarEditor: false });
     try {
       await privacy();
       const result = await new Promise((resolve, reject) => wx.chooseMedia({ count: 1, mediaType: ['image'], sourceType: ['album', 'camera'], success: resolve, fail: e => /cancel/i.test(e.errMsg || '') ? resolve(null) : reject(new Error('未能选择头像，请重试。')) }));
@@ -24,14 +28,17 @@ Page({
   },
   async saveAvatar(file) {
     if (this.data.savingAvatar || !requireLogin()) return;
+    const app = getApp(), generation = app._generation;
     this.setData({ savingAvatar: true });
     try {
       await privacy();
-      const app = getApp(), result = await app.client.upload('/api/account/avatar', file, 'avatar');
+      if (generation !== app._generation) return;
+      const result = await app.client.upload('/api/account/avatar', file, 'avatar');
+      if (generation !== app._generation) return;
       app.applyAccount(result.user); this.setData({ user: result.user });
       hydrateAccountAvatar(this, { account: result.user }, app);
       wx.showToast({ title: '头像已更新', icon: 'none' });
-    } catch (error) { notify(error); } finally { this.setData({ savingAvatar: false }); }
+    } catch (error) { if (generation === app._generation) notify(error); } finally { if (generation === app._generation) this.setData({ savingAvatar: false }); }
   },
   avatarError() { this.setData({ userAvatar: '' }); },
   render(state) { const user = state.account || getApp().user; hydrateAccountAvatar(this, state, getApp()); this.setData({ canAvatar: Boolean(state.features && state.features.accountAvatars), user, ...(!this._editingNickname && user ? { nickname: user.displayName } : {}), balance: points(state.credits && state.credits.balance || 0), dailyReward: points(state.credits && state.credits.dailyGrant !== undefined ? state.credits.dailyGrant : 1000).replace(/\.00$/, ''), canCheckIn: Boolean(state.credits && state.credits.canCheckIn), sessions: state.sessions.length, films: state.artifacts.filter(item => item.kind === 'video').length, media: state.media.filter(item => !item.character).length }); },
@@ -39,12 +46,13 @@ Page({
   async saveName() {
     if (this.data.savingName) return;
     if (!requireLogin()) return;
+    const app = getApp(), generation = app._generation;
     const displayName = this.data.nickname.trim();
     if (!displayName || displayName.length > 40) { wx.showToast({ title: '请填写 1 至 40 个字符的昵称', icon: 'none' }); return; }
     this.setData({ savingName: true });
-    try { const result = await getApp().client.request('/api/auth/wechat/profile', { displayName }, 'PATCH'); if (getApp().applyAccount) getApp().applyAccount(result.user); else getApp().user = result.user; this._editingNickname = false; this.setData({ user: result.user, nickname: result.user.displayName }); wx.showToast({ title: '昵称已保存', icon: 'success' }); }
-    catch (error) { notify(error); }
-    finally { this.setData({ savingName: false }); }
+    try { const result = await app.client.request('/api/auth/wechat/profile', { displayName }, 'PATCH'); if (generation !== app._generation) return; if (app.applyAccount) app.applyAccount(result.user); else app.user = result.user; this._editingNickname = false; this.setData({ user: result.user, nickname: result.user.displayName, nameEditor: false }); wx.showToast({ title: '昵称已保存', icon: 'success' }); }
+    catch (error) { if (generation === app._generation) notify(error); }
+    finally { if (generation === app._generation) this.setData({ savingName: false }); }
   },
   login() { requireLogin(); },
   navigate(event) {

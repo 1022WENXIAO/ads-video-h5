@@ -52,3 +52,22 @@ test('an unexpected executor failure releases the lane without retrying a poison
   queue.dispatch(); await flush(); assert.deepEqual(failures, ['bad']);
   assert.deepEqual(jobs.map(j => j.status), ['failed', 'succeeded']);
 });
+
+test('deep exploration has a separate lane while other conversations progress and same-session FIFO is retained', async () => {
+  const jobs = [
+    { ...entry('deep', 'chat', 'same'), researchMode: 'deep' },
+    entry('same-followup', 'chat', 'same'), entry('chat-a', 'chat'), entry('chat-b', 'chat'), entry('work', 'create'),
+  ];
+  const started: string[] = [], releases = new Map<string, () => void>();
+  const queue = createJobQueue({ concurrency: { work: 1, chat: 2, research: 2 }, jobs: () => jobs,
+    onError: (_job, error) => assert.fail(String(error)),
+    async execute(job) { job.status = 'running'; started.push(job.id); await new Promise<void>(r => releases.set(job.id, r)); job.status = 'succeeded'; } });
+  queue.dispatch(); await flush();
+  assert.deepEqual(new Set(started), new Set(['work', 'chat-a', 'chat-b', 'deep']));
+  releases.get('chat-a')!(); releases.get('chat-b')!(); await flush();
+  assert.equal(jobs[1].status, 'queued', 'a later message in the research session cannot race its predecessor');
+  assert.equal(jobs[0].status, 'running');
+  releases.get('deep')!(); await flush(); assert.equal(started.at(-1), 'same-followup');
+  releases.get('same-followup')!(); releases.get('work')!(); await flush();
+  assert.ok(jobs.every(j => j.status === 'succeeded'));
+});
