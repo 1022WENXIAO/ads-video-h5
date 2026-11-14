@@ -2,7 +2,7 @@ import {readFile} from 'node:fs/promises';
 import path from 'node:path';
 import type {TaskSpec} from '../shared/taskRuntime';
 import {atomicStateWrite,withFileLock,stateHash} from './durableState';
-type Draft=import('../shared/creativeProject').CreativeProject|import('../shared/scienceScene').ScienceScene;
+type Draft=import('../shared/creativeProject').CreativeProject|import('../shared/scienceScene').ScienceScene|import('../shared/styleVideo').StyleVideoPlan;
 interface Saved {taskId:string;revision:number;templateId?:string;hash:string;draft:Draft}
 const location=(data:string,spec:TaskSpec)=>{if(!/^[a-f0-9-]{36}$/.test(spec.id))throw Error('任务草稿标识无效。');return path.join(data,'task-drafts',spec.id+'.json');};
 export async function loadTaskDraft(data:string,spec:TaskSpec){

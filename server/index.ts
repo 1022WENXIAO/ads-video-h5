@@ -74,7 +74,8 @@ import { withCreditUsage } from './creditUsage';
 import { mountCreditRoutes, mountCreditAdminRoutes } from './creditRoutes';
 import { createReleaseEvaluations } from './releaseEvaluations';
 import { loadApplicationState } from './stateLoading';
-import { loadVideoTemplates, publicTemplate, templateSelection } from './videoTemplates';
+import { loadVideoTemplateCatalog, loadVideoTemplate, publicTemplate, templateSelection } from './videoTemplates';
+import { runStyleVideo } from './styleVideo';
 import { resolveTemplateRequest } from './templateRequest';
 import { runTemplateWorkflow } from './templateWorkflow';
 import { codeDefoldProject } from './defoldCoding';
@@ -97,7 +98,7 @@ const mediaDir = path.join(dataDir, 'media');
 const artifactDir = path.join(dataDir, 'artifacts');
 const exportDir = path.join(dataDir, 'exports');
 const tmpDir = path.join(dataDir, 'uploads');
-const videoTemplates = await loadVideoTemplates();
+const videoTemplates = await loadVideoTemplateCatalog();
 const stateFile = path.join(dataDir, 'app-state.json');
 const port = Number(process.env.PORT || 8787);
 const publicBase = `/${(process.env.PUBLIC_BASE_PATH || '').replace(/^\/+|\/+$/g, '')}`.replace(/^\/$/, '');
@@ -299,7 +300,8 @@ async function performJob(job: Job): Promise<void> {
   }
 
   if (job.template) {
-    const template = videoTemplates.find(t=>t.id===job.template!.id);
+    const entry = videoTemplates.find(t=>t.id===job.template!.id);
+    const template = entry && await loadVideoTemplate(entry);
     if (!template || template.skillHash!==job.template.skillHash) throw new Error('模板规则已变化，请重新发送制作要求以使用当前版本。');
     const config=await getModelConfig('text',session.modelId);
     if(!config)throw new Error('文本模型尚未配置，请在管理后台设置后重试。');
@@ -319,23 +321,63 @@ async function performJob(job: Job): Promise<void> {
       const artifact:Artifact={id,ownerId:job.ownerId,sessionId:session.id,messageId:job.messageId,kind:'game',name:made.draft.title+'.zip',url:`/api/artifacts/${id}/play`,downloadUrl:`/api/artifacts/${id}/project`,projectUrl:`/api/artifacts/${id}/project`,coverUrl:`/api/artifacts/${id}/cover`,coverMimeType:'image/jpeg',createdAt:now(),version:state.artifacts.filter(a=>a.sessionId===session.id&&a.kind==='game').length+1,creative:{engine:'defold',sourceHash:made.verification.sourceHash,artifactHash:made.build.artifactHash,technicalPassed:true,modelSelfChecked:true,userAccepted:false},workflow:structuredClone(job.workflow)};
       currentTaskExecution()?.guard();state.artifacts.push(artifact);job.artifactId=id;addReply(session,job,`已用Defold完成《${made.draft.title}》：游戏与动画节点已实际编译为HTML5，输入和重启试玩及模型自检通过。可直接试玩或下载源码工程，待你审阅玩法和画面。`,id);await saveState();return;
     }
-    updateReply(session,job,`已使用「${template.name}」，正在核对资料并设计同屏对照动画。`,'commentary','template-start');await saveState();
-    const result=await runTemplateWorkflow({template,prompt,config,history,previous:(savedDraft&&'panels' in savedDraft?savedDraft:legacyDraft&&session.templateId===template.id?session.templateDraft:undefined),
-      directory:path.join(dataDir,'template-projects',job.id,job.attemptId||randomUUID()),progress:workflowProgress,
-      renderProgress:async(frames,total)=>{job.progress=Math.max(job.progress||0,35+Math.round(frames/total*50));job.stage=`渲染模板视频 · ${Math.round(frames/total*100)}%`;await saveState();}});
-    if(job.taskSpec)await saveTaskDraft(dataDir,job.taskSpec,result.draft,()=>currentTaskExecution()?.guard());
-    if(session.taskSpec?.id===job.taskSpec?.id){session.templateId=template.id;session.templateDraft=result.draft;}
-    if(!result.rendered){addReply(session,job,`「${template.name}」方案已保存：${result.draft.title}，${result.draft.panels.length}图同屏，${result.draft.duration}秒。\n${result.draft.panels.map((p,i)=>`${i+1}. ${p.name}：${p.difference}`).join('\n')}\n发送“生成成片”即可继续制作。`);await saveState();return;}
+    const directory = path.join(dataDir, 'template-projects', job.id, job.attemptId || randomUUID());
+    const renderProgress = async (frames: number, total: number) => {
+      job.progress = Math.max(job.progress || 0, 35 + Math.round(frames / total * 50));
+      job.stage = `渲染模板视频 · ${Math.round(frames / total * 100)}%`;
+      await saveState();
+    };
+    updateReply(session, job, `已使用「${template.name}」，${template.style ? '正在读取样片并设计分镜。' : '正在核对资料并设计同屏对照动画。'}`, 'commentary', 'template-start');
+    await saveState();
+    const common = { template, prompt, config, directory, progress: workflowProgress, renderProgress };
+    const result = template.style
+      ? await runStyleVideo({ ...common, previous: savedDraft && 'style' in savedDraft ? savedDraft : undefined })
+      : await runTemplateWorkflow({ ...common, history, previous: savedDraft && 'panels' in savedDraft
+        ? savedDraft : legacyDraft && session.templateId === template.id ? session.templateDraft : undefined });
+    const { draft } = result;
+    const science = 'panels' in draft ? draft : undefined;
+    const panels = science?.panels.length ?? 0;
+    const references = 'references' in result ? result.references : [];
+    if (job.taskSpec) await saveTaskDraft(dataDir, job.taskSpec, draft, () => currentTaskExecution()?.guard());
+    if (science && session.taskSpec?.id === job.taskSpec?.id) {
+      session.templateId = template.id;
+      session.templateDraft = science;
+    }
+    if (!result.rendered) {
+      const scenes = 'style' in draft ? draft.beats.map(beat => beat.title) : draft.panels.map(panel => panel.name + '：' + panel.difference);
+      addReply(session, job, `「${template.name}」方案已保存：${draft.title}，${draft.duration}秒。\n${scenes.map((scene, i) => `${i + 1}. ${scene}`).join('\n')}\n再次选择该模板并发送“生成成片”即可继续制作。`);
+      await saveState();
+      return;
+    }
     const rendered=result.rendered,id=randomUUID(),mediaId=randomUUID();
     const destinations=[path.join(exportDir,`${id}.mp4`),path.join(mediaDir,mediaId),path.join(exportDir,`${id}-cover.png`),path.join(exportDir,`${id}-project.zip`),path.join(exportDir,`${id}-template.json`)];
     try{
-      await Promise.all([copyFile(rendered.file,destinations[0]),copyFile(rendered.file,destinations[1]),copyFile(rendered.cover,destinations[2]),copyFile(rendered.archive,destinations[3]),writeFile(destinations[4],JSON.stringify({config:result.draft,references:result.references,verification:rendered.verification},null,2),{mode:0o600})]);
+      await Promise.all([copyFile(rendered.file,destinations[0]),copyFile(rendered.file,destinations[1]),copyFile(rendered.cover,destinations[2]),copyFile(rendered.archive,destinations[3]),writeFile(destinations[4],JSON.stringify({config:result.draft,references,verification:rendered.verification},null,2),{mode:0o600})]);
       await Promise.all([oss?.put(job.ownerId!,'exports',id,destinations[0],'video/mp4'),oss?.put(job.ownerId!,'media',mediaId,destinations[1],'video/mp4'),oss?.put(job.ownerId!,'covers',id,destinations[2],'image/png'),oss?.put(job.ownerId!,'artifacts',`${id}-project`,destinations[3],'application/zip'),oss?.put(job.ownerId!,'artifacts',`${id}-template`,destinations[4],'application/json')]);
       throwIfJobCancelled();
     }catch(error){await Promise.all(destinations.map(f=>rm(f,{force:true})));if(oss)await Promise.allSettled([oss.remove(job.ownerId!,'exports',id),oss.remove(job.ownerId!,'media',mediaId),oss.remove(job.ownerId!,'covers',id),oss.remove(job.ownerId!,'artifacts',`${id}-project`),oss.remove(job.ownerId!,'artifacts',`${id}-template`)]);throw error;}
-    const artifact:Artifact={id,ownerId:job.ownerId,sessionId:session.id,messageId:job.messageId,kind:'video',name:result.draft.title+'.mp4',url:`/api/artifacts/${id}`,downloadUrl:`/api/download/${id}`,projectUrl:`/api/artifacts/${id}/project`,coverUrl:`/api/artifacts/${id}/cover`,coverMimeType:'image/png',createdAt:now(),version:state.artifacts.filter(a=>a.sessionId===session.id&&a.kind==='video').length+1,duration:result.draft.duration,format:'9:16',mediaId,hasNarration:false,hasBgm:result.draft.bgm,workflow:structuredClone(job.workflow),template:{...job.template,panels:result.draft.panels.length,technicalPassed:true,userAccepted:false,boundary:result.draft.boundary,basis:result.draft.basis,animationMode:rendered.verification.animationMode as 'code'|'declarative',sourceHash:rendered.verification.programSourceSha256||undefined,motion:rendered.verification.motionV2?{meanChangedAreaPct:rendered.verification.motionV2.meanChangedAreaPct,activeFramePct:rendered.verification.motionV2.activeFramePct}:undefined}};
+    const motion = 'motionV2' in rendered.verification ? rendered.verification.motionV2 : undefined;
+    const artifact: Artifact = {
+      id, ownerId: job.ownerId, sessionId: session.id, messageId: job.messageId,
+      kind: 'video', name: draft.title + '.mp4', url: `/api/artifacts/${id}`, downloadUrl: `/api/download/${id}`,
+      projectUrl: `/api/artifacts/${id}/project`, coverUrl: `/api/artifacts/${id}/cover`, coverMimeType: 'image/png',
+      createdAt: now(), version: state.artifacts.filter(a => a.sessionId === session.id && a.kind === 'video').length + 1,
+      duration: draft.duration, format: 'style' in draft ? draft.format : '9:16',
+      mediaId, hasNarration: false, hasBgm: science?.bgm ?? false, workflow: structuredClone(job.workflow),
+      template: { ...job.template, panels, technicalPassed: true, userAccepted: false,
+        boundary: science?.boundary ?? '样片用于构图和动效参考，实际画面为模板动画。',
+        basis: science?.basis ?? (template.sample ? [template.sample.source.url] : []),
+        animationMode: rendered.verification.animationMode as 'code' | 'declarative',
+        sourceHash: rendered.verification.programSourceSha256 || undefined,
+        motion: motion ? { meanChangedAreaPct: motion.meanChangedAreaPct, activeFramePct: motion.activeFramePct } : undefined,
+      },
+    };
     currentTaskExecution()?.guard();state.artifacts.push(artifact);state.media.push({id:mediaId,ownerId:job.ownerId,name:artifact.name,mimeType:'video/mp4',kind:'video',duration:artifact.duration,url:`/api/media/${mediaId}`,createdAt:now(),origin:'generated'});
-    job.artifactId=id;addReply(session,job,`已按「${template.name}」制作《${result.draft.title}》：${result.draft.panels.length}图同屏，${result.draft.duration}秒单页循环，无口播${result.draft.bgm?'、带循环配乐':''}。成片、封面和可编辑工程已保存，技术检查通过，待你审阅。`,id);await saveState();return;
+    job.artifactId = id;
+    const description = science ? `${panels}图同屏，${draft.duration}秒单页循环${science.bgm ? '，带循环配乐' : ''}` : `${draft.duration}秒，${artifact.format}，三幕动画`;
+    addReply(session, job, `已按「${template.name}」制作《${draft.title}》：${description}。成片、封面和可编辑工程已保存，技术检查通过，待你审阅。`, id);
+    await saveState();
+    return;
   }
   if(job.kind==='avatar') {
     const source=media.find(m=>m.id===job.avatarSourceId&&m.character?.role==='reference');
@@ -781,7 +823,14 @@ async function processQueuedJob(job: Job) {
           await saveState();
           const execute = () => withAgentRuntime(runtime, async()=>{
             const manifest={models:snapshotModels(models!).map(({id,modelId,provider,baseUrl})=>({id,modelId,provider,baseUrl})),capabilities:job.capabilities,extensions:runtime.fingerprint,template:job.template,film:job.filmTask};
-            const assertTemplate=async()=>{if(job.template&&(await loadVideoTemplates()).find(t=>t.id===job.template!.id)?.skillHash!==job.template.skillHash)throw Error('模板执行文件已变化，请使用最新模板重新运行。');};await assertTemplate();
+            const assertTemplate = async () => {
+              if (!job.template) return;
+              const entry = videoTemplates.find(t => t.id === job.template!.id);
+              if (!entry || (await loadVideoTemplate(entry)).skillHash !== job.template.skillHash) {
+                throw new Error('模板执行文件已变化，请使用最新模板重新运行。');
+              }
+            };
+            await assertTemplate();
             const environmentHash=await captureTaskEnvironment(root,manifest);
             return withTaskExecution({timeoutMs:!isEvaluationOwner(job.ownerId)&&job.researchMode==='deep'?null:taskTimeoutMs(job.ownerId,evaluationJobDeadlines.get(job.id)),ledgerDirectory:path.join(dataDir,'agent-effects',job.taskSpec!.id),maxCredits:process.env.QINGJIAN_TASK_MAX_CREDITS===undefined?undefined:Number(process.env.QINGJIAN_TASK_MAX_CREDITS),spec:job.taskSpec!,directory:path.join(dataDir,'agent-runs',job.id),environmentHash,
               assertCurrent:()=>assertTaskRevision(job.taskSpec!,getSession(job.sessionId)?.taskRevisions),
@@ -824,12 +873,15 @@ async function processQueuedJob(job: Job) {
 }
 
 async function enqueueAgentMessage(session: Session, text: string, attachmentIds: string[], voiceTicket?: string, modelSnapshot?:ModelSnapshot, interaction?: Job['interaction'], researchMode?:Job['researchMode']): Promise<Job> {
-  const selection=resolveTemplateRequest(text,session,videoTemplates);
+  const selection = interaction === 'chat' || interaction === 'explore'
+    ? { kind: 'plan' as const, template: undefined }
+    : resolveTemplateRequest(text, session, videoTemplates);
+  const template = selection.template && await loadVideoTemplate(selection.template);
   const creditTaskId = isEvaluationOwner(session.ownerId) ? undefined : await credits.admit(session.ownerId!, text, voiceTicket);
   const createdAt = now();
   const message: ChatMessage = { id: randomUUID(), role: 'user', text, createdAt, attachmentIds };
-  const job: Job = { id: randomUUID(), ownerId: session.ownerId, sessionId: session.id, messageId: message.id, kind: selection.kind, status: 'queued', createdAt, updatedAt: createdAt, progress: 0, ...(selection.template?{template:templateSelection(selection.template)}:{}) };
-  if (interaction) { job.interaction = interaction; if (interaction !== 'create') job.kind = 'plan'; }
+  const job: Job = { id: randomUUID(), ownerId: session.ownerId, sessionId: session.id, messageId: message.id, kind: selection.kind, status: 'queued', createdAt, updatedAt: createdAt, progress: 0, ...(template ? { template: templateSelection(template) } : {}) };
+  if (interaction) job.interaction = interaction;
   if(interaction==='chat'||interaction==='explore')job.researchMode=resolveResearchMode(text,researchMode);else if(researchMode)job.researchMode=researchMode;
   job.taskSpec=createTaskSpec([...session.messages,message],text,selection.template?.id,priorTaskSpec(session,selection.template?.id));if(selection.template)(session.taskSpecsByTemplate||={})[selection.template.id]=job.taskSpec;if(!wantsConversation(text))session.taskSpec=job.taskSpec;session.taskRevisions||={};session.taskRevisions[job.taskSpec.id]=job.taskSpec.revision;
   jobRunner.supersede(state.jobs,job.taskSpec,now());
@@ -946,6 +998,13 @@ app.get('/api/effects/assets/:id', async (request, response) => {
   if (!asset) return response.status(404).json({ error: '素材不存在。' });
   try { response.type(asset.mimeType).sendFile(await effects.ensureAsset(asset)); }
   catch { response.status(404).json({ error: '素材文件不存在。' }); }
+});
+// Packaged sample assets are public. Native image and video players do not use the API session cookie.
+app.get('/api/templates/:id/sample/:kind', (request, response) => {
+  const template = videoTemplates.find(item => item.id === request.params.id && item.sample);
+  const asset = request.params.kind === 'video' ? 'sample.mp4' : request.params.kind === 'poster' ? 'poster.png' : undefined;
+  if (!template || !asset) return response.status(404).json({ error: '样片不存在。' });
+  return response.sendFile(asset, { root: path.join(template.directory, 'assets'), maxAge: '1h' });
 });
 auth.mount(app, credits.readiness, user => credits.snapshot(user.id));
 app.get('/api/notifications/config',(q,r)=>r.json(notifications.configuration(userOf(q).id)));
@@ -1093,7 +1152,6 @@ app.post('/api/chat', async (request, response) => {
   if (session.archivedAt) return response.status(409).json({ error: '请先取消归档，再继续对话。' });
   const text = typeof request.body?.message === 'string' ? request.body.message.trim().slice(0, 2000) : '';
   if (!text) return response.status(400).json({ error: '请输入想让轻剪完成的内容。' });
-  try{resolveTemplateRequest(text,session,videoTemplates);}catch(error){return response.status(400).json({error:error instanceof Error?error.message:'请选择有效的视频模板。'});}
   const attachments = Array.isArray(request.body?.attachmentIds) ? request.body.attachmentIds : [];
   if (attachments.length > MAX_CHAT_ATTACHMENTS || attachments.some((id: unknown) => typeof id !== 'string' || !state.media.some((item) => item.id === id && owned(item, user.id)))) return response.status(400).json({ error: '附件不存在或一次添加过多。' });
   if (request.body?.voiceTicket !== undefined && (typeof request.body.voiceTicket !== 'string' || request.body.voiceTicket.length > 100)) return response.status(400).json({ error: '语音指令凭证格式无效。' });
@@ -1102,6 +1160,10 @@ app.post('/api/chat', async (request, response) => {
   const researchMode=request.body?.researchMode;
   if(researchMode!==undefined&&!['auto','off','web','deep'].includes(researchMode))return response.status(400).json({error:'联网模式无效。'});
   if(researchMode&&researchMode!=='auto'&&interaction!=='chat'&&interaction!=='explore')return response.status(400).json({error:'请在对话区选择联网或深度探索。'});
+  if (interaction !== 'chat' && interaction !== 'explore') {
+    try { resolveTemplateRequest(text, session, videoTemplates); }
+    catch (error) { return response.status(400).json({ error: error instanceof Error ? error.message : '请选择有效的视频模板。' }); }
+  }
   await enqueueAgentMessage(session, text, attachments, request.body?.voiceTicket, undefined, interaction, researchMode);
   await saveState(); response.json(await publicState(user)); void processQueue();
 });

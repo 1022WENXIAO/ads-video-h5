@@ -189,15 +189,18 @@ HTML 特效的管理、草稿预览、渲染和下载接口见 [HTML 特效说�
 
 ## Skill 视频模板
 
-- `GET /api/templates`：当前用户可用的模板目录，只返回展示信息与默认参数。
-- `/api/chat` 支持 `@动态图科普视频 制作一个LLM Prompt的原理视频`；未知模板、仅有模板名或多个不同模板会明确报错。已选模板会写入任务快照（ID、版本、内容哈希），后续“生成成片”或修改指令沿用该模板；只要方案时不会渲染。
-- 模板独立执行资料核对、可编程场景与确定性状态模型、结果断言、逐帧布局、1080×1920/30fps渲染、媒体验证。默认无口播，单页循环BGM。结果的 `artifact.template.userAccepted` 保持 `false`，直到用户实际审阅。
+- `GET /api/templates`：当前用户可用的模板目录，只返回展示信息、默认参数和可选样片地址。
+- `/api/chat` 支持 `@动态图科普视频 制作一个LLM Prompt的原理视频`；未知模板、仅有模板名或多个不同模板会明确报错。已选模板会写入任务快照（ID、版本、内容哈希），后续导出或修改时需再次选择同一模板。未选择时走主 Agent；只要方案时不会渲染。
+- `GET /api/templates/:id/sample/:kind`：读取随应用发布的公开样片和封面，`kind` 为 `video` 或 `poster`。样片支持 HTTP Range。
+- `style-video` 执行器提供三幕程序动画，默认 12 秒横屏、无口播和配乐。Agent 读取对应样片的分镜时间表，支持视觉的模型也会收到从 MP4 抽取的关键帧。
+- 动态图科普模板独立执行资料核对、可编程场景与确定性状态模型、结果断言、逐帧布局、1080×1920/30fps渲染、媒体验证。默认无口播，单页循环BGM。结果的 `artifact.template.userAccepted` 保持 `false`，直到用户实际审阅。
 - `GET /api/artifacts/:id/project`：经当前用户所有权校验后下载可编辑工程 ZIP；包含网页、配置、状态/绘图代码、原始 Skill、来源与检查记录。成片与封面沿用原有下载接口。
 - 模板在 `skills/<id>/template.json` 注册。目录名与ID一致；元数据、上下文文件、可选原始来源提示、默认参数与测试案例都在清单中。新增同类模板可使用已有 `animated-science` 执行器；其他制作类型需实现并注册对应执行器。
 
 ### 管理后台模板测试（仅管理员）
 
-- `GET /api/admin/templates`：目录、完整 Skill 上下文、版本哈希与预置测试案例。
+- `GET /api/admin/templates`：目录与预置测试案例。
+- `GET /api/admin/templates/:id/skill`：按需读取单个模板的完整 Skill 上下文与版本哈希。
 - `POST /api/admin/templates/:id/tests/:caseId/run`：可选 `{ "modelId": "..." }`，202返回运行记录。使用与聊天相同的任务队列和制作流程，隔离测试会话及文件，不占用普通用户会话；已有测试运行时返回409。
 - `GET /api/admin/template-tests`：最近100条运行记录，含状态、进度、错误与工具过程；记录持久化，服务重启后从任务读取真实状态。
 - `POST /api/admin/template-tests/:id/stop`：停止当前测试，传播取消信号至模型、浏览器与FFmpeg。

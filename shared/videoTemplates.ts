@@ -1,5 +1,13 @@
+export interface VideoTemplateSample {
+  title: string;
+  videoUrl: string;
+  posterUrl: string;
+  source: { author: string; url: string; galleryUrl: string };
+}
+
 export interface VideoTemplate {
   output?: 'game';
+  sample?: VideoTemplateSample;
   id: string;
   name: string;
   description: string;
@@ -15,6 +23,7 @@ export interface AdminVideoTemplate extends VideoTemplate {
   instructions: string;
   testCases: TemplateTestCase[];
 }
+export type AdminVideoTemplateEntry = Omit<AdminVideoTemplate, 'skillHash' | 'instructions'>;
 export interface TemplateTestRun {
   id: string;
   template: TemplateSelection;
@@ -44,4 +53,15 @@ export function selectMention<T extends VideoTemplate>(text: string, templates: 
   if (selected.some(t => !t)) throw new Error(`未找到模板「${mentions[selected.findIndex(t => !t)].name}」，请从 @ 模板列表选择。`);
   if (new Set(selected.map(t => t!.id)).size > 1) throw new Error('一次制作请选择一个模板。');
   return selected[0];
+}
+
+/** Preserve the user's draft while replacing its existing template markers. */
+export function withoutTemplateMentions(text: string, templates: readonly VideoTemplate[]): string {
+  for (const mention of templateMentions(text).reverse()) {
+    if (templates.some(template => template.id === mention.name || template.name === mention.name)) {
+      const end = text[mention.end] === ' ' ? mention.end + 1 : mention.end;
+      text = text.slice(0, mention.start) + text.slice(end);
+    }
+  }
+  return text.trimStart();
 }

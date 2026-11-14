@@ -6,6 +6,7 @@ const { version, sections, hasVoiceConsent } = require('../../utils/voice-consen
 const { chooseFiles, uploadMedia, livePhotoHelp } = require('../../utils/upload');
 const { attachmentLimit } = require('../../utils/media-limits');
 const { loadThumbnails, coverError } = require('../../utils/thumbnails');
+const { selectedTemplateName, withoutTemplateMentions } = require('../../utils/templates');
 const { createVoice } = require('../../utils/voice');
 const { keyboardLayout } = require('../../utils/keyboard-layout');
 const { openDraft, modeOf, activateSession } = require('../../utils/sessions');
@@ -16,7 +17,7 @@ const voiceLabels = { idle: '长按说话，松开发送', authorizing: '等待�
 Page({
   onShareAppMessage: shareAppMessage,
   onShareTimeline: shareTimeline,
-  data: Object.assign(appearanceData(), { messages: [], empty: true, running: false, title: '新会话', prompt: '', attachmentIds: [], attached: [], pick: false, sources: [], sending: false, creatingSession: false, uploading: false, uploadText: '', error: '', voice: 'idle', voiceLabel: voiceLabels.idle, voiceReady: false, cursor: 0, editorCursor: -1, focus: false, scrollTarget: '', balance: '0.00', insufficient: false, hasOlder: false, voiceConsentVisible: false, voiceConsentVersion: version, voiceConsentSections: sections }),
+  data: Object.assign(appearanceData(), { messages: [], empty: true, running: false, title: '新会话', prompt: '', templateName: '', attachmentIds: [], attached: [], pick: false, sources: [], sending: false, creatingSession: false, uploading: false, uploadText: '', error: '', voice: 'idle', voiceLabel: voiceLabels.idle, voiceReady: false, cursor: 0, editorCursor: -1, focus: false, scrollTarget: '', balance: '0.00', insufficient: false, hasOlder: false, voiceConsentVisible: false, voiceConsentVersion: version, voiceConsentSections: sections }),
   onLoad() {
     this._drafts = {}; this._draftGeneration = getApp()._generation; this._pendingSends = getApp()._pendingMessageSessions || (getApp()._pendingMessageSessions = new Set());
     this._sidebarLimit = 40;
@@ -40,7 +41,7 @@ Page({
       onRecognized: (message, snapshot, ticket) => {
         if (this.data.sessionId !== snapshot.sessionId) return;
         this._recognized = ticket ? { message, ticket, sessionId: snapshot.sessionId, at: Date.now() } : null;
-        this.setData({ prompt: message, cursor: message.length, voiceReady: Boolean(ticket) });
+        this.setData({ prompt: message, cursor: message.length, templateName: selectedTemplateName(message, this.templates()), voiceReady: Boolean(ticket) });
       },
       onError: error => { this._voiceError = error.message; if (this._visible) { this.setData({ error: error.message }); notify(error); } },
       onAccepted: (state, _message, snapshot) => { this._voiceError = ''; if (this.data.sessionId === snapshot.sessionId) { this._offset = 0; this._recognized = null; this.setData({ prompt: '', attachmentIds: [], attached: [], cursor: 0, error: '', voiceReady: false }); this.render(state); } this.scroll(); },
@@ -52,7 +53,10 @@ Page({
     this.setData(Object.assign({ focus: false }, keyboardLayout(this._windowBaseline, this._windowBaseline, 0)));
     this.setData({ voice: this._voicePhase || 'idle', voiceLabel: voiceLabels[this._voicePhase || 'idle'] });
     if (this._voiceError) this.setData({ error: this._voiceError });
+    const selection = this._pendingTemplate;
+    this._pendingTemplate = null;
     if (!withSession(this, this.render)) return;
+    if (selection) this.applyTemplate(selection);
     if (getApp().pendingAttachments) { const ids = getApp().pendingAttachments; getApp().pendingAttachments = null; this.addAttachments(ids); if (getApp().state) this.render(getApp().state); }
   },
   onHide() { hide(this); this._editorFocused = false; this.setData({ focus: false, keyboardHeight: 0, keyboardOffset: 0 }); this.cancelConsent(); if (this._voice) this._voice.cancel(); },
@@ -118,7 +122,8 @@ Page({
     }
     const draft = changed && this._drafts && this._drafts[view.sessionId];
     const restoredIds = draft ? draft.attachmentIds.filter(id => state.media.some(m => m.id === id)) : ids;
-    const patch = Object.assign(view, { attachmentIds: restoredIds, attached: restoredIds.map(id => mediaView(state.media.find(m => m.id === id), getApp().client)), voiceReady: Boolean(this.voiceTicket()), sending: Boolean(this._pendingSends && this._pendingSends.has(view.sessionId)), modelChanging: this._modelChangingId === view.sessionId }, changed ? { prompt: draft ? draft.prompt : '', cursor: draft ? draft.cursor : 0, researchMode: draft ? draft.researchMode : 'auto', error: draft ? draft.error : '', focus: false } : {});
+    const prompt = changed ? draft ? draft.prompt : '' : this.data.prompt;
+    const patch = Object.assign(view, { templateName: selectedTemplateName(prompt, state.templates || []), attachmentIds: restoredIds, attached: restoredIds.map(id => mediaView(state.media.find(m => m.id === id), getApp().client)), voiceReady: Boolean(this.voiceTicket()), sending: Boolean(this._pendingSends && this._pendingSends.has(view.sessionId)), modelChanging: this._modelChangingId === view.sessionId }, changed ? { editorCursor: -1, prompt: draft ? draft.prompt : '', cursor: draft ? draft.cursor : 0, researchMode: draft ? draft.researchMode : 'auto', error: draft ? draft.error : '', focus: false } : {});
     const cache = this._renderCache || (this._renderCache = {}), delta = {};
     for (const key of Object.keys(patch)) { const encoded = JSON.stringify(patch[key]); if (cache[key] !== encoded || JSON.stringify(this.data[key]) !== encoded) { cache[key] = encoded; delta[key] = patch[key]; } }
     if (Object.keys(delta).length) this.setData(delta);
@@ -126,13 +131,14 @@ Page({
     if (this._lastCount !== view.messages.length || this._lastSession !== view.sessionId) { this._lastCount = view.messages.length; this._lastSession = view.sessionId; this.scroll(); }
   },
   scroll() { if (this._visible) this.setData({ scrollTarget: '' }, () => this.setData({ scrollTarget: this.data.empty ? 'thread-start' : 'thread-end' })); },
-  input(event) { this.setData({ prompt: event.detail.value, cursor: event.detail.cursor, error: '' }); this.setData({ voiceReady: Boolean(this.voiceTicket()) }); },
+  input(event) { this.setData({ prompt: event.detail.value, cursor: event.detail.cursor, templateName: selectedTemplateName(event.detail.value, this.templates()), error: '' }); this.setData({ voiceReady: Boolean(this.voiceTicket()) }); },
   voiceTicket() { const value = this._recognized; return value && value.sessionId === this.data.sessionId && value.message === this.data.prompt.trim() && Date.now() - value.at < 15 * 60000 ? value.ticket : null; },
   blur(event) { this._editorFocused = false; this.setData({ focus: false, editorCursor: -1 }); if (event.detail.cursor !== undefined) this.setData({ cursor: event.detail.cursor }); },
   newline() {
     if (this.data.prompt.length >= 2000) return;
     const at = Math.max(0, Math.min(this.data.prompt.length, this.data.cursor));
-    this.setData({ prompt: this.data.prompt.slice(0, at) + '\n' + this.data.prompt.slice(at), cursor: at + 1, editorCursor: at + 1, focus: true });
+    const prompt = this.data.prompt.slice(0, at) + '\n' + this.data.prompt.slice(at);
+    this.setData({ prompt, templateName: selectedTemplateName(prompt, this.templates()), cursor: at + 1, editorCursor: at + 1, focus: true });
     this.setData({ voiceReady: Boolean(this.voiceTicket()) });
   },
   async send() {
@@ -147,7 +153,7 @@ Page({
     const pending = this._pendingSends || (this._pendingSends = new Set()); pending.add(sessionId);
     this.setData({ sending: true, error: '', focus: false });
     try {
-      const state = await app.mutate('/api/chat', { sessionId, message, interaction: this.interaction(), researchMode: this.data.mode === 'chat' ? this.data.researchMode || 'auto' : 'auto', attachmentIds: this.data.attachmentIds, ...(ticket ? { voiceTicket: ticket } : {}) });
+      const state = await app.mutate('/api/chat', { sessionId, message, interaction: this.interaction(), researchMode: this.requestResearchMode(), attachmentIds: this.data.attachmentIds, ...(ticket ? { voiceTicket: ticket } : {}) });
       if (generation !== app._generation) return;
       if (this.data.sessionId === sessionId) { this._offset = 0; this._recognized = null; this.setData({ prompt: '', cursor: 0, attachmentIds: [], attached: [], voiceReady: false }); }
       else if (this._drafts && this._drafts[sessionId] && this._drafts[sessionId].prompt.trim() === message) this._drafts[sessionId] = { prompt: '', cursor: 0, attachmentIds: [], error: '', researchMode: this._drafts[sessionId].researchMode };
@@ -158,8 +164,34 @@ Page({
       else if (this._drafts && this._drafts[sessionId]) this._drafts[sessionId].error = error.message;
     } finally { pending.delete(sessionId); if (generation === app._generation && this.data.sessionId === sessionId) this.setData({ sending: false }); }
   },
+  templates() { return (getApp().state || {}).templates || []; },
+  openTemplates() {
+    if (this.data.modelChanging || this.data.creatingSession || this.data.sending || this.data.uploading || this.data.voice !== 'idle' || !requireLogin() || !this.data.sessionId) return;
+    const { sessionId } = this.data;
+    const generation = getApp()._generation;
+    wx.navigateTo({
+      url: '/pages/templates/index',
+      events: { useTemplate: ({ id }) => { this._pendingTemplate = { id, sessionId, generation }; } },
+      fail: () => notify(new Error('暂时无法打开模板画廊。')),
+    });
+  },
+  applyTemplate({ id, sessionId, generation }) {
+    const app = getApp();
+    if (!app.client.hasSession() || sessionId !== this.data.sessionId || generation !== app._generation) return;
+    const template = this.templates().find(item => item.id === id);
+    if (!template) { notify(new Error('模板已更新，请重新打开画廊。')); return; }
+    const prompt = '@' + template.name + ' ' + withoutTemplateMentions(this.data.prompt, this.templates());
+    if (prompt.length > 2000) { notify(new Error('请先缩短对话草稿，再添加模板。')); return; }
+    this._recognized = null;
+    this.setData({ prompt, templateName: template.name, cursor: prompt.length, editorCursor: prompt.length, voiceReady: false, focus: true, error: '' });
+  },
+  removeTemplate() {
+    const prompt = withoutTemplateMentions(this.data.prompt, this.templates());
+    this._recognized = null;
+    this.setData({ prompt, templateName: '', cursor: prompt.length, editorCursor: prompt.length, voiceReady: false, focus: true });
+  },
   suggestion(event) {
-    this.setData({ prompt: event.currentTarget.dataset.text, cursor: event.currentTarget.dataset.text.length, editorCursor: event.currentTarget.dataset.text.length, focus: true });
+    this.setData({ prompt: event.currentTarget.dataset.text, templateName: '', cursor: event.currentTarget.dataset.text.length, editorCursor: event.currentTarget.dataset.text.length, focus: true });
   },
   expand(event) { const id = event.currentTarget.dataset.id; this._expanded = this._expanded[id] ? {} : { [id]: true }; this.render(getApp().state); },
   older() { this._offset += 50; this._expanded = {}; this.render(getApp().state); },
@@ -216,10 +248,14 @@ Page({
       }
     } catch (error) { notify(error); } finally { this.setData({ sidebarBusy: false }); }
   },
-  interaction() { return this.data.mode === 'chat' ? 'chat' : 'create'; },
+  interaction() {
+    const template = selectedTemplateName(this.data.prompt, this.templates());
+    return this.data.mode === 'chat' && !template ? 'chat' : 'create';
+  },
+  requestResearchMode() { return this.interaction() === 'chat' ? this.data.researchMode || 'auto' : 'auto'; },
   research(event) { if (this.data.sending || this.data.voice !== 'idle') return; if(!this.data.researchAvailable){notify(new Error('此功能需要连接 0.2.8 本地后端，正式后端尚未更新。'));return;}const mode = event.currentTarget.dataset.mode; this.setData({ researchMode: this.data.researchMode === mode ? 'auto' : mode }); },
   checkMode() {
-    if (this.data.mode === 'chat' && this.data.researchMode && this.data.researchMode !== 'auto' && !this.data.researchAvailable) { this.setData({error:'请连接 0.2.8 本地后端后再使用联网搜索或深度探索。'}); return false; }
+    if (this.requestResearchMode() !== 'auto' && !this.data.researchAvailable) { this.setData({error:'请连接 0.2.8 本地后端后再使用联网搜索或深度探索。'}); return false; }
     if (this.interaction() === 'create' || getApp().state && getApp().state.features && getApp().state.features.conversationModes) return true;
     this.setData({ error: '新版对话功能尚在本地开发，当前连接的版本暂不可用。' });
     return false;
@@ -241,7 +277,7 @@ Page({
       const state = await openDraft(getApp(), mode);
       if (!state._openedDraftId || getApp().state.activeSessionId !== state._openedDraftId) return;
       this._count = 50; this._offset = 0; this._expanded = {}; this._recognized = null;
-      this.setData({ prompt: '', cursor: 0, editorCursor: -1, attachmentIds: [], attached: [], voiceReady: false, pick: false });
+      this.setData({ prompt: '', templateName: '', cursor: 0, editorCursor: -1, attachmentIds: [], attached: [], voiceReady: false, pick: false });
       // Render the receipt directly; the button must work even if a page's
       // polling subscription was interrupted by a hide/show transition.
       this.render(state); this.scroll(); wx.showToast({ title: '已进入空白新对话', icon: 'none' });
@@ -300,7 +336,7 @@ Page({
     if (this.data.insufficient) { notify(new Error('积分不足，请先签到领取。')); return; }
     if (this.data.modelChanging || this.data.creatingSession || this.data.sending || this.data.uploading) return;
     if (!hasVoiceConsent(getApp())) { await this.requestVoiceConsent(); return; }
-    this._voiceError = ''; this.setData({ error: '', focus: false }); this._voice.start({ sessionId: this.data.sessionId, interaction: this.interaction(), researchMode: this.data.mode === 'chat' ? this.data.researchMode || 'auto' : 'auto', prefix: this.data.prompt, attachmentIds: this.data.attachmentIds });
+    this._voiceError = ''; this.setData({ error: '', focus: false }); this._voice.start({ sessionId: this.data.sessionId, interaction: this.interaction(), researchMode: this.requestResearchMode(), prefix: this.data.prompt, attachmentIds: this.data.attachmentIds });
   },
   requestVoiceConsent() {
     if (hasVoiceConsent(getApp())) return Promise.resolve(true);

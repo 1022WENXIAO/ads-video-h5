@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { mkdtemp, readFile, rm, writeFile, mkdir } from 'node:fs/promises';
 import path from 'node:path';
 import os from 'node:os';
-import { loadVideoTemplates, publicTemplate } from '../server/videoTemplates';
+import { loadVideoTemplate, loadVideoTemplateCatalog, loadVideoTemplates, publicTemplate } from '../server/videoTemplates';
 import { selectMention, templateMentions } from '../shared/videoTemplates';
 import { resolveTemplateRequest } from '../server/templateRequest';
 import { validateScienceScene, patchScienceScene } from '../server/scienceScene';
@@ -26,16 +26,42 @@ test('mentions select a template without matching an email or a name prefix; unk
   assert.throws(()=>selectMention('@未知模板 制作视频',templates),/未找到模板/);
 });
 
-test('template routing preserves draft-only requests and continues in the same skill after a saved draft',async()=>{
+test('template routing requires explicit selection even after a saved draft',async()=>{
   const templates=await loadVideoTemplates(),session={templateId:'animated-science-video'};
   assert.equal(resolveTemplateRequest('@动态图科普视频 制作一个LLM Prompt的原理视频',{},templates).kind,'export');
   assert.equal(resolveTemplateRequest('@动态图科普视频 只写方案，先不要导出视频',{},templates).kind,'plan');
-  assert.equal(resolveTemplateRequest('生成成片',session,templates).template?.id,session.templateId);
-  assert.equal(resolveTemplateRequest('修改为24秒',session,templates).template?.id,session.templateId);
+  assert.equal(resolveTemplateRequest('生成成片',session,templates).template,undefined);
+  assert.equal(resolveTemplateRequest('修改为24秒',session,templates).template,undefined);
+  assert.equal(resolveTemplateRequest('@动态图科普视频 生成成片',session,templates).template?.id,session.templateId);
   assert.equal(resolveTemplateRequest('生成一张封面图',session,templates).template,undefined);
   assert.equal(resolveTemplateRequest('为什么要先研究资料',session,templates).template,undefined);
   assert.throws(()=>resolveTemplateRequest('每天9点 @动态图科普视频 制作视频',session,templates),/暂不支持定时执行/);
   assert.throws(()=>resolveTemplateRequest('@动态图科普视频',{},templates),/补充/);
+});
+
+test('catalog can start without reading any skill and loads only the explicitly selected style', async t => {
+  const root = await mkdtemp(path.join(os.tmpdir(), 'qj-style-catalog-'));
+  t.after(() => rm(root, { recursive: true, force: true }));
+  const entries = (await loadVideoTemplateCatalog()).filter(entry => entry.style);
+  assert.equal(entries.length, 4);
+  for (const entry of entries) {
+    assert.ok(entry.sample?.videoUrl.endsWith('/sample/video'));
+    assert.ok(entry.sample.source.url.startsWith('https://x.com/'));
+    const local = path.join(root, entry.id);
+    await mkdir(local);
+    await writeFile(path.join(local, 'template.json'), await readFile(path.join(entry.directory, 'template.json')));
+  }
+  const catalog = await loadVideoTemplateCatalog(root);
+  assert.equal(catalog.length, 4);
+  assert.equal(resolveTemplateRequest('制作一条视频', { templateId: catalog[0].id }, catalog).template, undefined);
+  assert.ok(catalog.every(entry => !('instructions' in entry) && !('skillHash' in entry)));
+  const selected = resolveTemplateRequest('@界面动效 演示整理任务', {}, catalog).template!;
+  const original = entries.find(entry => entry.id === selected.id)!;
+  await mkdir(path.join(selected.directory, 'assets'));
+  for (const file of ['SKILL.md', 'assets/sample.mp4', 'assets/sample.json']) {
+    await writeFile(path.join(selected.directory, file), await readFile(path.join(original.directory, file)));
+  }
+  assert.match((await loadVideoTemplate(selected)).context, /触发、反馈、结果/);
 });
 
 test('science state models reject unverified sources, empty visual operations, invalid references and false result assertions',()=>{
@@ -71,6 +97,26 @@ test('the real browser checks every frame and verifies deterministic seek, loopi
     try{const layout=await inspectScienceLayout(view.page);assert.equal(layout.framesChecked,481);assert.equal(layout.checks.length,count);assert.equal(layout.loopIdentical,true);}
     finally{await view.close();}
   }
+});
+
+test('CRLF scene modules execute inside the isolated browser without leaking module imports', async t => {
+  const [template] = await loadVideoTemplates();
+  const directory = await mkdtemp(path.join(os.tmpdir(), 'qj-crlf-scene-'));
+  t.after(() => rm(directory, { recursive: true, force: true }));
+  const integration = path.join(directory, 'assets/integration');
+  await mkdir(integration, { recursive: true });
+  for (const name of ['project-builder', 'renderer', 'scene', 'motion-api', 'reference-effects', 'motion-metrics']) {
+    const source = await readFile(path.join(template.directory, 'assets/integration', name + '.mjs'), 'utf8');
+    await writeFile(path.join(integration, name + '.mjs'), source.replace(/\r?\n/g, '\r\n'));
+  }
+  const view = await openSciencePage({ ...template, directory }, scienceFixture(4));
+  try {
+    assert.equal(await view.page.evaluate(() => {
+      const scene = (window as any).science;
+      scene.renderer.draw(3);
+      return scene.config.panels.length;
+    }), 4);
+  } finally { await view.close(); }
 });
 
 test('project archives retain UTF-8 source names and do not include sibling private files',async()=>{

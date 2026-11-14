@@ -148,9 +148,10 @@ test('real API supports draft deduplication, archive/restore, owner-scoped delet
   const chatDraft: any = await (await f.request(cookie, '/api/sessions', { reuseEmpty: true, mode: 'chat' })).json();
   assert.equal(chatDraft.activeSessionId, id); assert.equal(chatDraft.sessions.length, first.sessions.length);
   assert.equal((await f.request(foreign, '/api/sessions/' + id, {}, 'DELETE')).status, 404);
-  const admitted: any = await (await f.request(cookie, '/api/chat', { sessionId: id, message: '请生成一张图片', interaction: 'chat', attachmentIds: [] })).json();
+  const admitted: any = await (await f.request(cookie, '/api/chat', { sessionId: id, message: '请生成一张图片，风格参考 @界面动效 。', interaction: 'chat', attachmentIds: [] })).json();
   const jobId = admitted.jobs.at(-1).id;
   assert.equal(admitted.jobs.at(-1).interaction, 'chat');
+  assert.equal(admitted.jobs.at(-1).template, undefined, 'text-only interaction does not bind the mentioned template');
   await waitFor(async () => { const current: any = await (await f.request(cookie, '/api/state')).json(); return current.jobs.find((j: any) => j.id === jobId)?.status === 'succeeded'; });
   const answered: any = await (await f.request(cookie, '/api/state')).json();
   assert.equal(answered.artifacts.length, 0, 'chat mode cannot dispatch image production');

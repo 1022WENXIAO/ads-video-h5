@@ -221,3 +221,46 @@ test('account changes clear local draft state even if the server reuses the same
   assert.equal(p.data.prompt, ''); assert.equal(p.data.researchMode, 'auto'); assert.equal(p.data.sending, false);
   p.onUnload();
 });
+
+test('template drafts restore their chip and keep research options isolated across conversations', async t => {
+  const f = await fixture(), p = f.page; selectable(f); t.after(() => p.onUnload());
+  f.state.templates = [{ id: 'video-style-interface', name: '界面动效' }];
+  p.input({ detail: { value: '@界面动效 演示原来的想法', cursor: 5 } });
+  p.setData({ researchMode: 'deep' });
+  p.sidebarActivate(tapped('b'));
+  assert.equal(p.data.templateName, '');
+  p.input({ detail: { value: '另一个问题', cursor: 6 } }); p.setData({ researchMode: 'web' });
+  p.sidebarActivate(tapped('old'));
+  assert.equal(p.data.prompt, '@界面动效 演示原来的想法');
+  assert.equal(p.data.templateName, '界面动效'); assert.equal(p.data.cursor, 5);
+  assert.equal(p.data.editorCursor, -1); assert.equal(p.data.researchMode, 'deep');
+  assert.equal(p.interaction(), 'create'); assert.equal(p.requestResearchMode(), 'auto');
+  p.removeTemplate();
+  assert.equal(p.data.prompt, '演示原来的想法'); assert.equal(p.interaction(), 'chat');
+  assert.equal(p.requestResearchMode(), 'deep');
+  p.sidebarActivate(tapped('b'));
+  assert.equal(p.data.prompt, '另一个问题'); assert.equal(p.data.templateName, '');
+  assert.equal(p.requestResearchMode(), 'web');
+});
+
+test('a template selected after deep research submits creation for both text and voice without chat-only flags', async t => {
+  const f = await fixture(), p = f.page; selectable(f); t.after(() => p.onUnload());
+  f.state.templates = [{ id: 'video-style-interface', name: '界面动效' }];
+  p.setData({ prompt: '制作产品介绍', researchMode: 'deep' });
+  p.applyTemplate({ id: 'video-style-interface', sessionId: 'old', generation: 0 });
+  // A template requires its own backend capability, not the optional research mode.
+  f.state.features.researchModes = false; p.render(f.state);
+  const bodies: any[] = [];
+  f.app.mutate = async (_route: string, body: any) => { bodies.push(body); return f.app.state; };
+  await p.send();
+  assert.equal(bodies.length, 1); assert.equal(bodies[0].interaction, 'create');
+  assert.equal(bodies[0].researchMode, 'auto'); assert.equal(bodies[0].message, '@界面动效 制作产品介绍');
+  assert.equal(p.data.templateName, '');
+  p.applyTemplate({ id: 'video-style-interface', sessionId: 'old', generation: 0 });
+  const { version } = miniRequire('./miniprogram/utils/voice-consent');
+  f.app.voiceConsent = { version, agreedAt: new Date().toISOString() };
+  let voice: any; p._voice.start = (value: any) => { voice = value; };
+  await p.voiceStart();
+  assert.equal(voice.interaction, 'create'); assert.equal(voice.researchMode, 'auto');
+  assert.match(voice.prefix, /^@界面动效 /);
+});

@@ -121,7 +121,9 @@ function createClient(platform, config, onExpired) {
     const url = mediaUrl(value);
     return url && !url.startsWith(base + '/') ? url : '';
   };
-  return { request, wechatLogin, upload, download, mediaUrl, previewUrl, clear, hasSession: () => Boolean(cookie), restoreState: startup.read, rememberState: startup.write,
+  const templateAssetUrl = route => typeof route === 'string' &&
+    /^\/api\/templates\/[a-z][a-z0-9-]{0,63}\/sample\/(?:video|poster)$/.test(route) ? endpoint(route) : '';
+  return { request, wechatLogin, upload, download, mediaUrl, previewUrl, templateAssetUrl, clear, hasSession: () => Boolean(cookie), restoreState: startup.read, rememberState: startup.write,
     cachedDownload, forgetDownload: value => { const url = mediaUrl(value); cache.delete(url); images.forget(url); } };
 }
 module.exports = { createClient };

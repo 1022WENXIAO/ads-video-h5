@@ -14,6 +14,7 @@ import {
   Image as ImageIcon,
   ImagePlus,
   Library,
+  Layers3,
   Menu,
   Mic2,
   Music2,
@@ -45,16 +46,19 @@ import HotResearchCard from "./HotResearchCard";
 import TemplateMentionInput from './TemplateMentionInput';
 import VoiceInput from './VoiceInput';
 import { fetchCredits } from './creditApi';
+import { withoutTemplateMentions, type VideoTemplate } from '../shared/videoTemplates';
 import type { CreditWallet } from '../shared/creditTypes';
 import './credits.css';
 import { formatPoints } from '../shared/creditFormat';
 import { isActiveJob } from './jobStatus';
 const AvatarPanel = lazy(() => import('./AvatarPanel'));
 const CreditPage = lazy(() => import('./CreditPage'));
+const TemplateGallery = lazy(() => import('./TemplateGallery'));
 
 type Page =
   | "chat"
   | "history"
+  | "templates"
   | "media"
   | "avatars"
   | "films"
@@ -84,6 +88,7 @@ const labels = {
   "zh-CN": {
     chat: "对话",
     history: "会话历史",
+    templates: "模板画廊",
     media: "素材库",
     avatars: "作者形象",
     films: "成片库",
@@ -130,6 +135,7 @@ const labels = {
   "en-US": {
     chat: "Chat",
     history: "Conversations",
+    templates: "Template gallery",
     media: "Media",
     avatars: "Author avatar",
     films: "Exports",
@@ -505,7 +511,7 @@ function ArtifactCard({
         {artifact.plan.reconstruction.limitations.map((s,i)=><small key={i}>{s}</small>)}
       </details> : null}
       {artifact.template ? <details className="template-delivery">
-        <summary>{artifact.template.name} · {artifact.template.panels}图同屏 · 待审阅</summary>
+        <summary>{artifact.template.name} · {artifact.template.panels ? `${artifact.template.panels}图同屏` : "三幕动画"} · 待审阅</summary>
         <p>{artifact.template.boundary}</p>
         <small>模板 v{artifact.template.version} · {artifact.template.technicalPassed ? '技术检查通过' : '待检查'} · 用户验收待确认</small>
         {artifact.projectUrl ? <a href={artifact.projectUrl} download>下载可编辑工程 ZIP</a> : null}
@@ -788,6 +794,16 @@ export default function App({ user, onLogout }: { user: PublicUser; onLogout: ()
     setPage(next);
     setError("");
   }
+  function useGalleryTemplate(template: VideoTemplate) {
+    const next = `@${template.name} ${withoutTemplateMentions(prompt, state?.templates || [])}`;
+    if (next.length > 2000) {
+      setError(locale === 'zh-CN' ? '请先缩短对话草稿，再添加模板。' : 'Shorten the draft before adding a template.');
+      return;
+    }
+    setPrompt(next);
+    nav('chat');
+    requestAnimationFrame(() => composerInput.current?.focus());
+  }
   async function mutate(url: string, method: string, body?: unknown) {
     setPending(true);
     setError("");
@@ -1020,7 +1036,7 @@ export default function App({ user, onLogout }: { user: PublicUser; onLogout: ()
   const timelineUrl = timelineArtifact?.url || clipSource?.url;
   return (
     <div className="page-backdrop">
-      <main className="app-shell">
+      <main className={page === "templates" ? "app-shell gallery-shell" : "app-shell"}>
         <header className="topbar">
           {page === "chat" ? (
             <button
@@ -1048,14 +1064,14 @@ export default function App({ user, onLogout }: { user: PublicUser; onLogout: ()
           )}
           {page !== "chat" ? <h1 className="page-title">{t[page]}</h1> : null}
           {page === "chat" ? (
-            <button
-              type="button"
-              className="top-history"
-              onClick={() => nav("history")}
-            >
-              <Clock3 size={19} />
-              {t.history}
-            </button>
+            <div className="top-chat-actions">
+              <button type="button" className="top-history top-gallery-link" disabled={voiceBusy} onClick={() => nav('templates')}>
+                <Layers3 size={17} />{t.templates}
+              </button>
+              <button type="button" className="top-history" onClick={() => nav('history')}>
+                <Clock3 size={19} />{t.history}
+              </button>
+            </div>
           ) : page === "history" ? (
             <button
               type="button"
@@ -1296,7 +1312,7 @@ export default function App({ user, onLogout }: { user: PublicUser; onLogout: ()
                     })}
                   </div>
                 ) : null}
-                <TemplateMentionInput key={session?.id} templates={state?.templates||[]} value={prompt} onChange={setPrompt} inputRef={composerInput} disabled={voiceBusy} placeholder={t.input} rows={Math.min(5, Math.max(attachments.length ? 2 : 1, prompt.split("\n").length))} onSubmit={()=>void send()} selectedTemplateId={session?.templateId}/>
+                <TemplateMentionInput key={session?.id} templates={state?.templates||[]} value={prompt} onChange={setPrompt} inputRef={composerInput} disabled={voiceBusy} placeholder={t.input} rows={Math.min(5, Math.max(attachments.length ? 2 : 1, prompt.split("\n").length))} onSubmit={()=>void send()}/>
                 <div className="composer-actions">
                   <button
                     type="button"
@@ -1354,6 +1370,9 @@ export default function App({ user, onLogout }: { user: PublicUser; onLogout: ()
             </form>
           </>
         ) : null}
+        {page === 'templates' && state ? <Suspense fallback={<p className="subpage-content">{t.templates}…</p>}>
+          <TemplateGallery templates={state.templates || []} locale={locale} assetUrl={apiPath} onUse={useGalleryTemplate} />
+        </Suspense> : null}
         {page === 'avatars' && state ? <Suspense fallback={<p className="subpage-content">正在打开作者形象…</p>}><AvatarPanel state={state} pending={pending} error={error} mutate={mutate} openChat={() => nav('chat')} /></Suspense> : null}
         {page === "history" ? (
           <section className="subpage-content">

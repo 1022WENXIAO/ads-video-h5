@@ -4,7 +4,7 @@ const script=(v)=>v.replace(/<\/script/gi,'<\\/script');
 /** Generated code exists only in an opaque-origin iframe, without host APIs or network. */
 export function buildScienceDocument(parts,config){
   const {renderer,scene,motion,reference,metrics}=parts;
-  const strip=(s)=>s.replace(/^import .*\n/gm,'').replace(/\bexport /g,'');
+  const strip=(s)=>s.replace(/^import [^\r\n]*(?:\r?\n|$)/gm,'').replace(/\bexport /g,'');
   const normalized={...config,scene:'authored',fps:30,footerLeft:'教学示意 · 非真实模型推理'};
   const child=`<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; connect-src 'none'; img-src data:; worker-src 'none'; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'"><style>html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#070b13}canvas{display:block;width:100%;height:100%}</style></head><body><canvas id="canvas" width="1080" height="1920"></canvas><script>
 globalThis.__name=fn=>fn;

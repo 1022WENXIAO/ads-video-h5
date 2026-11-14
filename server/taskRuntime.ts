@@ -30,6 +30,9 @@ export async function captureTaskEnvironment(root:string,extra:unknown){
  const files=['server/index.ts','package.json','pnpm-lock.yaml','server/core.ts','server/taskRuntime.ts','server/taskContract.ts','server/requiredTool.ts','server/creativeReview.ts','server/scienceRender.ts','server/defoldRuntime.ts','server/defoldInspect.ts','server/defoldVisual.ts','server/artifactIntegrity.ts','server/durableState.ts','server/creativeWorkspace.ts','server/creativeTools.ts','server/templateWorkflow.ts','server/scienceCoding.ts','server/defoldCoding.ts','server/defoldProject.ts','server/pixelfx.ts','server/pixelfxDefold.ts','server/pixelfxTools.ts','tooling/creative/render-pixelfx.mjs','third_party/pixelfx/vendor.lock.json','skills/defold-game/assets/pixelfx.lua','server/jobExecution.ts','server/creditUsage.ts','shared/taskRuntime.ts','server/taskDrafts.ts','server/scienceWorkspace.ts'];
  files.push('server/questionResearch.ts','server/deepQuestionResearch.ts','server/narrativeResearch.ts','server/searxSearch.ts','server/openWebSearch.ts','server/publicResearch.ts','server/jobQueue.ts');
  if((extra as any)?.film)files.push('server/filmAnalysis.ts','shared/film.ts');
+ if ((extra as { template?: { id?: string } })?.template?.id?.startsWith('video-style-')) {
+  files.push('server/styleVideo.ts', 'server/videoTemplates.ts');
+ }
  const engineDirectory=path.join(process.env.QINGJIAN_ENGINE_CACHE||path.join(homedir(),'.cache/qingjian-engines'),'defold/1.14.0');
  const installed=await readFile(path.join(engineDirectory,'runtime.json'),'utf8').then(JSON.parse,()=>({}));
  const engineFiles=(extra as any)?.template?.id==='defold-game'?[process.env.QINGJIAN_DEFOLD_BOB||installed.bob||path.join(engineDirectory,'bob.jar'),process.env.QINGJIAN_JAVA_PATH||installed.java,process.env.QINGJIAN_DEFOLD_WORKER].filter((f):f is string=>Boolean(f)):[];
